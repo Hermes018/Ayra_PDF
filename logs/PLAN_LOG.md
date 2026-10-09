@@ -46,3 +46,11 @@ Entry format:
 - Failsafes affected: N/A.
 - Verification steps: Verify 31 tools are documented across the generated files.
 - Revision (date, what changed, why): N/A.
+
+## [2026-10-10] Plan for Phase 0.4
+- Goal / acceptance: Perform Engine Recon on `pdfcraft`. Spike test for merge, split, and compress operations and verify output with `qpdf --check`. Gate: spike test succeeds and `qpdf --check` is clean.
+- Approach + alternatives considered: Clone `pdfcraft` into a vendor/ or external directory (e.g., `vendor/pdfcraft`), read its source to identify methods for load, combine, split, render, compress. Record findings in `protocol/ENGINE_NOTES.md`. Create a temporary rust binary (e.g., in `xtask` or a new workspace crate `spike`) that depends on the local `pdfcraft`. Generate 3 sample PDFs using an available tool, run the spike, and verify outputs with `qpdf`.
+- Files/crates touched: `protocol/ENGINE_NOTES.md`, `spike/*` (or `xtask/src/spike.rs`), `logs/*`.
+- Failsafes affected: DO-2 (Verify APIs from source before use).
+- Verification steps: `qpdf --check` returns exit code 0 for all generated files.
+- Revision (date, what changed, why): N/A.

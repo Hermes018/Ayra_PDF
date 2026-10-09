@@ -3,3 +3,10 @@ members = [
     "xtask"
 ]
 resolver = "2"
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+authors = ["Test <test@example.com>"]
+rust-version = "1.74"
+license = "MIT"
