@@ -64,3 +64,18 @@ The safest and simplest way to resolve this blocker is to run the system-level p
 - Interpretation / ambiguity: User provided the instruction to proceed, indicating system dependencies are installed manually. I will update ERR-001 to fixed, record versions in ENV.md, install cargo tools, and run xtask doctor.
 - Actions taken / sub-phase affected: Resuming Phase 0.2
 - Conflicts with protocol? (yes/no + resolution): No.
+
+## [2026-10-10] Prompt #4
+- Verbatim: """Begin Phase 0.3 (UX Audit of iLovePDF). Execute the following steps:
+1. Create a `ux-spec/` directory if it does not already exist.
+2. Based on your web knowledge of iLovePDF's tools (as mapped in our `07_FEATURE_MAP.md`), generate detailed Markdown specification files for each tool group inside `ux-spec/`. 
+3. For each tool, document the expected UI states (empty dropzone, loaded file list, processing state, done state, error state), option panels (e.g., compression levels, split ranges, merge drag-and-drop behavior), and responsive layout expectations.
+4. Keep the specifications focused strictly on behavior, layout, and user interactions to serve as our frontend source-of-truth.
+5. Once the specifications cover every tool listed in `07_FEATURE_MAP.md`, verify that the gate is met.
+6. Update `logs/PROGRESS_LOG.md` and `logs/CHECKPOINT.md` to reflect the completion of Phase 0.3.
+7. Commit the changes with a conventional commit message.
+8. Tag the commit as `phase-0.3-green`.
+9. Print the updated ANCHOR block."""
+- Interpretation / ambiguity: Instructed to complete Phase 0.3 which involves generating detailed UX specifications for all 31 tools defined in the 7 columns of the feature map, logging the completion, verifying the gate, committing, tagging, and printing the anchor block. No ambiguity.
+- Actions taken / sub-phase affected: Phase 0.3
+- Conflicts with protocol? (yes/no + resolution): No.
