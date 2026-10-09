@@ -79,3 +79,19 @@ The safest and simplest way to resolve this blocker is to run the system-level p
 - Interpretation / ambiguity: Instructed to complete Phase 0.3 which involves generating detailed UX specifications for all 31 tools defined in the 7 columns of the feature map, logging the completion, verifying the gate, committing, tagging, and printing the anchor block. No ambiguity.
 - Actions taken / sub-phase affected: Phase 0.3
 - Conflicts with protocol? (yes/no + resolution): No.
+
+## [2026-10-10] Prompt #5
+- Verbatim: """Begin Phase 0.4 (Engine Recon & Spike). Execute the following steps:
+1. Clone or vendor `storytold/pdfcraft` locally, inspect its crates, and record the pinned commit SHA and confirmed public APIs in `protocol/ENGINE_NOTES.md`.
+2. Inspect the verified methods for load, combine, split, render, and compress. Note any discrepancies between its actual API and our architectural assumptions.
+3. Create a minimal spike test script/binary using `pdfcraft` against 3 sample PDFs:
+   - Perform a Merge operation.
+   - Perform a Split operation.
+   - Perform a Compress/Optimize operation.
+4. Verify the outputs using `qpdf --check` to ensure the resulting PDF structures are valid and clean.
+5. Record your findings in `logs/PLAN_LOG.md` and document the verified gate results in `logs/PROGRESS_LOG.md`.
+6. Update `logs/CHECKPOINT.md` to indicate Phase 0.4 completion and next steps.
+7. Commit with a conventional commit message, tag as `phase-0.4-green`, and print the ANCHOR block."""
+- Interpretation / ambiguity: Instructed to execute Phase 0.4. This involves cloning `pdfcraft`, documenting its APIs in `ENGINE_NOTES.md`, building a spike test with 3 PDFs to merge, split, and compress, then verifying with `qpdf --check`. Finally, update logs, checkpoint, commit, and tag.
+- Actions taken / sub-phase affected: Phase 0.4
+- Conflicts with protocol? (yes/no + resolution): No.

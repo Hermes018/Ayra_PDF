@@ -60,3 +60,16 @@ Entry format:
   - Rule 02:12 "Treat ux-spec/ as the UI source of truth" -> Evidence: UX specs generated.
 - Risks / follow-ups: None.
 - Commit / tag: `phase-0.3-green`
+
+## [2026-10-10 05:35] Phase 0.4 — DONE
+- Changes:
+  - Cloned `pdfcraft` and documented verified public APIs for merge, split, and compress in `ENGINE_NOTES.md`.
+  - Created `spike` binary crate to test the engine with 3 sample PDFs.
+  - Spike successfully performed Merge, Split, and Compress, and outputs were verified clean using `qpdf --check`.
+- Gate: pass (spike test succeeds and `qpdf --check` is clean)
+- Tests added/run: 0/1 (spike run)
+- Pre-commit checklist: 1 YES 2 N/A 3 YES 4 YES 5 N/A 6 YES 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - DO-2 "Verify APIs from source before use" -> Evidence: Documented verified APIs in `ENGINE_NOTES.md`.
+- Risks / follow-ups: None.
+- Commit / tag: `phase-0.4-green`
