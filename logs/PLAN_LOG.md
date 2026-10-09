@@ -38,3 +38,11 @@ Entry format:
 - Failsafes affected: N/A (Build infra).
 - Verification steps: `cargo xtask doctor` passes successfully.
 - Revision (date, what changed, why): N/A.
+
+## [2026-10-10] Plan for Phase 0.3
+- Goal / acceptance: Complete UX audit and specification for all tools listed in the 7 columns of `07_FEATURE_MAP.md`. Gate: `ux-spec` covers every tool in `FEATURE_MAP`.
+- Approach + alternatives considered: Create one markdown specification file per category (tool group) inside the `ux-spec/` directory to keep files manageable. Each tool will have documented states (empty, loaded, processing, done, error), option panels, and responsive layouts. The specs will focus purely on frontend behavior and user interaction, acting as the UI source-of-truth.
+- Files/crates touched: `ux-spec/01_organize.md`, `ux-spec/02_optimize.md`, `ux-spec/03_convert_to.md`, `ux-spec/04_convert_from.md`, `ux-spec/05_edit.md`, `ux-spec/06_security.md`, `ux-spec/07_intelligence.md`, `ux-spec/08_extras.md`, `logs/*`.
+- Failsafes affected: N/A.
+- Verification steps: Verify 31 tools are documented across the generated files.
+- Revision (date, what changed, why): N/A.

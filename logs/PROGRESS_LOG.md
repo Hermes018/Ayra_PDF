@@ -47,3 +47,16 @@ Entry format:
   - Rule 02:11 "Vet dependencies..." -> N/A (no third-party crates used in xtask besides std)
 - Risks / follow-ups: PATH variables need to be set in environment for rustc and pnpm (noted during task execution).
 - Commit / tag: `phase-0.2-green`
+
+## [2026-10-10 05:24] Phase 0.3 — DONE
+- Changes: 
+  - Generated detailed Markdown specification files in `ux-spec/` for each tool group.
+  - Documented UI states, option panels, and responsive behaviors.
+  - Ensured all tools from `07_FEATURE_MAP.md` are covered.
+- Gate: pass (ux-spec covers every tool in FEATURE_MAP)
+- Tests added/run: 0/0
+- Pre-commit checklist: 1 N/A 2 N/A 3 YES 4 N/A 5 N/A 6 N/A 7 YES 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - Rule 02:12 "Treat ux-spec/ as the UI source of truth" -> Evidence: UX specs generated.
+- Risks / follow-ups: None.
+- Commit / tag: `phase-0.3-green`
