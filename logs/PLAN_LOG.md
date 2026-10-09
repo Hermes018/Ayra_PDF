@@ -17,3 +17,11 @@ Entry format:
 - Failsafes affected: None.
 - Verification steps: N/A.
 - Revision (date, what changed, why): N/A.
+
+## [2026-10-10] Plan for Phase 0.1
+- Goal / acceptance: Initialize repository, ensure protocol files are copied, fill directory tree documentation, and make the first commit.
+- Approach + alternatives considered: The user already supplied the protocol files. Directory tree is already populated in `protocol/09_DIRECTORY_TREE.md`. Git initialization and amendment commit have been performed. Will finalize logging and tag `phase-0.1-green`.
+- Files/crates touched: `logs/CHECKPOINT.md`, `logs/PLAN_LOG.md`, `logs/PROGRESS_LOG.md`.
+- Failsafes affected: None.
+- Verification steps: `git status` clean, directory tree matches expectations.
+- Revision (date, what changed, why): N/A.
