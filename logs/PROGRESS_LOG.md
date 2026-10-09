@@ -33,3 +33,17 @@ Entry format:
 - Protocol compliance (phase end only): N/A
 - Risks / follow-ups: None.
 - Commit / tag: `phase-0.1-green`
+
+## [2026-10-10 05:21] Phase 0.2 — DONE
+- Changes: 
+  - User manually installed system dependencies. Set up `xtask` crate and `.cargo/config.toml`.
+  - Installed Rust, pnpm, and cargo extensions; documented toolchain versions in `ENV.md`.
+  - Created `cargo xtask doctor` gate and verified it passes.
+- Gate: pass (Doctor check passed. Gate green.)
+- Tests added/run: 0/0
+- Pre-commit checklist: 1 YES 2 N/A 3 YES 4 N/A 5 N/A 6 N/A 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - Rule 02:2 "Verify external API..." -> N/A (no APIs used)
+  - Rule 02:11 "Vet dependencies..." -> N/A (no third-party crates used in xtask besides std)
+- Risks / follow-ups: PATH variables need to be set in environment for rustc and pnpm (noted during task execution).
+- Commit / tag: `phase-0.2-green`
