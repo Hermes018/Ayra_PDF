@@ -77,3 +77,21 @@ Adopt (MIT OR Apache-2.0, 6.0k stars) with git-pin, worker isolation, fallback a
 
 ## ADR-007 [2026-10-10] Taxonomy parity (7 columns)
 Home grid = exactly ORGANIZE PDF, OPTIMIZE PDF, CONVERT TO PDF, CONVERT FROM PDF, EDIT PDF, PDF SECURITY, PDF INTELLIGENCE; 31 reference tools mapped one-to-one in `07_FEATURE_MAP.md`; enforced by `cargo xtask feature-map-check` and a UI snapshot test. Extras live below the grid. Column placement of tools not labelled in the reference list is an assumption to confirm in 0.3. **Approved by:** user (System Update item 5).
+
+## ADR-008 [2026-10-10] Engine pinning strategy (pdfcraft)
+- **Context:** Spike in Phase 0.4 verified `pdfcraft` (commit `dc4b3eee`) successfully merges, splits, and compresses PDFs. Digital signatures correctly cause modifications to be rejected. Merged output triggered minor qpdf warnings (missing kid Resources dictionary) but remained structurally valid and repairable.
+- **Decision:** Track `vendor/pdfcraft` as a git submodule pinned to the tested commit rather than a gitignored folder. This ensures deterministic multi-device syncing and isolates upstream instability. Any updates to the engine will require a deliberate bump and a re-run of the `qpdf` oracle suite.
+- **Consequences:** The repo requires `git submodule update --init` on fresh clone.
+- **Approved by:** agent-within-scope.
+
+## ADR-009 [2026-10-10] Fallback Renderer (pdfium-render)
+- **Context:** `pdfcraft`'s renderer (`hayro`) is early in development. For visual features like thumbnails, page extraction, or OCR layout, we need a robust, production-grade fallback if the primary engine panics or renders inaccurately on complex files.
+- **Decision:** Adopt `pdfium-render` (and `pdfium-binaries`) exclusively as a visual rendering fallback. It will be sandboxed to the worker. If `pdfcraft` fails to render a thumbnail, `pdfium` attempts it. It will NOT be used for structural PDF modifications (merge/split/etc.).
+- **Consequences:** Increases application bundle size by the size of the pdfium native library (~10-20 MB depending on platform).
+- **Approved by:** agent-within-scope.
+
+## ADR-010 [2026-10-10] Markdown-to-PDF Approach (Typst)
+- **Context:** We need a robust offline Markdown-to-PDF engine. Headless browsers (puppeteer/wkhtmltopdf) are banned/bloated. Pure Rust Markdown-to-PDF crates are often incomplete.
+- **Decision:** Use `typst` (Apache-2.0) as the backend engine. We will use `comrak` to parse Markdown and emit Typst code, then use `typst` to render the PDF. Typst is fast, produces professional typography, and is a pure Rust dependency.
+- **Consequences:** Adds Typst to the dependency tree. Requires maintaining a Markdown-to-Typst translation layer.
+- **Approved by:** agent-within-scope.
