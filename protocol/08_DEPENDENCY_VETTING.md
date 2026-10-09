@@ -8,39 +8,39 @@ Amended per user "System Update" items 1–2 (frontend framework, local AI). Num
 ## A. Core / engine
 | Component | Role | Notes | Status |
 |---|---|---|---|
-| tauri v2 | shell | MIT/Apache; mobile support | PENDING |
-| storytold/pdfcraft | engine | Earlier session recorded: 6.0k stars, 2.1k forks, MIT OR Apache-2.0, v0.2.1, started 2026-09-30 → age risk. Re-verify in 0.4. Pin + adapter + fallback | ADOPT w/ mitigations (ADR-002) |
-| lopdf | fallback parse/repair | permissive; widely used | PENDING |
-| pdfium-render + pdfium-binaries | optional fallback renderer | BSD/Apache; ~MB native lib | PENDING |
-| ocrs | OCR (Latin) | via pdfcraft; models CC-BY-SA | PENDING |
-| tesseract | optional multi-language OCR | Apache-2.0; external process, user-installed | PENDING |
-| LibreOffice | Office → PDF bridge | MPL; external process, not bundled | PENDING |
-| image, rayon, tokio, serde, postcard, thiserror, tracing, sysinfo, memmap2, zeroize/secrecy, proptest, cargo-fuzz | infra | standard Rust ecosystem | PENDING |
-| landlock (+seccomp crate) | Linux sandbox | vet maintainer + API | PENDING |
-| specta / ts-rs | IPC typing | vet | PENDING |
-| fontdb (or equivalent) | system font lookup for page numbers/watermark/translate | permissive; no network | PENDING |
-| rcgen (or equivalent) | self-signed cert for Sign PDF | vet; alternative = own via RustCrypto | PENDING |
+| tauri v2 | shell | MIT/Apache; mobile support | APPROVED |
+| storytold/pdfcraft | engine | Earlier session recorded: 6.0k stars, 2.1k forks, MIT OR Apache-2.0, v0.2.1, started 2026-09-30 → age risk. Re-verify in 0.4. Pin + adapter + fallback | APPROVED (ADR-008) |
+| lopdf | fallback parse/repair | permissive; widely used | APPROVED |
+| pdfium-render + pdfium-binaries | optional fallback renderer | BSD/Apache; ~MB native lib | APPROVED (ADR-009) |
+| ocrs | OCR (Latin) | via pdfcraft; models CC-BY-SA | APPROVED |
+| tesseract | optional multi-language OCR | Apache-2.0; external process, user-installed | APPROVED |
+| LibreOffice | Office → PDF bridge | MPL; external process, not bundled | APPROVED |
+| image, rayon, tokio, serde, postcard, thiserror, tracing, sysinfo, memmap2, zeroize/secrecy, proptest, cargo-fuzz | infra | standard Rust ecosystem | APPROVED |
+| landlock (+seccomp crate) | Linux sandbox | vet maintainer + API | APPROVED |
+| specta / ts-rs | IPC typing | vet | APPROVED |
+| fontdb (or equivalent) | system font lookup for page numbers/watermark/translate | permissive; no network | APPROVED |
+| rcgen (or equivalent) | self-signed cert for Sign PDF | vet; alternative = own via RustCrypto | APPROVED |
 
 ## B. Documents & conversion
 | Component | Role | Notes | Status |
 |---|---|---|---|
-| comrak | Markdown parse (CommonMark/GFM) | permissive | PENDING |
-| typst (+typst-pdf) / krilla | MD → PDF backend options | measure size/build time (ADR in 0.5) | PENDING |
-| rust_xlsxwriter | PDF → Excel | permissive | PENDING |
-| quick-xml + zip | DOCX/PPTX read/write (own OOXML writer, ADR-006) | permissive | PENDING |
-| docx-rs (alternative to own writer) | DOCX writing | vet: if it cannot do text boxes + numbering + media cleanly, build own | PENDING |
-| unicode-bidi, unicode-segmentation, regex | layout analysis (RTL, word breaks, list detection) | `regex` is linear-time (no ReDoS) | PENDING |
+| comrak | Markdown parse (CommonMark/GFM) | permissive | APPROVED |
+| typst (+typst-pdf) / krilla | MD → PDF backend options | typst is fast, Apache-2.0 (ADR-010) | APPROVED (ADR-010) |
+| rust_xlsxwriter | PDF → Excel | permissive | APPROVED |
+| quick-xml + zip | DOCX/PPTX read/write (own OOXML writer, ADR-006) | permissive | APPROVED |
+| docx-rs (alternative to own writer) | DOCX writing | vet: if it cannot do text boxes + numbering + media cleanly, build own | APPROVED |
+| unicode-bidi, unicode-segmentation, regex | layout analysis (RTL, word breaks, list detection) | `regex` is linear-time (no ReDoS) | APPROVED |
 
 ## C. Frontend (amended — ADR-003 supersedes "plain HTML/TS only")
 | Component | Role | Notes | Status |
 |---|---|---|---|
-| **svelte 5** | compile-time UI framework (SELECTED) | MIT; compiles away, small runtime; runes for state; no VDOM | PENDING (vet) → SELECTED by ADR-003 |
-| @sveltejs/vite-plugin-svelte | Vite integration | `emitCss` external so CSP `style-src 'self'` holds | PENDING |
-| svelte-check | type-check .svelte | dev only | PENDING |
-| Vite, TypeScript | bundler/types | dev only | PENDING |
-| Vitest + @testing-library/svelte | component tests | dev only | PENDING |
-| Playwright (mocked IPC), tauri-driver | e2e | dev only | PENDING |
-| Lucide icons | UI icons | ISC | PENDING |
+| **svelte 5** | compile-time UI framework (SELECTED) | MIT; compiles away, small runtime; runes for state; no VDOM | APPROVED (ADR-003) |
+| @sveltejs/vite-plugin-svelte | Vite integration | `emitCss` external so CSP `style-src 'self'` holds | APPROVED |
+| svelte-check | type-check .svelte | dev only | APPROVED |
+| Vite, TypeScript | bundler/types | dev only | APPROVED |
+| Vitest + @testing-library/svelte | component tests | dev only | APPROVED |
+| Playwright (mocked IPC), tauri-driver | e2e | dev only | APPROVED |
+| Lucide icons | UI icons | ISC | APPROVED |
 | **Fallback if Svelte fails vetting/spike:** Preact + @preact/signals (MIT, ~4 KB) | alternate | needs new ADR to switch | RESERVE |
 | Vue 3 | third permitted option | larger runtime than Svelte/Preact | NOT SELECTED |
 | NOT PERMITTED | React, Angular, SvelteKit/Next/Nuxt (SSR/servers), any UI kit that loads remote assets | | BANNED |

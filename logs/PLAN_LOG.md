@@ -54,3 +54,11 @@ Entry format:
 - Failsafes affected: DO-2 (Verify APIs from source before use).
 - Verification steps: `qpdf --check` returns exit code 0 for all generated files.
 - Revision (date, what changed, why): N/A.
+
+## [2026-10-10] Plan for Phase 0.5
+- Goal / acceptance: Complete dependency vetting, update `08_DEPENDENCY_VETTING.md`, write 3 new ADRs in `DECISIONS_ADR.md`, convert `vendor/pdfcraft` to a git submodule.
+- Approach + alternatives considered: Read `08_DEPENDENCY_VETTING.md`. Evaluate Tauri v2, pdfium-render, lopdf, ocrs, tesseract, LibreOffice headless bridge, and markdown tools based on license, maintenance, and suitability for our offline constraints. Add ADRs (ADR-008 to ADR-010). Initialize git submodule for `vendor/pdfcraft` to replace the `.gitignore`d directory.
+- Files/crates touched: `protocol/08_DEPENDENCY_VETTING.md`, `logs/DECISIONS_ADR.md`, `.gitmodules`, `logs/*`.
+- Failsafes affected: DO-4 (Outputs atomic + new file by default - not strictly applicable here but part of vetting logic for dependencies).
+- Verification steps: `git status` shows `.gitmodules` and `vendor/pdfcraft` as a tracked submodule.
+- Revision (date, what changed, why): N/A.

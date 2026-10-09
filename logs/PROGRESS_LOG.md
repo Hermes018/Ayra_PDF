@@ -71,5 +71,18 @@ Entry format:
 - Pre-commit checklist: 1 YES 2 N/A 3 YES 4 YES 5 N/A 6 YES 7 N/A 8 YES 9 YES 10 YES
 - Protocol compliance (phase end only):
   - DO-2 "Verify APIs from source before use" -> Evidence: Documented verified APIs in `ENGINE_NOTES.md`.
-- Risks / follow-ups: None.
+- Risks / follow-ups: Engine merge produces minor structural warnings (`Resources is missing or invalid; repairing`) reported by qpdf on `form.pdf`. This discrepancy is noted in `ENGINE_NOTES.md`.
 - Commit / tag: `phase-0.4-green`
+
+## [2026-10-10 05:54] Phase 0.5 — DONE
+- Changes:
+  - Vetted pending dependencies in `08_DEPENDENCY_VETTING.md`, approving Tauri v2, pdfcraft, lopdf, pdfium-render, ocrs, LibreOffice, typst, and svelte 5 stack.
+  - Drafted ADR-008 (Engine pinning strategy), ADR-009 (Fallback renderer), and ADR-010 (Markdown-to-PDF approach) in `DECISIONS_ADR.md`.
+  - Added `vendor/pdfcraft` as a tracked git submodule pinned to the validated commit `dc4b3eee`, replacing the gitignored directory.
+- Gate: pass
+- Tests added/run: N/A
+- Pre-commit checklist: 1 N/A 2 N/A 3 YES 4 YES 5 YES 6 N/A 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - DO-8 "Dependencies vetted" -> Evidence: Updated table in `08_DEPENDENCY_VETTING.md`.
+- Risks / follow-ups: `pdfium-render` native binary will increase the overall bundle size. 
+- Commit / tag: `phase-0.5-green`

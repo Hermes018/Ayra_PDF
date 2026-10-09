@@ -95,3 +95,18 @@ The safest and simplest way to resolve this blocker is to run the system-level p
 - Interpretation / ambiguity: Instructed to execute Phase 0.4. This involves cloning `pdfcraft`, documenting its APIs in `ENGINE_NOTES.md`, building a spike test with 3 PDFs to merge, split, and compress, then verifying with `qpdf --check`. Finally, update logs, checkpoint, commit, and tag.
 - Actions taken / sub-phase affected: Phase 0.4
 - Conflicts with protocol? (yes/no + resolution): No.
+
+## [2026-10-10] Prompt #6
+- Verbatim: """Begin Phase 0.5 (Dependency Vetting & ADRs). Execute the following steps:
+1. Review `protocol/08_DEPENDENCY_VETTING.md`. Evaluate the pending candidates (e.g., Tauri v2, pdfium-render, lopdf, ocrs, tesseract, LibreOffice headless bridge, comrak/Markdown tools).
+2. Update the status table in `08_DEPENDENCY_VETTING.md` with your vetting results based on the criteria in the document (permissive license, popularity, maintenance, etc.). 
+3. Draft necessary Architecture Decision Records (ADRs) in `logs/DECISIONS_ADR.md` for:
+   - The adoption and pinning strategy for `pdfcraft` (updating the existing ADR if needed based on Phase 0.4 findings).
+   - The choice of fallback renderer (e.g., `pdfium-render`).
+   - The Markdown-to-PDF approach.
+4. If you determine `vendor/pdfcraft` should be tracked as a git submodule rather than just a `.gitignore`d folder to make multi-device syncing easier for the user, execute that change now.
+5. Update `logs/PROGRESS_LOG.md` and `logs/CHECKPOINT.md`.
+6. Commit the changes, tag as `phase-0.5-green`, and print the ANCHOR block."""
+- Interpretation / ambiguity: I need to vet dependencies, write ADRs for engine adoption, fallback renderer, and Markdown-to-PDF, convert `vendor/pdfcraft` to a submodule, and complete phase 0.5 logistics. No ambiguity.
+- Actions taken / sub-phase affected: Phase 0.5
+- Conflicts with protocol? (yes/no + resolution): No.

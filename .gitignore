@@ -1,4 +1,4 @@
 target/
-/vendor/
+
 /spike/target/
 *.pdf

@@ -1,0 +1,3 @@
+[submodule "vendor/pdfcraft"]
+	path = vendor/pdfcraft
+	url = https://github.com/storytold/pdfcraft.git
