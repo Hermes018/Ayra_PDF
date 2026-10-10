@@ -3157,6 +3157,8 @@ name = "lpdf-engine-port"
 version = "0.1.0"
 dependencies = [
  "lpdf-core-types",
+ "serde",
+ "ts-rs 10.1.0",
 ]
 
 [[package]]

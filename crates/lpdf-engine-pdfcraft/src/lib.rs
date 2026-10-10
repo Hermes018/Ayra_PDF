@@ -323,6 +323,86 @@ impl PdfEngine for PdfcraftAdapter {
 
         Ok(())
     }
+
+    fn compress(
+        &self,
+        input_path: &Path,
+        profile: lpdf_engine_port::OptimizeProfile,
+        output_path: &Path,
+    ) -> Result<()> {
+        use pdfcraft_engine::optimize::{Compression, ImageSettings, Settings};
+
+        let mut session = pdfcraft_engine::Session::new();
+        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let name = input_path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+
+        let doc_id = session
+            .open(name, None, Arc::new(bytes.clone()), None)
+            .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+        let mut settings = Settings::default();
+
+        match profile {
+            lpdf_engine_port::OptimizeProfile::Low => {
+                settings.color = ImageSettings {
+                    downsample: true,
+                    target_ppi: 200.0,
+                    above_ppi: 300.0,
+                    compression: Compression::Jpeg(80),
+                };
+                settings.gray = ImageSettings {
+                    downsample: true,
+                    target_ppi: 200.0,
+                    above_ppi: 300.0,
+                    compression: Compression::Jpeg(80),
+                };
+            }
+            lpdf_engine_port::OptimizeProfile::Medium => {
+                // defaults are exactly acrobat's medium settings
+            }
+            lpdf_engine_port::OptimizeProfile::High => {
+                settings.color = ImageSettings {
+                    downsample: true,
+                    target_ppi: 72.0,
+                    above_ppi: 100.0,
+                    compression: Compression::Jpeg(40),
+                };
+                settings.gray = ImageSettings {
+                    downsample: true,
+                    target_ppi: 72.0,
+                    above_ppi: 100.0,
+                    compression: Compression::Jpeg(40),
+                };
+            }
+        }
+
+        let (optimized_bytes, _) = session
+            .optimized_bytes(doc_id, &settings, &[])
+            .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+        let final_bytes = if optimized_bytes.len() < bytes.len() {
+            &optimized_bytes
+        } else {
+            &bytes
+        };
+
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &**final_bytes).map_err(LpdfError::Io)?;
+
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.len() != final_bytes.len() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(())
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(PdfcraftAdapter);

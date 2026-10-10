@@ -8,4 +8,6 @@ license.workspace = true
 
 [dependencies]
 lpdf-core-types = { path = "../lpdf-core-types" }
+serde = { version = "1.0.229", features = ["derive"] }
+ts-rs = "10.1.0"
 

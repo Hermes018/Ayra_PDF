@@ -82,6 +82,13 @@ pub enum JobRequest {
         output_path: String,
         degrees: i32,
     },
+
+    /// Compress a PDF document.
+    Compress {
+        input_path: String,
+        output_path: String,
+        profile: lpdf_engine_port::OptimizeProfile,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -487,6 +494,44 @@ impl JobManager {
                 let out = PathBuf::from(output_path);
 
                 engine.rotate_document(&path, *degrees, &out)?;
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::Compress {
+                input_path,
+                output_path,
+                profile,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Starting compression...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 50,
+                    message: "Compressing document...".into(),
+                });
+
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.compress(&path, *profile, &out)?;
 
                 if cancel_token.is_cancelled() {
                     return Err(LpdfError::Engine("Job cancelled".into()));
