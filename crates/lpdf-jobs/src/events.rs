@@ -10,8 +10,9 @@ use tokio::sync::mpsc;
 use crate::queue::JobId;
 
 /// A typed job event that flows from worker → supervisor → Tauri frontend.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ts_rs::TS)]
 #[serde(tag = "kind", content = "data")]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
 pub enum JobEvent {
     /// Job has been enqueued and is waiting.
     Queued { job_id: JobId },

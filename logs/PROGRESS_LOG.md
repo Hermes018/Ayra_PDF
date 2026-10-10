@@ -257,3 +257,17 @@ Entry format:
   - Rule 01:2 "Local files" -> Evidence: Uses native OS paths from Tauri drop events rather than standard HTML5 file uploads.
 - Risks / follow-ups: Edge cases for multiple file drops only preview the first file; batch UI selection is needed.
 - Commit / tag: `phase-3.3-green`
+
+## [2026-10-10 10:14] Phase 3.4 — DONE
+- Changes:
+  - Added `ts-rs` to backend crates to generate strongly typed IPC bindings (`JobEvent`, `JobRequest`, `JobStatus`).
+  - Created `IpcClient` in frontend mapping to the generated types.
+  - Setup Vitest, jsdom, and `@testing-library/svelte` for fast mocked-IPC UI testing. Added `OrganizeView.test.ts`.
+- Gate: pass
+- Tests added/run: 2/2 (OrganizeView tests passing)
+- Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 N/A 7 YES 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - DO-12 "Treat ux-spec/ as the UI source of truth; test with screenshot diffs + e2e" -> Setup testing library and mock UI tests.
+  - DO-16 "Build UI with Svelte 5" -> Component testing configured exclusively for Svelte 5 (no classes).
+- Risks / follow-ups: E2E Playwright with `tauri-driver` is still pending actual tauri implementation vs web-only mode.
+- Commit / tag: `phase-3.4-green`

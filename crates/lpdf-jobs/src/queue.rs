@@ -22,7 +22,8 @@ use crate::events::{JobEvent, JobEventSender};
 pub type JobId = String;
 
 /// Current status of a job.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
 pub enum JobStatus {
     Queued,
     Running,
@@ -32,8 +33,9 @@ pub enum JobStatus {
 }
 
 /// Describes the operation a job should perform.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ts_rs::TS)]
 #[serde(tag = "op")]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
 pub enum JobRequest {
     /// Load a PDF and retrieve its info.
     GetInfo { input_path: String },
