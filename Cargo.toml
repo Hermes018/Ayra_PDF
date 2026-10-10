@@ -19,3 +19,12 @@ lto = true
 opt-level = 3
 panic = "abort"
 strip = true
+
+[patch.crates-io]
+hayro-interpret = { path = "vendor/pdfcraft/vendor/hayro-interpret" }
+hayro = { path = "vendor/pdfcraft/vendor/hayro" }
+hayro-syntax = { path = "vendor/pdfcraft/vendor/hayro-syntax" }
+hayro-jbig2 = { path = "vendor/pdfcraft/vendor/hayro-jbig2" }
+lopdf = { path = "vendor/pdfcraft/vendor/lopdf" }
+winit = { path = "vendor/pdfcraft/vendor/winit" }
+egui-wgpu = { path = "vendor/pdfcraft/vendor/egui-wgpu" }

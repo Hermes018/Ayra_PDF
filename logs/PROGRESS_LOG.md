@@ -176,3 +176,17 @@ Entry format:
   - Rule 02:6 "obey hardware-tier budget" -> Evidence: implementation of L, M, H tier logic bounding concurrency and cache sizes.
 - Risks / follow-ups: i18n is currently a basic JSON store, might need dynamic loading as the app grows.
 - Commit / tag: `phase-1.5-green`
+
+## [2026-10-10 07:06] Phase 2.1 — DONE
+- Changes:
+  - Defined `PdfEngine` trait in `lpdf-engine-port` outlining the core contract for PDF operations.
+  - Implemented `PdfcraftAdapter` using pinned `storytold/pdfcraft` engine and `FallbackAdapter` using `lopdf`.
+  - Created shared contract test-suite `define_contract_tests!` enforcing adapter compliance.
+- Gate: pass
+- Tests added/run: 4/4 (contract tests for both adapters)
+- Pre-commit checklist: 1 YES 2 N/A 3 YES 4 YES 5 YES 6 N/A 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - Rule 02:4 "Define engine contracts" -> Evidence: `PdfEngine` trait defined in `lpdf-engine-port`.
+  - Rule 02:2 "Contract tests" -> Evidence: Macro `define_contract_tests!` generated identical test suites.
+- Risks / follow-ups: Pdfcraft `render` currently extracts first image as a stub. It will need actual rendering support later.
+- Commit / tag: `phase-2.1-green`
