@@ -22,6 +22,7 @@ pub trait PdfEngine {
     fn render(&self, page_index: usize, options: &RenderOptions, output_path: &Path) -> Result<()>;
     fn page_ops_delete(&mut self, pages: &[usize]) -> Result<()>;
     fn save(&self, output_path: &Path) -> Result<()>;
+    fn merge(&self, input_paths: &[&Path], output_path: &Path) -> Result<()>;
 }
 
 #[macro_export]

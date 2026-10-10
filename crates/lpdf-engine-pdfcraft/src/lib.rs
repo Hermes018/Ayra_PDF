@@ -111,6 +111,40 @@ impl PdfEngine for PdfcraftAdapter {
         std::fs::write(output_path, &*doc.bytes).map_err(LpdfError::Io)?;
         Ok(())
     }
+
+    fn merge(&self, input_paths: &[&Path], output_path: &Path) -> Result<()> {
+        let mut sources = Vec::new();
+        for path in input_paths {
+            let bytes = std::fs::read(path).map_err(LpdfError::Io)?;
+            let name = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .into_owned();
+            sources.push((name, Arc::new(bytes)));
+        }
+
+        let combined_bytes = self
+            .session
+            .combine(&sources)
+            .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+        // Atomic write
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &*combined_bytes).map_err(LpdfError::Io)?;
+
+        // Verify output bytes
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.len() != combined_bytes.len() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+
+        // Rename
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(())
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(PdfcraftAdapter);

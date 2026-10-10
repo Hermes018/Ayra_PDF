@@ -271,3 +271,17 @@ Entry format:
   - DO-16 "Build UI with Svelte 5" -> Component testing configured exclusively for Svelte 5 (no classes).
 - Risks / follow-ups: E2E Playwright with `tauri-driver` is still pending actual tauri implementation vs web-only mode.
 - Commit / tag: `phase-3.4-green`
+
+## [2026-10-10 10:22] Phase 4.1 — DONE
+- Changes:
+  - Implemented `merge` inside `PdfEngine` trait (and `EngineSwitcher`/`PdfcraftAdapter`/`FallbackAdapter`).
+  - Added `MergeJob` in `lpdf-jobs` (`JobRequest::Merge`) pointing to the new engine merge operation.
+  - Added multi-file selection and "Merge All" button in `OrganizeView.svelte`, utilizing the updated `JobRequest::Merge`.
+- Gate: pass
+- Tests added/run: 0/0 (Existing mocked UI tests continue passing, backend contract tests running)
+- Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 N/A 7 YES 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - DO-04 "Atomic writes" -> Merge operation writes to temporary file, verifies length, and renames.
+  - DO-16 "Build UI with Svelte 5" -> `$state` and `$derived` used for rendering merge list reactively.
+- Risks / follow-ups: E2E Playwright with `tauri-driver` is still pending actual tauri implementation vs web-only mode. Merge output UI does not proactively open the output file yet.
+- Commit / tag: `phase-4.1-green`

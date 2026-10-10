@@ -117,4 +117,9 @@ impl PdfEngine for EngineSwitcher {
             None => Err(LpdfError::Engine("No document loaded".into())),
         }
     }
+
+    fn merge(&self, input_paths: &[&Path], output_path: &Path) -> Result<()> {
+        // Merge operations are static/standalone and go through primary.
+        self.primary.merge(input_paths, output_path)
+    }
 }
