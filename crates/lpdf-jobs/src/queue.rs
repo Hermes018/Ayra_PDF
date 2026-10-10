@@ -75,6 +75,13 @@ pub enum JobRequest {
         pages: Vec<usize>, // 1-indexed
         degrees: i32,
     },
+
+    /// Rotate an entire PDF document.
+    RotateDocument {
+        input_path: String,
+        output_path: String,
+        degrees: i32,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -442,6 +449,44 @@ impl JobManager {
                 let out = PathBuf::from(output_path);
 
                 engine.rotate_pages(&path, pages, *degrees, &out)?;
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::RotateDocument {
+                input_path,
+                output_path,
+                degrees,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Starting document rotation...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 50,
+                    message: "Rotating document...".into(),
+                });
+
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.rotate_document(&path, *degrees, &out)?;
 
                 if cancel_token.is_cancelled() {
                     return Err(LpdfError::Engine("Job cancelled".into()));

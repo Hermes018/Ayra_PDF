@@ -134,6 +134,17 @@ impl PdfEngine for FallbackAdapter {
             "Rotate not supported by FallbackAdapter".into(),
         ))
     }
+
+    fn rotate_document(
+        &self,
+        _input_path: &Path,
+        _degrees: i32,
+        _output_path: &Path,
+    ) -> Result<()> {
+        Err(LpdfError::Engine(
+            "Rotate not supported by FallbackAdapter".into(),
+        ))
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(FallbackAdapter);
