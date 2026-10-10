@@ -147,4 +147,13 @@ impl PdfEngine for EngineSwitcher {
         self.primary
             .rotate_document(input_path, degrees, output_path)
     }
+
+    fn compress(
+        &self,
+        input_path: &Path,
+        profile: lpdf_engine_port::OptimizeProfile,
+        output_path: &Path,
+    ) -> Result<()> {
+        self.primary.compress(input_path, profile, output_path)
+    }
 }

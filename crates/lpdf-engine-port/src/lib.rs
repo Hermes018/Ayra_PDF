@@ -16,6 +16,14 @@ pub struct RenderOptions {
     pub format: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub enum OptimizeProfile {
+    Low,
+    Medium,
+    High,
+}
+
 pub trait PdfEngine {
     fn load(&mut self, path: &Path) -> Result<()>;
     fn info(&self) -> Result<PdfInfo>;
@@ -33,6 +41,12 @@ pub trait PdfEngine {
         output_path: &Path,
     ) -> Result<()>;
     fn rotate_document(&self, input_path: &Path, degrees: i32, output_path: &Path) -> Result<()>;
+    fn compress(
+        &self,
+        input_path: &Path,
+        profile: OptimizeProfile,
+        output_path: &Path,
+    ) -> Result<()>;
 }
 
 #[macro_export]

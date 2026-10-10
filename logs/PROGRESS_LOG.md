@@ -340,3 +340,19 @@ Entry format:
   - DO-04 "Atomic writes" -> Used standard atomic write-and-verify for RotateDocument.
 - Risks / follow-ups: None currently.
 - Commit / tag: `phase-4.5-green`
+
+## [2026-10-10 11:24] Phase 5.1 — DONE
+- Changes:
+  - Added `OptimizeProfile` and `compress` to `PdfEngine` trait.
+  - Implemented `compress` in `PdfcraftAdapter` by mapping profiles to `pdfcraft_engine::optimize::Settings`.
+  - Defined `JobRequest::Compress` and wired into `JobManager`.
+  - Rebuilt TS bindings with `cargo test -p lpdf-jobs`.
+  - Rewrote `OptimizeView.svelte` to allow selection of 3 compression profiles (`Low`, `Medium`, `High`) and dispatch to IPC.
+- Gate: pass
+- Tests added/run: 0/3
+- Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 N/A 7 YES 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - DO-04 "Atomic writes" -> Standard atomic write pattern used.
+  - DO-16 "Build UI with Svelte 5" -> UI logic implemented using `$state` and `$derived`.
+- Risks / follow-ups: UI currently uses a placeholder for previewing compression sizes.
+- Commit / tag: `phase-5.1-green`
