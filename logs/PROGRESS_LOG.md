@@ -298,3 +298,16 @@ Entry format:
   - DO-04 "Atomic writes" -> Extract uses atomic write pattern.
 - Risks / follow-ups: Range parser could be more robust (e.g. deduplicating and handling spaces more gracefully, though basic handling is there).
 - Commit / tag: `phase-4.2-green`
+
+## [2026-10-10 10:37] Phase 4.3 — DONE
+- Changes:
+  - Added stateless `delete_pages` and `rotate_pages` methods to the `PdfEngine` trait and `PdfcraftAdapter` using the verified atomic write pattern.
+  - Added the `RotatePages` variant to `JobRequest` and updated `DeletePages` to use the stateless methods.
+  - Added `Delete Pages` and `Rotate Pages` sections in `OrganizeView.svelte` UI with appropriate text inputs, dropdowns for degrees, and validation logic.
+- Gate: pass
+- Tests added/run: 0/0
+- Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 N/A 7 YES 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - DO-04 "Atomic writes" -> Both new commands use atomic write pattern.
+- Risks / follow-ups: None currently.
+- Commit / tag: `phase-4.3-green`

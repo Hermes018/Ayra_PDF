@@ -127,4 +127,19 @@ impl PdfEngine for EngineSwitcher {
         // Extract operations are static/standalone and go through primary.
         self.primary.extract_pages(input_path, pages, output_path)
     }
+
+    fn delete_pages(&self, input_path: &Path, pages: &[usize], output_path: &Path) -> Result<()> {
+        self.primary.delete_pages(input_path, pages, output_path)
+    }
+
+    fn rotate_pages(
+        &self,
+        input_path: &Path,
+        pages: &[usize],
+        degrees: i32,
+        output_path: &Path,
+    ) -> Result<()> {
+        self.primary
+            .rotate_pages(input_path, pages, degrees, output_path)
+    }
 }

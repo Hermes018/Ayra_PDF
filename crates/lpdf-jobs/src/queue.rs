@@ -67,6 +67,14 @@ pub enum JobRequest {
         output_path: String,
         pages: Vec<usize>, // 1-indexed for the user interface
     },
+
+    /// Rotate specific pages in a PDF.
+    RotatePages {
+        input_path: String,
+        output_path: String,
+        pages: Vec<usize>, // 1-indexed
+        degrees: i32,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -262,11 +270,10 @@ impl JobManager {
                 let _ = event_tx.send(JobEvent::Progress {
                     job_id: job_id.into(),
                     percent: 10,
-                    message: "Loading document...".into(),
+                    message: "Starting delete operation...".into(),
                 });
 
-                let mut engine = EngineSwitcher::new();
-                engine.load(&PathBuf::from(input_path))?;
+                let engine = EngineSwitcher::new();
 
                 if cancel_token.is_cancelled() {
                     return Err(LpdfError::Engine("Job cancelled".into()));
@@ -278,20 +285,14 @@ impl JobManager {
                     message: "Deleting pages...".into(),
                 });
 
-                engine.page_ops_delete(pages)?;
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.delete_pages(&path, pages, &out)?;
 
                 if cancel_token.is_cancelled() {
                     return Err(LpdfError::Engine("Job cancelled".into()));
                 }
-
-                let _ = event_tx.send(JobEvent::Progress {
-                    job_id: job_id.into(),
-                    percent: 80,
-                    message: "Saving output...".into(),
-                });
-
-                let out = PathBuf::from(output_path);
-                engine.save(&out)?;
 
                 Ok(JobOutput {
                     output_path: Some(output_path.clone()),
@@ -402,6 +403,45 @@ impl JobManager {
                 let out = PathBuf::from(output_path);
 
                 engine.extract_pages(&path, pages, &out)?;
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::RotatePages {
+                input_path,
+                output_path,
+                pages,
+                degrees,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Starting rotate operation...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 50,
+                    message: "Rotating pages...".into(),
+                });
+
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.rotate_pages(&path, pages, *degrees, &out)?;
 
                 if cancel_token.is_cancelled() {
                     return Err(LpdfError::Engine("Job cancelled".into()));
