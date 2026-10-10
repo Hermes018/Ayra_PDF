@@ -655,6 +655,267 @@ impl PdfEngine for PdfcraftAdapter {
 
         Ok(())
     }
+
+    fn add_annotation(
+        &self,
+        input_path: &Path,
+        annotation: &lpdf_engine_port::AnnotationDef,
+        output_path: &Path,
+    ) -> Result<()> {
+        let input_path = input_path.to_owned();
+        let annotation = annotation.clone();
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+            let mut session = pdfcraft_engine::Session::new();
+            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let name = input_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            let doc_id = session
+                .open(name, None, Arc::new(bytes), None)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            let shape = match &annotation.shape {
+                lpdf_engine_port::AnnotationShape::StickyNote { x, y, .. } => {
+                    pdfcraft_engine::Shape::Note {
+                        at: [*x, *y],
+                        icon: pdfcraft_engine::NoteIcon::Comment,
+                    }
+                }
+                lpdf_engine_port::AnnotationShape::Highlight { quads } => {
+                    pdfcraft_engine::Shape::TextMarkup {
+                        kind: pdfcraft_engine::Markup::Highlight,
+                        quads: quads.clone(),
+                    }
+                }
+                lpdf_engine_port::AnnotationShape::Underline { quads } => {
+                    pdfcraft_engine::Shape::TextMarkup {
+                        kind: pdfcraft_engine::Markup::Underline,
+                        quads: quads.clone(),
+                    }
+                }
+            };
+
+            let contents = match &annotation.shape {
+                lpdf_engine_port::AnnotationShape::StickyNote { text, .. } => text.clone(),
+                _ => String::new(),
+            };
+
+            let style = pdfcraft_engine::Style::default_for(&shape);
+
+            let new_annot = pdfcraft_engine::NewAnnotation {
+                page: annotation.page,
+                shape,
+                style,
+                contents,
+                author: annotation.author,
+            };
+
+            session
+                .apply(doc_id, pdfcraft_engine::Edit::AddAnnotation(new_annot))
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            let modified_bytes = session
+                .save_bytes(doc_id)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            Ok(modified_bytes)
+        }));
+
+        let final_bytes = match result {
+            Ok(Ok(bytes)) => bytes,
+            Ok(Err(e)) => return Err(e),
+            Err(e) => {
+                let msg = if let Some(s) = e.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = e.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown Edit Panic".to_string()
+                };
+                return Err(LpdfError::Engine(format!(
+                    "ObjectTreeError: Panic during add_annotation: {}",
+                    msg
+                )));
+            }
+        };
+
+        // Atomic write
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &*final_bytes).map_err(LpdfError::Io)?;
+
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.len() != final_bytes.len() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(())
+    }
+
+    fn add_watermark(
+        &self,
+        input_path: &Path,
+        settings: &lpdf_engine_port::WatermarkSettings,
+        output_path: &Path,
+    ) -> Result<()> {
+        let input_path = input_path.to_owned();
+        let settings = settings.clone();
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+            let mut session = pdfcraft_engine::Session::new();
+            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let name = input_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            let doc_id = session
+                .open(name, None, Arc::new(bytes), None)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            let pages = (0..session
+                .get(doc_id)
+                .ok_or_else(|| LpdfError::Engine("No document found".into()))?
+                .info
+                .pages
+                .len())
+                .collect();
+
+            let watermark_settings = pdfcraft_engine::Watermark {
+                text: settings.text,
+                opacity: settings.opacity,
+                rotation: settings.rotation,
+                color: settings.color,
+                ..Default::default()
+            };
+
+            session
+                .apply(
+                    doc_id,
+                    pdfcraft_engine::Edit::AddWatermark {
+                        pages,
+                        settings: watermark_settings,
+                        replace: false,
+                        file: None,
+                    },
+                )
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            let modified_bytes = session
+                .save_bytes(doc_id)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            Ok(modified_bytes)
+        }));
+
+        let final_bytes = match result {
+            Ok(Ok(bytes)) => bytes,
+            Ok(Err(e)) => return Err(e),
+            Err(e) => {
+                let msg = if let Some(s) = e.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = e.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown Edit Panic".to_string()
+                };
+                return Err(LpdfError::Engine(format!(
+                    "ObjectTreeError: Panic during add_watermark: {}",
+                    msg
+                )));
+            }
+        };
+
+        // Atomic write
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &*final_bytes).map_err(LpdfError::Io)?;
+
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.len() != final_bytes.len() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(())
+    }
+
+    fn flatten_comments(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        let input_path = input_path.to_owned();
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+            let mut session = pdfcraft_engine::Session::new();
+            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let name = input_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            let doc_id = session
+                .open(name, None, Arc::new(bytes), None)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            // F26: Flattening comments must not corrupt the tree, if it does, it panics
+            // and we catch it here.
+            session
+                .apply(
+                    doc_id,
+                    pdfcraft_engine::Edit::Flatten {
+                        comments: true,
+                        fields: false,
+                    },
+                )
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            let modified_bytes = session
+                .save_bytes(doc_id)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            Ok(modified_bytes)
+        }));
+
+        let final_bytes = match result {
+            Ok(Ok(bytes)) => bytes,
+            Ok(Err(e)) => return Err(e),
+            Err(e) => {
+                let msg = if let Some(s) = e.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = e.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown Edit Panic".to_string()
+                };
+                // Enforce F26: return an ObjectTreeError variant (here as a typed string in Engine).
+                return Err(LpdfError::Engine(format!(
+                    "ObjectTreeError: Corrupted object tree during flatten: {}",
+                    msg
+                )));
+            }
+        };
+
+        // Atomic write - discard temp file if failure occurs before rename.
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &*final_bytes).map_err(LpdfError::Io)?;
+
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.len() != final_bytes.len() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(())
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(PdfcraftAdapter);

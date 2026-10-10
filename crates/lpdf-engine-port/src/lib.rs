@@ -32,6 +32,31 @@ pub struct Permissions {
     pub allow_edit: bool,
 }
 
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub struct WatermarkSettings {
+    pub text: String,
+    pub opacity: f64,
+    pub rotation: f64,
+    pub color: [f64; 3],
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub enum AnnotationShape {
+    StickyNote { x: f64, y: f64, text: String },
+    Highlight { quads: Vec<[f64; 8]> },
+    Underline { quads: Vec<[f64; 8]> },
+}
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub struct AnnotationDef {
+    pub page: usize,
+    pub shape: AnnotationShape,
+    pub author: String,
+}
+
 pub trait PdfEngine {
     fn load(&mut self, path: &Path) -> Result<()>;
     fn info(&self) -> Result<PdfInfo>;
@@ -65,6 +90,19 @@ pub trait PdfEngine {
         output_path: &Path,
     ) -> Result<()>;
     fn unlock(&self, input_path: &Path, password: &str, output_path: &Path) -> Result<()>;
+    fn add_annotation(
+        &self,
+        input_path: &Path,
+        annotation: &AnnotationDef,
+        output_path: &Path,
+    ) -> Result<()>;
+    fn add_watermark(
+        &self,
+        input_path: &Path,
+        settings: &WatermarkSettings,
+        output_path: &Path,
+    ) -> Result<()>;
+    fn flatten_comments(&self, input_path: &Path, output_path: &Path) -> Result<()>;
 }
 
 #[macro_export]
