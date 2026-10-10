@@ -164,4 +164,19 @@ impl PdfEngine for EngineSwitcher {
     fn ocr(&self, input_path: &Path, lang: &str, output_path: &Path) -> Result<()> {
         self.primary.ocr(input_path, lang, output_path)
     }
+
+    fn protect(
+        &self,
+        input_path: &Path,
+        password: &str,
+        permissions: lpdf_engine_port::Permissions,
+        output_path: &Path,
+    ) -> Result<()> {
+        self.primary
+            .protect(input_path, password, permissions, output_path)
+    }
+
+    fn unlock(&self, input_path: &Path, password: &str, output_path: &Path) -> Result<()> {
+        self.primary.unlock(input_path, password, output_path)
+    }
 }

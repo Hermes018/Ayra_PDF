@@ -102,6 +102,21 @@ pub enum JobRequest {
         output_path: String,
         lang: String,
     },
+
+    /// Protect a PDF with a password and permissions.
+    ProtectDocument {
+        input_path: String,
+        output_path: String,
+        password: String,
+        permissions: lpdf_engine_port::Permissions,
+    },
+
+    /// Unlock a password-protected PDF.
+    UnlockDocument {
+        input_path: String,
+        output_path: String,
+        password: String,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -627,6 +642,83 @@ impl JobManager {
                 let out = PathBuf::from(output_path);
 
                 engine.ocr(&path, lang, &out)?;
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::ProtectDocument {
+                input_path,
+                output_path,
+                password,
+                permissions,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Starting protection...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 50,
+                    message: "Encrypting document...".into(),
+                });
+
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.protect(&path, password, permissions.clone(), &out)?;
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::UnlockDocument {
+                input_path,
+                output_path,
+                password,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Starting unlock...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 50,
+                    message: "Decrypting document...".into(),
+                });
+
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.unlock(&path, password, &out)?;
 
                 if cancel_token.is_cancelled() {
                     return Err(LpdfError::Engine("Job cancelled".into()));
