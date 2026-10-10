@@ -203,4 +203,28 @@ impl PdfEngine for EngineSwitcher {
     fn flatten_comments(&self, input_path: &Path, output_path: &Path) -> Result<()> {
         self.primary.flatten_comments(input_path, output_path)
     }
+
+    fn flatten_forms(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.primary.flatten_forms(input_path, output_path)
+    }
+
+    fn fill_form(
+        &self,
+        input_path: &Path,
+        fields: &std::collections::HashMap<String, String>,
+        output_path: &Path,
+    ) -> Result<()> {
+        self.primary.fill_form(input_path, fields, output_path)
+    }
+
+    fn sign_document(
+        &self,
+        input_path: &Path,
+        p12_path: &Path,
+        password: &str,
+        output_path: &Path,
+    ) -> Result<()> {
+        self.primary
+            .sign_document(input_path, p12_path, password, output_path)
+    }
 }

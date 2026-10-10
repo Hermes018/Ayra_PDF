@@ -916,6 +916,213 @@ impl PdfEngine for PdfcraftAdapter {
 
         Ok(())
     }
+
+    fn flatten_forms(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        let input_path = input_path.to_owned();
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+            let mut session = pdfcraft_engine::Session::new();
+            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let name = input_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            let doc_id = session
+                .open(name, None, Arc::new(bytes), None)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            // F26: Wrap in catch_unwind
+            session
+                .apply(
+                    doc_id,
+                    pdfcraft_engine::Edit::Flatten {
+                        comments: false,
+                        fields: true,
+                    },
+                )
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            let modified_bytes = session
+                .save_bytes(doc_id)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            Ok(modified_bytes)
+        }));
+
+        let final_bytes = match result {
+            Ok(Ok(bytes)) => bytes,
+            Ok(Err(e)) => return Err(e),
+            Err(e) => {
+                let msg = if let Some(s) = e.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = e.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown Edit Panic".to_string()
+                };
+                return Err(LpdfError::Engine(format!(
+                    "ObjectTreeError: Corrupted object tree during flatten_forms: {}",
+                    msg
+                )));
+            }
+        };
+
+        // Atomic write
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &*final_bytes).map_err(LpdfError::Io)?;
+
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.len() != final_bytes.len() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(())
+    }
+
+    fn fill_form(
+        &self,
+        input_path: &Path,
+        fields: &std::collections::HashMap<String, String>,
+        output_path: &Path,
+    ) -> Result<()> {
+        let input_path = input_path.to_owned();
+        let fields = fields.clone();
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+            let mut session = pdfcraft_engine::Session::new();
+            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let name = input_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            let doc_id = session
+                .open(name, None, Arc::new(bytes), None)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            for (k, v) in fields {
+                session
+                    .apply(
+                        doc_id,
+                        pdfcraft_engine::Edit::SetFieldValue {
+                            name: k,
+                            value: pdfcraft_forms::FieldValue::Text(v),
+                        },
+                    )
+                    .map_err(|e| LpdfError::Engine(e.to_string()))?;
+            }
+
+            let modified_bytes = session
+                .save_bytes(doc_id)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            Ok(modified_bytes)
+        }));
+
+        let final_bytes = match result {
+            Ok(Ok(bytes)) => bytes,
+            Ok(Err(e)) => return Err(e),
+            Err(e) => {
+                let msg = if let Some(s) = e.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = e.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown Edit Panic".to_string()
+                };
+                return Err(LpdfError::Engine(format!(
+                    "ObjectTreeError: Corrupted object tree during fill_form: {}",
+                    msg
+                )));
+            }
+        };
+
+        // Atomic write
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &*final_bytes).map_err(LpdfError::Io)?;
+
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.len() != final_bytes.len() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(())
+    }
+
+    fn sign_document(
+        &self,
+        input_path: &Path,
+        p12_path: &Path,
+        password: &str,
+        output_path: &Path,
+    ) -> Result<()> {
+        let input_path = input_path.to_owned();
+        let p12_path = p12_path.to_owned();
+        let password = password.to_string();
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let p12_bytes = std::fs::read(&p12_path).map_err(LpdfError::Io)?;
+
+            let doc = pdfcraft_cos::Document::open(Arc::new(bytes))
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            let digital_id = pdfcraft_sign::pkcs12::open(&p12_bytes, &password)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            let opts = pdfcraft_sign::SignOptions {
+                field: None,
+                page: 0,
+                rect: None,
+                new_field_name: None,
+                reason: Some("LocalPDF Studio Signature".to_string()),
+                location: None,
+                contact: None,
+                date: "D:20261010000000Z".to_string(), // placeholder date
+                certify: None,
+                appearance: pdfcraft_sign::Appearance::default(),
+            };
+
+            let signed_bytes = pdfcraft_sign::sign(&doc, &digital_id, &opts)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            Ok(signed_bytes)
+        }));
+
+        let final_bytes = match result {
+            Ok(Ok(bytes)) => bytes,
+            Ok(Err(e)) => return Err(e),
+            Err(_e) => {
+                // F24: Do not leak stack traces for cryptographic integrity
+                return Err(LpdfError::Engine(
+                    "Panic during cryptographic signing".to_string(),
+                ));
+            }
+        };
+
+        // Atomic write
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &*final_bytes).map_err(LpdfError::Io)?;
+
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.len() != final_bytes.len() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(())
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(PdfcraftAdapter);

@@ -96,6 +96,7 @@ pub trait PdfEngine {
         annotation: &AnnotationDef,
         output_path: &Path,
     ) -> Result<()>;
+
     fn add_watermark(
         &self,
         input_path: &Path,
@@ -103,6 +104,20 @@ pub trait PdfEngine {
         output_path: &Path,
     ) -> Result<()>;
     fn flatten_comments(&self, input_path: &Path, output_path: &Path) -> Result<()>;
+    fn flatten_forms(&self, input_path: &Path, output_path: &Path) -> Result<()>;
+    fn fill_form(
+        &self,
+        input_path: &Path,
+        fields: &std::collections::HashMap<String, String>,
+        output_path: &Path,
+    ) -> Result<()>;
+    fn sign_document(
+        &self,
+        input_path: &Path,
+        p12_path: &Path,
+        password: &str,
+        output_path: &Path,
+    ) -> Result<()>;
 }
 
 #[macro_export]

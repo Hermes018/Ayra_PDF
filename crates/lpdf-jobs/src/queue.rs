@@ -137,6 +137,27 @@ pub enum JobRequest {
         input_path: String,
         output_path: String,
     },
+
+    /// Flatten form fields into the page content.
+    FlattenForms {
+        input_path: String,
+        output_path: String,
+    },
+
+    /// Fill form fields with values.
+    FillForm {
+        input_path: String,
+        output_path: String,
+        fields: std::collections::HashMap<String, String>,
+    },
+
+    /// Sign the PDF document using a PKCS#12 certificate.
+    SignDocument {
+        input_path: String,
+        output_path: String,
+        p12_path: String,
+        password: String,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -811,6 +832,76 @@ impl JobManager {
                 let out = PathBuf::from(output_path);
 
                 engine.flatten_comments(&path, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::FlattenForms {
+                input_path,
+                output_path,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Flattening forms...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.flatten_forms(&path, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::FillForm {
+                input_path,
+                output_path,
+                fields,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Filling form...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.fill_form(&path, fields, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::SignDocument {
+                input_path,
+                output_path,
+                p12_path,
+                password,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Signing document...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let p12 = PathBuf::from(p12_path);
+                let out = PathBuf::from(output_path);
+
+                engine.sign_document(&path, &p12, password, &out)?;
 
                 Ok(JobOutput {
                     output_path: Some(output_path.clone()),
