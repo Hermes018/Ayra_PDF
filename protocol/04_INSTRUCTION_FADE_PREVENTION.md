@@ -8,7 +8,7 @@ Long sessions, context compaction and summaries erode rules. These mechanisms ar
 ## ANCHOR BLOCK (print verbatim, fill the blanks)
 ```
 ANCHOR
-1. Building LocalPDF Studio: offline, local, NO limits, iLovePDF-equivalent (7-column taxonomy). Rust core + Tauri v2 + Svelte 5 SPA UI (ADR-003). Native Rust ML (OCR) & Crypto (aws-lc-rs). Sidecars strictly reserved for MS Office/MD conversion.
+1. Building LocalPDF Studio: offline, local, NO limits. Rust core powers Organize, Annotate, Forms, Security, Redaction, basic Convert, and ML OCR natively via pdfcraft. Sidecars (Max 1GB) restricted strictly to Office XLSX/PPTX/Complex DOCX.
 2. Position: Phase __ . __  (from logs/CHECKPOINT.md). Next gate: __________.
 3. No network at runtime. No telemetry. No remote assets. No GPL/AGPL linked except isolated sidecar binaries. Max bundle size: 1GB.
 4. Outputs atomic + new file by default. Originals untouched. Verify-after-write.

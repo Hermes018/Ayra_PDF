@@ -29,42 +29,29 @@ Every sub-phase ends: tests run -> `cargo xtask gate` -> PROGRESS_LOG -> CHECKPO
 - 3.3 Thumbnail pipeline: custom URI protocol, IntersectionObserver queue, LRU cache, cancel on scroll, skeletons; fast (u8) thumbs vs hi-fi zoom.
 - 3.4 Typed IPC client (generated types), runes-based state modules, a11y baseline, e2e harness (tauri-driver) + fast mocked-IPC UI tests (Vitest + Testing Library + Playwright mocked IPC) with screenshot diffs vs ux-spec.
 
-## PHASE 4 — Organize
-- 4.1 Merge: multi-add, drag reorder, sort, password prompts, per-file bookmarks, mixed page sizes.
-- 4.2 Split: custom ranges, fixed ranges, every-N, by size, by bookmarks, extract-all; output to folder or ZIP.
-- 4.3 Remove pages / Extract pages (visual select + range text).
-- 4.4 Organize (grid editor): multi-select, drag-reorder, rotate L/R, delete, duplicate, insert blank/from file, undo/redo, live thumbs, save / save-as.
-- 4.5 Rotate PDF. [G] 10k-page merge/split inside Tier-L memory budget; outputs verified.
+## PHASE 4 — Organize (Native via pdfcraft)
+- 4.1 Organize operations: Page grid, Rotate, Delete, Extract, Insert, Replace, Split, Set page boxes, Crop pages, Duplicate pages, Page labels.
 
-## PHASE 5 — Optimize
-- 5.1 Compress: 3 level profiles (tunable, calibrated on corpus), before/after sizes, never-grow, preserves text/links/bookmarks, batch.
-- 5.2 Repair: tolerant parse -> rewrite -> fallback chain -> report of fixes.
-- 5.3 OCR: Native Latin offline OCR via `pdfcraft_ocr` (`ocrs`/`rten` ML models); deskew; per-page progress; searchable layer. [G] size-reduction report + SSIM visual-regression bound.
+## PHASE 5 — Processing (Native via pdfcraft)
+- 5.1 Process operations: Compress, Repair, Scan & OCR (Native Latin offline OCR via `pdfcraft_ocr`).
 
-## PHASE 6 — Edit & security
-- 6.1 Protect (AES-256, user/owner passwords, permissions) / Unlock (user-supplied password or restriction removal only). Natively powered by `pdfcraft_crypt`.
-- 6.2 Watermark, page numbers, crop.
-- 6.3 Edit PDF (add text/shapes/images/highlight/draw; existing-text edit = experimental flag).
-- 6.4 Sign (draw/type/image stamping, sign-yourself with local PKCS#12 PAdES B-B, self-signed cert generator, signature verification; NO request-signatures, NO TSA), Redact (true semantic removal natively via `pdfcraft_redact`), Compare. [G] redaction verified by re-extraction + byte grep; encrypted outputs open in qpdf/poppler with password. Natively powered by `pdfcraft_sign` and `pdfcraft_redact`.
-- 6.5 PDF Forms: detect fields, create fillable (text/checkbox/radio/list), fill, flatten; XFDF if supported. Natively powered by `pdfcraft_forms`.
+## PHASE 6 — Annotation, Editing, Forms, & Security (Native via pdfcraft)
+- 6.1 Annotation/Editing: Sticky note, Highlight, Underline, Strikethrough, Squiggly, Text box, Freehand, Rectangle, Oval, Line, Arrow, Comment list, Flatten comments, Edit text & images, Header/footer, Watermark, Link, Bates numbering, Background.
+- 6.2 Forms & Signatures: Field list, Detect fields, Clear form, Field properties, Tab orders (rows/cols), Flatten fields, Import/Export data, Form components (Text, Checkbox, Radio, Drop-down, List, Button, Image, Date, Digital Signature), Fill & Sign markings (Checkmark, Cross, Dot, Line).
+- 6.3 Security & Processing: Protect, Unlock, Redact (true semantic removal natively via `pdfcraft_redact`).
 
-## PHASE 7 — Convert to PDF
-- 7.1 Images -> PDF (JPG/PNG/TIFF/BMP/GIF/WebP; page size, orientation, margins, merge or separate).
-- 7.2 Word/Excel/PowerPoint -> PDF via bundled OpenOffice/LibreOffice/ONLYOFFICE headless sidecar for pixel-perfect translations (ADR-004). Mandatory sidecar approach.
-- 7.3 HTML -> PDF (stretch): local .html or pasted HTML only, network blocked, JS off, per-OS `HtmlPrinter` (ADR-005). [G] test under `unshare -n` with remote-image HTML.
-- 7.4a Scan to PDF: image import + auto-crop/deskew/enhance.
-- 7.4b Scanner hardware: STRETCH, default dropped; requires user approval + ADR (SANE via external `scanimage` / WIA `unsafe` module).
+## PHASE 7 — Basic Convert to PDF (Native via pdfcraft)
+- 7.1 Image (PNG), Export all images, HTML, RTF, Plain Text to PDF, Structural Word (.docx) to PDF.
+- 7.2 HTML -> PDF (stretch): local .html or pasted HTML only, network blocked, JS off, per-OS `HtmlPrinter`.
 
-## PHASE 8 — Convert from PDF
-- 8.1 PDF -> JPG/PNG (DPI, ranges, ZIP).
-- 8.2 PDF -> Word / HTML / text via bundled OpenOffice/LibreOffice/ONLYOFFICE headless sidecar for pixel-perfect translations (ADR-004). Mandatory sidecar approach.
-- 8.3 PDF -> Excel and PowerPoint via headless sidecar.
-- 8.4 PDF -> PDF/A (pdfcraft preflight; verify with veraPDF in CI). Calibrate ADR-006 acceptance metrics on corpus; LibreOffice round-trip in CI. [G] fidelity report on corpus.
+## PHASE 8 — Basic Convert from PDF (Native via pdfcraft)
+- 8.1 PDF to Image (PNG), Export all images, HTML, RTF, Plain Text, Structural Word (.docx).
+- 8.2 PDF -> PDF/A (pdfcraft preflight; verify with veraPDF in CI). Calibrate ADR-006 acceptance metrics on corpus.
 
-## PHASE 9 — Markdown toolset
-- 9.1 MD -> PDF via Pandoc sidecar for text and structural conversions (ADR-004).
-- 9.2 PDF -> MD via Pandoc sidecar (images extracted to `assets/`, links, page-break policy).
-- 9.3 MD <-> DOCX / HTML, DOCX -> MD, HTML -> MD via Pandoc sidecar.
+## PHASE 9 — Advanced Convert (M10 Sidecars)
+- 9.1 Word/Excel/PowerPoint -> PDF via bundled OpenOffice/LibreOffice/ONLYOFFICE headless sidecar for pixel-perfect translations.
+- 9.2 PDF -> Word (complex flowable) / Excel / PowerPoint via headless sidecar.
+- 9.3 Markdown toolset: MD -> PDF via Pandoc sidecar for text and structural conversions. PDF -> MD via Pandoc sidecar (images extracted to `assets/`). MD <-> DOCX / HTML via Pandoc sidecar.
 - 9.4 Batch folder conversion, front-matter, link/asset rewriting, CLI `localpdf md ...`.
 
 ## PHASE 10 — Pipelines, CLI, settings
