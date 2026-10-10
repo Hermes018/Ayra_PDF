@@ -8,6 +8,53 @@
     let currentPath = $derived(appState.currentFile);
     let activeFiles = $derived(appState.activeFiles);
 
+    let extractPagesInput = $state("");
+
+    function parsePages(input: string): number[] {
+        const pages = new Set<number>();
+        const parts = input.split(',');
+        for (let part of parts) {
+            part = part.trim();
+            if (!part) continue;
+            if (part.includes('-')) {
+                const [startStr, endStr] = part.split('-');
+                const start = parseInt(startStr, 10);
+                const end = parseInt(endStr, 10);
+                if (!isNaN(start) && !isNaN(end) && start <= end) {
+                    for (let i = start; i <= end; i++) pages.add(i);
+                }
+            } else {
+                const page = parseInt(part, 10);
+                if (!isNaN(page)) pages.add(page);
+            }
+        }
+        return Array.from(pages).sort((a, b) => a - b);
+    }
+
+    async function handleExtract() {
+        if (!currentPath) return;
+        const pages = parsePages(extractPagesInput);
+        if (pages.length === 0) {
+            alert("Please enter valid page numbers (e.g. 1, 3, 5-7).");
+            return;
+        }
+
+        const outputPath = currentPath.replace(/\.pdf$/i, '_extracted.pdf');
+        const req: JobRequest = {
+            op: "ExtractPages",
+            input_path: currentPath,
+            output_path: outputPath,
+            pages: pages
+        };
+
+        try {
+            const jobId = await IpcClient.submitJob(req);
+            console.log("Extract job submitted with ID:", jobId);
+        } catch (e) {
+            console.error("Failed to submit extract job:", e);
+        }
+    }
+
     async function handleMerge() {
         if (activeFiles.length < 2) return;
         
@@ -42,7 +89,24 @@
             <h3>Tools</h3>
             <p>Select pages to extract, delete, or reorder.</p>
 
-            <div class="merge-section">
+            <div class="tool-section">
+                <h4>Extract Pages</h4>
+                {#if currentPath}
+                    <input 
+                        type="text" 
+                        class="pages-input" 
+                        bind:value={extractPagesInput} 
+                        placeholder="e.g. 1, 3, 5-10" 
+                    />
+                    <button class="action-button" onclick={handleExtract} disabled={!extractPagesInput.trim()}>
+                        Extract
+                    </button>
+                {:else}
+                    <p class="empty-text">Select a file to extract pages.</p>
+                {/if}
+            </div>
+
+            <div class="tool-section">
                 <h4>Files to Merge</h4>
                 {#if activeFiles.length > 0}
                     <ul class="file-list">
@@ -133,16 +197,27 @@
         overflow: hidden;
     }
 
-    .merge-section {
+    .tool-section {
         margin-top: 2rem;
         padding-top: 1rem;
         border-top: 1px solid #313244;
     }
 
-    .merge-section h4 {
+    .tool-section h4 {
         margin-top: 0;
         margin-bottom: 0.5rem;
         color: #cba6f7;
+    }
+
+    .pages-input {
+        width: 100%;
+        padding: 0.5rem;
+        background-color: #11111b;
+        border: 1px solid #45475a;
+        color: #cdd6f4;
+        border-radius: 4px;
+        margin-bottom: 0.75rem;
+        box-sizing: border-box;
     }
 
     .file-list {
@@ -165,7 +240,7 @@
         text-overflow: ellipsis;
     }
 
-    .merge-button {
+    .action-button, .merge-button {
         width: 100%;
         padding: 0.75rem;
         background-color: #89b4fa;
@@ -177,13 +252,13 @@
         transition: opacity 0.2s;
     }
 
-    .merge-button:disabled {
+    .action-button:disabled, .merge-button:disabled {
         background-color: #45475a;
         color: #7f849c;
         cursor: not-allowed;
     }
 
-    .merge-button:not(:disabled):hover {
+    .action-button:not(:disabled):hover, .merge-button:not(:disabled):hover {
         opacity: 0.9;
     }
 

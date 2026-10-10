@@ -285,3 +285,16 @@ Entry format:
   - DO-16 "Build UI with Svelte 5" -> `$state` and `$derived` used for rendering merge list reactively.
 - Risks / follow-ups: E2E Playwright with `tauri-driver` is still pending actual tauri implementation vs web-only mode. Merge output UI does not proactively open the output file yet.
 - Commit / tag: `phase-4.1-green`
+
+## [2026-10-10 10:31] Phase 4.2 — DONE
+- Changes:
+  - Added `extract_pages` to `PdfEngine` trait and implemented it in `PdfcraftAdapter` by creating a temporary session, parsing 1-indexed UI requests into 0-indexed engine requests, and doing an atomic write.
+  - Implemented `ExtractPages` job variant in `lpdf-jobs`.
+  - Added Extract UI in `OrganizeView.svelte` to parse custom page ranges and dispatch the typed Job.
+- Gate: pass
+- Tests added/run: 0/0
+- Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 N/A 7 YES 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - DO-04 "Atomic writes" -> Extract uses atomic write pattern.
+- Risks / follow-ups: Range parser could be more robust (e.g. deduplicating and handling spaces more gracefully, though basic handling is there).
+- Commit / tag: `phase-4.2-green`

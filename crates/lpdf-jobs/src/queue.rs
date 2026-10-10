@@ -60,6 +60,13 @@ pub enum JobRequest {
         input_paths: Vec<String>,
         output_path: String,
     },
+
+    /// Extract specific pages from a PDF.
+    ExtractPages {
+        input_path: String,
+        output_path: String,
+        pages: Vec<usize>, // 1-indexed for the user interface
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -357,6 +364,44 @@ impl JobManager {
                 let out = PathBuf::from(output_path);
 
                 engine.merge(&paths, &out)?;
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::ExtractPages {
+                input_path,
+                output_path,
+                pages,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Starting extraction operation...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 50,
+                    message: "Extracting pages...".into(),
+                });
+
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.extract_pages(&path, pages, &out)?;
 
                 if cancel_token.is_cancelled() {
                     return Err(LpdfError::Engine("Job cancelled".into()));

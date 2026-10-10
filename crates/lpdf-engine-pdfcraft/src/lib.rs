@@ -145,6 +145,40 @@ impl PdfEngine for PdfcraftAdapter {
 
         Ok(())
     }
+
+    fn extract_pages(&self, input_path: &Path, pages: &[usize], output_path: &Path) -> Result<()> {
+        let mut session = pdfcraft_engine::Session::new();
+        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let name = input_path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        let doc_id = session
+            .open(name, None, Arc::new(bytes), None)
+            .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+        let zero_indexed: Vec<usize> = pages.iter().map(|p| p.saturating_sub(1)).collect();
+        let extracted_bytes = session
+            .extract(doc_id, &zero_indexed)
+            .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+        // Atomic write
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &*extracted_bytes).map_err(LpdfError::Io)?;
+
+        // Verify output bytes
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.len() != extracted_bytes.len() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+
+        // Rename
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(())
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(PdfcraftAdapter);
