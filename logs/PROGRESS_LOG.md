@@ -145,3 +145,18 @@ Entry format:
   - DO-9 "Keep commits small, conventional, gate-green" -> Evidence: Used `cargo xtask gate` inside the new CI workflow to enforce it globally.
 - Risks / follow-ups: The Fedora container is minimal, so additional implicit dependencies might crop up later if we rely on host-installed tools.
 - Commit / tag: `phase-1.3-green`
+
+## [2026-10-10 06:37] Phase 1.4 — DONE
+- Changes:
+  - Initialized Tauri v2 app with Svelte 5 in `app-tauri`.
+  - Added strict CSP and explicitly allowed capabilities (avoiding wildcard permissions for fs/shell/http).
+  - Configured Tauri `window-state` and `single-instance` plugins.
+  - Added `test-offline` script to `xtask` running the app in `unshare -n` without network.
+- Gate: pass
+- Tests added/run: 0/1 (offline launch)
+- Pre-commit checklist: 1 YES 2 N/A 3 YES 4 YES 5 YES 6 N/A 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - Rule 02:1 "No network at runtime" -> Evidence: Verified via `unshare -n` via `xtask test-offline`.
+  - Rule 02:17 "No wildcard filesystem scopes" -> Evidence: Strict capabilities in `app-tauri/src-tauri/capabilities/default.json`.
+- Risks / follow-ups: The Svelte frontend is unstyled at this point.
+- Commit / tag: `phase-1.4-green`
