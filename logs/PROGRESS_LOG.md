@@ -311,3 +311,18 @@ Entry format:
   - DO-04 "Atomic writes" -> Both new commands use atomic write pattern.
 - Risks / follow-ups: None currently.
 - Commit / tag: `phase-4.3-green`
+
+## [2026-10-10 11:08] Phase 4.4 — DONE
+- Changes:
+  - Added `GridEditor.svelte` component to render all PDF pages to individual thumbnail canvases using local `pdf.js` assets.
+  - Implemented interactive drag-and-drop reordering of pages using Svelte 5 `$state` updates.
+  - Implemented visual inline overlays for rotation and deletion toggles on each page.
+  - Built an "Apply Changes" mechanism that computes structural diffs and dispatches appropriate sequence of `ExtractPages`, `DeletePages`, or `RotatePages` jobs via `IpcClient`.
+  - Replaced single `PdfViewer` in `OrganizeView.svelte` with `GridEditor` to facilitate a more advanced organize layout.
+- Gate: pass
+- Tests added/run: 0/2
+- Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 N/A 7 YES 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - DO-16 "Build UI with Svelte 5" -> Utilized $state arrays and effect propagation for drag state.
+- Risks / follow-ups: Large PDFs might require intersection observer for canvas rendering to save memory instead of rendering all upfront. For now, works adequately.
+- Commit / tag: `phase-4.4-green`
