@@ -144,3 +144,24 @@ The safest and simplest way to resolve this blocker is to run the system-level p
 - Interpretation / ambiguity: Protocol update for git sync flow. Workspace setup with new crates. No ambiguity.
 - Actions taken / sub-phase affected: Protocol Amendment + Phase 1.1
 - Conflicts with protocol? (yes/no + resolution): No.
+
+## [2026-10-10] Prompt #9
+- Verbatim: """Begin Phase 1.2 (Gates & Linting). Execute the following steps sequentially:
+1. **Initialize cargo-deny:** Run `cargo deny init` to generate a `deny.toml` file at the root. Ensure it is configured to explicitly reject GPL, AGPL, and SSPL licenses.
+2. **Implement protocol-lint:** Extend the `xtask` crate to include a `protocol-lint` command. This custom lint must scan the workspace and fail if it detects:
+   - Banned code patterns in non-test `src/` files: `.unwrap(`, `.expect(`, `todo!(`, `unimplemented!(`, or `panic!(`.
+   - Banned dependencies in any `Cargo.toml`: HTTP/network crates (e.g., `reqwest`, `hyper`, `ureq`, `isahc`, `surf`).
+3. **Implement gate:** Extend the `xtask` crate to include a `gate` command. This command must sequentially execute and fail if any of these steps fail:
+   - `cargo fmt -- --check`
+   - `cargo clippy --workspace -- -D warnings`
+   - `cargo nextest run` (passing with 0 tests is acceptable for now)
+   - `cargo deny check`
+   - `cargo audit`
+   - `cargo xtask protocol-lint`
+4. **Verify the Gate:** Run `cargo xtask gate`. If it fails, fix the underlying issues (e.g., formatting, clippy warnings) until it passes completely green.
+5. **Logging & Commit:**
+   - Update `logs/PROGRESS_LOG.md`... and `logs/CHECKPOINT.md`...
+   - Commit... tag... print ANCHOR block."""
+- Interpretation / ambiguity: Implement strict linters and a CI gate inside xtask.
+- Actions taken / sub-phase affected: Phase 1.2
+- Conflicts with protocol? (yes/no + resolution): No.
