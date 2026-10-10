@@ -160,3 +160,19 @@ Entry format:
   - Rule 02:17 "No wildcard filesystem scopes" -> Evidence: Strict capabilities in `app-tauri/src-tauri/capabilities/default.json`.
 - Risks / follow-ups: The Svelte frontend is unstyled at this point.
 - Commit / tag: `phase-1.4-green`
+
+## [2026-10-10 06:44] Phase 1.5 — DONE
+- Changes:
+  - Added Error Taxonomy using `thiserror` in `lpdf-core-types`.
+  - Configured `tracing` with `tracing-appender` for rotating local logs in `app-tauri`.
+  - Implemented Hardware Tier detection (`HardwareProfile`) in `lpdf-hw` via `sysinfo`.
+  - Added TOML parsing for settings in `lpdf-core-types`.
+  - Added simple i18n scaffolding in Svelte 5 via `$state` runes.
+- Gate: pass
+- Tests added/run: 0/0 (no new tests yet, but types compile correctly)
+- Pre-commit checklist: 1 YES 2 N/A 3 YES 4 YES 5 YES 6 N/A 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - Rule 02:10 "logs with tracing (local only)" -> Evidence: `tracing-appender` writing strictly to local disk.
+  - Rule 02:6 "obey hardware-tier budget" -> Evidence: implementation of L, M, H tier logic bounding concurrency and cache sizes.
+- Risks / follow-ups: i18n is currently a basic JSON store, might need dynamic loading as the app grows.
+- Commit / tag: `phase-1.5-green`
