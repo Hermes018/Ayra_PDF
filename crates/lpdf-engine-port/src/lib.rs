@@ -134,6 +134,12 @@ pub trait PdfEngine {
         regions: Vec<RedactionRegion>,
         output_path: &Path,
     ) -> Result<()>;
+
+    // Conversions
+    fn image_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()>;
+    fn text_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()>;
+    fn structural_docx_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()>;
+    fn html_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()>;
 }
 
 #[macro_export]

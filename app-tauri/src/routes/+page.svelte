@@ -2,7 +2,7 @@
     import MainLayout from '$lib/components/MainLayout.svelte';
     import OrganizeView from '$lib/views/OrganizeView.svelte';
     import OptimizeView from '$lib/views/OptimizeView.svelte';
-    import ConvertView from '$lib/views/ConvertView.svelte';
+    import ConvertToPdfView from '$lib/views/ConvertToPdfView.svelte';
     import SecurityView from '$lib/views/SecurityView.svelte';
     import EditView from '$lib/views/EditView.svelte';
     import FormsView from '$lib/views/FormsView.svelte';
@@ -19,7 +19,7 @@
     {:else if currentView === 'Optimize'}
         <OptimizeView />
     {:else if currentView === 'Convert'}
-        <ConvertView />
+        <ConvertToPdfView />
     {:else if currentView === 'Security'}
         <SecurityView />
     {:else if currentView === 'Edit'}

@@ -1207,6 +1207,58 @@ impl PdfEngine for PdfcraftAdapter {
 
         Ok(())
     }
+
+    fn image_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.do_convert_to_pdf(input_path, output_path)
+    }
+
+    fn text_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.do_convert_to_pdf(input_path, output_path)
+    }
+
+    fn structural_docx_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.do_convert_to_pdf(input_path, output_path)
+    }
+
+    fn html_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.do_convert_to_pdf(input_path, output_path)
+    }
+}
+
+impl PdfcraftAdapter {
+    fn do_convert_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        let name = input_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("file");
+        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let arc_bytes = Arc::new(bytes);
+
+        // Atomic convert to PDF
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            self.session
+                .convert_to_pdf(name, &arc_bytes)
+                .map_err(|e| LpdfError::Engine(e.to_string()))
+        }));
+
+        let out_bytes = match result {
+            Ok(Ok((_kind, out))) => out,
+            Ok(Err(e)) => return Err(e),
+            Err(_) => return Err(LpdfError::Engine("Panic during conversion".into())),
+        };
+
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &*out_bytes).map_err(LpdfError::Io)?;
+
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.is_empty() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(())
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(PdfcraftAdapter);

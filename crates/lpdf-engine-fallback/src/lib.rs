@@ -240,6 +240,22 @@ impl PdfEngine for FallbackAdapter {
     ) -> Result<()> {
         Err(LpdfError::Engine("unimplemented".into()))
     }
+
+    fn image_to_pdf(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Engine("unimplemented".into()))
+    }
+
+    fn text_to_pdf(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Engine("unimplemented".into()))
+    }
+
+    fn structural_docx_to_pdf(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Engine("unimplemented".into()))
+    }
+
+    fn html_to_pdf(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Engine("unimplemented".into()))
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(FallbackAdapter);

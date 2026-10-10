@@ -236,4 +236,20 @@ impl PdfEngine for EngineSwitcher {
     ) -> Result<()> {
         self.primary.redact(input_path, regions, output_path)
     }
+
+    fn image_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.primary.image_to_pdf(input_path, output_path)
+    }
+
+    fn text_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.primary.text_to_pdf(input_path, output_path)
+    }
+
+    fn structural_docx_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.primary.structural_docx_to_pdf(input_path, output_path)
+    }
+
+    fn html_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.primary.html_to_pdf(input_path, output_path)
+    }
 }
