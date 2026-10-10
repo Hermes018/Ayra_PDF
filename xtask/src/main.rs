@@ -13,6 +13,7 @@ fn main() {
     match args[1].as_str() {
         "protocol-lint" => run_protocol_lint(),
         "gate" => run_gate(),
+        "test-offline" => run_test_offline(),
         _ => {
             eprintln!("Unknown command: {}", args[1]);
             exit(1);
@@ -141,4 +142,36 @@ fn run_gate() {
     }
 
     println!("Gate passed green!");
+}
+
+fn run_test_offline() {
+    let workspace_root = env::current_dir().unwrap();
+    let bin_path = workspace_root
+        .join("target")
+        .join("debug")
+        .join("app-tauri");
+    if !bin_path.exists() {
+        eprintln!(
+            "Binary not found at {}. Please run `cargo build -p app-tauri` first.",
+            bin_path.display()
+        );
+        exit(1);
+    }
+
+    println!("Testing offline launch via unshare...");
+    let status = Command::new("timeout")
+        .args(["5s", "unshare", "-n", "-r", bin_path.to_str().unwrap()])
+        .status()
+        .expect("Failed to execute unshare command");
+
+    // timeout exits with 124 if the command times out, which is success for us since it means the app stayed alive
+    if status.code() == Some(124) || status.success() {
+        println!("Offline test passed (app launched and stayed alive without network).");
+    } else {
+        eprintln!(
+            "Offline test failed: app crashed or failed to launch. Exit code: {:?}",
+            status.code()
+        );
+        exit(1);
+    }
 }

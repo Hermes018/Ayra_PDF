@@ -1,7 +1,8 @@
 [workspace]
 members = [
     "xtask",
-    "crates/*"
+    "crates/*",
+    "app-tauri/src-tauri"
 ]
 resolver = "2"
 
@@ -11,3 +12,10 @@ version = "0.1.0"
 authors = ["Test <test@example.com>"]
 rust-version = "1.74"
 license = "MIT"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
