@@ -244,3 +244,16 @@ Entry format:
   - Rule 01:3 "No CDNs, offline native apps only" -> Evidence: PDF.js loaded exclusively from local static copies, preventing remote leaks.
 - Risks / follow-ups: The current implementation reads the entire PDF file into memory for preview rendering. This could crash the frontend on extremely large files (e.g. 1GB PDFs). We may need an efficient streaming/virtualized strategy later.
 - Commit / tag: `phase-3.2-green`
+
+## [2026-10-10 07:42] Phase 3.3 — DONE
+- Changes:
+  - Created Svelte 5 `appState` with `$state` runes to track the global active PDF file list across all taxonomy views.
+  - Implemented `Dropzone.svelte` using native Tauri window event listeners (`tauri://drag-drop` family) to securely ingest absolute file paths directly from the OS, bypassing the browser's Blob/HTML5 sandbox.
+  - Updated `OrganizeView.svelte` and `MainLayout.svelte` to read from the global state reactively, replacing the hardcoded file picker.
+- Gate: pass
+- Tests added/run: 0/4 (contract tests re-run)
+- Pre-commit checklist: 1 YES 2 N/A 3 YES 4 YES 5 YES 6 YES 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - Rule 01:2 "Local files" -> Evidence: Uses native OS paths from Tauri drop events rather than standard HTML5 file uploads.
+- Risks / follow-ups: Edge cases for multiple file drops only preview the first file; batch UI selection is needed.
+- Commit / tag: `phase-3.3-green`
