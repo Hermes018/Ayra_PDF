@@ -27,6 +27,23 @@
             console.error("Failed to submit compress job:", e);
         }
     }
+    async function handleRepair() {
+        if (!currentPath) return;
+
+        const outputPath = currentPath.replace(/\.pdf$/i, `_repaired.pdf`);
+        const req: JobRequest = {
+            op: "Repair",
+            input_path: currentPath,
+            output_path: outputPath
+        };
+
+        try {
+            const jobId = await IpcClient.submitJob(req);
+            console.log("Repair job submitted with ID:", jobId);
+        } catch (e) {
+            console.error("Failed to submit repair job:", e);
+        }
+    }
 </script>
 
 <div class="view-container">
@@ -57,6 +74,20 @@
                     </p>
                 {:else}
                     <p class="empty-text">Select or drag a file to compress.</p>
+                {/if}
+            </div>
+
+            <div class="tool-section">
+                <h4>Repair Document</h4>
+                {#if currentPath}
+                    <p class="help-text">
+                        Attempts to fix broken xref tables, recover orphaned objects, and rewrite the PDF cleanly.
+                    </p>
+                    <button class="action-button secondary-button" onclick={handleRepair}>
+                        Repair Now
+                    </button>
+                {:else}
+                    <p class="empty-text">Select or drag a file to repair.</p>
                 {/if}
             </div>
         </div>
@@ -181,6 +212,14 @@
 
     .action-button:hover {
         background-color: #b4befe;
+    }
+
+    .secondary-button {
+        background-color: #89b4fa;
+    }
+
+    .secondary-button:hover {
+        background-color: #74c7ec;
     }
 
     .help-text {

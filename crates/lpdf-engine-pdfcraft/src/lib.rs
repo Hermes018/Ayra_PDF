@@ -403,6 +403,44 @@ impl PdfEngine for PdfcraftAdapter {
 
         Ok(())
     }
+
+    fn repair(&self, input_path: &Path, output_path: &Path) -> Result<Vec<String>> {
+        let mut session = pdfcraft_engine::Session::new();
+        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let name = input_path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+
+        let doc_id = session
+            .open(name, None, Arc::new(bytes), None)
+            .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+        // Extract the log of repairs made during parsing
+        let log = session
+            .get(doc_id)
+            .map(|doc| doc.repair_log())
+            .unwrap_or_default();
+
+        let repaired_bytes = session
+            .save_bytes(doc_id)
+            .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+        // Atomic write
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &*repaired_bytes).map_err(LpdfError::Io)?;
+
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.len() != repaired_bytes.len() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(log)
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(PdfcraftAdapter);

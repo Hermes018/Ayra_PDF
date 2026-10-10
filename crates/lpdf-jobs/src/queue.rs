@@ -89,6 +89,12 @@ pub enum JobRequest {
         output_path: String,
         profile: lpdf_engine_port::OptimizeProfile,
     },
+
+    /// Repair a damaged PDF document.
+    Repair {
+        input_path: String,
+        output_path: String,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -536,6 +542,49 @@ impl JobManager {
                 if cancel_token.is_cancelled() {
                     return Err(LpdfError::Engine("Job cancelled".into()));
                 }
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::Repair {
+                input_path,
+                output_path,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Starting repair...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 50,
+                    message: "Repairing document...".into(),
+                });
+
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                let log = engine.repair(&path, &out)?;
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 90,
+                    message: format!("Repair complete. {} issues fixed.", log.len()),
+                });
 
                 Ok(JobOutput {
                     output_path: Some(output_path.clone()),

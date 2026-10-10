@@ -156,6 +156,12 @@ impl PdfEngine for FallbackAdapter {
             "Compress not supported by FallbackAdapter".into(),
         ))
     }
+
+    fn repair(&self, _input_path: &Path, _output_path: &Path) -> Result<Vec<String>> {
+        Err(LpdfError::Engine(
+            "Repair not supported by FallbackAdapter".into(),
+        ))
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(FallbackAdapter);
