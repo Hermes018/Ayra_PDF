@@ -117,6 +117,26 @@ pub enum JobRequest {
         output_path: String,
         password: String,
     },
+
+    /// Add an annotation to the document.
+    AnnotateDocument {
+        input_path: String,
+        output_path: String,
+        annotation: lpdf_engine_port::AnnotationDef,
+    },
+
+    /// Add a watermark to the document.
+    WatermarkDocument {
+        input_path: String,
+        output_path: String,
+        settings: lpdf_engine_port::WatermarkSettings,
+    },
+
+    /// Flatten comments into the page content.
+    FlattenComments {
+        input_path: String,
+        output_path: String,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -723,6 +743,74 @@ impl JobManager {
                 if cancel_token.is_cancelled() {
                     return Err(LpdfError::Engine("Job cancelled".into()));
                 }
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::AnnotateDocument {
+                input_path,
+                output_path,
+                annotation,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Applying annotation...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.add_annotation(&path, annotation, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::WatermarkDocument {
+                input_path,
+                output_path,
+                settings,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Adding watermark...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.add_watermark(&path, settings, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::FlattenComments {
+                input_path,
+                output_path,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Flattening comments...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.flatten_comments(&path, &out)?;
 
                 Ok(JobOutput {
                     output_path: Some(output_path.clone()),

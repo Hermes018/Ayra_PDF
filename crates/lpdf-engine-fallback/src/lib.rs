@@ -186,6 +186,28 @@ impl PdfEngine for FallbackAdapter {
             "Unlock not supported by FallbackAdapter".into(),
         ))
     }
+
+    fn add_annotation(
+        &self,
+        _input_path: &Path,
+        _annotation: &lpdf_engine_port::AnnotationDef,
+        _output_path: &Path,
+    ) -> Result<()> {
+        Err(LpdfError::Engine("unimplemented".into()))
+    }
+
+    fn add_watermark(
+        &self,
+        _input_path: &Path,
+        _settings: &lpdf_engine_port::WatermarkSettings,
+        _output_path: &Path,
+    ) -> Result<()> {
+        Err(LpdfError::Engine("unimplemented".into()))
+    }
+
+    fn flatten_comments(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Engine("unimplemented".into()))
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(FallbackAdapter);

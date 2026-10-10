@@ -179,4 +179,28 @@ impl PdfEngine for EngineSwitcher {
     fn unlock(&self, input_path: &Path, password: &str, output_path: &Path) -> Result<()> {
         self.primary.unlock(input_path, password, output_path)
     }
+
+    fn add_annotation(
+        &self,
+        input_path: &Path,
+        annotation: &lpdf_engine_port::AnnotationDef,
+        output_path: &Path,
+    ) -> Result<()> {
+        self.primary
+            .add_annotation(input_path, annotation, output_path)
+    }
+
+    fn add_watermark(
+        &self,
+        input_path: &Path,
+        settings: &lpdf_engine_port::WatermarkSettings,
+        output_path: &Path,
+    ) -> Result<()> {
+        self.primary
+            .add_watermark(input_path, settings, output_path)
+    }
+
+    fn flatten_comments(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.primary.flatten_comments(input_path, output_path)
+    }
 }

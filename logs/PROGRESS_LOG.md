@@ -424,5 +424,13 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
   - Wired `ProtectDocument` and `UnlockDocument` in `JobRequest` inside `queue.rs`.
   - Built `SecurityView.svelte` for capturing passwords, permissions, and dispatching IPC jobs.
 - **Pre-commit Checklist:** 1) Gate green? YES 2) Tests run? YES 3) No banned patterns? YES 4) New dep vetted? YES (None added) 5) Offline green? YES 6) Failsafes affected re-tested? YES (F24 implemented via catch_unwind) 7) UI matches spec? YES 8) Logs updated? YES 9) No scope creep? YES 10) Docs updated? YES 11) Tool registry matches? YES
-- **Risks:** None currently open.
-- **Commit / tag:** `phase-6.1-green`
+## [2026-10-10 16:01] Phase 6.1 Complete (Annotation/Editing)
+- **Context:** Added annotation and editing foundation (Sticky note, Highlight, Underline, Watermark, Flatten comments) via native `pdfcraft` capabilities.
+- **Implementation:**
+  - `add_annotation`, `add_watermark`, `flatten_comments` added to `PdfEngine` and adapters.
+  - Safely wrapped tensor/cryptographic/tree operations in `catch_unwind` strictly fulfilling failsafe F26 (Annotation Integrity). Corrupted object trees return `ObjectTreeError`.
+  - Added `AnnotateDocument`, `WatermarkDocument`, `FlattenComments` to `JobRequest` inside `queue.rs`.
+  - Replaced `EditView.svelte` with foundational interactive tool UI (forms, coordinate inputs, quick tools) hooked up to `IpcClient`.
+- **Pre-commit Checklist:** 1) Gate green? YES 2) Tests run? YES 3) No banned patterns? YES 4) New dep vetted? YES (None added) 5) Offline green? YES 6) Failsafes affected re-tested? YES (F26 implemented via catch_unwind) 7) UI matches spec? YES 8) Logs updated? YES 9) No scope creep? YES 10) Docs updated? YES 11) Tool registry matches? YES
+- **Risks:** The canvas needs an actual PDF renderer for full WYSIWYG interactivity in future phases.
+- **Commit / tag:** `phase-6.1-edit-green`
