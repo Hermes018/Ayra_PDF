@@ -156,4 +156,8 @@ impl PdfEngine for EngineSwitcher {
     ) -> Result<()> {
         self.primary.compress(input_path, profile, output_path)
     }
+
+    fn repair(&self, input_path: &Path, output_path: &Path) -> Result<Vec<String>> {
+        self.primary.repair(input_path, output_path)
+    }
 }

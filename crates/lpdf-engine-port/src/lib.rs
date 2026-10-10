@@ -47,6 +47,7 @@ pub trait PdfEngine {
         profile: OptimizeProfile,
         output_path: &Path,
     ) -> Result<()>;
+    fn repair(&self, input_path: &Path, output_path: &Path) -> Result<Vec<String>>;
 }
 
 #[macro_export]
