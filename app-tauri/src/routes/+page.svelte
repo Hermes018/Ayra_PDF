@@ -1,5 +1,6 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
+  import { t } from "$lib/i18n";
 
   let name = $state("");
   let greetMsg = $state("");
@@ -12,7 +13,7 @@
 </script>
 
 <main class="container">
-  <h1>Welcome to Tauri + Svelte</h1>
+  <h1>{t("app.welcome")}</h1>
 
   <div class="row">
     <a href="https://vite.dev" target="_blank">
