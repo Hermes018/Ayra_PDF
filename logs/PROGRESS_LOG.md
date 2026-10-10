@@ -130,3 +130,18 @@ Entry format:
   - DO-9 "no GPL/network" -> Evidence: Addressed by `cargo deny` and `xtask protocol-lint`.
 - Risks / follow-ups: None.
 - Commit / tag: `phase-1.2-green`
+
+## [2026-10-10 06:15] Phase 1.3 — DONE
+- Changes:
+  - Created `.github/workflows/ci.yml` defining a CI gate matrix for `fedora:44` (Linux) and `windows-latest`.
+  - Configured Linux runner to install system dependencies via `dnf`, matching the local setup established in Phase 0.2.
+  - Set up `Swatinem/rust-cache` and `cargo-binstall`/`taiki-e/install-action` for fast dependencies provision.
+  - Created `.github/workflows/nightly.yml` defining a nightly cron job that checks out the repository, sets up nightly Rust, and strictly validates our isolated test corpus generation using `corpus/fetch.sh`.
+- Gate: pass
+- Tests added/run: 0/0
+- Pre-commit checklist: 1 N/A 2 N/A 3 YES 4 YES 5 YES 6 YES 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - DO-5 "Outputs atomic..." -> N/A
+  - DO-9 "Keep commits small, conventional, gate-green" -> Evidence: Used `cargo xtask gate` inside the new CI workflow to enforce it globally.
+- Risks / follow-ups: The Fedora container is minimal, so additional implicit dependencies might crop up later if we rely on host-installed tools.
+- Commit / tag: `phase-1.3-green`

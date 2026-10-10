@@ -1,0 +1,30 @@
+name: Nightly Corpus Validation
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # Run at 2 AM every day
+
+jobs:
+  validate-corpus:
+    runs-on: ubuntu-latest
+    container: fedora:44
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install system dependencies (Fedora)
+        run: |
+          dnf install -y qpdf curl
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Setup nightly Rust
+        run: |
+          rustup default nightly
+
+      - name: Run corpus fetch script
+        run: |
+          chmod +x corpus/fetch.sh
+          ./corpus/fetch.sh

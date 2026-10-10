@@ -165,3 +165,21 @@ The safest and simplest way to resolve this blocker is to run the system-level p
 - Interpretation / ambiguity: Implement strict linters and a CI gate inside xtask.
 - Actions taken / sub-phase affected: Phase 1.2
 - Conflicts with protocol? (yes/no + resolution): No.
+
+## [2026-10-10] Prompt #10
+- Verbatim: """Begin Phase 1.3 (CI - GitHub Actions). Note: Your previous checkpoint mentioned "Extract layout analysis spike", which is incorrect for this phase. Please align strictly with `protocol/05_PHASES.md`. Execute the following steps:
+1. **Create CI Workflow (`.github/workflows/ci.yml`):**
+   - Trigger on push and pull request.
+   - Set up a build matrix for Linux (Fedora container) and Windows (`windows-latest`).
+   - Include steps to checkout the code (with `submodules: recursive`), install the stable Rust toolchain, and set up Rust caching (e.g., `Swatinem/rust-cache`).
+   - For the Fedora container, include a step to install the system dependencies required by Tauri and our tools (webkit2gtk4.1-devel, qpdf, etc., as we did in 0.2).
+   - The final validation step MUST run our custom gate: `cargo xtask gate`.
+2. **Create Nightly Workflow (`.github/workflows/nightly.yml`):**
+   - Trigger via a nightly cron schedule.
+   - Include steps to checkout, set up Rust nightly, and run `corpus/fetch.sh` to guarantee our test fixtures generate correctly in isolated environments.
+3. **Logging & Commit:**
+   - Update `logs/PROGRESS_LOG.md`... and `logs/CHECKPOINT.md`...
+   - Commit... tag... print ANCHOR block."""
+- Interpretation / ambiguity: Create CI and nightly workflows. Ensure alignment with phase requirements.
+- Actions taken / sub-phase affected: Phase 1.3
+- Conflicts with protocol? (yes/no + resolution): No.

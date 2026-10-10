@@ -96,3 +96,15 @@ Entry format:
 - Failsafes affected: DO-4 (banned patterns), DO-9 (no GPL/network).
 - Verification steps: `cargo xtask gate` passes green.
 - Revision (date, what changed, why): N/A.
+
+## [2026-10-10] Plan for Phase 1.3
+- Goal / acceptance: Set up GitHub Actions CI and nightly workflows.
+- Approach + alternatives considered: 
+  - Create `.github/workflows/ci.yml` with a matrix for `windows-latest` and `fedora:44` container (or `ubuntu-latest` running inside a Fedora container). 
+  - Create `.github/workflows/nightly.yml` for nightly cron.
+  - Install dependencies inside Fedora (`webkit2gtk4.1-devel openssl-devel librsvg2-devel libappindicator-gtk3-devel libxdo-devel gcc gcc-c++ qpdf poppler-utils tesseract libreoffice cargo-deny cargo-audit cargo-nextest`). Wait, cargo extensions can be installed via `cargo-binstall` or just `cargo install` inside the CI, or cached. We can use pre-built actions or run cargo commands. Actually, the prompt says "install the system dependencies required by Tauri and our tools... as we did in 0.2". The dependencies installed in 0.2 were via `dnf install`. Then cargo commands like `cargo nextest` etc. need to be available for the gate to pass! Wait, in github actions we can use `taiki-e/install-action` for cargo-deny, cargo-audit, cargo-nextest.
+  - Set up checkout with submodules.
+- Files/crates touched: `.github/workflows/ci.yml`, `.github/workflows/nightly.yml`, `logs/*`.
+- Failsafes affected: None directly, improves CI.
+- Verification steps: Workflows are correctly formatted.
+- Revision (date, what changed, why): N/A.
