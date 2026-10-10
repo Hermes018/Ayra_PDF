@@ -5,7 +5,7 @@
 //! cooperative cancellation.
 
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
@@ -53,6 +53,12 @@ pub enum JobRequest {
         output_path: String,
         page_index: usize,
         dpi: u32,
+    },
+
+    /// Merge multiple PDFs into a single document.
+    Merge {
+        input_paths: Vec<String>,
+        output_path: String,
     },
 }
 
@@ -317,6 +323,44 @@ impl JobManager {
                 };
                 let out = PathBuf::from(output_path);
                 engine.render(*page_index, &opts, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::Merge {
+                input_paths,
+                output_path,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Starting merge operation...".into(),
+                });
+
+                // Merge operation does not require loading a document first
+                let engine = EngineSwitcher::new();
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 50,
+                    message: "Merging documents...".into(),
+                });
+
+                let paths: Vec<&Path> = input_paths.iter().map(Path::new).collect();
+                let out = PathBuf::from(output_path);
+
+                engine.merge(&paths, &out)?;
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
 
                 Ok(JobOutput {
                     output_path: Some(output_path.clone()),

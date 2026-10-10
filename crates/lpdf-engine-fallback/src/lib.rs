@@ -94,6 +94,12 @@ impl PdfEngine for FallbackAdapter {
             .map_err(|e| LpdfError::Engine(e.to_string()))?;
         Ok(())
     }
+
+    fn merge(&self, _input_paths: &[&Path], _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Engine(
+            "Merge not supported by FallbackAdapter".into(),
+        ))
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(FallbackAdapter);
