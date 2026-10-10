@@ -20,6 +20,9 @@
 17. Keep AI features behind the `ai-local` flag, default OFF; every AI feature has an offline non-AI state (greyed tile or Basic mode).
 18. Report approximate conversions honestly: PDF→Office/MD results carry the ADR-006 quality report.
 19. Always start a session on a new device with `git pull --recurse-submodules` and end by pushing commits and tags (`git push && git push --tags`).
+20. Allow the bundling of heavy external binaries (OpenOffice/ONLYOFFICE/Pandoc) strictly via the Tauri Sidecar API (`tauri::api::process::Command`).
+21. Enforce strict shell-injection prevention. All file paths passed to sidecars must be strictly validated, absolute local paths.
+22. Structure sidecar execution to capture both `stdout` and `stderr` asynchronously, mapping CLI exit codes to typed Rust errors.
 
 ## DON'T
 1. No network at runtime: no HTTP clients, telemetry, analytics, update pings, CDN scripts/fonts/images, remote fonts. CSP `connect-src` limited to IPC only.
@@ -30,8 +33,9 @@
 6. No base64 for large payloads. No blocking the UI thread/event loop.
 7. No page/size/file-count caps. Resource guards may degrade gracefully (slower, chunked) and must tell the user — never silently truncate.
 8. No password cracking/brute-forcing/bypass. Unlock = user supplies the password, or removes restrictions on files that need no open-password.
-9. No GPL/AGPL/SSPL code linked or bundled (MuPDF, PyMuPDF, Ghostscript, iText banned). MPL/LGPL tools only via separate process. GPL tools (poppler, etc.) allowed ONLY as CI oracles, never shipped.
-10. No wildcard filesystem scopes (`$HOME/**`, `**`). No broad `shell`/`http` plugin permissions. Access only user-chosen paths.
+9. No network at runtime. No telemetry. GPL/AGPL permitted ONLY as isolated Tauri sidecar binaries. Max bundle size: 1GB.
+10. Never pass raw, unsanitized user input or filenames directly to a sidecar CLI command.
+11. No wildcard filesystem scopes (`$HOME/**`, `**`). No broad `shell`/`http` plugin permissions. Access only user-chosen paths.
 11. No storing decrypted content, passwords or document text outside RAM; temp files for encrypted docs stay encrypted.
 12. No copying iLovePDF code/CSS/assets/branding/copy.
 13. No scope creep: anything not in `07_FEATURE_MAP.md` needs PLAN_LOG + ADR + approval.
