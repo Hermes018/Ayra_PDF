@@ -1,27 +1,18 @@
 <script lang="ts">
     import PdfViewer from '$lib/components/PdfViewer.svelte';
+    import { appState } from '$lib/state.svelte';
 
-    let pdfPath = $state("../../corpus/basic_10_pages.pdf");
-    let currentPath = $state<string | null>(null);
-
-    function loadPdf() {
-        currentPath = pdfPath;
-    }
+    // The viewer reactive path comes directly from the global active files
+    let currentPath = $derived(appState.currentFile);
 </script>
 
 <div class="view-container">
     <div class="header">
         <h2>Organize PDFs</h2>
         <div class="controls">
-            <input 
-                type="text" 
-                bind:value={pdfPath} 
-                placeholder="Enter absolute or relative path to PDF..." 
-                class="path-input"
-            />
-            <button onclick={loadPdf} class="btn-primary">
-                Load PDF
-            </button>
+            <span class="active-file-path">
+                {currentPath || 'No file selected. Drag and drop a PDF.'}
+            </span>
         </div>
     </div>
 
@@ -67,36 +58,16 @@
     .controls {
         display: flex;
         gap: 0.5rem;
-        width: 50%;
     }
 
-    .path-input {
-        flex: 1;
+    .active-file-path {
+        background-color: #11111b;
         padding: 0.5rem 1rem;
         border-radius: 6px;
+        color: #a6adc8;
+        font-family: monospace;
+        font-size: 0.9rem;
         border: 1px solid #45475a;
-        background-color: #11111b;
-        color: #cdd6f4;
-        outline: none;
-    }
-
-    .path-input:focus {
-        border-color: #89b4fa;
-    }
-
-    .btn-primary {
-        padding: 0.5rem 1.25rem;
-        border-radius: 6px;
-        border: none;
-        background-color: #89b4fa;
-        color: #11111b;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-    .btn-primary:hover {
-        background-color: #74c7ec;
     }
 
     .viewer-layout {

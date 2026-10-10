@@ -2,6 +2,7 @@
     import { type Snippet } from 'svelte';
     import Sidebar from './Sidebar.svelte';
     import StatusBar from './StatusBar.svelte';
+    import Dropzone from './Dropzone.svelte';
 
     let { children, currentView = $bindable() } = $props<{
         children: Snippet;
@@ -19,6 +20,8 @@
         
         <StatusBar />
     </div>
+    
+    <Dropzone />
 </div>
 
 <style>
