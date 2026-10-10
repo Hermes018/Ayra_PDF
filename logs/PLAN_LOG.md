@@ -83,3 +83,16 @@ Entry format:
 - Failsafes affected: DO-5 (No unsafe code).
 - Verification steps: `cargo check` succeeds on the workspace.
 - Revision (date, what changed, why): N/A.
+
+## [2026-10-10] Plan for Phase 1.2
+- Goal / acceptance: Implement xtask gates (`protocol-lint`, `gate`) and configure `cargo-deny`.
+- Approach + alternatives considered: 
+  - Run `cargo deny init`.
+  - Update `deny.toml` to reject GPL/AGPL/SSPL.
+  - Extend `xtask/src/main.rs` with `protocol-lint` that scans `crates/**/*.rs` (ignoring test modules if possible, or just all `src/**/*.rs`) for banned string patterns. Scan `Cargo.toml` for banned network crates.
+  - Add `gate` command to `xtask` to run `cargo fmt -- --check`, `clippy --workspace -- -D warnings`, `nextest run`, `deny check`, `audit`, and `xtask protocol-lint`.
+  - Run `cargo xtask gate`, fix format/clippy.
+- Files/crates touched: `deny.toml`, `xtask/src/main.rs`, `logs/*`.
+- Failsafes affected: DO-4 (banned patterns), DO-9 (no GPL/network).
+- Verification steps: `cargo xtask gate` passes green.
+- Revision (date, what changed, why): N/A.

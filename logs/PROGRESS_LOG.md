@@ -115,3 +115,18 @@ Entry format:
   - Failsafe DO-5 "No unsafe code" -> Evidence: Add `#![forbid(unsafe_code)]` to all generated crate root files.
 - Risks / follow-ups: None.
 - Commit / tag: `phase-1.1-green`
+
+## [2026-10-10 06:13] Phase 1.2 — DONE
+- Changes:
+  - Initialized `cargo-deny` with `deny.toml` to reject GPL/AGPL/SSPL by implicitly denying all unlicensed dependencies and keeping a strict whitelist.
+  - Implemented `protocol-lint` in `xtask` to scan `src/` for banned patterns (`unwrap`, `expect`, etc.) and `Cargo.toml` for network dependencies (`reqwest`, `hyper`, etc.).
+  - Implemented `gate` command in `xtask` running `cargo fmt`, `clippy`, `nextest run`, `cargo deny check`, `cargo audit`, and `cargo xtask protocol-lint`.
+  - Addressed minor clippy warning (`PathBuf` unused import).
+- Gate: pass
+- Tests added/run: 0/0
+- Pre-commit checklist: 1 N/A 2 N/A 3 YES 4 YES 5 YES 6 YES 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - DO-4 "banned patterns" -> Evidence: Addressed by `xtask protocol-lint`.
+  - DO-9 "no GPL/network" -> Evidence: Addressed by `cargo deny` and `xtask protocol-lint`.
+- Risks / follow-ups: None.
+- Commit / tag: `phase-1.2-green`
