@@ -1,10 +1,35 @@
 use directories::ProjectDirs;
+use lpdf_jobs::events::job_event_channel;
+use lpdf_jobs::queue::{JobManager, JobRequest};
+use std::sync::Arc;
+use tauri::Emitter;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+/// Tauri-managed state holding the job manager.
+struct AppState {
+    job_manager: Arc<JobManager>,
+}
+
+/// Submit a job to the background worker queue.
+/// Returns the job ID immediately — never blocks the main thread.
 #[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+fn submit_job(state: tauri::State<'_, AppState>, request: JobRequest) -> String {
+    state.job_manager.submit(request)
+}
+
+/// Cancel a running or queued job by ID.
+#[tauri::command]
+fn cancel_job(state: tauri::State<'_, AppState>, job_id: String) -> bool {
+    state.job_manager.cancel(&job_id)
+}
+
+/// Query the current status of a job by ID.
+#[tauri::command]
+fn job_status(
+    state: tauri::State<'_, AppState>,
+    job_id: String,
+) -> Option<lpdf_jobs::queue::JobStatus> {
+    state.job_manager.status(&job_id)
 }
 
 fn setup_logging() -> Option<tracing_appender::non_blocking::WorkerGuard> {
@@ -32,11 +57,32 @@ fn setup_logging() -> Option<tracing_appender::non_blocking::WorkerGuard> {
 pub fn run() {
     let _log_guard = setup_logging();
 
+    // Create the job event channel
+    let (event_tx, mut event_rx) = job_event_channel();
+
+    // Default concurrency = 2 (Tier L safe); will be configurable per-tier later
+    let job_manager = Arc::new(JobManager::new(2, event_tx));
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(tauri_plugin_single_instance::init(|_app, _argv, _cwd| {}))
-        .invoke_handler(tauri::generate_handler![greet])
+        .manage(AppState {
+            job_manager: Arc::clone(&job_manager),
+        })
+        .invoke_handler(tauri::generate_handler![submit_job, cancel_job, job_status])
+        .setup(|app| {
+            // Forward job events to the Tauri frontend as structured events
+            let handle = app.handle().clone();
+            tokio::spawn(async move {
+                while let Some(event) = event_rx.recv().await {
+                    tracing::debug!("Job event: {:?}", event);
+                    // Emit to all windows; the frontend filters by job_id
+                    let _ = handle.emit("job-event", &event);
+                }
+            });
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

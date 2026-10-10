@@ -1,0 +1,14 @@
+[package]
+name = "lpdf-engine-switcher"
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+lpdf-core-types = { path = "../lpdf-core-types" }
+lpdf-engine-port = { path = "../lpdf-engine-port" }
+lpdf-engine-pdfcraft = { path = "../lpdf-engine-pdfcraft" }
+lpdf-engine-fallback = { path = "../lpdf-engine-fallback" }
+tracing = "0.1"
