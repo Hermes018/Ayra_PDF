@@ -32,6 +32,7 @@ pub trait PdfEngine {
         degrees: i32,
         output_path: &Path,
     ) -> Result<()>;
+    fn rotate_document(&self, input_path: &Path, degrees: i32, output_path: &Path) -> Result<()>;
 }
 
 #[macro_export]

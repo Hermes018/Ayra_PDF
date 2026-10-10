@@ -326,3 +326,17 @@ Entry format:
   - DO-16 "Build UI with Svelte 5" -> Utilized $state arrays and effect propagation for drag state.
 - Risks / follow-ups: Large PDFs might require intersection observer for canvas rendering to save memory instead of rendering all upfront. For now, works adequately.
 - Commit / tag: `phase-4.4-green`
+
+## [2026-10-10 11:15] Phase 4.5 — DONE
+- Changes:
+  - Added `rotate_document` to `PdfEngine` trait to enable rotating entire documents efficiently.
+  - Implemented `rotate_document` in `PdfcraftAdapter` fetching total page count and applying the rotation edit to all pages using the standard atomic write pattern.
+  - Added `RotateDocument` variant to `JobRequest` and implemented it in `JobManager`.
+  - Added `Rotate Document` section in `OrganizeView.svelte` to allow one-click rotation of the entire document.
+- Gate: pass
+- Tests added/run: 0/2
+- Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 N/A 7 YES 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - DO-04 "Atomic writes" -> Used standard atomic write-and-verify for RotateDocument.
+- Risks / follow-ups: None currently.
+- Commit / tag: `phase-4.5-green`

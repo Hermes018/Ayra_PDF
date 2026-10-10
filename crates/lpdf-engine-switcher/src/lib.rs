@@ -142,4 +142,9 @@ impl PdfEngine for EngineSwitcher {
         self.primary
             .rotate_pages(input_path, pages, degrees, output_path)
     }
+
+    fn rotate_document(&self, input_path: &Path, degrees: i32, output_path: &Path) -> Result<()> {
+        self.primary
+            .rotate_document(input_path, degrees, output_path)
+    }
 }

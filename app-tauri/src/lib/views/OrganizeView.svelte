@@ -12,6 +12,7 @@
     let deletePagesInput = $state("");
     let rotatePagesInput = $state("");
     let rotateDegrees = $state(90);
+    let rotateDocDegrees = $state(90);
 
     function parsePages(input: string): number[] {
         const pages = new Set<number>();
@@ -107,6 +108,25 @@
         }
     }
 
+    async function handleRotateDoc() {
+        if (!currentPath) return;
+
+        const outputPath = currentPath.replace(/\.pdf$/i, `_rotdoc_${rotateDocDegrees}.pdf`);
+        const req: JobRequest = {
+            op: "RotateDocument",
+            input_path: currentPath,
+            output_path: outputPath,
+            degrees: rotateDocDegrees
+        };
+
+        try {
+            const jobId = await IpcClient.submitJob(req);
+            console.log("Rotate document job submitted with ID:", jobId);
+        } catch (e) {
+            console.error("Failed to submit rotate document job:", e);
+        }
+    }
+
     async function handleMerge() {
         if (activeFiles.length < 2) return;
         
@@ -194,6 +214,22 @@
                     </button>
                 {:else}
                     <p class="empty-text">Select a file to rotate pages.</p>
+                {/if}
+            </div>
+
+            <div class="tool-section">
+                <h4>Rotate Document</h4>
+                {#if currentPath}
+                    <select class="pages-input" bind:value={rotateDocDegrees}>
+                        <option value={90}>90° Clockwise</option>
+                        <option value={180}>180°</option>
+                        <option value={-90}>90° Counter-Clockwise</option>
+                    </select>
+                    <button class="action-button" onclick={handleRotateDoc}>
+                        Rotate All
+                    </button>
+                {:else}
+                    <p class="empty-text">Select a file to rotate.</p>
                 {/if}
             </div>
 
