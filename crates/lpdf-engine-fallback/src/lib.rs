@@ -100,6 +100,17 @@ impl PdfEngine for FallbackAdapter {
             "Merge not supported by FallbackAdapter".into(),
         ))
     }
+
+    fn extract_pages(
+        &self,
+        _input_path: &Path,
+        _pages: &[usize],
+        _output_path: &Path,
+    ) -> Result<()> {
+        Err(LpdfError::Engine(
+            "Extract not supported by FallbackAdapter".into(),
+        ))
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(FallbackAdapter);

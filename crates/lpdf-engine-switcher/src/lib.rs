@@ -122,4 +122,9 @@ impl PdfEngine for EngineSwitcher {
         // Merge operations are static/standalone and go through primary.
         self.primary.merge(input_paths, output_path)
     }
+
+    fn extract_pages(&self, input_path: &Path, pages: &[usize], output_path: &Path) -> Result<()> {
+        // Extract operations are static/standalone and go through primary.
+        self.primary.extract_pages(input_path, pages, output_path)
+    }
 }
