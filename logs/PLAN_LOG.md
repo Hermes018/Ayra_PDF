@@ -70,3 +70,16 @@ Entry format:
 - Failsafes affected: N/A.
 - Verification steps: Script runs successfully and hashes match.
 - Revision (date, what changed, why): N/A.
+
+## [2026-10-10] Plan for Phase 1.1 & Protocol Update
+- Goal / acceptance: Amend protocol for multi-device sync. Set up Rust workspace with `rust-toolchain.toml`, `Cargo.toml`, and generate 15 empty crates with `#![forbid(unsafe_code)]`.
+- Approach + alternatives considered: 
+  - Update `02_RULES_DOS_DONTS.md` with new DO and DON'T.
+  - Update `06_ARCHITECTURE.md` with multi-device section.
+  - Write `rust-toolchain.toml`.
+  - Update root `Cargo.toml` to list all members.
+  - Run `cargo new` 15 times and prepend `#![forbid(unsafe_code)]`.
+- Files/crates touched: `protocol/02_RULES_DOS_DONTS.md`, `protocol/06_ARCHITECTURE.md`, `rust-toolchain.toml`, `Cargo.toml`, `crates/*`.
+- Failsafes affected: DO-5 (No unsafe code).
+- Verification steps: `cargo check` succeeds on the workspace.
+- Revision (date, what changed, why): N/A.

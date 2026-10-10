@@ -57,3 +57,6 @@ Cold start, idle RSS, first-thumbnail latency, merge/split/compress throughput p
 
 ## 8. Frontend rules (ADR-003)
 Svelte 5 + Vite + TS, SPA. Runes state modules per domain; Rust owns document truth. CSS variables for tokens; CSS emitted to external files (CSP `style-src 'self'`). No external fonts (bundled subset WOFF2 + licence). Pointer-event DnD via Svelte actions (auto-scroll, multi-select drag, Alt+Arrows keyboard move). Thumbnails via `<img src="lpdf://thumb/...">` + IntersectionObserver; virtualized grids above 200 pages. Canvas/SVG overlay editing for Edit/Sign/Crop/Redact with ops committed through one `edit_apply` command. All text via i18n keys; never `{@html}` file-derived strings. Bundle budget enforced in gate.
+
+## 9. Multi-Device Development
+The repository is synchronized across multiple devices using a standard Git remote workflow. Upstream dependencies such as `vendor/pdfcraft` are tracked strictly as Git submodules to guarantee reproducible builds across environments. Despite this remote synchronisation for source code during development, the final compiled LocalPDF Studio application unconditionally adheres to its offline, no-network, zero-telemetry runtime constraints.

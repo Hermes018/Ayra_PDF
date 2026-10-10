@@ -19,6 +19,7 @@
 16. Build UI with Svelte 5 per ADR-003 (runes, text-node rendering, pointer-event actions).
 17. Keep AI features behind the `ai-local` flag, default OFF; every AI feature has an offline non-AI state (greyed tile or Basic mode).
 18. Report approximate conversions honestly: PDF→Office/MD results carry the ADR-006 quality report.
+19. Always start a session on a new device with `git pull --recurse-submodules` and end by pushing commits and tags (`git push && git push --tags`).
 
 ## DON'T
 1. No network at runtime: no HTTP clients, telemetry, analytics, update pings, CDN scripts/fonts/images, remote fonts. CSP `connect-src` limited to IPC only.
@@ -40,5 +41,6 @@
 17. No v1-era Tauri APIs (`emit_all`, allowlist config). Use v2 capabilities.
 18. No `{@html}` of file-derived strings; no SvelteKit/SSR; no frontend `fetch(`/XMLHttpRequest/WebSocket/EventSource.
 19. No model weights bundled in installers and none downloaded at runtime; models are user-imported files only.
-20. No URL fetching in any tool (HTML to PDF accepts local files/pasted HTML only).
-21. No "request signature from others" or timestamp-authority calls in Sign PDF.
+44. No URL fetching in any tool (HTML to PDF accepts local files/pasted HTML only).
+45. No "request signature from others" or timestamp-authority calls in Sign PDF.
+46. Never commit, log, or store GitHub Personal Access Tokens (PATs) or credentials.

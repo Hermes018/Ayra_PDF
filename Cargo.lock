@@ -3,5 +3,65 @@
 version = 4
 
 [[package]]
+name = "lpdf-cli"
+version = "0.1.0"
+
+[[package]]
+name = "lpdf-core-types"
+version = "0.1.0"
+
+[[package]]
+name = "lpdf-engine-fallback"
+version = "0.1.0"
+
+[[package]]
+name = "lpdf-engine-pdfcraft"
+version = "0.1.0"
+
+[[package]]
+name = "lpdf-engine-port"
+version = "0.1.0"
+
+[[package]]
+name = "lpdf-fs-safety"
+version = "0.1.0"
+
+[[package]]
+name = "lpdf-hw"
+version = "0.1.0"
+
+[[package]]
+name = "lpdf-jobs"
+version = "0.1.0"
+
+[[package]]
+name = "lpdf-tools-convert"
+version = "0.1.0"
+
+[[package]]
+name = "lpdf-tools-edit"
+version = "0.1.0"
+
+[[package]]
+name = "lpdf-tools-markdown"
+version = "0.1.0"
+
+[[package]]
+name = "lpdf-tools-optimize"
+version = "0.1.0"
+
+[[package]]
+name = "lpdf-tools-organize"
+version = "0.1.0"
+
+[[package]]
+name = "lpdf-tools-security"
+version = "0.1.0"
+
+[[package]]
+name = "lpdf-worker"
+version = "0.1.0"
+
+[[package]]
 name = "xtask"
 version = "0.1.0"

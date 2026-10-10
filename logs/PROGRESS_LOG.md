@@ -99,3 +99,19 @@ Entry format:
   - DO-4 "Outputs atomic + new file by default" -> N/A for test corpus.
 - Risks / follow-ups: Need to add hostile test files later.
 - Commit / tag: `phase-0.6-green`
+
+## [2026-10-10 06:06] Phase 1.1 — DONE
+- Changes:
+  - Added new DOs (git pull/push on new devices) and DON'Ts (never commit PATs) in `protocol/02_RULES_DOS_DONTS.md`.
+  - Added a Multi-Device Development section in `protocol/06_ARCHITECTURE.md`.
+  - Setup a Cargo virtual workspace in `Cargo.toml`.
+  - Created `rust-toolchain.toml` to pin the stable toolchain.
+  - Generated 13 library crates and 2 binary crates in `crates/`, and prepended `#![forbid(unsafe_code)]` to all of them.
+- Gate: pass
+- Tests added/run: N/A
+- Pre-commit checklist: 1 N/A 2 N/A 3 YES 4 YES 5 YES 6 YES 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - DO-5 "Outputs atomic..." -> N/A
+  - Failsafe DO-5 "No unsafe code" -> Evidence: Add `#![forbid(unsafe_code)]` to all generated crate root files.
+- Risks / follow-ups: None.
+- Commit / tag: `phase-1.1-green`
