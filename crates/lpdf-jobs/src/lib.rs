@@ -1,15 +1,15 @@
+//! Async job queue for long-running PDF operations.
+//!
+//! Design rules:
+//! - The Tauri main thread is NEVER blocked (DO-8: command handlers < 10ms).
+//! - Every job runs on a tokio blocking task to avoid starving the async runtime.
+//! - Progress, completion, and errors are communicated via typed events.
+//! - Every job supports cancellation via a `CancellationToken`.
+
 #![forbid(unsafe_code)]
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub mod events;
+pub mod queue;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use events::{JobEvent, JobEventSender};
+pub use queue::{JobId, JobManager, JobRequest, JobStatus};

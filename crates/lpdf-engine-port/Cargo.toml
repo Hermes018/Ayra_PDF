@@ -8,3 +8,4 @@ license.workspace = true
 
 [dependencies]
 lpdf-core-types = { path = "../lpdf-core-types" }
+

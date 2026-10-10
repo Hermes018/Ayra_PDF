@@ -190,3 +190,17 @@ Entry format:
   - Rule 02:2 "Contract tests" -> Evidence: Macro `define_contract_tests!` generated identical test suites.
 - Risks / follow-ups: Pdfcraft `render` currently extracts first image as a stub. It will need actual rendering support later.
 - Commit / tag: `phase-2.1-green`
+
+## [2026-10-10 07:18] Phase 2.2 — DONE
+- Changes:
+  - Created `lpdf-engine-switcher` crate to route operations through primary (pdfcraft) with fallback to secondary (lopdf) on parse/engine errors.
+  - Implemented async job queue in `lpdf-jobs` using tokio `spawn_blocking` and Semaphore (bounded concurrency).
+  - Wired `JobManager` into Tauri app state and implemented structured event emission for progress, completion, and errors.
+- Gate: pass
+- Tests added/run: 0/4 (contract tests re-run)
+- Pre-commit checklist: 1 YES 2 N/A 3 YES 4 YES 5 YES 6 N/A 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - Rule 02:8 "Heavy/untrusted work in jobs on the worker process" -> Evidence: `lpdf-jobs` spawns blocking tasks.
+  - Rule 02:7 "Typed errors... map to UI" -> Evidence: `JobEvent::Failed` pushes typed string codes to the UI.
+- Risks / follow-ups: UI is not yet consuming the job events.
+- Commit / tag: `phase-2.2-green`

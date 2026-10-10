@@ -1,0 +1,120 @@
+//! Engine switcher: tries PdfcraftAdapter first, falls back to FallbackAdapter
+//! on parse/corruption errors (Failsafe F7).
+
+#![forbid(unsafe_code)]
+
+use lpdf_core_types::{LpdfError, Result};
+use lpdf_engine_port::{PdfEngine, PdfInfo, RenderOptions};
+use std::path::{Path, PathBuf};
+
+/// Tracks which engine is active after a load attempt.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ActiveEngine {
+    Primary,
+    Fallback,
+}
+
+/// Routes PDF operations through the primary engine (pdfcraft) first.
+/// If the primary fails to load a document due to a parse or engine error,
+/// it transparently retries with the fallback engine (lopdf) and flags
+/// degraded mode.
+pub struct EngineSwitcher {
+    primary: lpdf_engine_pdfcraft::PdfcraftAdapter,
+    fallback: lpdf_engine_fallback::FallbackAdapter,
+    active: Option<ActiveEngine>,
+    loaded_path: Option<PathBuf>,
+}
+
+impl Default for EngineSwitcher {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl EngineSwitcher {
+    pub fn new() -> Self {
+        Self {
+            primary: lpdf_engine_pdfcraft::PdfcraftAdapter::new(),
+            fallback: lpdf_engine_fallback::FallbackAdapter::new(),
+            active: None,
+            loaded_path: None,
+        }
+    }
+
+    /// Returns which engine is currently handling the loaded document, if any.
+    pub fn active_engine(&self) -> Option<ActiveEngine> {
+        self.active
+    }
+
+    /// Returns true when operating in degraded (fallback) mode.
+    pub fn is_degraded(&self) -> bool {
+        self.active == Some(ActiveEngine::Fallback)
+    }
+
+    /// Returns whether the given error is a parse/corruption error that should
+    /// trigger a fallback attempt.
+    fn is_fallback_worthy(err: &LpdfError) -> bool {
+        matches!(err, LpdfError::Engine(_) | LpdfError::ParseError(_))
+    }
+}
+
+impl PdfEngine for EngineSwitcher {
+    fn load(&mut self, path: &Path) -> Result<()> {
+        self.loaded_path = Some(path.to_path_buf());
+
+        // Try primary first
+        match self.primary.load(path) {
+            Ok(()) => {
+                tracing::info!("EngineSwitcher: loaded via primary (pdfcraft)");
+                self.active = Some(ActiveEngine::Primary);
+                Ok(())
+            }
+            Err(e) if Self::is_fallback_worthy(&e) => {
+                tracing::warn!(
+                    "EngineSwitcher: primary load failed ({}), attempting fallback",
+                    e
+                );
+                self.fallback.load(path).map_err(|fallback_err| {
+                    tracing::error!("EngineSwitcher: fallback also failed: {}", fallback_err);
+                    fallback_err
+                })?;
+                self.active = Some(ActiveEngine::Fallback);
+                tracing::info!("EngineSwitcher: loaded via fallback (lopdf) — degraded mode");
+                Ok(())
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    fn info(&self) -> Result<PdfInfo> {
+        match self.active {
+            Some(ActiveEngine::Primary) => self.primary.info(),
+            Some(ActiveEngine::Fallback) => self.fallback.info(),
+            None => Err(LpdfError::Engine("No document loaded".into())),
+        }
+    }
+
+    fn render(&self, page_index: usize, options: &RenderOptions, output_path: &Path) -> Result<()> {
+        match self.active {
+            Some(ActiveEngine::Primary) => self.primary.render(page_index, options, output_path),
+            Some(ActiveEngine::Fallback) => self.fallback.render(page_index, options, output_path),
+            None => Err(LpdfError::Engine("No document loaded".into())),
+        }
+    }
+
+    fn page_ops_delete(&mut self, pages: &[usize]) -> Result<()> {
+        match self.active {
+            Some(ActiveEngine::Primary) => self.primary.page_ops_delete(pages),
+            Some(ActiveEngine::Fallback) => self.fallback.page_ops_delete(pages),
+            None => Err(LpdfError::Engine("No document loaded".into())),
+        }
+    }
+
+    fn save(&self, output_path: &Path) -> Result<()> {
+        match self.active {
+            Some(ActiveEngine::Primary) => self.primary.save(output_path),
+            Some(ActiveEngine::Fallback) => self.fallback.save(output_path),
+            None => Err(LpdfError::Engine("No document loaded".into())),
+        }
+    }
+}
