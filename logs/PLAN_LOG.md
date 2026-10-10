@@ -62,3 +62,11 @@ Entry format:
 - Failsafes affected: DO-4 (Outputs atomic + new file by default - not strictly applicable here but part of vetting logic for dependencies).
 - Verification steps: `git status` shows `.gitmodules` and `vendor/pdfcraft` as a tracked submodule.
 - Revision (date, what changed, why): N/A.
+
+## [2026-10-10] Plan for Phase 0.6
+- Goal / acceptance: Setup PDF test corpus with download/synthetic generation scripts and ignore PDFs from git.
+- Approach + alternatives considered: Create `corpus/MANIFEST`, write a `corpus/fetch.sh` script using `wget` and `qpdf` (to clone an empty page 1000 times), ignore `corpus/*.pdf`.
+- Files/crates touched: `corpus/MANIFEST`, `corpus/fetch.sh`, `.gitignore`, `logs/*`.
+- Failsafes affected: N/A.
+- Verification steps: Script runs successfully and hashes match.
+- Revision (date, what changed, why): N/A.
