@@ -1,5 +1,5 @@
 <script lang="ts">
-    import PdfViewer from '$lib/components/PdfViewer.svelte';
+    import GridEditor from '$lib/components/GridEditor.svelte';
     import { appState } from '$lib/state.svelte';
     import { IpcClient } from '$lib/ipc';
     import type { JobRequest } from '$lib/bindings/JobRequest';
@@ -216,7 +216,7 @@
         
         <!-- Main PDF Viewer Area -->
         <div class="viewer-main">
-            <PdfViewer filePath={currentPath} />
+            <GridEditor filePath={currentPath} />
         </div>
     </div>
 </div>
