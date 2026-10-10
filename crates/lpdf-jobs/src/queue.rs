@@ -164,6 +164,19 @@ pub enum JobRequest {
         output_path: String,
         regions: Vec<lpdf_engine_port::RedactionRegion>,
     },
+
+    ImageToPdf {
+        input_path: String,
+        output_path: String,
+    },
+    DocxToPdf {
+        input_path: String,
+        output_path: String,
+    },
+    HtmlToPdf {
+        input_path: String,
+        output_path: String,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -931,6 +944,54 @@ impl JobManager {
                 let out = PathBuf::from(output_path);
 
                 engine.redact(&path, regions.clone(), &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::ImageToPdf {
+                input_path,
+                output_path,
+            } => {
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.image_to_pdf(&path, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::DocxToPdf {
+                input_path,
+                output_path,
+            } => {
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.structural_docx_to_pdf(&path, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::HtmlToPdf {
+                input_path,
+                output_path,
+            } => {
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.html_to_pdf(&path, &out)?;
 
                 Ok(JobOutput {
                     output_path: Some(output_path.clone()),
