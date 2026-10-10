@@ -356,3 +356,8 @@ Entry format:
   - DO-16 "Build UI with Svelte 5" -> UI logic implemented using `$state` and `$derived`.
 - Risks / follow-ups: UI currently uses a placeholder for previewing compression sizes.
 - Commit / tag: `phase-5.1-green`
+
+## [2026-10-10 11:38] ADR-004: Sidecar Architecture Pivot
+- **Context:** Perfect MS Office and Markdown fidelity requires highly complex parsers and rendering engines that are impractical to implement from scratch in Rust within a reasonable timeframe.
+- **Decision:** Integrate Tauri Sidecars for document conversion. We accept a larger application size (>100MB up to 1GB) and relax GPL/AGPL restrictions *exclusively* for isolated external sidecar processes (OpenOffice/LibreOffice/ONLYOFFICE and Pandoc).
+- **Consequences:** We gain pixel-perfect Office <-> PDF translations and robust Markdown conversions. We must strictly enforce shell-injection prevention, asynchronously capture stdout/stderr, map exit codes, and isolate the execution failure.

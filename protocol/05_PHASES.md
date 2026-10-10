@@ -50,21 +50,21 @@ Every sub-phase ends: tests run -> `cargo xtask gate` -> PROGRESS_LOG -> CHECKPO
 
 ## PHASE 7 — Convert to PDF
 - 7.1 Images -> PDF (JPG/PNG/TIFF/BMP/GIF/WebP; page size, orientation, margins, merge or separate).
-- 7.2 Word/Excel/PowerPoint -> PDF via optional LibreOffice headless bridge (detect, sandbox, timeout; feature greys out with explanation if absent).
+- 7.2 Word/Excel/PowerPoint -> PDF via bundled OpenOffice/LibreOffice/ONLYOFFICE headless sidecar for pixel-perfect translations (ADR-004).
 - 7.3 HTML -> PDF (stretch): local .html or pasted HTML only, network blocked, JS off, per-OS `HtmlPrinter` (ADR-005). [G] test under `unshare -n` with remote-image HTML.
 - 7.4a Scan to PDF: image import + auto-crop/deskew/enhance.
 - 7.4b Scanner hardware: STRETCH, default dropped; requires user approval + ADR (SANE via external `scanimage` / WIA `unsafe` module).
 
 ## PHASE 8 — Convert from PDF
 - 8.1 PDF -> JPG/PNG (DPI, ranges, ZIP).
-- 8.2 PDF -> Word / HTML / text via `lpdf-layout` + own OOXML writer, Flow and Exact modes, quality report (ADR-006). Build the `lpdf-layout` pipeline steps 1–11 here.
-- 8.3 PDF -> Excel (table detection) and PowerPoint (own OOXML writer), reusing `lpdf-layout`; PPTX default Exact layout; XLSX only from detected tables.
+- 8.2 PDF -> Word / HTML / text via bundled OpenOffice/LibreOffice/ONLYOFFICE headless sidecar for pixel-perfect translations (ADR-004).
+- 8.3 PDF -> Excel and PowerPoint via headless sidecar.
 - 8.4 PDF -> PDF/A (pdfcraft preflight; verify with veraPDF in CI). Calibrate ADR-006 acceptance metrics on corpus; LibreOffice round-trip in CI. [G] fidelity report on corpus.
 
 ## PHASE 9 — Markdown toolset
-- 9.1 MD -> PDF (themes, page size, TOC, code highlight, tables, local images, optional math) — backend chosen by ADR (see 01/08).
-- 9.2 PDF -> MD (headings/lists/tables/code detection, images extracted to `assets/`, links, page-break policy, OCR fallback; reuses `lpdf-layout`) + quality metrics on corpus.
-- 9.3 MD <-> DOCX / HTML, DOCX -> MD, HTML -> MD.
+- 9.1 MD -> PDF via Pandoc sidecar for text and structural conversions (ADR-004).
+- 9.2 PDF -> MD via Pandoc sidecar (images extracted to `assets/`, links, page-break policy).
+- 9.3 MD <-> DOCX / HTML, DOCX -> MD, HTML -> MD via Pandoc sidecar.
 - 9.4 Batch folder conversion, front-matter, link/asset rewriting, CLI `localpdf md ...`.
 
 ## PHASE 10 — Pipelines, CLI, settings
