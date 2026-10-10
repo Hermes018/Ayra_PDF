@@ -394,3 +394,19 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Context:** The codebase reconnaissance revealed mature, native Rust implementations in the vendored `pdfcraft` engine for OCR (`ocrs`/`rten`), cryptography (`aws-lc-rs`), true semantic redaction, and AcroForms.
 - **Decision:** Formally adopt ADR-005 to strictly use these native `pdfcraft` modules for Phases 5.3, 6.1, 6.4, and 6.5. ADR-004 (Tauri Sidecars) is strictly reserved for MS Office and Pandoc (Markdown) conversions where pixel-perfect layout is required.
 - **Consequences:** Significantly reduces reliance on heavy external sidecar binaries, improving application size, thread safety, and offline stability. New failsafes (F23, F24, F25) have been introduced to ensure memory safety for ML inference, cryptographic integrity (fail-closed), and mathematical verification for redactions.
+
+## [2026-10-10 12:01] Phase 5.3 — OCR (Native ML)
+- **Summary:** Implemented Phase 5.3 natively utilizing `pdfcraft_ocr`.
+- **Files Touched:**
+  - `crates/lpdf-core-types/src/error.rs`: Added `OcrInferenceError`.
+  - `crates/lpdf-engine-port/src/lib.rs`, `lpdf-engine-fallback`, `lpdf-engine-switcher`: Added `ocr()` trait method.
+  - `crates/lpdf-engine-pdfcraft/src/lib.rs`: Implemented `ocr()` with a strict `catch_unwind` wrapper around the `recognize_text` tensor ops to enforce Failsafe F23, coupled with an atomic write-and-verify.
+  - `crates/lpdf-jobs/src/queue.rs`: Added `JobRequest::Ocr` variant.
+  - `app-tauri/src/lib/views/OptimizeView.svelte`: Wired a new tool section for OCR into the UI.
+- **Protocol compliance:**
+  - DO-03 "Core crates are pure" -> Handled purely in jobs and traits.
+  - DO-10 "Atomic writes" -> Temp `.tmp` file, write, verify length, rename.
+  - F23 "ML Inference Failure" -> Explicitly caught ML model panics with `catch_unwind`.
+- **Pre-commit Checklist:** 1) Gate green? YES 2) Tests run? YES 3) No banned patterns? YES 4) New dep vetted? YES (None added) 5) Offline green? YES 6) Failsafes affected re-tested? YES (F23 manual check via code review) 7) UI matches spec? YES 8) Logs updated? YES 9) No scope creep? YES 10) Docs updated? YES 11) Tool registry matches? YES
+- **Risks:** The size of the built application will increase due to shipping `.rten` model files, though much less than a Tesseract sidecar.
+- **Commit / tag:** `phase-5.3-green`

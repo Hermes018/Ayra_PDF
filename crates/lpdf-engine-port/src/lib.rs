@@ -48,6 +48,7 @@ pub trait PdfEngine {
         output_path: &Path,
     ) -> Result<()>;
     fn repair(&self, input_path: &Path, output_path: &Path) -> Result<Vec<String>>;
+    fn ocr(&self, input_path: &Path, lang: &str, output_path: &Path) -> Result<()>;
 }
 
 #[macro_export]

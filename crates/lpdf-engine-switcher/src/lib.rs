@@ -160,4 +160,8 @@ impl PdfEngine for EngineSwitcher {
     fn repair(&self, input_path: &Path, output_path: &Path) -> Result<Vec<String>> {
         self.primary.repair(input_path, output_path)
     }
+
+    fn ocr(&self, input_path: &Path, lang: &str, output_path: &Path) -> Result<()> {
+        self.primary.ocr(input_path, lang, output_path)
+    }
 }

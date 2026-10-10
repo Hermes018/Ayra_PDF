@@ -95,6 +95,13 @@ pub enum JobRequest {
         input_path: String,
         output_path: String,
     },
+
+    /// Extract text using OCR.
+    Ocr {
+        input_path: String,
+        output_path: String,
+        lang: String,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -243,6 +250,7 @@ impl JobManager {
             LpdfError::ParseError(_) => "PARSE_ERROR".into(),
             LpdfError::ConfigError(_) => "CONFIG_ERROR".into(),
             LpdfError::Unsupported(_) => "UNSUPPORTED".into(),
+            LpdfError::OcrInferenceError(_) => "OCR_INFERENCE_ERROR".into(),
         }
     }
 
@@ -585,6 +593,44 @@ impl JobManager {
                     percent: 90,
                     message: format!("Repair complete. {} issues fixed.", log.len()),
                 });
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::Ocr {
+                input_path,
+                output_path,
+                lang,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Starting OCR...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 50,
+                    message: "Recognizing text...".into(),
+                });
+
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.ocr(&path, lang, &out)?;
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
 
                 Ok(JobOutput {
                     output_path: Some(output_path.clone()),

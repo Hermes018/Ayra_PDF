@@ -44,6 +44,25 @@
             console.error("Failed to submit repair job:", e);
         }
     }
+
+    async function handleOcr() {
+        if (!currentPath) return;
+
+        const outputPath = currentPath.replace(/\.pdf$/i, `_ocr.pdf`);
+        const req: JobRequest = {
+            op: "Ocr",
+            input_path: currentPath,
+            output_path: outputPath,
+            lang: "en" // Only Latin supported right now natively
+        };
+
+        try {
+            const jobId = await IpcClient.submitJob(req);
+            console.log("OCR job submitted with ID:", jobId);
+        } catch (e) {
+            console.error("Failed to submit OCR job:", e);
+        }
+    }
 </script>
 
 <div class="view-container">
@@ -88,6 +107,20 @@
                     </button>
                 {:else}
                     <p class="empty-text">Select or drag a file to repair.</p>
+                {/if}
+            </div>
+
+            <div class="tool-section">
+                <h4>OCR (Make Text Searchable)</h4>
+                {#if currentPath}
+                    <p class="help-text">
+                        Uses native, local ML to recognize Latin alphabet text and overlay an invisible searchable layer.
+                    </p>
+                    <button class="action-button secondary-button" onclick={handleOcr}>
+                        Recognize Text (OCR)
+                    </button>
+                {:else}
+                    <p class="empty-text">Select or drag a file to OCR.</p>
                 {/if}
             </div>
         </div>

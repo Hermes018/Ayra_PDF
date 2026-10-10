@@ -441,6 +441,81 @@ impl PdfEngine for PdfcraftAdapter {
 
         Ok(log)
     }
+
+    fn ocr(&self, input_path: &Path, lang: &str, output_path: &Path) -> Result<()> {
+        let input_path = input_path.to_owned();
+        let lang = lang.to_owned();
+
+        // Wrap in catch_unwind to satisfy F23 (ML Inference Failure)
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+            let mut session = pdfcraft_engine::Session::new();
+            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let name = input_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            let doc_id = session
+                .open(name, None, Arc::new(bytes), None)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            let doc = session
+                .get(doc_id)
+                .ok_or_else(|| LpdfError::Engine("Document not found".into()))?;
+
+            let all_pages: Vec<usize> = (0..doc.info.pages.len()).collect();
+
+            let settings = pdfcraft_engine::ocr::OcrSettings {
+                language: lang,
+                dpi: 300.0,
+                skip_text_pages: true,
+            };
+
+            // This is where ML inference runs and might panic
+            session
+                .recognize_text(doc_id, &all_pages, settings)
+                .map_err(|e| LpdfError::OcrInferenceError(e.to_string()))?;
+
+            let repaired_bytes = session
+                .save_bytes(doc_id)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            Ok(repaired_bytes)
+        }));
+
+        let final_bytes = match result {
+            Ok(Ok(bytes)) => bytes,
+            Ok(Err(e)) => return Err(e),
+            Err(e) => {
+                let msg = if let Some(s) = e.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = e.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown ML Panic".to_string()
+                };
+                return Err(LpdfError::OcrInferenceError(format!(
+                    "Panic during OCR inference: {}",
+                    msg
+                )));
+            }
+        };
+
+        // Atomic write
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &*final_bytes).map_err(LpdfError::Io)?;
+
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.len() != final_bytes.len() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(())
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(PdfcraftAdapter);

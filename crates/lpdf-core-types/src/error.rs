@@ -19,6 +19,9 @@ pub enum LpdfError {
 
     #[error("Unsupported Operation: {0}")]
     Unsupported(String),
+
+    #[error("OCR Inference Error: {0}")]
+    OcrInferenceError(String),
 }
 
 pub type Result<T> = std::result::Result<T, LpdfError>;

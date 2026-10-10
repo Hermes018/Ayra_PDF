@@ -162,6 +162,12 @@ impl PdfEngine for FallbackAdapter {
             "Repair not supported by FallbackAdapter".into(),
         ))
     }
+
+    fn ocr(&self, _input_path: &Path, _lang: &str, _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Engine(
+            "OCR not supported by FallbackAdapter".into(),
+        ))
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(FallbackAdapter);
