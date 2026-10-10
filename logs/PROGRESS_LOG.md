@@ -86,3 +86,16 @@ Entry format:
   - DO-8 "Dependencies vetted" -> Evidence: Updated table in `08_DEPENDENCY_VETTING.md`.
 - Risks / follow-ups: `pdfium-render` native binary will increase the overall bundle size. 
 - Commit / tag: `phase-0.5-green`
+
+## [2026-10-10 06:03] Phase 0.6 — DONE
+- Changes:
+  - Created `corpus/MANIFEST` to track test PDFs (standard, hostile, and synthetic).
+  - Wrote `corpus/fetch.sh` to deterministically download standard PDFs and generate a synthetic 1,000-page PDF using `qpdf`.
+  - Ignored `*.pdf` to prevent checking in large binaries.
+- Gate: pass
+- Tests added/run: 0/3 (hashes verified via script)
+- Pre-commit checklist: 1 YES 2 N/A 3 YES 4 YES 5 N/A 6 N/A 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - DO-4 "Outputs atomic + new file by default" -> N/A for test corpus.
+- Risks / follow-ups: Need to add hostile test files later.
+- Commit / tag: `phase-0.6-green`

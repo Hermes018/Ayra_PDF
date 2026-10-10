@@ -1,0 +1,13 @@
+# TEST CORPUS MANIFEST
+
+## Standard / Public PDFs
+- standard-text.pdf (sha256: 3df79d34abbca99308e79cb94461c1893582604d68329a41fd4bec1885e6adb4): A simple text PDF from W3C.
+- standard-form.pdf (sha256: 92444d8856ce55d9e25dca8b6d1420634fc68b11e1ab1f760916ea29ddd312b2): A PDF with form fields.
+
+## Hostile / Edge-cases
+- hostile-bombs.pdf: (To be added) A zip bomb or extremely complex vector PDF.
+- hostile-broken-xref.pdf: (To be added) A PDF with a manually corrupted cross-reference table.
+
+## Synthetic files
+- synthetic-1k.pdf (sha256: a45efb448a911e4edf765c15eb779ee1958f0dd9da18e218e40e977bf48b74d4): A 1,000-page PDF generated via qpdf by duplicating pages.
+- synthetic-10k.pdf: (To be added) A 10,000-page PDF.

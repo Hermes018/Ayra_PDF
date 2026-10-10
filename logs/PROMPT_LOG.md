@@ -110,3 +110,16 @@ The safest and simplest way to resolve this blocker is to run the system-level p
 - Interpretation / ambiguity: I need to vet dependencies, write ADRs for engine adoption, fallback renderer, and Markdown-to-PDF, convert `vendor/pdfcraft` to a submodule, and complete phase 0.5 logistics. No ambiguity.
 - Actions taken / sub-phase affected: Phase 0.5
 - Conflicts with protocol? (yes/no + resolution): No.
+
+## [2026-10-10] Prompt #7
+- Verbatim: """Begin Phase 0.6 (Corpus & Fixtures). Execute the following steps:
+1. Create a `corpus/` directory.
+2. Update the root `.gitignore` to strictly ignore all PDF files inside the corpus directory (e.g., `corpus/*.pdf`), but allow the manifest and scripts to be committed.
+3. Create `corpus/MANIFEST` defining the test files we need. Categorize them into: Standard/Public PDFs, Hostile/Edge-cases, Synthetic files (1k and 10k pages).
+4. Write a bash script (`corpus/fetch.sh`) or a new `xtask` command that downloads 2-3 permissive/public-domain sample PDFs using `curl` or `wget`, uses `qpdf` to programmatically generate a synthetic 1,000-page PDF, and generates SHA256 hashes verifying against MANIFEST.
+5. Execute the script to ensure it successfully downloads and generates the test files. 
+6. Update `logs/PROGRESS_LOG.md` and `logs/CHECKPOINT.md`.
+7. Commit the changes, tag as `phase-0.6-green`, and print the ANCHOR block."""
+- Interpretation / ambiguity: Create test corpus, fetch script, manifest, ignore PDFs, run script, and close phase 0.6. No ambiguity.
+- Actions taken / sub-phase affected: Phase 0.6
+- Conflicts with protocol? (yes/no + resolution): No.
