@@ -4,7 +4,7 @@
 #![forbid(unsafe_code)]
 
 use lpdf_core_types::{LpdfError, Result};
-use lpdf_engine_port::{PdfEngine, PdfInfo, RenderOptions};
+use lpdf_engine_port::{PdfEngine, PdfInfo, RedactionRegion, RenderOptions};
 use std::path::{Path, PathBuf};
 
 /// Tracks which engine is active after a load attempt.
@@ -226,5 +226,14 @@ impl PdfEngine for EngineSwitcher {
     ) -> Result<()> {
         self.primary
             .sign_document(input_path, p12_path, password, output_path)
+    }
+
+    fn redact(
+        &self,
+        input_path: &Path,
+        regions: Vec<RedactionRegion>,
+        output_path: &Path,
+    ) -> Result<()> {
+        self.primary.redact(input_path, regions, output_path)
     }
 }

@@ -15,6 +15,13 @@
     // Unlock State
     let unlockPassword = $state("");
 
+    // Redact State
+    let redactPage = $state(0);
+    let redactX = $state(0);
+    let redactY = $state(0);
+    let redactW = $state(100);
+    let redactH = $state(100);
+
     async function handleProtect() {
         if (!currentPath || !protectPassword) return;
 
@@ -60,6 +67,34 @@
             unlockPassword = "";
         } catch (e) {
             console.error("Failed to submit unlock job:", e);
+        }
+    }
+
+    async function handleRedact() {
+        if (!currentPath) return;
+
+        const outputPath = currentPath.replace(/\.pdf$/i, `_redacted.pdf`);
+        
+        const req: JobRequest = {
+            op: "RedactDocument",
+            input_path: currentPath,
+            output_path: outputPath,
+            regions: [
+                {
+                    page: redactPage,
+                    x: redactX,
+                    y: redactY,
+                    width: redactW,
+                    height: redactH
+                }
+            ]
+        };
+
+        try {
+            const jobId = await IpcClient.submitJob(req);
+            console.log("Redact job submitted with ID:", jobId);
+        } catch (e) {
+            console.error("Failed to submit redact job:", e);
         }
     }
 </script>
@@ -125,6 +160,47 @@
                     </p>
                 {:else}
                     <p class="empty-text">Select or drag a file to unlock.</p>
+                {/if}
+            </div>
+
+            <div class="tool-section">
+                <h4>Semantic Redaction</h4>
+                {#if currentPath}
+                    <div class="form-group row-group">
+                        <div class="col">
+                            <label for="redactPage">Page (0-idx)</label>
+                            <input id="redactPage" type="number" min="0" bind:value={redactPage} />
+                        </div>
+                    </div>
+                    <div class="form-group row-group">
+                        <div class="col">
+                            <label for="redactX">X</label>
+                            <input id="redactX" type="number" bind:value={redactX} />
+                        </div>
+                        <div class="col">
+                            <label for="redactY">Y</label>
+                            <input id="redactY" type="number" bind:value={redactY} />
+                        </div>
+                    </div>
+                    <div class="form-group row-group">
+                        <div class="col">
+                            <label for="redactW">Width</label>
+                            <input id="redactW" type="number" bind:value={redactW} />
+                        </div>
+                        <div class="col">
+                            <label for="redactH">Height</label>
+                            <input id="redactH" type="number" bind:value={redactH} />
+                        </div>
+                    </div>
+
+                    <button class="action-button danger-button" onclick={handleRedact}>
+                        Apply Redaction
+                    </button>
+                    <p class="help-text">
+                        Mathematically destroys text and images in the selected region. Cannot be undone!
+                    </p>
+                {:else}
+                    <p class="empty-text">Select or drag a file to redact.</p>
                 {/if}
             </div>
         </div>
@@ -207,12 +283,25 @@
         color: var(--text-muted);
     }
 
-    .form-group input[type="password"] {
+    .form-group input[type="password"],
+    .form-group input[type="number"] {
         padding: 0.5rem;
         border: 1px solid var(--border-color);
         border-radius: 4px;
         background: var(--bg-color);
         color: var(--text-color);
+    }
+    
+    .row-group {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+    
+    .col {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        gap: 0.2rem;
     }
     
     .permissions-group {
@@ -251,6 +340,10 @@
     
     .secondary-button {
         background: var(--secondary-color, #6b7280);
+    }
+
+    .danger-button {
+        background: #dc2626;
     }
 
     .help-text {

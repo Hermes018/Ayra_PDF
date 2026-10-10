@@ -456,3 +456,13 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 9 No scope creep? YES 
 10 Docs/ADR updated if a decision was made? YES 
 11 Tool registry matches 07_FEATURE_MAP (7 columns)? YES
+
+## [2026-10-10 16:30] Phase 6.3 - Semantic Redaction
+- **Status:** Complete (Tag: phase-6.3-green)
+- **Work:**
+  - Implemented semantic redaction `PdfEngine::redact` using `pdfcraft_redact::apply` via `pdfcraft_engine::Session`.
+  - Enforced Failsafe F25 via atomic verification internally and during rename step.
+  - Wired `RedactDocument` job to `EngineSwitcher` and integrated UI in `SecurityView.svelte`.
+- **Gate:** pass (cargo xtask gate green)
+- **Tests added/run:** `cargo test -p lpdf-jobs` (3/3), frontend vitest tests.
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES

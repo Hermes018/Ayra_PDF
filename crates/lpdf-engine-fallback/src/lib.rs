@@ -2,7 +2,7 @@
 
 use lopdf::Document;
 use lpdf_core_types::{LpdfError, Result};
-use lpdf_engine_port::{PdfEngine, PdfInfo, RenderOptions};
+use lpdf_engine_port::{PdfEngine, PdfInfo, RedactionRegion, RenderOptions};
 use std::path::Path;
 
 pub struct FallbackAdapter {
@@ -227,6 +227,15 @@ impl PdfEngine for FallbackAdapter {
         _input_path: &Path,
         _p12_path: &Path,
         _password: &str,
+        _output_path: &Path,
+    ) -> Result<()> {
+        Err(LpdfError::Engine("unimplemented".into()))
+    }
+
+    fn redact(
+        &self,
+        _input_path: &Path,
+        _regions: Vec<RedactionRegion>,
         _output_path: &Path,
     ) -> Result<()> {
         Err(LpdfError::Engine("unimplemented".into()))

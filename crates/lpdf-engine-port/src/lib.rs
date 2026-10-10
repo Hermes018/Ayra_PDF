@@ -57,6 +57,16 @@ pub struct AnnotationDef {
     pub author: String,
 }
 
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub struct RedactionRegion {
+    pub page: usize,
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
 pub trait PdfEngine {
     fn load(&mut self, path: &Path) -> Result<()>;
     fn info(&self) -> Result<PdfInfo>;
@@ -116,6 +126,12 @@ pub trait PdfEngine {
         input_path: &Path,
         p12_path: &Path,
         password: &str,
+        output_path: &Path,
+    ) -> Result<()>;
+    fn redact(
+        &self,
+        input_path: &Path,
+        regions: Vec<RedactionRegion>,
         output_path: &Path,
     ) -> Result<()>;
 }
