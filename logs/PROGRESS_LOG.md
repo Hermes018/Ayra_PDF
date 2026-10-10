@@ -230,3 +230,17 @@ Entry format:
   - Rule 01:1 "7-column taxonomy" -> Evidence: `Sidebar.svelte` has navigation items corresponding to the 7 categories.
 - Risks / follow-ups: Frontend type checking (`pnpm check`) skipped locally due to missing node package manager in environment, but structure is simple enough.
 - Commit / tag: `phase-3.1-green`
+
+## [2026-10-10 07:38] Phase 3.2 — DONE
+- Changes:
+  - Downloaded stable `pdf.min.js` and `pdf.worker.min.js` natively into `app-tauri/static/` to adhere strictly to zero-CDN CSP constraints.
+  - Implemented `PdfViewer.svelte` which renders a loaded PDF page into a HTML `<canvas>`.
+  - Backed the viewer with a dedicated fast-path Tauri command `read_file_bytes` to read PDF from the local filesystem straight into frontend memory.
+  - Integrated a proof of concept loading mechanism inside `OrganizeView.svelte` defaulting to the `corpus/` test file.
+- Gate: pass
+- Tests added/run: 0/4 (contract tests re-run)
+- Pre-commit checklist: 1 YES 2 N/A 3 YES 4 YES 5 YES 6 YES 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - Rule 01:3 "No CDNs, offline native apps only" -> Evidence: PDF.js loaded exclusively from local static copies, preventing remote leaks.
+- Risks / follow-ups: The current implementation reads the entire PDF file into memory for preview rendering. This could crash the frontend on extremely large files (e.g. 1GB PDFs). We may need an efficient streaming/virtualized strategy later.
+- Commit / tag: `phase-3.2-green`

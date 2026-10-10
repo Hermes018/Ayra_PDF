@@ -32,6 +32,12 @@ fn get_job_status(
     state.job_manager.status(&job_id)
 }
 
+/// Read file bytes into frontend memory for PdfViewer.
+#[tauri::command]
+async fn read_file_bytes(path: String) -> Result<Vec<u8>, String> {
+    std::fs::read(&path).map_err(|e| e.to_string())
+}
+
 fn setup_logging() -> Option<tracing_appender::non_blocking::WorkerGuard> {
     if let Some(proj_dirs) = ProjectDirs::from("", "", "localpdf") {
         let state_dir = proj_dirs.state_dir().unwrap_or(proj_dirs.data_dir());
@@ -73,7 +79,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             submit_job,
             cancel_job,
-            get_job_status
+            get_job_status,
+            read_file_bytes
         ])
         .setup(|app| {
             // Forward job events to the Tauri frontend as structured events
