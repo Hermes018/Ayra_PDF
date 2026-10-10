@@ -25,6 +25,13 @@
 22. Structure sidecar execution to capture both `stdout` and `stderr` asynchronously, mapping CLI exit codes to typed Rust errors.
 23. Prioritize native `pdfcraft` modules (`pdfcraft_ocr`, `pdfcraft_redact`, `pdfcraft_crypt`, `pdfcraft_sign`) over sidecars.
 24. Enforce strict memory bounds and thread safety when invoking local ML inference (`ocrs`/`rten`) for text recognition.
+25. Mandate the use of native `pdfcraft` Rust APIs for all of the following domains:
+    - *Organization:* Page grid, Rotate, Delete, Extract, Insert, Replace, Split, Set page boxes, Crop pages, Duplicate pages, Page labels.
+    - *Annotation/Editing:* Sticky note, Highlight, Underline, Strikethrough, Squiggly, Text box, Freehand, Rectangle, Oval, Line, Arrow, Comment list, Flatten comments, Edit text & images, Header/footer, Watermark, Link, Bates numbering, Background.
+    - *Forms & Signatures:* Field list, Detect fields, Clear form, Field properties, Tab orders (rows/cols), Flatten fields, Import/Export data, Form components (Text, Checkbox, Radio, Drop-down, List, Button, Image, Date, Digital Signature), Fill & Sign markings (Checkmark, Cross, Dot, Line).
+    - *Basic Conversion:* Structural Word (.docx), Image (PNG), Export all images, HTML, RTF, Plain Text.
+    - *Processing:* Scan & OCR, Protect, Redact, Compress.
+26. Sanitize all AcroForm input data (Import data/Fill & sign) against buffer overflows and malicious script injection natively before applying to the PDF.
 
 ## DON'T
 1. No network at runtime: no HTTP clients, telemetry, analytics, update pings, CDN scripts/fonts/images, remote fonts. CSP `connect-src` limited to IPC only.
@@ -52,3 +59,4 @@
 46. Never commit, log, or store GitHub Personal Access Tokens (PATs) or credentials.
 47. Never use pseudo-redaction (drawing black boxes over text). All redaction must be semantic and destructive at the byte level.
 48. Do not leak cryptographic stack traces from `aws-lc-rs` to the frontend.
+49. Never spin up a sidecar for any feature listed as natively supported by pdfcraft in the DO section.
