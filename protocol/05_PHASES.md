@@ -39,25 +39,25 @@ Every sub-phase ends: tests run -> `cargo xtask gate` -> PROGRESS_LOG -> CHECKPO
 ## PHASE 5 — Optimize
 - 5.1 Compress: 3 level profiles (tunable, calibrated on corpus), before/after sizes, never-grow, preserves text/links/bookmarks, batch.
 - 5.2 Repair: tolerant parse -> rewrite -> fallback chain -> report of fixes.
-- 5.3 OCR: Latin via ocrs; extra languages via optional Tesseract adapter; deskew; per-page progress; searchable layer. [G] size-reduction report + SSIM visual-regression bound.
+- 5.3 OCR: Native Latin offline OCR via `pdfcraft_ocr` (`ocrs`/`rten` ML models); deskew; per-page progress; searchable layer. [G] size-reduction report + SSIM visual-regression bound.
 
 ## PHASE 6 — Edit & security
-- 6.1 Protect (AES-256, user/owner passwords, permissions) / Unlock (user-supplied password or restriction removal only).
+- 6.1 Protect (AES-256, user/owner passwords, permissions) / Unlock (user-supplied password or restriction removal only). Natively powered by `pdfcraft_crypt`.
 - 6.2 Watermark, page numbers, crop.
 - 6.3 Edit PDF (add text/shapes/images/highlight/draw; existing-text edit = experimental flag).
-- 6.4 Sign (draw/type/image stamping, sign-yourself with local PKCS#12 PAdES B-B, self-signed cert generator, signature verification; NO request-signatures, NO TSA), Redact (true removal), Compare. [G] redaction verified by re-extraction + byte grep; encrypted outputs open in qpdf/poppler with password.
-- 6.5 PDF Forms: detect fields, create fillable (text/checkbox/radio/list), fill, flatten; XFDF if supported.
+- 6.4 Sign (draw/type/image stamping, sign-yourself with local PKCS#12 PAdES B-B, self-signed cert generator, signature verification; NO request-signatures, NO TSA), Redact (true semantic removal natively via `pdfcraft_redact`), Compare. [G] redaction verified by re-extraction + byte grep; encrypted outputs open in qpdf/poppler with password. Natively powered by `pdfcraft_sign` and `pdfcraft_redact`.
+- 6.5 PDF Forms: detect fields, create fillable (text/checkbox/radio/list), fill, flatten; XFDF if supported. Natively powered by `pdfcraft_forms`.
 
 ## PHASE 7 — Convert to PDF
 - 7.1 Images -> PDF (JPG/PNG/TIFF/BMP/GIF/WebP; page size, orientation, margins, merge or separate).
-- 7.2 Word/Excel/PowerPoint -> PDF via bundled OpenOffice/LibreOffice/ONLYOFFICE headless sidecar for pixel-perfect translations (ADR-004).
+- 7.2 Word/Excel/PowerPoint -> PDF via bundled OpenOffice/LibreOffice/ONLYOFFICE headless sidecar for pixel-perfect translations (ADR-004). Mandatory sidecar approach.
 - 7.3 HTML -> PDF (stretch): local .html or pasted HTML only, network blocked, JS off, per-OS `HtmlPrinter` (ADR-005). [G] test under `unshare -n` with remote-image HTML.
 - 7.4a Scan to PDF: image import + auto-crop/deskew/enhance.
 - 7.4b Scanner hardware: STRETCH, default dropped; requires user approval + ADR (SANE via external `scanimage` / WIA `unsafe` module).
 
 ## PHASE 8 — Convert from PDF
 - 8.1 PDF -> JPG/PNG (DPI, ranges, ZIP).
-- 8.2 PDF -> Word / HTML / text via bundled OpenOffice/LibreOffice/ONLYOFFICE headless sidecar for pixel-perfect translations (ADR-004).
+- 8.2 PDF -> Word / HTML / text via bundled OpenOffice/LibreOffice/ONLYOFFICE headless sidecar for pixel-perfect translations (ADR-004). Mandatory sidecar approach.
 - 8.3 PDF -> Excel and PowerPoint via headless sidecar.
 - 8.4 PDF -> PDF/A (pdfcraft preflight; verify with veraPDF in CI). Calibrate ADR-006 acceptance metrics on corpus; LibreOffice round-trip in CI. [G] fidelity report on corpus.
 

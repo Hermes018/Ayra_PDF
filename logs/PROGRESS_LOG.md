@@ -375,3 +375,22 @@ Entry format:
   - DO-04 "Atomic writes" -> Standard atomic write pattern used.
 - Risks / follow-ups: The returned repair log is currently printed to the rust event stream. We should expose the `log.len()` fixed issues visually.
 - Commit / tag: `phase-5.2-green`
+
+## [2026-10-10 11:49] Checkpoint — Engine Native Capability Reconnaissance
+An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, native Rust support for many upcoming advanced taxonomy phases, significantly reducing our reliance on external cloud or sidecar binaries.
+
+### Natively Supported (Bypasses Sidecars)
+- **Phase 5.3 (OCR):** The `pdfcraft_ocr` crate implements native, offline OCR via the `ocrs` engine using `rten` ML models (Latin alphabet). This completely bypasses the need for an external Tesseract or sidecar pipeline for English/Latin text.
+- **Phase 6.1 (Protect/Security):** The `pdfcraft_crypt` crate fully implements PDF Standard Security Handlers up to Revision 6, including native AES-256 and RC4. We can natively encrypt, decrypt, and enforce owner/user permissions.
+- **Phase 6.4 (Redact & Sign):**
+  - *Redaction:* `pdfcraft_redact` performs true semantic redaction natively. It permanently rewrites the PDF to remove underlying text, paths, inline images, and annotations, complete with a fail-closed verification pass.
+  - *Signatures:* `pdfcraft_sign` natively handles cryptographic signing (PAdES B-B, `ETSI.CAdES.detached`) using `aws-lc-rs`. It supports reading PKCS#12 stores, generating signatures, and appending timestamp tokens.
+- **Phase 6.5 (PDF Forms):** `pdfcraft_forms` provides robust native capabilities to extract, modify, fill, and flatten AcroForms (Text, Radio, CheckBox, Combo).
+
+### Partially Supported / Requires Sidecar Integration
+- **Phase 8.2 & 9 (Convert to/from Word/HTML/MD):** The `pdfcraft_export` crate contains native capability to extract text, paragraphs, and images to flowable Word (DOCX), HTML, and RTF formats. However, it extracts structural flowing text rather than *pixel-perfect* conversions. To satisfy the strict requirements of ADR-004 (pixel-perfect conversions), the Tauri Sidecar strategy with LibreOffice/Pandoc remains mandatory for absolute layout fidelity.
+
+## [2026-10-10 11:55] ADR-005: Native ML & Cryptography Adoption
+- **Context:** The codebase reconnaissance revealed mature, native Rust implementations in the vendored `pdfcraft` engine for OCR (`ocrs`/`rten`), cryptography (`aws-lc-rs`), true semantic redaction, and AcroForms.
+- **Decision:** Formally adopt ADR-005 to strictly use these native `pdfcraft` modules for Phases 5.3, 6.1, 6.4, and 6.5. ADR-004 (Tauri Sidecars) is strictly reserved for MS Office and Pandoc (Markdown) conversions where pixel-perfect layout is required.
+- **Consequences:** Significantly reduces reliance on heavy external sidecar binaries, improving application size, thread safety, and offline stability. New failsafes (F23, F24, F25) have been introduced to ensure memory safety for ML inference, cryptographic integrity (fail-closed), and mathematical verification for redactions.

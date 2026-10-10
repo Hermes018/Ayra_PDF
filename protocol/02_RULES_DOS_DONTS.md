@@ -23,6 +23,8 @@
 20. Allow the bundling of heavy external binaries (OpenOffice/ONLYOFFICE/Pandoc) strictly via the Tauri Sidecar API (`tauri::api::process::Command`).
 21. Enforce strict shell-injection prevention. All file paths passed to sidecars must be strictly validated, absolute local paths.
 22. Structure sidecar execution to capture both `stdout` and `stderr` asynchronously, mapping CLI exit codes to typed Rust errors.
+23. Prioritize native `pdfcraft` modules (`pdfcraft_ocr`, `pdfcraft_redact`, `pdfcraft_crypt`, `pdfcraft_sign`) over sidecars.
+24. Enforce strict memory bounds and thread safety when invoking local ML inference (`ocrs`/`rten`) for text recognition.
 
 ## DON'T
 1. No network at runtime: no HTTP clients, telemetry, analytics, update pings, CDN scripts/fonts/images, remote fonts. CSP `connect-src` limited to IPC only.
@@ -48,3 +50,5 @@
 44. No URL fetching in any tool (HTML to PDF accepts local files/pasted HTML only).
 45. No "request signature from others" or timestamp-authority calls in Sign PDF.
 46. Never commit, log, or store GitHub Personal Access Tokens (PATs) or credentials.
+47. Never use pseudo-redaction (drawing black boxes over text). All redaction must be semantic and destructive at the byte level.
+48. Do not leak cryptographic stack traces from `aws-lc-rs` to the frontend.
