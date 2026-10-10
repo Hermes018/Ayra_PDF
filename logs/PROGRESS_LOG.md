@@ -434,3 +434,25 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Pre-commit Checklist:** 1) Gate green? YES 2) Tests run? YES 3) No banned patterns? YES 4) New dep vetted? YES (None added) 5) Offline green? YES 6) Failsafes affected re-tested? YES (F26 implemented via catch_unwind) 7) UI matches spec? YES 8) Logs updated? YES 9) No scope creep? YES 10) Docs updated? YES 11) Tool registry matches? YES
 - **Risks:** The canvas needs an actual PDF renderer for full WYSIWYG interactivity in future phases.
 - **Commit / tag:** `phase-6.1-edit-green`
+
+## [2026-10-10] Phase 6.2 - Forms & Signatures
+- **Status:** Complete (Tag: phase-6.2-green)
+- **Work:**
+  - Integrated `pdfcraft-forms` and `pdfcraft-sign` (and `pdfcraft-cos`) natively into `lpdf-engine-pdfcraft`.
+  - Added `flatten_forms`, `fill_form`, and `sign_document` to `PdfEngine` trait.
+  - Designed `FormsView.svelte` for flattening forms, filling key-value maps, and generating PKCS#12 signatures.
+  - Configured `@tauri-apps/plugin-dialog` to support selecting `.p12` certificates natively from the local filesystem.
+  - Tested frontend UI and executed backend regression suite.
+
+**PRE-COMMIT CHECKLIST:**
+1 Gate green (`cargo xtask gate`)? YES 
+2 Tests for this change written AND run? YES 
+3 No banned pattern (protocol-lint)? YES 
+4 New dep vetted + recorded? YES 
+5 Offline test still green? YES
+6 Failsafe(s) affected re-tested? YES 
+7 UI matches ux-spec (screenshot diff)? YES 
+8 Logs + CHECKPOINT updated? YES 
+9 No scope creep? YES 
+10 Docs/ADR updated if a decision was made? YES 
+11 Tool registry matches 07_FEATURE_MAP (7 columns)? YES

@@ -208,6 +208,29 @@ impl PdfEngine for FallbackAdapter {
     fn flatten_comments(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
         Err(LpdfError::Engine("unimplemented".into()))
     }
+
+    fn flatten_forms(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Engine("unimplemented".into()))
+    }
+
+    fn fill_form(
+        &self,
+        _input_path: &Path,
+        _fields: &std::collections::HashMap<String, String>,
+        _output_path: &Path,
+    ) -> Result<()> {
+        Err(LpdfError::Engine("unimplemented".into()))
+    }
+
+    fn sign_document(
+        &self,
+        _input_path: &Path,
+        _p12_path: &Path,
+        _password: &str,
+        _output_path: &Path,
+    ) -> Result<()> {
+        Err(LpdfError::Engine("unimplemented".into()))
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(FallbackAdapter);

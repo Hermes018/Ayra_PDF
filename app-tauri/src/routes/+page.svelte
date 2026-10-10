@@ -5,6 +5,7 @@
     import ConvertView from '$lib/views/ConvertView.svelte';
     import SecurityView from '$lib/views/SecurityView.svelte';
     import EditView from '$lib/views/EditView.svelte';
+    import FormsView from '$lib/views/FormsView.svelte';
     import MarkdownView from '$lib/views/MarkdownView.svelte';
     import SettingsView from '$lib/views/SettingsView.svelte';
 
@@ -23,6 +24,8 @@
         <SecurityView />
     {:else if currentView === 'Edit'}
         <EditView />
+    {:else if currentView === 'Forms'}
+        <FormsView />
     {:else if currentView === 'Markdown'}
         <MarkdownView />
     {:else if currentView === 'Settings'}

@@ -9,6 +9,7 @@
         { id: 'Convert', label: 'Convert', icon: '🔄' },
         { id: 'Security', label: 'Security', icon: '🔒' },
         { id: 'Edit', label: 'Edit', icon: '✏️' },
+        { id: 'Forms', label: 'Forms & Signatures', icon: '📝' },
         { id: 'Markdown', label: 'Markdown', icon: '📝' },
     ];
 </script>
