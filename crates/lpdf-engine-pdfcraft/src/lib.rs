@@ -516,6 +516,145 @@ impl PdfEngine for PdfcraftAdapter {
 
         Ok(())
     }
+
+    fn protect(
+        &self,
+        input_path: &Path,
+        password: &str,
+        permissions: lpdf_engine_port::Permissions,
+        output_path: &Path,
+    ) -> Result<()> {
+        let input_path = input_path.to_owned();
+        let password = password.to_owned();
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+            let mut session = pdfcraft_engine::Session::new();
+            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let name = input_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            let doc_id = session
+                .open(name, None, Arc::new(bytes), None)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            let protection = pdfcraft_engine::Protection {
+                open_password: Some(password.clone()),
+                permissions_password: Some(password.clone()),
+                printing: if permissions.allow_print {
+                    pdfcraft_engine::Printing::High
+                } else {
+                    pdfcraft_engine::Printing::None
+                },
+                changes: if permissions.allow_edit {
+                    pdfcraft_engine::Changes::AnyExceptExtract
+                } else {
+                    pdfcraft_engine::Changes::None
+                },
+                copy: permissions.allow_copy,
+                ..Default::default()
+            };
+
+            session
+                .apply(doc_id, pdfcraft_engine::Edit::Protect(protection))
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            let encrypted_bytes = session
+                .save_bytes(doc_id)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            Ok(encrypted_bytes)
+        }));
+
+        let final_bytes = match result {
+            Ok(Ok(bytes)) => bytes,
+            Ok(Err(e)) => return Err(e),
+            Err(e) => {
+                let msg = if let Some(s) = e.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = e.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown Crypto Panic".to_string()
+                };
+                return Err(LpdfError::Engine(format!(
+                    "Panic during cryptographic operation: {}",
+                    msg
+                )));
+            }
+        };
+
+        // Atomic write
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &*final_bytes).map_err(LpdfError::Io)?;
+
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.len() != final_bytes.len() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(())
+    }
+
+    fn unlock(&self, input_path: &Path, password: &str, output_path: &Path) -> Result<()> {
+        let input_path = input_path.to_owned();
+        let password = password.to_owned();
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+            let mut session = pdfcraft_engine::Session::new();
+            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let name = input_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            let doc_id = session
+                .open(name, None, Arc::new(bytes), Some(&password))
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            session
+                .apply(doc_id, pdfcraft_engine::Edit::RemoveProtection)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            let decrypted_bytes = session
+                .save_bytes(doc_id)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            Ok(decrypted_bytes)
+        }));
+
+        let final_bytes = match result {
+            Ok(Ok(bytes)) => bytes,
+            Ok(Err(e)) => return Err(e),
+            Err(_e) => {
+                // Do not leak cryptographic stack traces.
+                return Err(LpdfError::Engine(
+                    "Panic during cryptographic operation (stack trace withheld for security)"
+                        .to_string(),
+                ));
+            }
+        };
+
+        // Atomic write
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &*final_bytes).map_err(LpdfError::Io)?;
+
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.len() != final_bytes.len() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(())
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(PdfcraftAdapter);

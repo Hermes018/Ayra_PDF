@@ -168,6 +168,24 @@ impl PdfEngine for FallbackAdapter {
             "OCR not supported by FallbackAdapter".into(),
         ))
     }
+
+    fn protect(
+        &self,
+        _input_path: &Path,
+        _password: &str,
+        _permissions: lpdf_engine_port::Permissions,
+        _output_path: &Path,
+    ) -> Result<()> {
+        Err(LpdfError::Engine(
+            "Protect not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn unlock(&self, _input_path: &Path, _password: &str, _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Engine(
+            "Unlock not supported by FallbackAdapter".into(),
+        ))
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(FallbackAdapter);

@@ -24,6 +24,14 @@ pub enum OptimizeProfile {
     High,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub struct Permissions {
+    pub allow_print: bool,
+    pub allow_copy: bool,
+    pub allow_edit: bool,
+}
+
 pub trait PdfEngine {
     fn load(&mut self, path: &Path) -> Result<()>;
     fn info(&self) -> Result<PdfInfo>;
@@ -49,6 +57,14 @@ pub trait PdfEngine {
     ) -> Result<()>;
     fn repair(&self, input_path: &Path, output_path: &Path) -> Result<Vec<String>>;
     fn ocr(&self, input_path: &Path, lang: &str, output_path: &Path) -> Result<()>;
+    fn protect(
+        &self,
+        input_path: &Path,
+        password: &str,
+        permissions: Permissions,
+        output_path: &Path,
+    ) -> Result<()>;
+    fn unlock(&self, input_path: &Path, password: &str, output_path: &Path) -> Result<()>;
 }
 
 #[macro_export]

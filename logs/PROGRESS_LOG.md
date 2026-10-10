@@ -415,3 +415,14 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Context:** Following the success of Phase 5.3, a full review of the `pdfcraft` feature set was conducted. We discovered that the entire required taxonomy (Organization, Annotation, Forms, Security, basic Conversion) is "Ready" as native Rust implementations.
 - **Decision:** Drastically expand ADR-005. The protocol now mandates routing 95% of the application's functionality through pure, memory-safe Rust via `pdfcraft` native APIs.
 - **Consequences:** Sidecars are now strictly limited to Phase 9 "Advanced Convert (M10)" for complex structural formats (XLSX, PPTX, flowable DOCX, Markdown via Pandoc). This massively simplifies deployment, reduces bundle size by avoiding heavy Office binaries for basic tasks, and enforces a much stricter offline and memory-safe boundary. Forms and Extraction now have dedicated failsafes (F26, F27) for data sanitization and boundary checking.
+
+## [2026-10-10 12:20] Phase 6.1 Complete (Protect & Unlock)
+- **Context:** Protect and unlock security capabilities needed for Phase 6.1.
+- **Implementation:** 
+  - Defined `Permissions` mapped to `pdfcraft_engine::Protection`.
+  - Added `protect()` and `unlock()` in `PdfEngine` trait and `PdfcraftAdapter`, securely wrapped in `catch_unwind` to fulfill failsafe F24 (Cryptographic Integrity).
+  - Wired `ProtectDocument` and `UnlockDocument` in `JobRequest` inside `queue.rs`.
+  - Built `SecurityView.svelte` for capturing passwords, permissions, and dispatching IPC jobs.
+- **Pre-commit Checklist:** 1) Gate green? YES 2) Tests run? YES 3) No banned patterns? YES 4) New dep vetted? YES (None added) 5) Offline green? YES 6) Failsafes affected re-tested? YES (F24 implemented via catch_unwind) 7) UI matches spec? YES 8) Logs updated? YES 9) No scope creep? YES 10) Docs updated? YES 11) Tool registry matches? YES
+- **Risks:** None currently open.
+- **Commit / tag:** `phase-6.1-green`
