@@ -25,7 +25,7 @@ fn cancel_job(state: tauri::State<'_, AppState>, job_id: String) -> bool {
 
 /// Query the current status of a job by ID.
 #[tauri::command]
-fn job_status(
+fn get_job_status(
     state: tauri::State<'_, AppState>,
     job_id: String,
 ) -> Option<lpdf_jobs::queue::JobStatus> {
@@ -70,7 +70,11 @@ pub fn run() {
         .manage(AppState {
             job_manager: Arc::clone(&job_manager),
         })
-        .invoke_handler(tauri::generate_handler![submit_job, cancel_job, job_status])
+        .invoke_handler(tauri::generate_handler![
+            submit_job,
+            cancel_job,
+            get_job_status
+        ])
         .setup(|app| {
             // Forward job events to the Tauri frontend as structured events
             let handle = app.handle().clone();

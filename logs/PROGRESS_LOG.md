@@ -204,3 +204,16 @@ Entry format:
   - Rule 02:7 "Typed errors... map to UI" -> Evidence: `JobEvent::Failed` pushes typed string codes to the UI.
 - Risks / follow-ups: UI is not yet consuming the job events.
 - Commit / tag: `phase-2.2-green`
+
+## [2026-10-10 07:22] Phase 2.3 — DONE
+- Changes:
+  - Initialized `lpdf-jobs` worker queue inside `app-tauri` and registered it as managed `tauri::State`.
+  - Exposed strongly-typed Tauri commands (`submit_job`, `cancel_job`, `get_job_status`).
+  - Added background tokio task to bridge internal `job_event_channel` messages out to the frontend via `app.emit("job-event", ...)` payload.
+- Gate: pass
+- Tests added/run: 0/4 (contract tests re-run)
+- Pre-commit checklist: 1 YES 2 N/A 3 YES 4 YES 5 YES 6 N/A 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - Rule 02:8 "Heavy/untrusted work in jobs on the worker process. Command handlers stay <10 ms" -> Evidence: `submit_job` just pushes to the queue and returns `<1ms`.
+- Risks / follow-ups: The worker system currently uses spawn_blocking; true out-of-process architecture will be established later if needed, but for now Tauri's main thread is fully isolated from PDF logic.
+- Commit / tag: `phase-2.3-green`
