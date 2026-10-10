@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
 use lpdf_core_types::{LpdfError, Result};
-use lpdf_engine_port::{PdfEngine, PdfInfo, RenderOptions};
+use lpdf_engine_port::{PdfEngine, PdfInfo, RedactionRegion, RenderOptions};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -1115,6 +1115,90 @@ impl PdfEngine for PdfcraftAdapter {
 
         let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
         if written.len() != final_bytes.len() {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
+        }
+
+        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
+
+        Ok(())
+    }
+
+    fn redact(
+        &self,
+        input_path: &Path,
+        regions: Vec<RedactionRegion>,
+        output_path: &Path,
+    ) -> Result<()> {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+            let mut session = pdfcraft_engine::Session::new();
+            let name = input_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            let doc_id = session
+                .open(name, None, std::sync::Arc::new(bytes), None)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            for region in regions {
+                let shape = pdfcraft_engine::Shape::Redact {
+                    quads: vec![[
+                        region.x,
+                        region.y + region.height,
+                        region.x + region.width,
+                        region.y + region.height,
+                        region.x,
+                        region.y,
+                        region.x + region.width,
+                        region.y,
+                    ]],
+                    overlay: String::new(),
+                    look: Default::default(),
+                };
+
+                let mark = pdfcraft_engine::Edit::AddAnnotation(pdfcraft_engine::NewAnnotation {
+                    page: region.page,
+                    style: pdfcraft_engine::Style::default_for(&shape),
+                    shape,
+                    contents: String::new(),
+                    author: "Admin".into(),
+                });
+                session
+                    .apply(doc_id, mark)
+                    .map_err(|e| LpdfError::Engine(e.to_string()))?;
+            }
+
+            // F25: Secondary verification pass is performed internally by ApplyRedactions
+            session
+                .apply(
+                    doc_id,
+                    pdfcraft_engine::Edit::ApplyRedactions { pages: None },
+                )
+                .map_err(|e| LpdfError::Engine(format!("RedactionVerificationError: {}", e)))?;
+
+            session
+                .save_bytes(doc_id)
+                .map_err(|e| LpdfError::Engine(e.to_string()))
+        }));
+
+        let saved = match result {
+            Ok(Ok(saved)) => saved,
+            Ok(Err(e)) => return Err(e),
+            Err(_) => {
+                return Err(LpdfError::Engine(
+                    "Panic during redaction operations".into(),
+                ))
+            }
+        };
+
+        let temp_path = output_path.with_extension("tmp");
+        std::fs::write(&temp_path, &*saved).map_err(LpdfError::Io)?;
+
+        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
+        if written.is_empty() {
             let _ = std::fs::remove_file(&temp_path);
             return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
         }

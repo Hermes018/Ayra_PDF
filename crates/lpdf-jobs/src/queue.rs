@@ -151,12 +151,18 @@ pub enum JobRequest {
         fields: std::collections::HashMap<String, String>,
     },
 
-    /// Sign the PDF document using a PKCS#12 certificate.
     SignDocument {
         input_path: String,
         output_path: String,
         p12_path: String,
         password: String,
+    },
+
+    /// Apply semantic redactions to the document.
+    RedactDocument {
+        input_path: String,
+        output_path: String,
+        regions: Vec<lpdf_engine_port::RedactionRegion>,
     },
 }
 
@@ -902,6 +908,29 @@ impl JobManager {
                 let out = PathBuf::from(output_path);
 
                 engine.sign_document(&path, &p12, password, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::RedactDocument {
+                input_path,
+                output_path,
+                regions,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Applying redactions...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                engine.redact(&path, regions.clone(), &out)?;
 
                 Ok(JobOutput {
                     output_path: Some(output_path.clone()),
