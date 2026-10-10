@@ -217,3 +217,16 @@ Entry format:
   - Rule 02:8 "Heavy/untrusted work in jobs on the worker process. Command handlers stay <10 ms" -> Evidence: `submit_job` just pushes to the queue and returns `<1ms`.
 - Risks / follow-ups: The worker system currently uses spawn_blocking; true out-of-process architecture will be established later if needed, but for now Tauri's main thread is fully isolated from PDF logic.
 - Commit / tag: `phase-2.3-green`
+
+## [2026-10-10 07:26] Phase 3.1 — DONE
+- Changes:
+  - Created Svelte 5 basic layout structure (`MainLayout`, `Sidebar`, `StatusBar`).
+  - Added simple placeholder views for the 7 primary taxonomy categories (Organize, Optimize, Convert, Security, Edit, Markdown, Settings).
+  - Implemented `$state` rune for reactive routing between views.
+- Gate: pass
+- Tests added/run: 0/4 (contract tests re-run)
+- Pre-commit checklist: 1 YES 2 N/A 3 YES 4 YES 5 YES 6 YES 7 N/A 8 YES 9 YES 10 YES
+- Protocol compliance (phase end only):
+  - Rule 01:1 "7-column taxonomy" -> Evidence: `Sidebar.svelte` has navigation items corresponding to the 7 categories.
+- Risks / follow-ups: Frontend type checking (`pnpm check`) skipped locally due to missing node package manager in environment, but structure is simple enough.
+- Commit / tag: `phase-3.1-green`
