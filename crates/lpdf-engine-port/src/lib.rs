@@ -24,6 +24,14 @@ pub trait PdfEngine {
     fn save(&self, output_path: &Path) -> Result<()>;
     fn merge(&self, input_paths: &[&Path], output_path: &Path) -> Result<()>;
     fn extract_pages(&self, input_path: &Path, pages: &[usize], output_path: &Path) -> Result<()>;
+    fn delete_pages(&self, input_path: &Path, pages: &[usize], output_path: &Path) -> Result<()>;
+    fn rotate_pages(
+        &self,
+        input_path: &Path,
+        pages: &[usize],
+        degrees: i32,
+        output_path: &Path,
+    ) -> Result<()>;
 }
 
 #[macro_export]

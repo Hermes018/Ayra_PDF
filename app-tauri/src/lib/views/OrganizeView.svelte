@@ -9,6 +9,9 @@
     let activeFiles = $derived(appState.activeFiles);
 
     let extractPagesInput = $state("");
+    let deletePagesInput = $state("");
+    let rotatePagesInput = $state("");
+    let rotateDegrees = $state(90);
 
     function parsePages(input: string): number[] {
         const pages = new Set<number>();
@@ -52,6 +55,55 @@
             console.log("Extract job submitted with ID:", jobId);
         } catch (e) {
             console.error("Failed to submit extract job:", e);
+        }
+    }
+
+    async function handleDelete() {
+        if (!currentPath) return;
+        const pages = parsePages(deletePagesInput);
+        if (pages.length === 0) {
+            alert("Please enter valid page numbers to delete.");
+            return;
+        }
+
+        const outputPath = currentPath.replace(/\.pdf$/i, '_deleted.pdf');
+        const req: JobRequest = {
+            op: "DeletePages",
+            input_path: currentPath,
+            output_path: outputPath,
+            pages: pages
+        };
+
+        try {
+            const jobId = await IpcClient.submitJob(req);
+            console.log("Delete job submitted with ID:", jobId);
+        } catch (e) {
+            console.error("Failed to submit delete job:", e);
+        }
+    }
+
+    async function handleRotate() {
+        if (!currentPath) return;
+        const pages = parsePages(rotatePagesInput);
+        if (pages.length === 0) {
+            alert("Please enter valid page numbers to rotate.");
+            return;
+        }
+
+        const outputPath = currentPath.replace(/\.pdf$/i, '_rotated.pdf');
+        const req: JobRequest = {
+            op: "RotatePages",
+            input_path: currentPath,
+            output_path: outputPath,
+            pages: pages,
+            degrees: rotateDegrees
+        };
+
+        try {
+            const jobId = await IpcClient.submitJob(req);
+            console.log("Rotate job submitted with ID:", jobId);
+        } catch (e) {
+            console.error("Failed to submit rotate job:", e);
         }
     }
 
@@ -103,6 +155,45 @@
                     </button>
                 {:else}
                     <p class="empty-text">Select a file to extract pages.</p>
+                {/if}
+            </div>
+
+            <div class="tool-section">
+                <h4>Delete Pages</h4>
+                {#if currentPath}
+                    <input 
+                        type="text" 
+                        class="pages-input" 
+                        bind:value={deletePagesInput} 
+                        placeholder="e.g. 1, 3, 5-10" 
+                    />
+                    <button class="action-button action-danger" onclick={handleDelete} disabled={!deletePagesInput.trim()}>
+                        Delete
+                    </button>
+                {:else}
+                    <p class="empty-text">Select a file to delete pages.</p>
+                {/if}
+            </div>
+
+            <div class="tool-section">
+                <h4>Rotate Pages</h4>
+                {#if currentPath}
+                    <input 
+                        type="text" 
+                        class="pages-input" 
+                        bind:value={rotatePagesInput} 
+                        placeholder="e.g. 1, 3, 5-10" 
+                    />
+                    <select class="pages-input" bind:value={rotateDegrees}>
+                        <option value={90}>90° Clockwise</option>
+                        <option value={180}>180°</option>
+                        <option value={-90}>90° Counter-Clockwise</option>
+                    </select>
+                    <button class="action-button" onclick={handleRotate} disabled={!rotatePagesInput.trim()}>
+                        Rotate
+                    </button>
+                {:else}
+                    <p class="empty-text">Select a file to rotate pages.</p>
                 {/if}
             </div>
 
@@ -261,6 +352,12 @@
     .action-button:not(:disabled):hover, .merge-button:not(:disabled):hover {
         opacity: 0.9;
     }
+
+    .action-danger {
+        background-color: #f38ba8;
+        color: #11111b;
+    }
+
 
     .empty-text {
         font-size: 0.85rem;

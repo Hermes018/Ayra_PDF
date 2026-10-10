@@ -111,6 +111,29 @@ impl PdfEngine for FallbackAdapter {
             "Extract not supported by FallbackAdapter".into(),
         ))
     }
+
+    fn delete_pages(
+        &self,
+        _input_path: &Path,
+        _pages: &[usize],
+        _output_path: &Path,
+    ) -> Result<()> {
+        Err(LpdfError::Engine(
+            "Stateless delete not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn rotate_pages(
+        &self,
+        _input_path: &Path,
+        _pages: &[usize],
+        _degrees: i32,
+        _output_path: &Path,
+    ) -> Result<()> {
+        Err(LpdfError::Engine(
+            "Rotate not supported by FallbackAdapter".into(),
+        ))
+    }
 }
 
 lpdf_engine_port::define_contract_tests!(FallbackAdapter);
