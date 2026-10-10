@@ -1,0 +1,61 @@
+name: CI Gate
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  gate:
+    name: Gate (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            container: fedora:44
+          - os: windows-latest
+            container: null
+
+    container: ${{ matrix.container }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install system dependencies (Fedora)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          dnf install -y webkit2gtk4.1-devel openssl-devel librsvg2-devel libappindicator-gtk3-devel libxdo-devel gcc gcc-c++ qpdf poppler-utils tesseract libreoffice
+          # Also install rustup and cargo since we are in a bare fedora container
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Setup stable Rust
+        # Windows doesn't need rustup install because windows-latest has it
+        run: |
+          rustup default stable
+          rustup component add clippy rustfmt
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo extensions (Fedora)
+        if: matrix.os == 'ubuntu-latest'
+        # Can use taiki-e/install-action or manually install via cargo binstall. Since it's a bare container we use cargo-binstall
+        run: |
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+          cargo binstall -y cargo-deny cargo-audit cargo-nextest
+
+      - name: Install cargo extensions (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny,cargo-audit,cargo-nextest
+
+      - name: Run gate
+        run: cargo xtask gate
