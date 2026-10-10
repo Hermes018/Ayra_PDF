@@ -123,3 +123,24 @@ The safest and simplest way to resolve this blocker is to run the system-level p
 - Interpretation / ambiguity: Create test corpus, fetch script, manifest, ignore PDFs, run script, and close phase 0.6. No ambiguity.
 - Actions taken / sub-phase affected: Phase 0.6
 - Conflicts with protocol? (yes/no + resolution): No.
+
+## [2026-10-10] Prompt #8
+- Verbatim: """First, apply the missed Git workflow protocol updates, then immediately execute Phase 1.1. Execute the following steps sequentially:
+1. **Protocol Amendments (Multi-Device Git Workflow):**
+   - Edit `protocol/02_RULES_DOS_DONTS.md`. Add a new DO: "Always start a session on a new device with `git pull --recurse-submodules` and end by pushing commits and tags (`git push && git push --tags`)."
+   - Edit `protocol/02_RULES_DOS_DONTS.md`. Add a new DON'T: "Never commit, log, or store GitHub Personal Access Tokens (PATs) or credentials."
+   - Edit `protocol/06_ARCHITECTURE.md`. Add a brief "Multi-Device Development" section...
+2. **Begin Phase 1.1 (Foundation - Cargo Workspace & Skeleton):**
+   - Create a root `rust-toolchain.toml` file pinning the stable toolchain.
+   - Create a root `Cargo.toml` configuring a virtual Cargo workspace. Include `xtask` and the crates listed below...
+   - Create a `crates/` directory.
+   - Use `cargo new --lib` to generate the 13 crates...
+   - Use `cargo new --bin` to generate the 2 crates...
+   - Inject `#![forbid(unsafe_code)]`...
+   - Run `cargo check`...
+3. **Logging & Commit:**
+   - Update `logs/PROGRESS_LOG.md`... and `logs/CHECKPOINT.md`...
+   - Commit... tag... print ANCHOR block."""
+- Interpretation / ambiguity: Protocol update for git sync flow. Workspace setup with new crates. No ambiguity.
+- Actions taken / sub-phase affected: Protocol Amendment + Phase 1.1
+- Conflicts with protocol? (yes/no + resolution): No.
