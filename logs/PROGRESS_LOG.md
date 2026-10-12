@@ -835,6 +835,30 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/summarizer_tests.rs` (2 tests added, 9 run), `crates/lpdf-cli/tests/cli_tests.rs` (3 tests added, 25 run), `crates/lpdf-engine-port` (1 binding test), `crates/lpdf-jobs` (1 binding test), `app-tauri/src/lib/views/__tests__/AiSummarizeView.test.ts` (1 test added, 9 run; 49 vitest tests total; 126 nextest tests total).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-13 01:25] Phase 11.1 — Hardening: Fuzzing on Adapter Inputs & Nightly CI
+- **Status:** Complete (Tag: phase-11.1-green)
+- **Work:**
+  - `fuzz/` Harness & Target Definitions (`fuzz/Cargo.toml`, `fuzz/fuzz_targets/`):
+    - Created `fuzz/` layout with `localpdf-fuzz` package metadata and independent workspace membership.
+    - Defined four fuzz targets covering critical adapter entrypoints:
+      - `fuzz_pdfcraft_load`: arbitrary/mutated byte buffers, truncated headers, corrupted xref tables, and malformed object streams exercising `PdfcraftAdapter` (`load`, `info`, `repair`, `pdf_to_text`, `summarize_extractive`).
+      - `fuzz_fallback_load`: arbitrary/corrupted byte buffers and malformed PDF structures exercising `FallbackAdapter` (`load`, `info`).
+      - `fuzz_engine_switcher`: adversarial inputs exercising primary-to-fallback degradation paths in `EngineSwitcher`.
+      - `fuzz_fs_and_ai_rpc`: adversarial path strings (null bytes, directory traversal, reserved device names `CON`/`PRN`/`NUL`, deep nesting) and arbitrary JSON/byte frames fed into `lpdf-ai-worker` RPC / model header validation.
+  - Safe, Panic-Free Adapter Fuzz Routines (`crates/lpdf-engine-switcher/src/fuzz.rs`):
+    - Implemented `fuzz_pdfcraft_bytes`, `fuzz_fallback_bytes`, `fuzz_engine_switcher_bytes`, and `fuzz_fs_and_ai_rpc_bytes` with `#![forbid(unsafe_code)]`.
+    - Zero panics, zero unwrap/expect in non-test code, fully guarded with `std::panic::catch_unwind`.
+  - Deterministic Seeded PRNG Mutation Suite (`crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs`):
+    - Implemented deterministic seeded PRNG (Xorshift64Star) running 600+ iterations of bit-flips, truncations, header corruptions, deep nesting, random bytes, traversal attempts, and malformed JSON frames across corpus documents.
+    - Asserted zero panics / unwinds and clean, typed `Result::Err(LpdfError::...)` returns.
+  - Xtask & Nightly CI Workflow (`xtask/src/main.rs`, `.github/workflows/nightly.yml`):
+    - Added `cargo xtask fuzz` command to run the deterministic adapter fuzz smoke tests.
+    - Updated `.github/workflows/nightly.yml` with `workflow_dispatch` trigger, nightly Rust, corpus fetch/validation, `cargo xtask fuzz`, and failure artifact upload via `actions/upload-artifact@v4`.
+- **Gate:** pass (`cargo xtask gate` green: fmt, clippy, nextest 131/131, cargo-deny, cargo-audit, protocol-lint).
+- **Tests added/run:** `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs` (5 tests added, 600+ hostile iterations run; 131 nextest tests total).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 

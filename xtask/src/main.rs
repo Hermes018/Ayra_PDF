@@ -14,6 +14,7 @@ fn main() {
         "protocol-lint" => run_protocol_lint(),
         "gate" => run_gate(),
         "test-offline" => run_test_offline(),
+        "fuzz" => run_fuzz(&args[2..]),
         _ => {
             eprintln!("Unknown command: {}", args[1]);
             exit(1);
@@ -174,4 +175,26 @@ fn run_test_offline() {
         );
         exit(1);
     }
+}
+
+fn run_fuzz(_extra_args: &[String]) {
+    println!("Running deterministic adapter input fuzz smoke tests...");
+    let status = Command::new("cargo")
+        .args([
+            "test",
+            "-p",
+            "lpdf-engine-switcher",
+            "--test",
+            "fuzz_smoke_tests",
+            "--",
+            "--test-threads=1",
+        ])
+        .status()
+        .expect("Failed to execute fuzz tests");
+
+    if !status.success() {
+        eprintln!("Fuzz smoke tests failed!");
+        exit(1);
+    }
+    println!("Fuzz smoke tests passed green!");
 }
