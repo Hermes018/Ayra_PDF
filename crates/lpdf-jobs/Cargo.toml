@@ -10,6 +10,7 @@ license.workspace = true
 lpdf-core-types = { path = "../lpdf-core-types" }
 lpdf-engine-port = { path = "../lpdf-engine-port" }
 lpdf-engine-switcher = { path = "../lpdf-engine-switcher" }
+lpdf-fs-safety = { path = "../lpdf-fs-safety" }
 tokio = { version = "1", features = ["rt", "sync", "macros", "time"] }
 tokio-util = "0.7"
 serde = { version = "1", features = ["derive"] }

@@ -8,6 +8,7 @@
     import FormsView from '$lib/views/FormsView.svelte';
     import MarkdownView from '$lib/views/MarkdownView.svelte';
     import BatchQueueView from '$lib/views/BatchQueueView.svelte';
+    import PipelinesView from '$lib/views/PipelinesView.svelte';
     import SettingsView from '$lib/views/SettingsView.svelte';
 
     // Svelte 5 reactive state for view routing
@@ -31,6 +32,8 @@
         <MarkdownView />
     {:else if currentView === 'Queue'}
         <BatchQueueView />
+    {:else if currentView === 'Pipelines'}
+        <PipelinesView />
     {:else if currentView === 'Settings'}
         <SettingsView />
     {:else}

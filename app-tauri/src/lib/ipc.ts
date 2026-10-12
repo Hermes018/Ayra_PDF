@@ -3,6 +3,8 @@ import type { JobRequest } from './bindings/JobRequest';
 import type { JobStatus } from './bindings/JobStatus';
 import type { JobPriority } from './bindings/JobPriority';
 import type { JobRecord } from './bindings/JobRecord';
+import type { PipelinePreset } from './bindings/PipelinePreset';
+import type { PipelineStep } from './bindings/PipelineStep';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { JobEvent } from './bindings/JobEvent';
 
@@ -57,6 +59,13 @@ export class IpcClient {
     }
 
     /**
+     * List built-in pipeline presets
+     */
+    static async listPipelinePresets(): Promise<PipelinePreset[]> {
+        return await invoke<PipelinePreset[]>('list_pipeline_presets');
+    }
+
+    /**
      * Listen for job events emitted by the backend
      */
     static async onJobEvent(handler: (event: JobEvent) => void): Promise<UnlistenFn> {
@@ -65,4 +74,5 @@ export class IpcClient {
         });
     }
 }
+
 

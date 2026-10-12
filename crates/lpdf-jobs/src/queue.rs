@@ -240,6 +240,12 @@ pub enum JobRequest {
         output_dir: String,
         options: lpdf_engine_port::MarkdownBatchOptions,
     },
+    RunPipeline {
+        input_path: String,
+        output_path: String,
+        steps: Vec<crate::pipeline::PipelineStep>,
+        preset_name: Option<String>,
+    },
 }
 
 /// Execution priority for queued jobs.
@@ -578,6 +584,18 @@ impl JobRequest {
                 Some(input_dir.clone()),
                 Some(output_dir.clone()),
             ),
+            JobRequest::RunPipeline {
+                input_path,
+                output_path,
+                steps,
+                preset_name,
+            } => {
+                let title = match preset_name {
+                    Some(name) => format!("Workflow: {}", name),
+                    None => format!("Pipeline ({} steps)", steps.len()),
+                };
+                (title, Some(input_path.clone()), Some(output_path.clone()))
+            }
         }
     }
 }
@@ -2041,6 +2059,135 @@ impl JobManager {
                 Ok(JobOutput {
                     output_path: Some(out_p.to_string_lossy().to_string()),
                     degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::RunPipeline {
+                input_path,
+                output_path,
+                steps,
+                ..
+            } => {
+                if steps.is_empty() {
+                    return Err(LpdfError::InvalidInput("Pipeline has no steps".into()));
+                }
+
+                let out_path = PathBuf::from(output_path);
+                let parent_dir = out_path.parent().unwrap_or_else(|| Path::new("."));
+                let stage_id = uuid::Uuid::new_v4().to_string();
+                let stage_dir = parent_dir.join(format!(".pipeline_stage_{}", stage_id));
+                std::fs::create_dir_all(&stage_dir).map_err(LpdfError::Io)?;
+
+                // RAII cleaner ensuring stage_dir is removed on return/cancellation/error
+                struct StageCleaner<'a>(&'a Path);
+                impl<'a> Drop for StageCleaner<'a> {
+                    fn drop(&mut self) {
+                        let _ = std::fs::remove_dir_all(self.0);
+                    }
+                }
+                let _cleaner = StageCleaner(&stage_dir);
+
+                let total_steps = steps.len();
+                let mut current_input = PathBuf::from(input_path);
+
+                for (idx, step) in steps.iter().enumerate() {
+                    if cancel_token.is_cancelled() {
+                        return Err(LpdfError::Engine("Job cancelled".into()));
+                    }
+
+                    let step_base_percent = ((idx as f64 / total_steps as f64) * 90.0) as u8 + 5;
+                    let _ = event_tx.send(JobEvent::Progress {
+                        job_id: job_id.into(),
+                        percent: step_base_percent,
+                        message: format!("Pipeline step {}/{}: {:?}", idx + 1, total_steps, step),
+                    });
+
+                    let step_output = stage_dir.join(format!("step_{}.pdf", idx + 1));
+                    let engine = EngineSwitcher::new();
+
+                    match step {
+                        crate::pipeline::PipelineStep::Repair => {
+                            let _ = engine.repair(&current_input, &step_output)?;
+                        }
+                        crate::pipeline::PipelineStep::Compress { profile } => {
+                            engine.compress(&current_input, *profile, &step_output)?;
+                        }
+                        crate::pipeline::PipelineStep::Ocr => {
+                            engine.ocr(&current_input, "eng", &step_output)?;
+                        }
+                        crate::pipeline::PipelineStep::Rotate { degrees, pages } => {
+                            if pages.is_empty() {
+                                engine.rotate_document(&current_input, *degrees, &step_output)?;
+                            } else {
+                                let usize_pages: Vec<usize> =
+                                    pages.iter().map(|&p| p as usize).collect();
+                                engine.rotate_pages(
+                                    &current_input,
+                                    &usize_pages,
+                                    *degrees,
+                                    &step_output,
+                                )?;
+                            }
+                        }
+                        crate::pipeline::PipelineStep::FlattenComments => {
+                            engine.flatten_comments(&current_input, &step_output)?;
+                        }
+                        crate::pipeline::PipelineStep::FlattenForms => {
+                            engine.flatten_forms(&current_input, &step_output)?;
+                        }
+                        crate::pipeline::PipelineStep::Watermark { settings } => {
+                            engine.add_watermark(&current_input, settings, &step_output)?;
+                        }
+                        crate::pipeline::PipelineStep::Protect {
+                            password,
+                            permissions,
+                        } => {
+                            engine.protect(
+                                &current_input,
+                                password,
+                                permissions.clone(),
+                                &step_output,
+                            )?;
+                        }
+                        crate::pipeline::PipelineStep::PdfToPdfA { conformance } => {
+                            let _ =
+                                engine.pdf_to_pdfa(&current_input, *conformance, &step_output)?;
+                        }
+                    }
+
+                    let meta = std::fs::metadata(&step_output).map_err(LpdfError::Io)?;
+                    if meta.len() == 0 {
+                        return Err(LpdfError::Engine(format!(
+                            "Pipeline step {} produced an empty file",
+                            idx + 1
+                        )));
+                    }
+
+                    current_input = step_output;
+                }
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let final_bytes = std::fs::read(&current_input).map_err(LpdfError::Io)?;
+                if !final_bytes.starts_with(b"%PDF-") {
+                    return Err(LpdfError::ParseError(
+                        "Pipeline final output is not a valid PDF".into(),
+                    ));
+                }
+
+                lpdf_fs_safety::atomic_write(&out_path, &final_bytes)?;
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 100,
+                    message: "Pipeline completed successfully".into(),
+                });
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: false,
                 })
             }
         }

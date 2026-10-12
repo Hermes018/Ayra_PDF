@@ -60,6 +60,12 @@ fn retry_job(state: tauri::State<'_, AppState>, job_id: String) -> Result<String
         .map_err(|e| e.to_string())
 }
 
+/// List built-in workflow / pipeline presets.
+#[tauri::command]
+fn list_pipeline_presets() -> Vec<lpdf_jobs::pipeline::PipelinePreset> {
+    lpdf_jobs::pipeline::builtin_pipeline_presets()
+}
+
 /// Read file bytes into frontend memory for PdfViewer.
 #[tauri::command]
 async fn read_file_bytes(path: String) -> Result<Vec<u8>, String> {
@@ -113,6 +119,7 @@ pub fn run() {
             list_jobs,
             clear_finished_jobs,
             retry_job,
+            list_pipeline_presets,
             read_file_bytes
         ])
         .setup(|app| {
