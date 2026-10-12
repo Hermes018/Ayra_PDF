@@ -2,8 +2,8 @@
 
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    OfficeInputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion,
-    RenderOptions,
+    OfficeInputFormat, OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine,
+    PdfInfo, RedactionRegion, RenderOptions,
 };
 use std::path::Path;
 use std::sync::Arc;
@@ -1690,6 +1690,15 @@ impl PdfEngine for PdfcraftAdapter {
         output_path: &Path,
     ) -> Result<std::path::PathBuf> {
         office_sidecar::convert_office_to_pdf(input_path, format, output_path, None)
+    }
+
+    fn pdf_to_office(
+        &self,
+        input_path: &Path,
+        format: OfficeOutputFormat,
+        output_path: &Path,
+    ) -> Result<std::path::PathBuf> {
+        office_sidecar::convert_pdf_to_office(input_path, format, output_path, None)
     }
 }
 

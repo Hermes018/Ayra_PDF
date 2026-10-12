@@ -3,9 +3,22 @@
     import { IpcClient } from '$lib/ipc';
     import type { JobRequest } from '$lib/bindings/JobRequest';
     import type { PdfAConformance } from '$lib/bindings/PdfAConformance';
+    import type { OfficeOutputFormat } from '$lib/bindings/OfficeOutputFormat';
 
     let currentPath = $derived(appState.currentFile);
-    let selectedFormat = $state<'PdfToImages' | 'ExtractAllImages' | 'PdfToText' | 'PdfToDocx' | 'PdfToHtml' | 'PdfToRtf' | 'PdfToPdfA'>('PdfToDocx');
+    type ExportMode =
+        | 'PdfToDocx'
+        | 'PdfToWordSidecar'
+        | 'PdfToExcelSidecar'
+        | 'PdfToPowerPointSidecar'
+        | 'PdfToPdfA'
+        | 'PdfToImages'
+        | 'ExtractAllImages'
+        | 'PdfToHtml'
+        | 'PdfToText'
+        | 'PdfToRtf';
+
+    let selectedFormat = $state<ExportMode>('PdfToDocx');
     let selectedConformance = $state<PdfAConformance>('PdfA2b');
     let customOutputPath = $state<string>('');
     let statusMessage = $state<string | null>(null);
@@ -20,6 +33,30 @@
             icon: '📄',
             desc: 'Converts reading blocks, headings, tables, and images to structural Word format natively.',
             badge: 'Structural'
+        },
+        {
+            id: 'PdfToWordSidecar' as const,
+            title: 'PDF to Word (Complex Flowable via Sidecar)',
+            ext: '.docx',
+            icon: '📝',
+            desc: 'Converts complex multi-column layouts into flowable Microsoft Word (.docx) via headless sidecar.',
+            badge: 'Sidecar Flowable'
+        },
+        {
+            id: 'PdfToExcelSidecar' as const,
+            title: 'PDF to Excel (.xlsx)',
+            ext: '.xlsx',
+            icon: '📊',
+            desc: 'Extracts tables and tabular spreadsheets into Microsoft Excel (.xlsx) via headless sidecar.',
+            badge: 'Sidecar Spreadsheet'
+        },
+        {
+            id: 'PdfToPowerPointSidecar' as const,
+            title: 'PDF to PowerPoint (.pptx)',
+            ext: '.pptx',
+            icon: '📽️',
+            desc: 'Converts presentation slides into Microsoft PowerPoint (.pptx) via headless sidecar.',
+            badge: 'Sidecar Slides'
         },
         {
             id: 'PdfToPdfA' as const,
@@ -98,18 +135,42 @@
         isSubmitting = true;
         statusMessage = null;
 
-        const req: JobRequest = selectedFormat === 'PdfToPdfA'
-            ? {
+        let req: JobRequest;
+        if (selectedFormat === 'PdfToPdfA') {
+            req = {
                 op: 'PdfToPdfA',
                 input_path: currentPath,
                 output_path: out,
                 conformance: selectedConformance
-            }
-            : {
+            };
+        } else if (selectedFormat === 'PdfToWordSidecar') {
+            req = {
+                op: 'PdfToOffice',
+                input_path: currentPath,
+                output_path: out,
+                format: 'Docx'
+            };
+        } else if (selectedFormat === 'PdfToExcelSidecar') {
+            req = {
+                op: 'PdfToOffice',
+                input_path: currentPath,
+                output_path: out,
+                format: 'Xlsx'
+            };
+        } else if (selectedFormat === 'PdfToPowerPointSidecar') {
+            req = {
+                op: 'PdfToOffice',
+                input_path: currentPath,
+                output_path: out,
+                format: 'Pptx'
+            };
+        } else {
+            req = {
                 op: selectedFormat,
                 input_path: currentPath,
                 output_path: out
             } as JobRequest;
+        }
 
         try {
             const jobId = await IpcClient.submitJob(req);
@@ -281,7 +342,9 @@
                 {/if}
                 <div class="summary-item">
                     <span class="summary-label">Engine:</span>
-                    <span class="summary-val highlight">Pure Rust Native (`pdfcraft`)</span>
+                    <span class="summary-val highlight">
+                        {selectedFormat.includes('Sidecar') ? 'Headless Sidecar (LibreOffice / OpenOffice)' : 'Pure Rust Native (`pdfcraft`)'}
+                    </span>
                 </div>
                 <div class="summary-item">
                     <span class="summary-label">File Safety:</span>

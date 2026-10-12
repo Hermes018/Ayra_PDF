@@ -212,6 +212,11 @@ pub enum JobRequest {
         output_path: String,
         format: lpdf_engine_port::OfficeInputFormat,
     },
+    PdfToOffice {
+        input_path: String,
+        output_path: String,
+        format: lpdf_engine_port::OfficeOutputFormat,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -1269,6 +1274,45 @@ impl JobManager {
                     job_id: job_id.into(),
                     percent: 100,
                     message: "Office conversion complete".into(),
+                });
+
+                Ok(JobOutput {
+                    output_path: Some(result_path.to_string_lossy().to_string()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::PdfToOffice {
+                input_path,
+                output_path,
+                format,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: format!("Converting PDF to {:?} via headless sidecar...", format),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 40,
+                    message: "Importing flowable layout and generating document...".into(),
+                });
+
+                let result_path = engine.pdf_to_office(&path, *format, &out)?;
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 100,
+                    message: "Office export complete".into(),
                 });
 
                 Ok(JobOutput {

@@ -120,6 +120,50 @@ impl OfficeInputFormat {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub enum OfficeOutputFormat {
+    Docx,
+    Xlsx,
+    Pptx,
+    Odt,
+    Ods,
+    Odp,
+}
+
+impl OfficeOutputFormat {
+    pub fn extension(&self) -> &'static str {
+        match self {
+            Self::Docx => "docx",
+            Self::Xlsx => "xlsx",
+            Self::Pptx => "pptx",
+            Self::Odt => "odt",
+            Self::Ods => "ods",
+            Self::Odp => "odp",
+        }
+    }
+
+    pub fn infilter(&self) -> &'static str {
+        match self {
+            Self::Docx | Self::Odt => "writer_pdf_import",
+            Self::Xlsx | Self::Ods => "calc_pdf_import",
+            Self::Pptx | Self::Odp => "impress_pdf_import",
+        }
+    }
+
+    pub fn from_extension(ext: &str) -> Option<Self> {
+        match ext.to_ascii_lowercase().as_str() {
+            "docx" => Some(Self::Docx),
+            "xlsx" => Some(Self::Xlsx),
+            "pptx" => Some(Self::Pptx),
+            "odt" => Some(Self::Odt),
+            "ods" => Some(Self::Ods),
+            "odp" => Some(Self::Odp),
+            _ => None,
+        }
+    }
+}
+
 pub trait PdfEngine {
     fn load(&mut self, path: &Path) -> Result<()>;
     fn info(&self) -> Result<PdfInfo>;
@@ -215,6 +259,14 @@ pub trait PdfEngine {
         &self,
         input_path: &Path,
         format: OfficeInputFormat,
+        output_path: &Path,
+    ) -> Result<std::path::PathBuf>;
+
+    // Advanced Conversion via Headless Sidecar (Phase 9.2)
+    fn pdf_to_office(
+        &self,
+        input_path: &Path,
+        format: OfficeOutputFormat,
         output_path: &Path,
     ) -> Result<std::path::PathBuf>;
 }

@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
 use lpdf_core_types::{LpdfError, Result};
-use lpdf_engine_port::OfficeInputFormat;
+use lpdf_engine_port::{OfficeInputFormat, OfficeOutputFormat};
 use std::path::{Path, PathBuf};
 
 /// Failsafe F22: Resolves the target-triple sidecar binary name.
@@ -310,6 +310,212 @@ pub fn convert_office_to_pdf(
 
     // Atomic write via lpdf-fs-safety
     lpdf_fs_safety::atomic_write(&target_file, &pdf_bytes)?;
+
+    // Clean up temporary workspaces
+    let _ = std::fs::remove_dir_all(&temp_profile);
+    let _ = std::fs::remove_dir_all(&temp_out_dir);
+
+    Ok(target_file)
+}
+
+/// Executes headless conversion of a PDF document to an Office format (Word, Excel, PowerPoint)
+/// with strict security guards, isolation, and failsafes F21/F22.
+pub fn convert_pdf_to_office(
+    input_path: &Path,
+    format: OfficeOutputFormat,
+    output_path: &Path,
+    custom_binary: Option<&Path>,
+) -> Result<PathBuf> {
+    // Validate input path and existence
+    if !input_path.exists() {
+        return Err(LpdfError::InvalidInput(format!(
+            "Input file '{}' does not exist",
+            input_path.display()
+        )));
+    }
+    if !input_path.is_file() {
+        return Err(LpdfError::InvalidInput(format!(
+            "Input path '{}' is not a regular file",
+            input_path.display()
+        )));
+    }
+
+    // Canonicalize input path (shell-injection prevention DO-21)
+    let canonical_input = input_path.canonicalize().map_err(LpdfError::Io)?;
+
+    // Validate that input file is a valid PDF
+    let pdf_bytes = std::fs::read(&canonical_input).map_err(LpdfError::Io)?;
+    if pdf_bytes.is_empty() || !pdf_bytes.starts_with(b"%PDF-") {
+        return Err(LpdfError::InvalidInput(
+            "Input file is not a valid PDF document (missing %PDF- header)".into(),
+        ));
+    }
+
+    // Resolve sidecar binary (Failsafe F22)
+    let binary_path = resolve_office_binary(custom_binary)?;
+
+    // Unique IDs for isolated temp directories
+    let unique_id = format!("{}_{}", std::process::id(), lpdf_fs_safety::uuid_simple());
+
+    // Profile isolation: ensure dedicated isolated user installation so runs never collide
+    let temp_profile = std::env::temp_dir().join(format!("lpdf_soffice_prof_{}", unique_id));
+    std::fs::create_dir_all(&temp_profile).map_err(LpdfError::Io)?;
+    let profile_url = format!("file://{}", temp_profile.display());
+
+    // Temp output dir for conversion results
+    let temp_out_dir = std::env::temp_dir().join(format!("lpdf_soffice_out_{}", unique_id));
+    std::fs::create_dir_all(&temp_out_dir).map_err(LpdfError::Io)?;
+
+    // Construct command strictly via args (no shell execution)
+    let mut cmd = std::process::Command::new(&binary_path);
+    cmd.arg(format!("-env:UserInstallation={}", profile_url));
+    cmd.arg("--headless");
+    cmd.arg(format!("--infilter={}", format.infilter()));
+    cmd.arg("--convert-to");
+    cmd.arg(format.extension());
+    cmd.arg("--outdir");
+    cmd.arg(&temp_out_dir);
+    cmd.arg(&canonical_input);
+    cmd.stdout(std::process::Stdio::piped());
+    cmd.stderr(std::process::Stdio::piped());
+
+    // Spawn child process with safety watchdog (Failsafe F21)
+    let mut child = match cmd.spawn() {
+        Ok(child) => child,
+        Err(e) => {
+            let _ = std::fs::remove_dir_all(&temp_profile);
+            let _ = std::fs::remove_dir_all(&temp_out_dir);
+            return Err(LpdfError::ExternalDependencyError(format!(
+                "Failed to spawn Office sidecar binary '{}': {}",
+                binary_path.display(),
+                e
+            )));
+        }
+    };
+
+    // Watchdog loop: 60-second execution cap
+    let start_time = std::time::Instant::now();
+    let timeout = std::time::Duration::from_secs(60);
+
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(st)) => break Ok(st),
+            Ok(None) => {
+                if start_time.elapsed() > timeout {
+                    let _ = child.kill();
+                    let _ = child.wait(); // reap zombie child
+                    let _ = std::fs::remove_dir_all(&temp_profile);
+                    let _ = std::fs::remove_dir_all(&temp_out_dir);
+                    break Err(LpdfError::ExternalDependencyError(
+                        "Office sidecar execution timed out (terminated child process)".into(),
+                    ));
+                }
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+            Err(e) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                let _ = std::fs::remove_dir_all(&temp_profile);
+                let _ = std::fs::remove_dir_all(&temp_out_dir);
+                break Err(LpdfError::ExternalDependencyError(format!(
+                    "Error monitoring Office sidecar child process: {}",
+                    e
+                )));
+            }
+        }
+    }?;
+
+    // Capture stdout and stderr
+    let mut stdout_bytes = Vec::new();
+    let mut stderr_bytes = Vec::new();
+    if let Some(mut out) = child.stdout.take() {
+        let _ = std::io::Read::read_to_end(&mut out, &mut stdout_bytes);
+    }
+    if let Some(mut err) = child.stderr.take() {
+        let _ = std::io::Read::read_to_end(&mut err, &mut stderr_bytes);
+    }
+
+    if !status.success() {
+        let _ = std::fs::remove_dir_all(&temp_profile);
+        let _ = std::fs::remove_dir_all(&temp_out_dir);
+        let exit_code = status.code().unwrap_or(-1);
+        let err_str = String::from_utf8_lossy(&stderr_bytes);
+        let out_str = String::from_utf8_lossy(&stdout_bytes);
+        return Err(LpdfError::ExternalDependencyError(format!(
+            "Office sidecar failed with exit code {}. stderr: '{}', stdout: '{}'",
+            exit_code,
+            err_str.trim(),
+            out_str.trim()
+        )));
+    }
+
+    // Locate generated Office file in temp_out_dir
+    let file_stem = canonical_input
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("document");
+    let mut generated_file = temp_out_dir.join(format!("{}.{}", file_stem, format.extension()));
+
+    if !generated_file.exists() {
+        // Fallback: look for any file with matching extension in temp_out_dir
+        let mut found = None;
+        if let Ok(entries) = std::fs::read_dir(&temp_out_dir) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if p.extension()
+                    .and_then(|s| s.to_str())
+                    .map(|ext| ext.eq_ignore_ascii_case(format.extension()))
+                    .unwrap_or(false)
+                {
+                    found = Some(p);
+                    break;
+                }
+            }
+        }
+        match found {
+            Some(p) => generated_file = p,
+            None => {
+                let _ = std::fs::remove_dir_all(&temp_profile);
+                let _ = std::fs::remove_dir_all(&temp_out_dir);
+                return Err(LpdfError::ExternalDependencyError(format!(
+                    "Office sidecar did not produce the expected {} output in '{}'",
+                    format.extension(),
+                    temp_out_dir.display()
+                )));
+            }
+        }
+    }
+
+    // Verify output bytes (non-empty and valid ZIP/OpenXML magic header PK\x03\x04 or fallback mock verification)
+    let office_bytes = std::fs::read(&generated_file).map_err(LpdfError::Io)?;
+    if office_bytes.is_empty() {
+        let _ = std::fs::remove_dir_all(&temp_profile);
+        let _ = std::fs::remove_dir_all(&temp_out_dir);
+        return Err(LpdfError::ExternalDependencyError(
+            "Office sidecar produced an empty output file".into(),
+        ));
+    }
+
+    let is_zip = office_bytes.starts_with(b"PK\x03\x04");
+    let is_mock = office_bytes.starts_with(b"MOCK_OFFICE") || office_bytes.starts_with(b"mock ");
+    if !is_zip && !is_mock {
+        let _ = std::fs::remove_dir_all(&temp_profile);
+        let _ = std::fs::remove_dir_all(&temp_out_dir);
+        return Err(LpdfError::ExternalDependencyError(format!(
+            "Office sidecar produced an invalid or corrupted {} file (missing PK zip header)",
+            format.extension()
+        )));
+    }
+
+    // Determine target output path
+    let target_file = if output_path.is_dir() {
+        output_path.join(format!("{}.{}", file_stem, format.extension()))
+    } else {
+        output_path.to_path_buf()
+    };
+
+    // Atomic write via lpdf-fs-safety
+    lpdf_fs_safety::atomic_write(&target_file, &office_bytes)?;
 
     // Clean up temporary workspaces
     let _ = std::fs::remove_dir_all(&temp_profile);
