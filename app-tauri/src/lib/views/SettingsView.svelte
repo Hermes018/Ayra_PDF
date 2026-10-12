@@ -16,6 +16,9 @@
         theme: 'System',
         local_ai_model_path: null,
         ai_local_enabled: false,
+        ai_license_acknowledged: false,
+        ai_model_sha256: null,
+        ai_model_license: null,
     });
 
     let recentLogs = $state<string[]>([]);
@@ -26,6 +29,8 @@
     let importedModelInfo = $state<AiModelInfo | null>(null);
     let isImportingModel = $state(false);
     let modelError = $state<string | null>(null);
+    let modelLicense = $state('Apache-2.0');
+    let licenseAcknowledged = $state(false);
 
     let diagnosticsPath = $state('localpdf-diagnostics.txt');
     let isExportingDiag = $state(false);
@@ -45,6 +50,10 @@
                 if (settings.local_ai_model_path) {
                     modelPathInput = settings.local_ai_model_path;
                 }
+                if (settings.ai_model_license) {
+                    modelLicense = settings.ai_model_license;
+                }
+                licenseAcknowledged = settings.ai_license_acknowledged;
             }
         } catch (e: any) {
             console.error('Failed to load settings:', e);
@@ -73,6 +82,11 @@
         saveMessage = null;
         saveError = null;
         try {
+            settings.ai_license_acknowledged = licenseAcknowledged;
+            settings.ai_model_license = modelLicense;
+            if (!licenseAcknowledged) {
+                settings.ai_local_enabled = false;
+            }
             const saved = await IpcClient.saveSettings(settings);
             settings = saved;
             saveMessage = 'Settings saved successfully!';
@@ -86,6 +100,14 @@
         }
     }
 
+    function handleLicenseAckChange(acknowledged: boolean) {
+        licenseAcknowledged = acknowledged;
+        settings.ai_license_acknowledged = acknowledged;
+        if (!acknowledged) {
+            settings.ai_local_enabled = false;
+        }
+    }
+
     async function handleImportModel() {
         if (!modelPathInput.trim()) {
             modelError = 'Please specify a local model file path (.gguf or .onnx).';
@@ -94,10 +116,17 @@
         isImportingModel = true;
         modelError = null;
         try {
-            const info = await IpcClient.importLocalAiModel(modelPathInput.trim());
+            const info = await IpcClient.importLocalAiModel(
+                modelPathInput.trim(),
+                modelLicense.trim(),
+                licenseAcknowledged
+            );
             importedModelInfo = info;
             settings.local_ai_model_path = info.path;
-            settings.ai_local_enabled = true;
+            settings.ai_model_sha256 = info.sha256_hex;
+            settings.ai_model_license = modelLicense.trim();
+            settings.ai_license_acknowledged = licenseAcknowledged;
+            settings.ai_local_enabled = licenseAcknowledged;
             saveMessage = `Imported model: ${info.file_name} (${info.format})`;
         } catch (e: any) {
             modelError = `Failed to import model: ${e?.message ?? e}`;
@@ -306,7 +335,7 @@
                     </div>
                     <div class="hash-row">
                         <span class="hash-label">SHA-256:</span>
-                        <code>{importedModelInfo.sha256_hex}</code>
+                        <code data-testid="model-sha256">{importedModelInfo.sha256_hex}</code>
                     </div>
                 </div>
             {:else if settings.local_ai_model_path}
@@ -315,18 +344,59 @@
                         <span class="model-name">📄 {settings.local_ai_model_path}</span>
                         <span class="format-pill">Configured</span>
                     </div>
+                    {#if settings.ai_model_sha256}
+                        <div class="hash-row">
+                            <span class="hash-label">SHA-256:</span>
+                            <code data-testid="model-sha256">{settings.ai_model_sha256}</code>
+                        </div>
+                    {/if}
                 </div>
             {/if}
+
+            <!-- Model Licence & Checksum Verification panel -->
+            <div class="license-panel" data-testid="license-verification-panel">
+                <h4>📜 Model Licence & Verification</h4>
+                <div class="form-group">
+                    <label for="model-license-select">Model Licence (SPDX)</label>
+                    <select
+                        id="model-license-select"
+                        data-testid="model-license-select"
+                        bind:value={modelLicense}
+                    >
+                        <option value="Apache-2.0">Apache-2.0</option>
+                        <option value="MIT">MIT</option>
+                        <option value="Llama-3-Community">Llama-3-Community</option>
+                        <option value="OpenRAIL-M">OpenRAIL-M</option>
+                        <option value="Custom">Custom / Proprietary</option>
+                    </select>
+                </div>
+
+                <div class="checkbox-row">
+                    <input
+                        type="checkbox"
+                        id="license-acknowledge-checkbox"
+                        data-testid="license-acknowledge-checkbox"
+                        checked={licenseAcknowledged}
+                        onchange={(e) => handleLicenseAckChange((e.target as HTMLInputElement).checked)}
+                    />
+                    <label for="license-acknowledge-checkbox">
+                        <strong>I acknowledge the model licence terms and verify the SHA-256 hash for offline local execution</strong>
+                        <span class="subtext">Required by Failsafe F19 before local LLM execution can be enabled</span>
+                    </label>
+                </div>
+            </div>
 
             <div class="checkbox-row">
                 <input
                     type="checkbox"
                     id="ai-toggle"
+                    data-testid="ai-local-toggle"
+                    disabled={!licenseAcknowledged}
                     bind:checked={settings.ai_local_enabled}
                 />
                 <label for="ai-toggle">
                     <strong>Enable AI Features (ai-local)</strong>
-                    <span class="subtext">Offline summarization and translation using local weights</span>
+                    <span class="subtext">{licenseAcknowledged ? 'Offline summarization and translation using local weights' : 'Disabled: Acknowledge model licence terms and verify SHA-256 to enable'}</span>
                 </label>
             </div>
         </section>
@@ -654,6 +724,23 @@
         border-radius: 4px;
         color: #cdd6f4;
         word-break: break-all;
+    }
+
+    .license-panel {
+        background-color: #1e1e2e;
+        border: 1px solid #313244;
+        border-radius: 6px;
+        padding: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .license-panel h4 {
+        margin: 0;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #cdd6f4;
     }
 
     .card-header-actions {

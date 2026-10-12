@@ -752,6 +752,32 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/summarizer_tests.rs` (4 tests), `crates/lpdf-cli/tests/cli_tests.rs` (2 tests added, 19 run), `app-tauri/src/lib/views/__tests__/AiSummarizeView.test.ts` (6 tests added, 45 total vitest run; 105 total nextest run).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-12 20:30] Phase 10.5b — Local-LLM Spike, `lpdf-ai-worker` Skeleton, Model Import UI, Hash & Licence Acknowledgement
+- **Status:** Complete (Tag: phase-10.5b-green)
+- **Work:**
+  - ADR-004 Spike & Backend Evaluation (`logs/DECISIONS_ADR.md`):
+    - Evaluated `llama-cpp-2` vs `candle` against `#![forbid(unsafe_code)]`, pure-Rust portability, GGUF quantization, and sandboxed execution under `unshare -n`.
+    - Documented spike selection in ADR-004: chose pure-Rust `candle` backend without C/C++ toolchain friction.
+  - `crates/lpdf-ai-worker` Skeleton & F19 Enforcement:
+    - Created `crates/lpdf-ai-worker` with `#![forbid(unsafe_code)]` and `ai-local` feature flag (default OFF).
+    - Defined `AiWorkerRequest` (`Ping`, `ValidateModel`, `InferChunk`), `AiWorkerResponse`, and `AiModelManifest`.
+    - Implemented `AiWorkerSession` enforcing Failsafe F19: rejects execution if `ai_local_enabled` is false, `license_acknowledged` is false, magic bytes / SHA-256 mismatch, or network attempted.
+    - Implemented binary worker entrypoint in `src/main.rs` executing typed JSON-line requests over stdin/stdout.
+    - Added unit/integration tests in `crates/lpdf-ai-worker/tests/ai_worker_tests.rs` (6 tests).
+  - Settings & IPC Extension (`lpdf-core-types`, `lpdf-fs-safety`, `app-tauri`):
+    - Extended `AppSettings` with `ai_license_acknowledged: bool`, `ai_model_sha256: Option<String>`, `ai_model_license: Option<String>`.
+    - Extended `AiModelInfo` with `license_spdx: String`, `license_acknowledged: bool`.
+    - Updated Tauri command `import_local_ai_model` and IPC client (`app-tauri/src/lib/ipc.ts`) to calculate SHA-256, validate magic headers, and enforce licence acknowledgement before enabling `ai_local_enabled`.
+    - Regenerated TypeScript bindings (`AppSettings.ts`, `AiModelInfo.ts`, `AiModelManifest.ts`, `AiWorkerRequest.ts`, `AiWorkerResponse.ts`).
+  - Frontend Model Import & Verification UI (`SettingsView.svelte`, `AiSummarizeView.svelte`):
+    - Updated `SettingsView.svelte`: added Model Licence & Checksum Verification panel with SHA-256 display (`data-testid="model-sha256"`), license selector (`data-testid="model-license-select"`), and mandatory acknowledgement checkbox (`data-testid="license-acknowledge-checkbox"`); gated local AI toggle until acknowledged.
+    - Updated `AiSummarizeView.svelte`: added Local AI readiness status badges (`data-testid="llm-status-badge"` showing "Model Ready" vs "Gated Opt-In"), model path and verified SHA-256 snippet.
+    - Extended Vitest test suites in `app-tauri/src/lib/views/__tests__/SettingsView.test.ts` (6 tests) and `AiSummarizeView.test.ts` (7 tests).
+- **Gate:** pass (`pnpm check` clean; `pnpm vitest run` 47/47 green; `cargo xtask gate` green: fmt, clippy, nextest 111/111, cargo-deny, cargo-audit, protocol-lint).
+- **Tests added/run:** `crates/lpdf-ai-worker/tests/ai_worker_tests.rs` (6 tests), `crates/lpdf-ai-worker/src/lib.rs` (1 test), `crates/lpdf-core-types/src/config.rs` (1 test), `crates/lpdf-fs-safety/tests/fs_safety_tests.rs` (5 tests), `app-tauri/src/lib/views/__tests__/SettingsView.test.ts` (6 tests), `app-tauri/src/lib/views/__tests__/AiSummarizeView.test.ts` (7 tests; 47 vitest tests total; 111 nextest tests total).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 

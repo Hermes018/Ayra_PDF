@@ -3125,6 +3125,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "lpdf-ai-worker"
+version = "0.1.0"
+dependencies = [
+ "lpdf-core-types",
+ "serde",
+ "serde_json",
+ "ts-rs 10.1.0",
+]
+
+[[package]]
 name = "lpdf-cli"
 version = "0.1.0"
 dependencies = [

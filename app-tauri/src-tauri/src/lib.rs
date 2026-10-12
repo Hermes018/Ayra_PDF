@@ -200,15 +200,28 @@ fn export_diagnostics(output_path: String) -> Result<String, String> {
     Ok(target.to_string_lossy().to_string())
 }
 
-/// Import a local AI model file (.gguf, .onnx, etc.), verify existence and SHA-256, and update AppSettings.
+/// Import a local AI model file (.gguf, .onnx, etc.), verify existence, header, and SHA-256, and update AppSettings.
+/// Requires explicit license acknowledgement before enabling `ai_local_enabled` (Failsafe F19).
 #[tauri::command]
-fn import_local_ai_model(model_path: String) -> Result<AiModelInfo, String> {
+fn import_local_ai_model(
+    model_path: String,
+    license_spdx: Option<String>,
+    acknowledge_license: Option<bool>,
+) -> Result<AiModelInfo, String> {
     let path = PathBuf::from(&model_path);
-    let info = lpdf_core_types::inspect_ai_model(&path).map_err(|e| e.to_string())?;
+    let mut info = lpdf_core_types::inspect_ai_model(&path).map_err(|e| e.to_string())?;
+
+    let ack = acknowledge_license.unwrap_or(false);
+    info.license_spdx = license_spdx.clone();
+    info.license_acknowledged = ack;
 
     let mut current_settings = get_settings().unwrap_or_default();
     current_settings.local_ai_model_path = Some(path);
-    current_settings.ai_local_enabled = true;
+    current_settings.ai_model_sha256 = Some(info.sha256_hex.clone());
+    current_settings.ai_model_license = license_spdx;
+    current_settings.ai_license_acknowledged = ack;
+    // Failsafe F19: refuse to enable ai_local_enabled unless license is explicitly acknowledged
+    current_settings.ai_local_enabled = ack;
     let _ = save_settings(current_settings);
 
     Ok(info)

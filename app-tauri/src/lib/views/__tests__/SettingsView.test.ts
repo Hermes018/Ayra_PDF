@@ -13,6 +13,9 @@ const initialSettings: AppSettings = {
     theme: 'System',
     local_ai_model_path: null,
     ai_local_enabled: false,
+    ai_license_acknowledged: false,
+    ai_model_sha256: null,
+    ai_model_license: null,
 };
 
 const mockLogs: string[] = [
@@ -27,6 +30,8 @@ const mockModelInfo: AiModelInfo = {
     size_bytes: 1258291200n,
     sha256_hex: 'a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0',
     format: 'GGUF',
+    license_spdx: 'Apache-2.0',
+    license_acknowledged: true,
 };
 
 describe('SettingsView', () => {
@@ -114,9 +119,47 @@ describe('SettingsView', () => {
         const importBtn = screen.getByText('Import Model');
         await fireEvent.click(importBtn);
 
-        expect(IpcClient.importLocalAiModel).toHaveBeenCalledWith('/models/llama-3.2-1b.gguf');
+        expect(IpcClient.importLocalAiModel).toHaveBeenCalledWith(
+            '/models/llama-3.2-1b.gguf',
+            'Apache-2.0',
+            false
+        );
         expect(await screen.findByText('📄 llama-3.2-1b.gguf')).toBeInTheDocument();
         expect(screen.getByText('GGUF')).toBeInTheDocument();
-        expect(screen.getByText('a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0')).toBeInTheDocument();
+        expect(screen.getByTestId('model-sha256')).toHaveTextContent(
+            'a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0'
+        );
+    });
+
+    test('enforces F19 licence acknowledgement gating for local AI toggle', async () => {
+        render(SettingsView);
+        await screen.findByTestId('settings-loaded');
+
+        const aiToggle = screen.getByTestId('ai-local-toggle') as HTMLInputElement;
+        const ackCheckbox = screen.getByTestId('license-acknowledge-checkbox') as HTMLInputElement;
+
+        // Initially disabled because licence is not acknowledged
+        expect(aiToggle.disabled).toBe(true);
+        expect(ackCheckbox.checked).toBe(false);
+
+        // Acknowledge licence terms
+        await fireEvent.click(ackCheckbox);
+        expect(ackCheckbox.checked).toBe(true);
+        expect(aiToggle.disabled).toBe(false);
+
+        // Enable AI toggle
+        await fireEvent.click(aiToggle);
+        expect(aiToggle.checked).toBe(true);
+
+        // Save settings and verify payload has ai_license_acknowledged = true
+        const saveBtn = screen.getByText('💾 Save Settings');
+        await fireEvent.click(saveBtn);
+
+        expect(IpcClient.saveSettings).toHaveBeenCalledWith(
+            expect.objectContaining({
+                ai_local_enabled: true,
+                ai_license_acknowledged: true,
+            })
+        );
     });
 });
