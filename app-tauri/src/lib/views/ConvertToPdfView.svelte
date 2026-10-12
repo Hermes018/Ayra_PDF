@@ -309,6 +309,7 @@
                             type="button"
                             class="format-tile"
                             class:active={selectedOptionId === opt.id}
+                            aria-pressed={selectedOptionId === opt.id}
                             onclick={() => { selectedOptionId = opt.id; }}
                         >
                             <div class="tile-header">

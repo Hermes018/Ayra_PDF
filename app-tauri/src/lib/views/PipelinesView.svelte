@@ -207,7 +207,8 @@
                     data-testid={`preset-card-${preset.id}`}
                     role="button"
                     tabindex="0"
-                    onkeydown={(e) => { if (e.key === 'Enter') applyPreset(preset); }}
+                    aria-pressed={selectedPresetId === preset.id}
+                    onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); applyPreset(preset); } }}
                 >
                     <div class="preset-header">
                         <span class="preset-title">{preset.name}</span>

@@ -6,34 +6,46 @@
 </script>
 
 <div class="convert-container">
-    <div class="tab-bar">
+    <div class="tab-bar" role="tablist" aria-label="Conversion Mode">
         <button
             type="button"
+            id="tab-from-pdf"
+            role="tab"
+            aria-selected={activeTab === 'from-pdf'}
+            aria-controls="panel-from-pdf"
+            tabindex={activeTab === 'from-pdf' ? 0 : -1}
             class="tab-btn"
             class:active={activeTab === 'from-pdf'}
             onclick={() => { activeTab = 'from-pdf'; }}
         >
-            <span class="tab-icon">📤</span>
+            <span class="tab-icon" aria-hidden="true">📤</span>
             <span class="tab-text">Convert from PDF</span>
         </button>
         <button
             type="button"
+            id="tab-to-pdf"
+            role="tab"
+            aria-selected={activeTab === 'to-pdf'}
+            aria-controls="panel-to-pdf"
+            tabindex={activeTab === 'to-pdf' ? 0 : -1}
             class="tab-btn"
             class:active={activeTab === 'to-pdf'}
             onclick={() => { activeTab = 'to-pdf'; }}
         >
-            <span class="tab-icon">📥</span>
+            <span class="tab-icon" aria-hidden="true">📥</span>
             <span class="tab-text">Convert to PDF</span>
         </button>
     </div>
 
-    <div class="tab-content">
-        {#if activeTab === 'from-pdf'}
+    {#if activeTab === 'from-pdf'}
+        <div id="panel-from-pdf" class="tab-content" role="tabpanel" aria-labelledby="tab-from-pdf">
             <ConvertFromPdfView />
-        {:else}
+        </div>
+    {:else}
+        <div id="panel-to-pdf" class="tab-content" role="tabpanel" aria-labelledby="tab-to-pdf">
             <ConvertToPdfView />
-        {/if}
-    </div>
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -74,6 +86,11 @@
     .tab-btn:hover {
         color: #cdd6f4;
         background: rgba(255, 255, 255, 0.04);
+    }
+
+    .tab-btn:focus-visible {
+        outline: 2px solid #cba6f7;
+        outline-offset: -2px;
     }
 
     .tab-btn.active {

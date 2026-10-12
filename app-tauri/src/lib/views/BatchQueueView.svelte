@@ -402,7 +402,7 @@
 
                     <!-- Diagnostics for Failures -->
                     {#if job.status === 'Failed' && (job.error_code || job.error_message)}
-                        <div class="diagnostics-box" data-testid="diagnostics-box">
+                        <div class="diagnostics-box" data-testid="diagnostics-box" role="alert" aria-live="assertive">
                             <div class="diag-header">
                                 <span class="diag-badge">{job.error_code || 'ERROR'}</span>
                                 <span class="diag-title">Diagnostics</span>

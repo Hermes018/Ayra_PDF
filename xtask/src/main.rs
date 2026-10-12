@@ -17,6 +17,7 @@ fn main() {
         "fuzz" | "hostile" => run_fuzz(&args[2..]),
         "perf-check" => run_perf_check(),
         "sbom" => run_sbom(),
+        "a11y" => run_a11y(),
         _ => {
             eprintln!("Unknown command: {}", args[1]);
             exit(1);
@@ -249,4 +250,27 @@ fn run_sbom() {
         exit(1);
     }
     println!("CycloneDX SBOM generated at logs/sbom.cdx.json and supply chain verified green!");
+}
+
+fn run_a11y() {
+    println!("Running accessibility (a11y) protocol audit and Svelte landmark verification...");
+    let status = Command::new("cargo")
+        .args([
+            "test",
+            "-p",
+            "lpdf-engine-switcher",
+            "--test",
+            "fuzz_smoke_tests",
+            "--",
+            "test_a11y_protocol_audit_and_svelte_landmarks",
+            "--test-threads=1",
+        ])
+        .status()
+        .expect("Failed to execute a11y tests");
+
+    if !status.success() {
+        eprintln!("A11y verification failed!");
+        exit(1);
+    }
+    println!("A11y protocol audit and Svelte landmark verification passed green!");
 }

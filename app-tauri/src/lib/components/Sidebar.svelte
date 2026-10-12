@@ -17,21 +17,22 @@
     ];
 </script>
 
-<aside class="sidebar">
+<aside class="sidebar" aria-label="Application Sidebar">
     <div class="logo">
-        <span class="icon">📄</span>
+        <span class="icon" aria-hidden="true">📄</span>
         <h2>LocalPDF</h2>
     </div>
 
-    <nav>
+    <nav aria-label="Primary Navigation">
         <ul>
             {#each menuItems as item}
                 <li>
                     <button
                         class:active={currentView === item.id}
+                        aria-current={currentView === item.id ? 'page' : undefined}
                         onclick={() => { currentView = item.id; }}
                     >
-                        <span class="icon">{item.icon}</span>
+                        <span class="icon" aria-hidden="true">{item.icon}</span>
                         {item.label}
                     </button>
                 </li>
@@ -42,9 +43,10 @@
     <div class="bottom-nav">
         <button
             class:active={currentView === 'Settings'}
+            aria-current={currentView === 'Settings' ? 'page' : undefined}
             onclick={() => { currentView = 'Settings'; }}
         >
-            <span class="icon">⚙️</span>
+            <span class="icon" aria-hidden="true">⚙️</span>
             Settings
         </button>
     </div>
@@ -104,6 +106,11 @@
 
     button:hover {
         background-color: #313244;
+    }
+
+    button:focus-visible {
+        outline: 2px solid #cba6f7;
+        outline-offset: 2px;
     }
 
     button.active {

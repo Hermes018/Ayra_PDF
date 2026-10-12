@@ -927,6 +927,29 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs` (3 tests added, 19 total run; 145 nextest tests total).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-13 04:10] Phase 11.5 — Hardening: Accessibility / A11y Audit & Phase 11 Gate
+- **Status:** Complete (Tag: phase-11.5-green)
+- **Work:**
+  - Comprehensive WCAG 2.1 AA Accessibility Audit (`protocol/A11Y_AUDIT.md`):
+    - Documented complete WCAG 2.1 AA audit checklist, landmark hierarchy, keyboard navigation map, WAI-ARIA states/roles, form labels, color contrast ratios, and automated verification matrix.
+  - Svelte 5 Accessibility & Navigation Hardening (`app-tauri/src/`):
+    - Added accessible `.skip-link` ("Skip to main content") in `MainLayout.svelte` directing focus to `<main id="main-content" tabindex="-1">` with offscreen-to-visible `:focus-visible` styling.
+    - Added `<aside aria-label="Application Sidebar">` and `<nav aria-label="Primary Navigation">` in `Sidebar.svelte` with dynamic `aria-current="page"` on active tool and settings buttons, with visible `:focus-visible` outlines.
+    - Enforced WAI-ARIA tab pattern in `ConvertView.svelte` with `role="tablist"`, `role="tab"`, `aria-selected`, `aria-controls`, `aria-labelledby`, and `role="tabpanel"`.
+    - Hardened `ConvertFromPdfView.svelte` and `ConvertToPdfView.svelte` with `aria-pressed` toggle states for format selection buttons.
+    - Associated certificate input with `<label for="cert-path">` in `FormsView.svelte` and refactored checkbox fieldset headers in `SecurityView.svelte` into `<span class="group-label">`.
+    - Added `role="alert" aria-live="assertive"` on error alert boxes in `BatchQueueView.svelte` and `AiSummarizeView.svelte`, and `role="status" aria-live="polite"` on progress/status indicators in `StatusBar.svelte` and `AiSummarizeView.svelte`.
+  - Frontend Vitest Accessibility Suite (`app-tauri/src/lib/views/__tests__/A11yConformance.test.ts`):
+    - Added 4 test suites verifying semantic landmarks (`navigation`, `main`, skip link), tablist keyboard navigation and `aria-selected` toggling, alert live regions (`role="alert"`, `aria-live="assertive"`), and status live regions.
+    - Updated `ConvertFromPdfView.test.ts` to assert against `role="tab"`. All 8 frontend test files (53 tests) pass.
+  - Rust & Protocol A11y Verification (`crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs`, `xtask/src/main.rs`):
+    - Reused existing test binary `fuzz_smoke_tests.rs` (saving linker RAM on 8GB host) with `test_a11y_protocol_audit_and_svelte_landmarks` scanning all `.svelte` templates for semantic landmarks, skip links, aria-label associations, and ensuring `protocol/A11Y_AUDIT.md` is present.
+    - Added `cargo xtask a11y` command to `xtask/src/main.rs`.
+- **Gate:** pass (`cargo xtask gate` green: fmt, clippy, nextest 146/146, cargo-deny, cargo-audit, protocol-lint; `pnpm check`: 0 errors, 0 warnings; `pnpm vitest`: 53/53 passed).
+- **Tests added/run:** `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs` (1 test added, 20 total run; 146 nextest tests total); `app-tauri/src/lib/views/__tests__/A11yConformance.test.ts` (4 tests added; 53 vitest tests total).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 
