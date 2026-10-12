@@ -207,6 +207,11 @@ pub enum JobRequest {
         output_path: String,
         conformance: lpdf_engine_port::PdfAConformance,
     },
+    OfficeToPdf {
+        input_path: String,
+        output_path: String,
+        format: lpdf_engine_port::OfficeInputFormat,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -356,6 +361,7 @@ impl JobManager {
             LpdfError::ConfigError(_) => "CONFIG_ERROR".into(),
             LpdfError::Unsupported(_) => "UNSUPPORTED".into(),
             LpdfError::OcrInferenceError(_) => "OCR_INFERENCE_ERROR".into(),
+            LpdfError::ExternalDependencyError(_) => "EXTERNAL_DEPENDENCY_ERROR".into(),
         }
     }
 
@@ -1225,6 +1231,48 @@ impl JobManager {
 
                 Ok(JobOutput {
                     output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::OfficeToPdf {
+                input_path,
+                output_path,
+                format,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: format!(
+                        "Converting {:?} document to PDF via headless sidecar...",
+                        format
+                    ),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 40,
+                    message: "Rendering high-fidelity layout...".into(),
+                });
+
+                let result_path = engine.office_to_pdf(&path, *format, &out)?;
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 100,
+                    message: "Office conversion complete".into(),
+                });
+
+                Ok(JobOutput {
+                    output_path: Some(result_path.to_string_lossy().to_string()),
                     degraded: engine.is_degraded(),
                 })
             }

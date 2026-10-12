@@ -5,7 +5,8 @@
 
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion, RenderOptions,
+    OfficeInputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion,
+    RenderOptions,
 };
 use std::path::{Path, PathBuf};
 
@@ -287,5 +288,14 @@ impl PdfEngine for EngineSwitcher {
     ) -> Result<PdfAPreflightReport> {
         self.primary
             .pdf_to_pdfa(input_path, conformance, output_path)
+    }
+
+    fn office_to_pdf(
+        &self,
+        input_path: &Path,
+        format: OfficeInputFormat,
+        output_path: &Path,
+    ) -> Result<std::path::PathBuf> {
+        self.primary.office_to_pdf(input_path, format, output_path)
     }
 }
