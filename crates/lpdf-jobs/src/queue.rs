@@ -202,6 +202,11 @@ pub enum JobRequest {
         input_path: String,
         output_path: String,
     },
+    PdfToPdfA {
+        input_path: String,
+        output_path: String,
+        conformance: lpdf_engine_port::PdfAConformance,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -1173,6 +1178,50 @@ impl JobManager {
                 }
 
                 engine.pdf_to_rtf(&path, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::PdfToPdfA {
+                input_path,
+                output_path,
+                conformance,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: format!("Converting to {:?} archival format...", conformance),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let report = engine.pdf_to_pdfa(&path, *conformance, &out)?;
+
+                let summary = format!(
+                    "PDF/A Preflight: {} (fixed: {}, remaining: {})",
+                    if report.is_compliant {
+                        "Compliant"
+                    } else {
+                        "Non-compliant"
+                    },
+                    report.fixed_issues.len(),
+                    report.remaining_issues.len(),
+                );
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 100,
+                    message: summary,
+                });
 
                 Ok(JobOutput {
                     output_path: Some(output_path.clone()),

@@ -4,7 +4,9 @@
 #![forbid(unsafe_code)]
 
 use lpdf_core_types::{LpdfError, Result};
-use lpdf_engine_port::{PdfEngine, PdfInfo, RedactionRegion, RenderOptions};
+use lpdf_engine_port::{
+    PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion, RenderOptions,
+};
 use std::path::{Path, PathBuf};
 
 /// Tracks which engine is active after a load attempt.
@@ -275,5 +277,15 @@ impl PdfEngine for EngineSwitcher {
 
     fn pdf_to_rtf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
         self.primary.pdf_to_rtf(input_path, output_path)
+    }
+
+    fn pdf_to_pdfa(
+        &self,
+        input_path: &Path,
+        conformance: PdfAConformance,
+        output_path: &Path,
+    ) -> Result<PdfAPreflightReport> {
+        self.primary
+            .pdf_to_pdfa(input_path, conformance, output_path)
     }
 }

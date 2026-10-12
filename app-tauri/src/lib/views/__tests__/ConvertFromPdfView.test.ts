@@ -29,6 +29,7 @@ describe('ConvertFromPdfView', () => {
         expect(screen.getByText(/Extract Embedded Images/i)).toBeInTheDocument();
         expect(screen.getByText(/HTML Document \(\.html\)/i)).toBeInTheDocument();
         expect(screen.getByText(/Plain Text \(\.txt\)/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/PDF to PDF\/A \(Archival\)/i).length).toBeGreaterThan(0);
     });
 
     test('submits JobRequest when export button clicked', async () => {
@@ -43,6 +44,56 @@ describe('ConvertFromPdfView', () => {
             op: 'PdfToDocx',
             input_path: '/path/to/my_document.pdf',
             output_path: '/path/to/my_document.docx'
+        }));
+    });
+
+    test('submits PdfToPdfA archival JobRequest with conformance level', async () => {
+        appState.addFiles(['/path/to/my_document.pdf']);
+        const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-pdfa-job-5678');
+        render(ConvertFromPdfView);
+
+        // Click PDF/A format tile
+        const pdfaTile = screen.getByRole('button', { name: /PDF to PDF\/A \(Archival\)/i });
+        await fireEvent.click(pdfaTile);
+
+        // Verify conformance selector appears with PDF/A-2b recommended
+        expect(screen.getByText(/PDF\/A Conformance Level/i)).toBeInTheDocument();
+        expect(screen.getByText(/Recommended/i)).toBeInTheDocument();
+
+        // Submit default (PDF/A-2b)
+        const btn = screen.getByRole('button', { name: /Convert Now/i });
+        await fireEvent.click(btn);
+
+        expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
+            op: 'PdfToPdfA',
+            input_path: '/path/to/my_document.pdf',
+            output_path: '/path/to/my_document_pdfa.pdf',
+            conformance: 'PdfA2b'
+        }));
+    });
+
+    test('allows selecting PDF/A-3b conformance level', async () => {
+        appState.addFiles(['/path/to/my_document.pdf']);
+        const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-pdfa-job-9012');
+        render(ConvertFromPdfView);
+
+        // Click PDF/A format tile
+        const pdfaTile = screen.getByRole('button', { name: /PDF to PDF\/A \(Archival\)/i });
+        await fireEvent.click(pdfaTile);
+
+        // Select PDF/A-3b radio
+        const radio3b = screen.getByRole('radio', { name: /PDF\/A-3b/i });
+        await fireEvent.click(radio3b);
+
+        // Submit
+        const btn = screen.getByRole('button', { name: /Convert Now/i });
+        await fireEvent.click(btn);
+
+        expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
+            op: 'PdfToPdfA',
+            input_path: '/path/to/my_document.pdf',
+            output_path: '/path/to/my_document_pdfa.pdf',
+            conformance: 'PdfA3b'
         }));
     });
 });

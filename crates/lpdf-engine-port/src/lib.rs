@@ -67,6 +67,23 @@ pub struct RedactionRegion {
     pub height: f64,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub enum PdfAConformance {
+    PdfA1b,
+    PdfA2b,
+    PdfA3b,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub struct PdfAPreflightReport {
+    pub conformance: PdfAConformance,
+    pub is_compliant: bool,
+    pub fixed_issues: Vec<String>,
+    pub remaining_issues: Vec<String>,
+}
+
 pub trait PdfEngine {
     fn load(&mut self, path: &Path) -> Result<()>;
     fn info(&self) -> Result<PdfInfo>;
@@ -148,6 +165,14 @@ pub trait PdfEngine {
     fn pdf_to_structural_docx(&self, input_path: &Path, output_path: &Path) -> Result<()>;
     fn pdf_to_html(&self, input_path: &Path, output_path: &Path) -> Result<()>;
     fn pdf_to_rtf(&self, input_path: &Path, output_path: &Path) -> Result<()>;
+
+    // Conversions from PDF (Phase 8.2 PDF/A Archival & Preflight)
+    fn pdf_to_pdfa(
+        &self,
+        input_path: &Path,
+        conformance: PdfAConformance,
+        output_path: &Path,
+    ) -> Result<PdfAPreflightReport>;
 }
 
 #[macro_export]
