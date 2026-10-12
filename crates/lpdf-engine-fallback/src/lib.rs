@@ -3,9 +3,9 @@
 use lopdf::Document;
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    ExtractiveSummaryReport, MarkdownBatchOptions, MarkdownBatchReport, MarkdownDocFormat,
-    OfficeInputFormat, OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine,
-    PdfInfo, RedactionRegion, RenderOptions, SummaryLength,
+    ExtractiveSummaryReport, LlmSummaryOptions, LlmSummaryReport, MarkdownBatchOptions,
+    MarkdownBatchReport, MarkdownDocFormat, OfficeInputFormat, OfficeOutputFormat, PdfAConformance,
+    PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion, RenderOptions, SummaryLength,
 };
 use std::path::Path;
 
@@ -393,6 +393,17 @@ impl PdfEngine for FallbackAdapter {
     ) -> Result<ExtractiveSummaryReport> {
         Err(LpdfError::Unsupported(
             "Extractive summarization is not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn summarize_llm_map_reduce(
+        &self,
+        _input_path: &Path,
+        _output_path: &Path,
+        _options: LlmSummaryOptions,
+    ) -> Result<LlmSummaryReport> {
+        Err(LpdfError::Unsupported(
+            "LLM Map-Reduce summarization is not supported by FallbackAdapter".into(),
         ))
     }
 }

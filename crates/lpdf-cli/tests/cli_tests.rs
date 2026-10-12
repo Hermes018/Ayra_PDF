@@ -307,6 +307,25 @@ impl PdfEngine for MockEngine {
             summary_word_count: 10,
         })
     }
+    fn summarize_llm_map_reduce(
+        &self,
+        _input_path: &Path,
+        output_path: &Path,
+        options: lpdf_engine_port::LlmSummaryOptions,
+    ) -> Result<lpdf_engine_port::LlmSummaryReport> {
+        *self.last_called.borrow_mut() = format!("summarize_llm:{:?}", options.length);
+        let content = "# Mock LLM Summary\n## Executive Synthesis\nMock Executive synthesis";
+        let _ = fs::write(output_path, content);
+        Ok(lpdf_engine_port::LlmSummaryReport {
+            output_path: output_path.to_path_buf(),
+            summary_text: content.to_string(),
+            chunk_summaries: vec!["Mock Chunk 1 summary".into()],
+            chunks_processed: 1,
+            model_sha256: options.manifest.sha256_hex,
+            source_word_count: 80,
+            summary_word_count: 15,
+        })
+    }
 }
 
 struct TestDirGuard(PathBuf);
@@ -903,4 +922,47 @@ fn test_cli_summarize_options_and_lengths() {
     ];
     let res_bad = lpdf_cli::run_cli_with_engine(&args_bad, &mut mock);
     assert!(res_bad.is_err());
+}
+
+#[test]
+fn test_cli_summarize_llm_map_reduce() {
+    let _g = TestDirGuard::new("cli_sum_llm");
+    let pdf = get_corpus_pdf("standard-text.pdf");
+    let out = _g.path().join("llm_summary.md");
+    let model = _g.path().join("mock_model.gguf");
+    let _ = fs::write(&model, b"GGUF_dummy_bytes");
+
+    let mut mock = MockEngine::new();
+
+    // Missing model error
+    let args_missing_model = vec![
+        "localpdf".into(),
+        "summarize".into(),
+        pdf.to_string_lossy().to_string(),
+        out.to_string_lossy().to_string(),
+        "--llm".into(),
+    ];
+    let res_err = lpdf_cli::run_cli_with_engine(&args_missing_model, &mut mock);
+    assert!(res_err.is_err());
+
+    // Valid LLM map-reduce execution
+    let args_ok = vec![
+        "localpdf".into(),
+        "summarize".into(),
+        pdf.to_string_lossy().to_string(),
+        out.to_string_lossy().to_string(),
+        "--llm".into(),
+        "--model".into(),
+        model.to_string_lossy().to_string(),
+        "--sha256".into(),
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".into(),
+        "--license".into(),
+        "Apache-2.0".into(),
+        "--acknowledge-license".into(),
+        "--chunk-words".into(),
+        "250".into(),
+    ];
+    let res_ok = lpdf_cli::run_cli_with_engine(&args_ok, &mut mock);
+    assert!(res_ok.is_ok(), "LLM summarize failed: {:?}", res_ok);
+    assert_eq!(*mock.last_called.borrow(), "summarize_llm:Medium");
 }

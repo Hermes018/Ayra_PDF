@@ -777,6 +777,33 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-ai-worker/tests/ai_worker_tests.rs` (6 tests), `crates/lpdf-ai-worker/src/lib.rs` (1 test), `crates/lpdf-core-types/src/config.rs` (1 test), `crates/lpdf-fs-safety/tests/fs_safety_tests.rs` (5 tests), `app-tauri/src/lib/views/__tests__/SettingsView.test.ts` (6 tests), `app-tauri/src/lib/views/__tests__/AiSummarizeView.test.ts` (7 tests; 47 vitest tests total; 111 nextest tests total).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-12 23:35] Phase 10.5c — AI Summarizer LLM Mode (Map-Reduce)
+- **Status:** Complete (Tag: phase-10.5c-green)
+- **Work:**
+  - Backend Map-Reduce LLM Summarization (`lpdf-engine-port`, `lpdf-engine-pdfcraft`, `lpdf-engine-fallback`, `lpdf-engine-switcher`):
+    - Defined `LlmSummaryOptions` (`manifest`, `ai_local_enabled`, `length`, `chunk_word_limit`, `max_tokens`, `temperature`) and `LlmSummaryReport` (`output_path`, `summary_text`, `chunk_summaries`, `chunks_processed`, `model_sha256`, `source_word_count`, `summary_word_count`) with serde and `ts-rs` exports.
+    - Added `summarize_llm_map_reduce` to `PdfEngine` trait across all engine implementations.
+    - Implemented layout block & sentence chunk partitioning (`partition_into_chunks`) bounded by word limits (<= 70% context budget).
+    - Implemented Map pass: sequentially inferring 2-3 sentence summaries per chunk with deterministic temperature (T <= 0.3) via isolated `AiWorkerSession`.
+    - Implemented Reduce pass: synthesizing intermediate chunk summaries into cohesive executive-level summary scaled to chosen `SummaryLength`.
+    - Enforced Failsafe F19: fail-closed validation rejecting inference when `ai_local_enabled` is false, model licence is unacknowledged, or SHA-256 / header verification fails.
+    - Atomic persistence of comprehensive Markdown report containing provenance metadata, model SHA-256 snippet, SPDX license attribution, executive synthesis, and section-by-section breakdown via `lpdf_fs_safety::atomic_write`.
+  - Background Job Queue & Unified CLI (`lpdf-jobs`, `lpdf-cli`):
+    - Added `JobRequest::SummarizeLlm { input_path: PathBuf, output_path: PathBuf, options: LlmSummaryOptions }` to `lpdf-jobs` with multi-stage progress reporting (validating, mapping, reducing, complete) and cancel-boundary checks.
+    - Extended `localpdf summarize` CLI with `--llm`, `--model <path>`, `--sha256 <hex>`, `--license <spdx>`, `--acknowledge-license`, and `--chunk-words <n>`.
+    - Added integration tests in `crates/lpdf-cli/tests/cli_tests.rs` (3 new tests covering help text, F19 flag rejection, and successful mock LLM map-reduce summarization).
+  - Frontend Local LLM Map-Reduce Interface (`app-tauri`):
+    - Updated `AiSummarizeView.svelte` with interactive controls for Map-Reduce settings:
+      - Semantic chunk budget slider & numeric stepper (100–2000 words, default 400).
+      - Inference temperature control with slider & numeric input (0.0–1.0, recommended <= 0.3 for deterministic generation).
+      - Conditional step numbering and dynamic submit action ("Generate Map-Reduce Summary" vs "Generate Extractive Summary").
+      - Integrated with `IpcClient.submitJob` submitting typed `JobRequest::SummarizeLlm`.
+    - Extended Vitest test suite in `app-tauri/src/lib/views/__tests__/AiSummarizeView.test.ts` (8 tests total) covering extractive submission, LLM mode toggling, chunk budget adjustment, deterministic temperature configuration, and `SummarizeLlm` JobRequest generation.
+- **Gate:** pass (`pnpm check` clean; `pnpm vitest run` 48/48 green; `cargo xtask gate` green: fmt, clippy, nextest 124/124, cargo-deny, cargo-audit, protocol-lint).
+- **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/summarizer_tests.rs` (3 tests added, 7 run), `crates/lpdf-cli/tests/cli_tests.rs` (3 tests added, 22 run), `crates/lpdf-engine-port` (1 binding test added), `app-tauri/src/lib/views/__tests__/AiSummarizeView.test.ts` (1 test added, 8 run; 48 vitest tests total; 124 nextest tests total).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 

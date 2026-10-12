@@ -251,6 +251,11 @@ pub enum JobRequest {
         output_path: PathBuf,
         length: lpdf_engine_port::SummaryLength,
     },
+    SummarizeLlm {
+        input_path: PathBuf,
+        output_path: PathBuf,
+        options: lpdf_engine_port::LlmSummaryOptions,
+    },
 }
 
 /// Execution priority for queued jobs.
@@ -607,6 +612,15 @@ impl JobRequest {
                 ..
             } => (
                 "Summarize (Extractive)".to_string(),
+                Some(input_path.to_string_lossy().to_string()),
+                Some(output_path.to_string_lossy().to_string()),
+            ),
+            JobRequest::SummarizeLlm {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Summarize (Local LLM Map-Reduce)".to_string(),
                 Some(input_path.to_string_lossy().to_string()),
                 Some(output_path.to_string_lossy().to_string()),
             ),
@@ -2237,6 +2251,51 @@ impl JobManager {
                         "Extractive summary generated ({} key points, {} words)",
                         report.key_points.len(),
                         report.summary_word_count
+                    ),
+                });
+
+                Ok(JobOutput {
+                    output_path: Some(report.output_path.to_string_lossy().to_string()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::SummarizeLlm {
+                input_path,
+                output_path,
+                options,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Validating model checksum and partitioning semantic chunks...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 40,
+                    message: "Running Map-Reduce inference over document chunks...".into(),
+                });
+
+                let report =
+                    engine.summarize_llm_map_reduce(input_path, output_path, options.clone())?;
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 100,
+                    message: format!(
+                        "Map-Reduce summary generated ({} chunks, {} words)",
+                        report.chunks_processed, report.summary_word_count
                     ),
                 });
 

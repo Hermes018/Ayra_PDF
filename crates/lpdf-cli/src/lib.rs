@@ -2,12 +2,12 @@
 
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    MarkdownBatchOptions, MarkdownBatchReport, MarkdownBatchTarget, MarkdownDocFormat,
-    OptimizeProfile, PdfAConformance, PdfEngine, Permissions, RedactionRegion, SummaryLength,
-    WatermarkSettings,
+    AiModelManifest, LlmSummaryOptions, MarkdownBatchOptions, MarkdownBatchReport,
+    MarkdownBatchTarget, MarkdownDocFormat, OptimizeProfile, PdfAConformance, PdfEngine,
+    Permissions, RedactionRegion, SummaryLength, WatermarkSettings,
 };
 use lpdf_engine_switcher::EngineSwitcher;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Creates a standard engine instance wired to primary (pdfcraft) and fallback.
 pub fn create_default_engine() -> EngineSwitcher {
@@ -1490,14 +1490,14 @@ fn format_batch_report(report: &MarkdownBatchReport) -> String {
 fn handle_summarize_command<E: PdfEngine>(args: &[String], engine: &mut E) -> Result<String> {
     if args.is_empty() || args[0] == "-h" || args[0] == "--help" || args[0] == "help" {
         return Ok(
-            "Usage: localpdf summarize <input.pdf> <output.md> [--length <short|medium|detailed>]"
+            "Usage: localpdf summarize <input.pdf> <output.md> [--length <short|medium|detailed>] [--llm --model <path> [--sha256 <hex>] [--license <spdx>] [--acknowledge-license] [--chunk-words <n>]]"
                 .to_string(),
         );
     }
 
     if args.len() < 2 {
         return Err(LpdfError::InvalidInput(
-            "Both input PDF path and output Markdown path are required. Usage: localpdf summarize <input.pdf> <output.md> [--length <short|medium|detailed>]".into(),
+            "Both input PDF path and output Markdown path are required. Usage: localpdf summarize <input.pdf> <output.md> [...]".into(),
         ));
     }
 
@@ -1511,6 +1511,13 @@ fn handle_summarize_command<E: PdfEngine>(args: &[String], engine: &mut E) -> Re
     let output = Path::new(&args[1]);
 
     let mut length = SummaryLength::Medium;
+    let mut is_llm = false;
+    let mut model_path: Option<PathBuf> = None;
+    let mut expected_sha256: Option<String> = None;
+    let mut license: Option<String> = None;
+    let mut acknowledge_license = false;
+    let mut chunk_words: Option<usize> = None;
+
     let mut i = 2;
     while i < args.len() {
         match args[i].as_str() {
@@ -1531,6 +1538,49 @@ fn handle_summarize_command<E: PdfEngine>(args: &[String], engine: &mut E) -> Re
                 }
                 i += 2;
             }
+            "--llm" => {
+                is_llm = true;
+                i += 1;
+            }
+            "--model" => {
+                if i + 1 >= args.len() {
+                    return Err(LpdfError::InvalidInput("Missing value for --model".into()));
+                }
+                model_path = Some(PathBuf::from(&args[i + 1]));
+                i += 2;
+            }
+            "--sha256" => {
+                if i + 1 >= args.len() {
+                    return Err(LpdfError::InvalidInput("Missing value for --sha256".into()));
+                }
+                expected_sha256 = Some(args[i + 1].clone());
+                i += 2;
+            }
+            "--license" => {
+                if i + 1 >= args.len() {
+                    return Err(LpdfError::InvalidInput(
+                        "Missing value for --license".into(),
+                    ));
+                }
+                license = Some(args[i + 1].clone());
+                i += 2;
+            }
+            "--acknowledge-license" => {
+                acknowledge_license = true;
+                i += 1;
+            }
+            "--chunk-words" => {
+                if i + 1 >= args.len() {
+                    return Err(LpdfError::InvalidInput(
+                        "Missing value for --chunk-words".into(),
+                    ));
+                }
+                let val = args[i + 1].parse::<usize>().map_err(|e| {
+                    LpdfError::InvalidInput(format!("Invalid integer for --chunk-words: {}", e))
+                })?;
+                chunk_words = Some(val);
+                i += 2;
+            }
             other => {
                 return Err(LpdfError::InvalidInput(format!(
                     "Unknown argument '{}'",
@@ -1540,17 +1590,68 @@ fn handle_summarize_command<E: PdfEngine>(args: &[String], engine: &mut E) -> Re
         }
     }
 
-    let report = engine.summarize_extractive(input, output, length)?;
-    Ok(format!(
-        "Extractive summary generated successfully -> {}\n- Source words: {}\n- Summary words: {}\n- Key points: {}\n- Keywords: {}",
-        report.output_path.display(),
-        report.source_word_count,
-        report.summary_word_count,
-        report.key_points.len(),
-        if report.keywords.is_empty() {
-            "none".to_string()
+    if is_llm {
+        let m_path = model_path.ok_or_else(|| {
+            LpdfError::InvalidInput(
+                "Local LLM summarization (--llm) requires --model <path>".into(),
+            )
+        })?;
+
+        let sha256_hex = match expected_sha256 {
+            Some(h) => h,
+            None => lpdf_core_types::compute_sha256_hex(&m_path)?,
+        };
+
+        let format = if m_path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|e| e.eq_ignore_ascii_case("onnx"))
+            .unwrap_or(false)
+        {
+            "ONNX".to_string()
         } else {
-            report.keywords.join(", ")
-        }
-    ))
+            "GGUF".to_string()
+        };
+
+        let manifest = AiModelManifest {
+            model_path: m_path,
+            sha256_hex,
+            format,
+            license_spdx: license.unwrap_or_else(|| "Apache-2.0".to_string()),
+            license_acknowledged: acknowledge_license,
+        };
+
+        let options = LlmSummaryOptions {
+            manifest,
+            ai_local_enabled: acknowledge_license,
+            length,
+            chunk_word_limit: chunk_words.unwrap_or(400),
+            max_tokens: 512,
+            temperature: 0.2,
+        };
+
+        let report = engine.summarize_llm_map_reduce(input, output, options)?;
+        Ok(format!(
+            "Map-Reduce LLM summary generated successfully -> {}\n- Chunks processed: {}\n- Source words: {}\n- Summary words: {}\n- Model: {}",
+            report.output_path.display(),
+            report.chunks_processed,
+            report.source_word_count,
+            report.summary_word_count,
+            report.model_sha256,
+        ))
+    } else {
+        let report = engine.summarize_extractive(input, output, length)?;
+        Ok(format!(
+            "Extractive summary generated successfully -> {}\n- Source words: {}\n- Summary words: {}\n- Key points: {}\n- Keywords: {}",
+            report.output_path.display(),
+            report.source_word_count,
+            report.summary_word_count,
+            report.key_points.len(),
+            if report.keywords.is_empty() {
+                "none".to_string()
+            } else {
+                report.keywords.join(", ")
+            }
+        ))
+    }
 }

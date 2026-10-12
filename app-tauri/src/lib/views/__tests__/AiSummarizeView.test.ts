@@ -42,7 +42,7 @@ describe('AiSummarizeView', () => {
 
         const llmCard = screen.getByTestId('mode-local-llm');
         expect(llmCard).not.toHaveClass('active');
-        expect(screen.getByText('Local LLM Mode')).toBeInTheDocument();
+        expect(screen.getByText(/Local LLM Mode/i)).toBeInTheDocument();
         expect(screen.getByText('Gated Opt-In')).toBeInTheDocument();
     });
 
@@ -151,6 +151,80 @@ describe('AiSummarizeView', () => {
         expect(screen.getByTestId('llm-model-path')).toHaveTextContent('/models/llama-3.2-1b.gguf');
         expect(screen.getByTestId('llm-model-hash')).toHaveTextContent('a1b2c3d4e5f60718...');
         expect(screen.getByText(/Licence Acknowledged \(Apache-2.0\)/i)).toBeInTheDocument();
+    });
+
+    test('switches to Local LLM Mode when enabled, configures Map-Reduce options, and dispatches SummarizeLlm', async () => {
+        vi.spyOn(IpcClient, 'getSettings').mockResolvedValue({
+            tier_override: null,
+            output_policy: 'SuffixNewFile',
+            backups_enabled: true,
+            language: 'en',
+            theme: 'System',
+            local_ai_model_path: '/models/llama-3.2-1b.gguf',
+            ai_local_enabled: true,
+            ai_license_acknowledged: true,
+            ai_model_sha256: 'a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0',
+            ai_model_license: 'Apache-2.0',
+        });
+        const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-llm-job-99');
+
+        render(AiSummarizeView);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('llm-status-badge')).toHaveTextContent('Model Ready');
+        });
+
+        const llmCard = screen.getByTestId('mode-local-llm');
+        await fireEvent.click(llmCard);
+
+        expect(llmCard).toHaveClass('active');
+        expect(screen.getByTestId('map-reduce-section')).toBeInTheDocument();
+
+        // Check chunk word limit and temperature controls
+        const chunkWordsInput = screen.getByTestId('chunk-words-input') as HTMLInputElement;
+        const tempInput = screen.getByTestId('temperature-input') as HTMLInputElement;
+        expect(chunkWordsInput.value).toBe('400');
+        expect(tempInput.value).toBe('0.2');
+
+        // Configure values
+        await fireEvent.input(chunkWordsInput, { target: { value: '600' } });
+        await fireEvent.input(tempInput, { target: { value: '0.1' } });
+
+        // Set input & output paths
+        const input = screen.getByTestId('input-path');
+        await fireEvent.input(input, { target: { value: '/docs/complex_manual.pdf' } });
+
+        // Select detailed
+        const detBtn = screen.getByTestId('length-detailed');
+        await fireEvent.click(detBtn);
+
+        // Submit
+        const generateBtn = screen.getByTestId('generate-summary-btn');
+        await fireEvent.click(generateBtn);
+
+        expect(submitSpy).toHaveBeenCalledWith({
+            op: 'SummarizeLlm',
+            input_path: '/docs/complex_manual.pdf',
+            output_path: '/docs/complex_manual_summary.md',
+            options: {
+                manifest: {
+                    model_path: '/models/llama-3.2-1b.gguf',
+                    sha256_hex: 'a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0',
+                    format: 'GGUF',
+                    license_spdx: 'Apache-2.0',
+                    license_acknowledged: true,
+                },
+                ai_local_enabled: true,
+                length: 'Detailed',
+                chunk_word_limit: 600,
+                max_tokens: 512,
+                temperature: 0.1,
+            },
+        });
+
+        expect(await screen.findByTestId('submission-status')).toHaveTextContent(
+            'Summary job queued successfully (ID: test-llm-job-99)'
+        );
     });
 });
 

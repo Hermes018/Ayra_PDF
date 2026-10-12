@@ -5,9 +5,9 @@
 
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    ExtractiveSummaryReport, MarkdownBatchOptions, MarkdownBatchReport, MarkdownDocFormat,
-    OfficeInputFormat, OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine,
-    PdfInfo, RedactionRegion, RenderOptions, SummaryLength,
+    ExtractiveSummaryReport, LlmSummaryOptions, LlmSummaryReport, MarkdownBatchOptions,
+    MarkdownBatchReport, MarkdownDocFormat, OfficeInputFormat, OfficeOutputFormat, PdfAConformance,
+    PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion, RenderOptions, SummaryLength,
 };
 use std::path::{Path, PathBuf};
 
@@ -355,5 +355,15 @@ impl PdfEngine for EngineSwitcher {
     ) -> Result<ExtractiveSummaryReport> {
         self.primary
             .summarize_extractive(input_path, output_path, length)
+    }
+
+    fn summarize_llm_map_reduce(
+        &self,
+        input_path: &Path,
+        output_path: &Path,
+        options: LlmSummaryOptions,
+    ) -> Result<LlmSummaryReport> {
+        self.primary
+            .summarize_llm_map_reduce(input_path, output_path, options)
     }
 }
