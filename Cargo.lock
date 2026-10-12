@@ -3150,6 +3150,7 @@ version = "0.1.0"
 dependencies = [
  "lpdf-core-types",
  "lpdf-engine-port",
+ "lpdf-fs-safety",
  "pdfcraft-cos",
  "pdfcraft-engine",
  "pdfcraft-forms",
@@ -3179,6 +3180,9 @@ dependencies = [
 [[package]]
 name = "lpdf-fs-safety"
 version = "0.1.0"
+dependencies = [
+ "lpdf-core-types",
+]
 
 [[package]]
 name = "lpdf-hw"

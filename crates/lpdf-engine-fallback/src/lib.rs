@@ -254,7 +254,45 @@ impl PdfEngine for FallbackAdapter {
     }
 
     fn html_to_pdf(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
-        Err(LpdfError::Engine("unimplemented".into()))
+        Err(LpdfError::Unsupported(
+            "html_to_pdf not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn pdf_to_images(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Unsupported(
+            "pdf_to_images not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn extract_all_images(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Unsupported(
+            "extract_all_images not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn pdf_to_text(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Unsupported(
+            "pdf_to_text not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn pdf_to_structural_docx(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Unsupported(
+            "pdf_to_structural_docx not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn pdf_to_html(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Unsupported(
+            "pdf_to_html not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn pdf_to_rtf(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
+        Err(LpdfError::Unsupported(
+            "pdf_to_rtf not supported by FallbackAdapter".into(),
+        ))
     }
 }
 
