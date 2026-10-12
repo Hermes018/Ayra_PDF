@@ -10,6 +10,7 @@
     import BatchQueueView from '$lib/views/BatchQueueView.svelte';
     import PipelinesView from '$lib/views/PipelinesView.svelte';
     import SettingsView from '$lib/views/SettingsView.svelte';
+    import AiSummarizeView from '$lib/views/AiSummarizeView.svelte';
 
     // Svelte 5 reactive state for view routing
     let currentView = $state('Organize');
@@ -30,6 +31,8 @@
         <FormsView />
     {:else if currentView === 'Markdown'}
         <MarkdownView />
+    {:else if currentView === 'Summarize'}
+        <AiSummarizeView onNavigate={(view) => { currentView = view; }} />
     {:else if currentView === 'Queue'}
         <BatchQueueView />
     {:else if currentView === 'Pipelines'}

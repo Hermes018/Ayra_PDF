@@ -3,9 +3,9 @@
 use lopdf::Document;
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    MarkdownBatchOptions, MarkdownBatchReport, MarkdownDocFormat, OfficeInputFormat,
-    OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion,
-    RenderOptions,
+    ExtractiveSummaryReport, MarkdownBatchOptions, MarkdownBatchReport, MarkdownDocFormat,
+    OfficeInputFormat, OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine,
+    PdfInfo, RedactionRegion, RenderOptions, SummaryLength,
 };
 use std::path::Path;
 
@@ -382,6 +382,17 @@ impl PdfEngine for FallbackAdapter {
     ) -> Result<MarkdownBatchReport> {
         Err(LpdfError::Unsupported(
             "batch_markdown_convert sidecar conversion is not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn summarize_extractive(
+        &self,
+        _input_path: &Path,
+        _output_path: &Path,
+        _length: SummaryLength,
+    ) -> Result<ExtractiveSummaryReport> {
+        Err(LpdfError::Unsupported(
+            "Extractive summarization is not supported by FallbackAdapter".into(),
         ))
     }
 }
