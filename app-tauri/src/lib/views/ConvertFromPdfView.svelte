@@ -259,6 +259,7 @@
                             type="button"
                             class="format-tile"
                             class:active={selectedFormat === fmt.id}
+                            aria-pressed={selectedFormat === fmt.id}
                             onclick={() => { selectedFormat = fmt.id; }}
                         >
                             <div class="tile-header">

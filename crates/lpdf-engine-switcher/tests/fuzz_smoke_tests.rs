@@ -8,7 +8,7 @@ use lpdf_engine_switcher::perf::*;
 use lpdf_engine_switcher::sbom::*;
 use lpdf_engine_switcher::EngineSwitcher;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Deterministic, fast pseudo-random number generator (Xorshift64Star).
 struct SeededPrng {
@@ -677,4 +677,82 @@ fn test_threat_model_matrix_coverage() {
 
     verify_threat_model_coverage(&threat_model_path)
         .expect("Threat model must cover all required threats T1 through T6");
+}
+
+#[test]
+fn test_a11y_protocol_audit_and_svelte_landmarks() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let audit_doc = workspace_root.join("protocol/A11Y_AUDIT.md");
+    assert!(audit_doc.exists(), "protocol/A11Y_AUDIT.md must exist");
+
+    let doc_content = fs::read_to_string(&audit_doc).expect("Read A11Y_AUDIT.md");
+    assert!(!doc_content.is_empty(), "A11Y_AUDIT.md must not be empty");
+    assert!(doc_content.contains("WCAG 2.1 Level AA"));
+    assert!(doc_content.contains("Landmark"));
+    assert!(doc_content.contains("aria-current"));
+    assert!(doc_content.contains("role=\"tablist\""));
+    assert!(doc_content.contains("role=\"progressbar\""));
+    assert!(doc_content.contains("role=\"alert\""));
+
+    let svelte_src = workspace_root.join("app-tauri/src");
+    assert!(svelte_src.exists(), "app-tauri/src must exist");
+
+    fn collect_svelte_files(dir: &Path, files: &mut Vec<PathBuf>) {
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    collect_svelte_files(&path, files);
+                } else if path.extension().and_then(|s| s.to_str()) == Some("svelte") {
+                    files.push(path);
+                }
+            }
+        }
+    }
+
+    let mut svelte_files = Vec::new();
+    collect_svelte_files(&svelte_src, &mut svelte_files);
+
+    assert!(
+        svelte_files.len() >= 10,
+        "Expected at least 10 Svelte components, found {}",
+        svelte_files.len()
+    );
+
+    // Verify key landmark files
+    let mut found_skip_link = false;
+    let mut found_primary_nav = false;
+    let mut found_status_landmark = false;
+    let mut found_tablist = false;
+
+    for file_path in &svelte_files {
+        let content = fs::read_to_string(file_path).expect("Read svelte file");
+        if content.contains("class=\"skip-link\"") && content.contains("id=\"main-content\"") {
+            found_skip_link = true;
+        }
+        if content.contains("aria-label=\"Primary Navigation\"") && content.contains("aria-current")
+        {
+            found_primary_nav = true;
+        }
+        if content.contains("role=\"status\"") && content.contains("aria-label=\"System status\"") {
+            found_status_landmark = true;
+        }
+        if content.contains("role=\"tablist\"") && content.contains("role=\"tab\"") {
+            found_tablist = true;
+        }
+    }
+
+    assert!(
+        found_skip_link,
+        "Must find skip-link and main-content landmarks in Svelte layout"
+    );
+    assert!(
+        found_primary_nav,
+        "Must find Primary Navigation landmark and aria-current in Sidebar"
+    );
+    assert!(
+        found_status_landmark,
+        "Must find status bar landmark in StatusBar"
+    );
+    assert!(found_tablist, "Must find WAI-ARIA tablist in ConvertView");
 }

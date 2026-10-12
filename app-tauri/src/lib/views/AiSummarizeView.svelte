@@ -499,15 +499,15 @@
         </div>
 
         {#if errorMessage}
-            <div class="status-box error" role="alert" data-testid="error-message">
-                <span class="status-icon">⚠️</span>
+            <div class="status-box error" role="alert" aria-live="assertive" data-testid="error-message">
+                <span class="status-icon" aria-hidden="true">⚠️</span>
                 <span>{errorMessage}</span>
             </div>
         {/if}
 
         {#if submissionStatus}
-            <div class="status-box success" role="status" data-testid="submission-status">
-                <span class="status-icon">✅</span>
+            <div class="status-box success" role="status" aria-live="polite" data-testid="submission-status">
+                <span class="status-icon" aria-hidden="true">✅</span>
                 <span>{submissionStatus}</span>
             </div>
         {/if}

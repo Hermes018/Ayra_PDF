@@ -207,14 +207,14 @@ describe('ConvertView tab container', () => {
 
     test('renders tabs and defaults to Convert from PDF', () => {
         render(ConvertView);
-        expect(screen.getByRole('button', { name: /Convert from PDF/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /Convert to PDF/i })).toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: /Convert from PDF/i })).toBeInTheDocument();
+        expect(screen.getByRole('tab', { name: /Convert to PDF/i })).toBeInTheDocument();
     });
 
     test('switches tabs on click', async () => {
         appState.addFiles(['/path/to/test.docx']);
         render(ConvertView);
-        const toPdfTab = screen.getByRole('button', { name: /Convert to PDF/i });
+        const toPdfTab = screen.getByRole('tab', { name: /Convert to PDF/i });
         await fireEvent.click(toPdfTab);
         expect(screen.getByRole('button', { name: /Word \(\.docx\) to PDF/i })).toBeInTheDocument();
     });

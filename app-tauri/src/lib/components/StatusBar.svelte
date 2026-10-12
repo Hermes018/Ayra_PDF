@@ -1,11 +1,11 @@
 <script lang="ts">
 </script>
 
-<footer class="status-bar">
+<footer class="status-bar" role="status" aria-label="System status">
     <div class="status-left">
-        <span class="icon">🟢</span> Ready
+        <span class="icon" aria-hidden="true">🟢</span> <span>Ready</span>
     </div>
-    <div class="status-right">
+    <div class="status-right" aria-live="polite">
         <span>0 active jobs</span>
     </div>
 </footer>

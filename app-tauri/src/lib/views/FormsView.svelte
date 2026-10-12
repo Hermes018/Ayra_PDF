@@ -157,10 +157,10 @@
                     <p class="description">Cryptographically sign the document using a local .p12 or .pfx certificate.</p>
                     
                     <div class="form-group">
-                        <label>Certificate (.p12 / .pfx)</label>
+                        <label for="cert-path">Certificate (.p12 / .pfx)</label>
                         <div class="file-picker">
-                            <input type="text" readonly value={p12Path} placeholder="Select a certificate..." class="input-field flex-1" />
-                            <button class="browse-btn" onclick={selectP12}>Browse</button>
+                            <input id="cert-path" type="text" readonly value={p12Path} placeholder="Select a certificate..." class="input-field flex-1" />
+                            <button class="browse-btn" onclick={selectP12} aria-label="Browse for certificate file">Browse</button>
                         </div>
                     </div>
 

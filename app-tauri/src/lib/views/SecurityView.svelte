@@ -117,7 +117,7 @@
                     </div>
 
                     <div class="form-group permissions-group">
-                        <label>Permissions (Owner capabilities)</label>
+                        <span class="group-label">Permissions (Owner capabilities)</span>
                         <label class="checkbox-label">
                             <input type="checkbox" bind:checked={allowPrint} />
                             Allow Printing
@@ -278,7 +278,8 @@
         gap: 0.4rem;
     }
 
-    .form-group label {
+    .form-group label,
+    .form-group .group-label {
         font-size: 0.85rem;
         color: var(--text-muted);
     }

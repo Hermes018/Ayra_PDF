@@ -10,11 +10,13 @@
     }>();
 </script>
 
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
 <div class="app-container">
     <Sidebar bind:currentView />
     
     <div class="main-content-wrapper">
-        <main class="main-content">
+        <main id="main-content" class="main-content" tabindex="-1">
             {@render children()}
         </main>
         
@@ -52,5 +54,26 @@
         flex: 1;
         overflow-y: auto;
         background-color: #181825;
+        outline: none;
+    }
+
+    .skip-link {
+        position: absolute;
+        top: -100px;
+        left: 1rem;
+        background: #cba6f7;
+        color: #11111b;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        border-radius: 4px;
+        z-index: 9999;
+        text-decoration: none;
+        transition: top 0.15s ease-out;
+    }
+
+    .skip-link:focus-visible {
+        top: 1rem;
+        outline: 3px solid #89b4fa;
+        outline-offset: 2px;
     }
 </style>
