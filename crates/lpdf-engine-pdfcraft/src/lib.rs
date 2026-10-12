@@ -2,8 +2,9 @@
 
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    MarkdownDocFormat, OfficeInputFormat, OfficeOutputFormat, PdfAConformance, PdfAPreflightReport,
-    PdfEngine, PdfInfo, RedactionRegion, RenderOptions,
+    MarkdownBatchOptions, MarkdownBatchReport, MarkdownDocFormat, OfficeInputFormat,
+    OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion,
+    RenderOptions,
 };
 use std::path::Path;
 use std::sync::Arc;
@@ -1737,6 +1738,23 @@ impl PdfEngine for PdfcraftAdapter {
         output_path: &Path,
     ) -> Result<std::path::PathBuf> {
         pandoc_sidecar::convert_doc_to_markdown(input_path, format, output_path, None)
+    }
+
+    fn batch_markdown_convert(
+        &self,
+        input_dir: &Path,
+        output_dir: &Path,
+        options: MarkdownBatchOptions,
+    ) -> Result<MarkdownBatchReport> {
+        pandoc_sidecar::batch_convert_markdown(
+            input_dir,
+            output_dir,
+            options,
+            None,
+            |in_p, out_p| self.pdf_to_html(in_p, out_p),
+            |in_p, out_p| self.extract_all_images(in_p, out_p),
+            |in_p, out_p| self.do_convert_to_pdf(in_p, out_p),
+        )
     }
 }
 

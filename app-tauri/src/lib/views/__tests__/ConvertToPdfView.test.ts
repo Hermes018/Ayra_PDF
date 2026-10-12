@@ -158,4 +158,27 @@ describe('ConvertToPdfView', () => {
             format: 'Docx'
         }));
     });
+
+    test('submits BatchMarkdownConvert JobRequest with configured options', async () => {
+        appState.addFiles(['/path/to/docs_folder']);
+        const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-job-batch-1');
+        render(ConvertToPdfView);
+
+        const batchTile = screen.getByRole('button', { name: /Batch Markdown Folder Conversion/i });
+        await fireEvent.click(batchTile);
+
+        const btn = screen.getByRole('button', { name: /Convert to PDF/i });
+        await fireEvent.click(btn);
+
+        expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
+            op: 'BatchMarkdownConvert',
+            input_dir: '/path/to/docs_folder',
+            options: expect.objectContaining({
+                target: 'Pdf',
+                inject_front_matter: true,
+                preserve_front_matter: true,
+                rewrite_assets: true
+            })
+        }));
+    });
 });

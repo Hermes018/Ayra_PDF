@@ -3,8 +3,9 @@
 use lopdf::Document;
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    MarkdownDocFormat, OfficeInputFormat, OfficeOutputFormat, PdfAConformance, PdfAPreflightReport,
-    PdfEngine, PdfInfo, RedactionRegion, RenderOptions,
+    MarkdownBatchOptions, MarkdownBatchReport, MarkdownDocFormat, OfficeInputFormat,
+    OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion,
+    RenderOptions,
 };
 use std::path::Path;
 
@@ -370,6 +371,17 @@ impl PdfEngine for FallbackAdapter {
     ) -> Result<std::path::PathBuf> {
         Err(LpdfError::Unsupported(
             "doc_to_markdown sidecar conversion is not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn batch_markdown_convert(
+        &self,
+        _input_dir: &Path,
+        _output_dir: &Path,
+        _options: MarkdownBatchOptions,
+    ) -> Result<MarkdownBatchReport> {
+        Err(LpdfError::Unsupported(
+            "batch_markdown_convert sidecar conversion is not supported by FallbackAdapter".into(),
         ))
     }
 }

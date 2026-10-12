@@ -195,6 +195,56 @@ impl MarkdownDocFormat {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub enum MarkdownBatchTarget {
+    Pdf,
+    Docx,
+    Html,
+    Markdown,
+}
+
+impl MarkdownBatchTarget {
+    pub fn default_extension(&self) -> &'static str {
+        match self {
+            Self::Pdf => "pdf",
+            Self::Docx => "docx",
+            Self::Html => "html",
+            Self::Markdown => "md",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub struct MarkdownBatchOptions {
+    pub target: MarkdownBatchTarget,
+    pub inject_front_matter: bool,
+    pub preserve_front_matter: bool,
+    pub rewrite_assets: bool,
+}
+
+impl Default for MarkdownBatchOptions {
+    fn default() -> Self {
+        Self {
+            target: MarkdownBatchTarget::Pdf,
+            inject_front_matter: true,
+            preserve_front_matter: true,
+            rewrite_assets: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub struct MarkdownBatchReport {
+    pub total_files: usize,
+    pub converted_files: usize,
+    pub failed_files: usize,
+    pub output_files: Vec<std::path::PathBuf>,
+    pub errors: Vec<String>,
+}
+
 pub trait PdfEngine {
     fn load(&mut self, path: &Path) -> Result<()>;
     fn info(&self) -> Result<PdfInfo>;
@@ -319,6 +369,14 @@ pub trait PdfEngine {
         format: MarkdownDocFormat,
         output_path: &Path,
     ) -> Result<std::path::PathBuf>;
+
+    // Batch Markdown Folder Conversion (Phase 9.4)
+    fn batch_markdown_convert(
+        &self,
+        input_dir: &Path,
+        output_dir: &Path,
+        options: MarkdownBatchOptions,
+    ) -> Result<MarkdownBatchReport>;
 }
 
 #[macro_export]

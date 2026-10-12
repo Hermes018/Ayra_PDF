@@ -235,6 +235,11 @@ pub enum JobRequest {
         output_path: String,
         format: lpdf_engine_port::MarkdownDocFormat,
     },
+    BatchMarkdownConvert {
+        input_dir: String,
+        output_dir: String,
+        options: lpdf_engine_port::MarkdownBatchOptions,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -1477,6 +1482,51 @@ impl JobManager {
 
                 Ok(JobOutput {
                     output_path: Some(result_path.to_string_lossy().to_string()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::BatchMarkdownConvert {
+                input_dir,
+                output_dir,
+                options,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: format!(
+                        "Scanning directory and starting batch conversion to {:?}...",
+                        options.target
+                    ),
+                });
+
+                let engine = EngineSwitcher::new();
+                let in_p = PathBuf::from(input_dir);
+                let out_p = PathBuf::from(output_dir);
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 50,
+                    message: "Batch converting documents with Pandoc and asset rewriting...".into(),
+                });
+
+                let report = engine.batch_markdown_convert(&in_p, &out_p, options.clone())?;
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 100,
+                    message: format!(
+                        "Batch conversion complete: {}/{} files converted",
+                        report.converted_files, report.total_files
+                    ),
+                });
+
+                Ok(JobOutput {
+                    output_path: Some(out_p.to_string_lossy().to_string()),
                     degraded: engine.is_degraded(),
                 })
             }

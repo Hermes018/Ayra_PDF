@@ -4,12 +4,18 @@
     import type { JobRequest } from '$lib/bindings/JobRequest';
     import type { OfficeInputFormat } from '$lib/bindings/OfficeInputFormat';
     import type { MarkdownDocFormat } from '$lib/bindings/MarkdownDocFormat';
+    import type { MarkdownBatchTarget } from '$lib/bindings/MarkdownBatchTarget';
 
     let currentPath = $derived(appState.currentFile);
     let customOutputPath = $state<string>('');
     let statusMessage = $state<string | null>(null);
     let isSubmitting = $state<boolean>(false);
     let lastJobId = $state<string | null>(null);
+
+    let batchTarget = $state<MarkdownBatchTarget>('Pdf');
+    let batchInjectFrontMatter = $state<boolean>(true);
+    let batchPreserveFrontMatter = $state<boolean>(true);
+    let batchRewriteAssets = $state<boolean>(true);
 
     interface ConvertOption {
         id: string;
@@ -123,6 +129,17 @@
             markdownDocFormat: 'Html'
         },
         {
+            id: 'BatchMarkdownConvert',
+            title: 'Batch Markdown Folder Conversion',
+            ext: 'folder',
+            targetExt: '_batch_converted',
+            icon: '📁',
+            desc: 'Batch converts all Markdown files or documents in a folder with YAML front-matter injection and assets/ link rewriting.',
+            badge: 'Batch Folder',
+            engine: 'Pandoc Sidecar + Batch Pipeline',
+            kind: 'pandoc'
+        },
+        {
             id: 'ImageToPdf',
             title: 'Image to PDF',
             ext: '.png',
@@ -214,6 +231,18 @@
                 output_path: out,
                 format: opt.markdownDocFormat!
             };
+        } else if (opt.id === 'BatchMarkdownConvert') {
+            req = {
+                op: 'BatchMarkdownConvert',
+                input_dir: currentPath,
+                output_dir: out,
+                options: {
+                    target: batchTarget,
+                    inject_front_matter: batchInjectFrontMatter,
+                    preserve_front_matter: batchPreserveFrontMatter,
+                    rewrite_assets: batchRewriteAssets
+                }
+            };
         } else if (opt.kind === 'office' && opt.officeFormat) {
             req = {
                 op: 'OfficeToPdf',
@@ -292,6 +321,37 @@
                     {/each}
                 </div>
             </div>
+
+            {#if selectedOptionId === 'BatchMarkdownConvert'}
+                <div class="section-card options-card">
+                    <span class="card-title">Batch Folder Settings</span>
+                    <div class="batch-settings">
+                        <div class="form-group">
+                            <label for="batch-target-select">Batch Target Format</label>
+                            <select id="batch-target-select" class="select-input" bind:value={batchTarget}>
+                                <option value="Pdf">PDF (.pdf)</option>
+                                <option value="Docx">Microsoft Word (.docx)</option>
+                                <option value="Html">HTML (.html)</option>
+                                <option value="Markdown">Markdown (.md)</option>
+                            </select>
+                        </div>
+                        <div class="checkboxes-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" bind:checked={batchInjectFrontMatter} />
+                                <span>Inject YAML front-matter (title, source, timestamp)</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" bind:checked={batchPreserveFrontMatter} />
+                                <span>Preserve existing YAML front-matter</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" bind:checked={batchRewriteAssets} />
+                                <span>Rewrite image links to relative assets/</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            {/if}
 
             <div class="section-card output-card">
                 <label class="card-title" for="target-output-input">Output Destination</label>

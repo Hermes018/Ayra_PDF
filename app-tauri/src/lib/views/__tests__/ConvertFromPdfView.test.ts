@@ -171,6 +171,29 @@ describe('ConvertFromPdfView', () => {
             output_path: '/path/to/article.md'
         }));
     });
+
+    test('submits BatchMarkdownConvert from PDF view', async () => {
+        appState.addFiles(['/path/to/my_folder']);
+        const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-batch-from-pdf');
+        render(ConvertFromPdfView);
+
+        const batchTile = screen.getByRole('button', { name: /Batch Folder to Markdown \(\.md\)/i });
+        await fireEvent.click(batchTile);
+
+        const btn = screen.getByRole('button', { name: /Convert Now/i });
+        await fireEvent.click(btn);
+
+        expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
+            op: 'BatchMarkdownConvert',
+            input_dir: '/path/to/my_folder',
+            options: expect.objectContaining({
+                target: 'Markdown',
+                inject_front_matter: true,
+                preserve_front_matter: true,
+                rewrite_assets: true
+            })
+        }));
+    });
 });
 
 describe('ConvertView tab container', () => {
