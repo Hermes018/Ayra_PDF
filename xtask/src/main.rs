@@ -15,6 +15,7 @@ fn main() {
         "gate" => run_gate(),
         "test-offline" => run_test_offline(),
         "fuzz" | "hostile" => run_fuzz(&args[2..]),
+        "perf-check" => run_perf_check(),
         _ => {
             eprintln!("Unknown command: {}", args[1]);
             exit(1);
@@ -197,4 +198,29 @@ fn run_fuzz(_extra_args: &[String]) {
         exit(1);
     }
     println!("Fuzz & hostile tests passed green!");
+}
+
+fn run_perf_check() {
+    println!("Running perf & memory profiling regression check under tier budgets...");
+    let status = Command::new("cargo")
+        .args([
+            "test",
+            "-p",
+            "lpdf-engine-switcher",
+            "--test",
+            "fuzz_smoke_tests",
+            "--",
+            "test_tier_perf_suite",
+            "test_perf_regression",
+            "test_load_baseline",
+            "--test-threads=1",
+        ])
+        .status()
+        .expect("Failed to execute perf check tests");
+
+    if !status.success() {
+        eprintln!("Perf & memory profiling regression check failed!");
+        exit(1);
+    }
+    println!("Perf & memory profiling regression check passed green!");
 }

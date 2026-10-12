@@ -14,6 +14,7 @@ use std::path::{Path, PathBuf};
 
 pub mod fuzz;
 pub mod hostile;
+pub mod perf;
 
 /// Tracks which engine is active after a load attempt.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -3201,6 +3201,8 @@ dependencies = [
  "lpdf-engine-pdfcraft",
  "lpdf-engine-port",
  "lpdf-fs-safety",
+ "lpdf-hw",
+ "serde",
  "serde_json",
  "tracing",
 ]
