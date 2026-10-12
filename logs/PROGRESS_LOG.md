@@ -692,6 +692,37 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-cli/tests/cli_tests.rs` (11 tests added, 18 run; total nextest 96/96; total vitest 34/34).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-12 18:47] Phase 10.4 — Settings, Log Viewer, Local Diagnostics Export, & Local AI Model Import
+- **Status:** Complete (Tag: phase-10.4-green)
+- **Work:**
+  - Extended versioned configuration in `crates/lpdf-core-types`:
+    - Defined `HardwareTier` (`Low`, `Medium`, `High`) with `ts-rs` export.
+    - Defined `OutputPolicy` (`SuffixNewFile`, `Subfolder`, `OverwriteWithBackup`) with `Default` and `ts-rs` export.
+    - Defined `ThemePreference` (`System`, `Light`, `Dark`) with `Default` and `ts-rs` export.
+    - Defined `AppSettings` (`tier_override`, `output_policy`, `backups_enabled`, `language`, `theme`, `local_ai_model_path`, `ai_local_enabled`) with `ts-rs` export.
+    - Defined `AiModelInfo` (`path`, `file_name`, `size_bytes`, `sha256_hex`, `format`) with `ts-rs` export.
+    - Implemented streaming, memory-bounded SHA-256 computation in pure Rust without external dependencies, with magic byte format detection (GGUF, ONNX, SafeTensors).
+  - Updated `crates/lpdf-hw` to re-export and utilize `HardwareTier` from `lpdf-core-types`.
+  - Added `save_settings_atomic` and `load_settings` in `crates/lpdf-fs-safety` guaranteeing crash-safe persistence via `atomic_write`.
+  - Added unit/integration tests in `crates/lpdf-fs-safety/tests/fs_safety_tests.rs` validating settings TOML serialization round-trips, default fallback on missing file, SHA-256 test vectors, and model file inspection.
+  - Implemented typed Tauri IPC commands in `app-tauri/src-tauri/src/lib.rs`:
+    - `get_settings`, `save_settings` (atomic TOML persistence in app config dir).
+    - `get_recent_logs` (reading from local rotating log files in state dir).
+    - `export_diagnostics` (sanitized report of OS, CPU, RAM, hardware tier, active settings, and log tail written atomically via `lpdf_fs_safety::atomic_write`).
+    - `import_local_ai_model` (validating local file, SHA-256 digest, and activating `ai_local_enabled`).
+  - Extended `IpcClient` in `app-tauri/src/lib/ipc.ts` with typed methods for all 5 commands.
+  - Built frontend `SettingsView.svelte` using Svelte 5 runes (`$state`, `$derived`, `$effect`):
+    - Performance & Hardware Tier cards with visual badges and `Auto-Detect`, `Low`, `Medium`, `High` selectors.
+    - Output collision naming policy selector and automatic backups toggle (F8).
+    - Theme switcher (`System`, `Light`, `Dark`) and language selector.
+    - Offline local AI model file importer displaying verified SHA-256 digest, format, and file size, with `ai-local` opt-in toggle.
+    - Scrollable monospace log viewer with "Refresh Logs" and atomic "Export Diagnostics" report controls.
+  - Added Vitest test suite in `app-tauri/src/lib/views/__tests__/SettingsView.test.ts` (5 tests covering load, save, tier/theme modification, log refresh, diagnostics export, and AI model import).
+- **Gate:** pass (`cargo xtask gate` green: fmt, clippy, nextest 101/101, cargo-deny, cargo-audit, protocol-lint; `pnpm check` clean; `pnpm vitest run` 39/39 green).
+- **Tests added/run:** `crates/lpdf-fs-safety/tests/fs_safety_tests.rs` (2 tests added, 5 run), `crates/lpdf-core-types` (5 binding export tests), `app-tauri/src/lib/views/__tests__/SettingsView.test.ts` (5 tests added; total vitest 39/39; total nextest 101/101).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 

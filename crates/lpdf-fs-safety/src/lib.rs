@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 
-use lpdf_core_types::{LpdfError, Result};
+use lpdf_core_types::{AppSettings, LpdfError, Result};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -34,6 +34,24 @@ pub fn atomic_write(target_path: &Path, bytes: &[u8]) -> Result<()> {
 
     fs::rename(&temp_path, target_path).map_err(LpdfError::Io)?;
     Ok(())
+}
+
+/// Persists `AppSettings` to a TOML file atomically via `atomic_write`.
+pub fn save_settings_atomic(path: &Path, settings: &AppSettings) -> Result<()> {
+    let toml_str =
+        toml::to_string_pretty(settings).map_err(|e| LpdfError::ConfigError(e.to_string()))?;
+    atomic_write(path, toml_str.as_bytes())
+}
+
+/// Loads `AppSettings` from a TOML file, returning `AppSettings::default()` if the file does not exist.
+pub fn load_settings(path: &Path) -> Result<AppSettings> {
+    if !path.exists() {
+        return Ok(AppSettings::default());
+    }
+    let content = fs::read_to_string(path).map_err(LpdfError::Io)?;
+    let settings: AppSettings =
+        toml::from_str(&content).map_err(|e| LpdfError::ConfigError(e.to_string()))?;
+    Ok(settings)
 }
 
 /// Create a safely named, newly created output folder inside `parent_dir` based on `prefix`.

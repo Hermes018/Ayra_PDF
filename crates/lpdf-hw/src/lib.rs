@@ -1,14 +1,7 @@
 #![forbid(unsafe_code)]
 
-use serde::{Deserialize, Serialize};
+pub use lpdf_core_types::HardwareTier;
 use sysinfo::System;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum HardwareTier {
-    L,
-    M,
-    H,
-}
 
 #[derive(Debug, Clone)]
 pub struct HardwareProfile {
@@ -28,11 +21,11 @@ impl HardwareProfile {
         let logical_cores = sys.cpus().len();
 
         let tier = if total_memory_mb <= 4096 || logical_cores <= 2 {
-            HardwareTier::L
+            HardwareTier::Low
         } else if total_memory_mb >= 16384 && logical_cores >= 8 {
-            HardwareTier::H
+            HardwareTier::High
         } else {
-            HardwareTier::M
+            HardwareTier::Medium
         };
 
         Self {
@@ -44,25 +37,25 @@ impl HardwareProfile {
 
     pub fn concurrent_jobs(&self) -> usize {
         match self.tier {
-            HardwareTier::L => 1,
-            HardwareTier::M => 2,
-            HardwareTier::H => std::cmp::max(2, self.logical_cores / 4),
+            HardwareTier::Low => 1,
+            HardwareTier::Medium => 2,
+            HardwareTier::High => std::cmp::max(2, self.logical_cores / 4),
         }
     }
 
     pub fn render_threads(&self) -> usize {
         match self.tier {
-            HardwareTier::L => std::cmp::min(2, self.logical_cores),
-            HardwareTier::M => std::cmp::max(1, self.logical_cores / 2),
-            HardwareTier::H => self.logical_cores,
+            HardwareTier::Low => std::cmp::min(2, self.logical_cores),
+            HardwareTier::Medium => std::cmp::max(1, self.logical_cores / 2),
+            HardwareTier::High => self.logical_cores,
         }
     }
 
     pub fn tile_cache_mb(&self) -> u64 {
         match self.tier {
-            HardwareTier::L => 64,
-            HardwareTier::M => 256,
-            HardwareTier::H => 512,
+            HardwareTier::Low => 64,
+            HardwareTier::Medium => 256,
+            HardwareTier::High => 512,
         }
     }
 
@@ -72,9 +65,9 @@ impl HardwareProfile {
         let free_memory_mb = sys.free_memory() / 1024 / 1024;
 
         match self.tier {
-            HardwareTier::L => std::cmp::min(free_memory_mb * 40 / 100, 1024),
-            HardwareTier::M => std::cmp::min(free_memory_mb * 50 / 100, 4096),
-            HardwareTier::H => std::cmp::min(free_memory_mb * 50 / 100, 16384),
+            HardwareTier::Low => std::cmp::min(free_memory_mb * 40 / 100, 1024),
+            HardwareTier::Medium => std::cmp::min(free_memory_mb * 50 / 100, 4096),
+            HardwareTier::High => std::cmp::min(free_memory_mb * 50 / 100, 16384),
         }
     }
 }
