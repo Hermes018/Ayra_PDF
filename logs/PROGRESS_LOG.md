@@ -905,6 +905,29 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs` (3 tests added, 16 total run; 142 nextest tests total).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-13 03:30] Phase 11.4 — Hardening: Threat-Model Review, Dependency Re-Vet, & SBOM
+- **Status:** Complete (Tag: phase-11.4-green)
+- **Work:**
+  - Comprehensive Threat-Model Review (`protocol/THREAT_MODEL.md`):
+    - Documented complete Threat Model & Mitigation Matrix covering categories T1 through T6 across all trust boundaries:
+      - T1: Weaponized/Malformed PDF Inputs (decompression bombs, deep recursion, cyclic trees, corrupted xref, astronomical geometry, embedded JS/Launch) mitigated via fail-closed catch_unwind boundaries, bounded recursion/allocation, and FallbackAdapter.
+      - T2: Sidecar Process & Command Injection (soffice/pandoc) mitigated via strict `Command::arg` array execution (zero `sh -c`), disposable `-env:UserInstallation` profiles, 60s watchdog process reaping, and magic header verification.
+      - T3: Filesystem & Path Traversal Attacks mitigated via `lpdf-fs-safety` (`atomic_write`, `create_safe_output_dir`, `sanitize_filename` stripping traversal dots, null bytes, and Windows reserved device names CON/PRN/AUX/NUL/COM1/LPT1).
+      - T4: Irreversible Redaction Leakage mitigated via Failsafe F25 physical content stream destruction + two-pass semantic verification ensuring zero plaintext residue.
+      - T5: Local AI Worker & Unverified Model Execution mitigated via Failsafe F19 (`ai-local` default OFF, user-supplied models only, streaming SHA-256 validation, magic header check, and `unshare -n` offline sandboxing).
+      - T6: Supply-Chain, License & Telemetry Risks mitigated via zero runtime network calls, `#![forbid(unsafe_code)]`, `cargo-deny`, `cargo-audit`, and deterministic SBOM generation.
+  - Dependency Re-Vet & Deterministic SBOM Generator (`crates/lpdf-engine-switcher/src/sbom.rs`):
+    - Implemented CycloneDX 1.5 JSON Bill of Materials generator parsing `Cargo.lock` packages (name, version, source, checksum) and `app-tauri/package.json` dependencies into `logs/sbom.cdx.json` via `lpdf_fs_safety::atomic_write`.
+    - Added automated supply-chain re-vetting asserting `#![forbid(unsafe_code)]` across all workspace crate entrypoints and verifying zero linked copyleft (GPL/AGPL) packages.
+    - Updated `app-tauri/src-tauri` entrypoints (`lib.rs`, `main.rs`) to declare `#![forbid(unsafe_code)]`.
+  - Tooling & CI Integration (`xtask/src/main.rs`, `.github/workflows/nightly.yml`):
+    - Added `cargo xtask sbom` subcommand running SBOM generation and supply chain invariants validation.
+    - Wired `cargo xtask sbom` into scheduled nightly CI runs.
+- **Gate:** pass (`cargo xtask gate` green: fmt, clippy, nextest 145/145, cargo-deny, cargo-audit, protocol-lint).
+- **Tests added/run:** `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs` (3 tests added, 19 total run; 145 nextest tests total).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 

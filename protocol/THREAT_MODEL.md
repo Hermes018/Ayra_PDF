@@ -1,0 +1,34 @@
+# THREAT MODEL & MITIGATION MATRIX (LocalPDF Studio)
+
+## Executive Summary & Security Philosophy
+LocalPDF Studio is a strictly offline, privacy-first local PDF suite designed to process untrusted documents without leaking data or executing unauthorized code. The system architecture enforces `#![forbid(unsafe_code)]` across all core workspace crates, runs under zero-network constraints at runtime, and mandates fail-closed boundaries for all parser, filesystem, sidecar, and AI inference operations.
+
+---
+
+## Trust Boundaries & Attack Surfaces
+1. **Host OS / User Filesystem**: Documents read from and written to user-designated directories.
+2. **Untrusted Ingress PDFs**: Documents downloaded from unknown sources or containing adversarial byte structures.
+3. **Primary & Fallback Parsers**: Rust-native parser engines (`pdfcraft` and `lopdf` via `EngineSwitcher`).
+4. **Child Process & Sidecar Boundaries**: Subprocess bridges (`soffice`, `pandoc`) executing conversions.
+5. **Local AI Worker Process**: Isolated worker subprocess (`lpdf-ai-worker`) executing local quantized GGUF inference.
+6. **IPC / Tauri Bridge**: Strongly-typed IPC communication between Tauri frontend and Rust backend.
+
+---
+
+## Threat Matrix & Mitigation Invariants
+
+| ID | Threat Category | Attack Vectors | Concrete Mitigations & Architecture Invariants | Verification & Evidence |
+|---|---|---|---|---|
+| **T1** | **Weaponized / Malformed PDF Inputs** | • Decompression bombs (`/FlateDecode` ratio mismatch)<br>• Deeply nested page trees (>500 recursion depth)<br>• Cyclic `/Pages` tree graphs (infinite loop)<br>• Corrupted/negative/out-of-bounds `xref` tables and circular `/Prev`<br>• Astronomical or inverted `MediaBox` geometry<br>• Embedded `/JavaScript` and `/Launch` executable actions | • `std::panic::catch_unwind` isolation at all engine entrypoints.<br>• Bounded recursion and allocation ceilings in `lpdf-engine-switcher`.<br>• Transparent fallback to `FallbackAdapter` (`lopdf`) on parse failures (Failsafe F7).<br>• Stripping of malicious action dictionaries (`/OpenAction`, `/AA`, `/JavaScript`, `/Launch`).<br>• Geometry coordinate validation and clamping (Failsafe F27). | • `crates/lpdf-engine-switcher/src/hostile.rs`<br>• `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs`<br>• Nightly fuzzing (`cargo xtask fuzz`, `cargo xtask hostile`). |
+| **T2** | **Sidecar Process & Command Injection** | • Shell injection through filenames with spaces, metacharacters, or shell control characters (`\|`, `;`, `&`, `$()`)<br>• Subprocess hangs or zombie process accumulation<br>• Sidecar profile corruption or host leakage | • Strict `std::process::Command::arg` array invocation; zero invocation via `sh -c` or shell interpreters (Failsafe F20).<br>• Disposable `-env:UserInstallation` sandboxed profiles in per-job temporary directories.<br>• 60-second watchdog execution timer with SIGKILL process reaping.<br>• Magic header verification (`%PDF-`, `PK\x03\x04`) on input and output files.<br>• Graceful `ExternalDependencyError` returned without host panic (Failsafes F21, F22). | • `crates/lpdf-engine-pdfcraft/src/lib.rs` (sidecar bridge implementation).<br>• Preflight path and format tests. |
+| **T3** | **Filesystem & Path Traversal Attacks** | • Directory traversal via `../` in input/output names<br>• Null byte (`\0`) truncation attacks<br>• Windows reserved device names (`CON`, `PRN`, `AUX`, `NUL`, `COM1`, `LPT1`)<br>• Partial/corrupt file writes during crash or disk exhaustion<br>• In-place corruption of original user files | • `lpdf_fs_safety::sanitize_filename` strips traversal dots, path separators, control characters, and reserved device names.<br>• `lpdf_fs_safety::atomic_write`: atomic write to temp file in same directory, `sync_all`, and atomic filesystem rename (Failsafe F1).<br>• Mandatory post-write byte-level size and existence verification (Failsafe F6).<br>• Originals strictly untouched (Failsafe F8 backup retention). | • `crates/lpdf-fs-safety/src/lib.rs`<br>• `test_hostile_paths_and_device_names`<br>• Failsafe F1/F6 automated integration tests. |
+| **T4** | **Irreversible Redaction Leakage** | • Visual overlay masks leaving underlying plaintext or vector streams intact<br>• Lingering metadata or text extraction residue in redacted areas | • Physical stream elimination: replacement of redaction regions with opaque black rectangles and total removal of intercepted character tokens from PDF content streams (Failsafe F25).<br>• Mandatory two-pass semantic verification: re-extracting text post-redaction and asserting 0 occurrences of redacted text in output bytes. | • Failsafe F25 test suite in `lpdf-engine-pdfcraft`.<br>• `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs`. |
+| **T5** | **Local AI Worker & Unverified Model Execution** | • Execution of untrusted or corrupted model files (`.gguf`)<br>• AI inference hanging or running out of memory<br>• Unauthorized network requests from ML inference code<br>• Unlicensed model usage | • Feature `ai-local` default OFF.<br>• User-imported models only: no automated model download.<br>• Mandatory streaming SHA-256 hash validation before loading (Failsafe F19).<br>• Magic header validation (reject corrupted non-GGUF weights).<br>• User acknowledgement of model SPDX license.<br>• AI worker subprocess sandboxed under Linux `unshare -n` (network isolation) with memory and watchdog limits. | • `crates/lpdf-ai-worker/src/lib.rs`<br>• `cargo xtask test-offline`<br>• Failsafe F19 verification tests. |
+| **T6** | **Supply-Chain, License & Telemetry Risks** | • Introduction of HTTP/telemetry dependencies<br>• Introduction of viral copyleft licenses (GPL/AGPL) contaminating binary distribution<br>• Use of `unsafe` blocks in application logic<br>• Known vulnerabilities in transitive crates | • Strict `#![forbid(unsafe_code)]` enforced across all workspace crates.<br>• Zero network libraries permitted in core/app (monitored by `cargo xtask protocol-lint` and `deny.toml`).<br>• Continuous `cargo deny check` enforcing permissive licenses (MIT, Apache-2.0, BSD-2/3, ISC, Zlib, MPL-2.0) and forbidding GPL/AGPL.<br>• Continuous `cargo audit` monitoring RustSec advisory database.<br>• Deterministic CycloneDX 1.5 SBOM generated via `crates/lpdf-engine-switcher/src/sbom.rs` and `cargo xtask sbom`. | • `deny.toml`<br>• `xtask/src/main.rs`<br>• `logs/sbom.cdx.json`<br>• Continuous CI gate. |
+
+---
+
+## Supply-Chain & Build Integrity
+1. **Compilation Sandboxing**: CI and local builds adhere to restricted cgroups (memory and CPU limits) to prevent system starvation.
+2. **Pinned Engine**: Core PDF rendering and editing engine `pdfcraft` pinned to audited commit `dc4b3eee84f73bad8564906c141bdda9caad0fd6`.
+3. **Deterministic SBOM**: Full CycloneDX 1.5 JSON Bill of Materials generated for both Rust and frontend dependencies to provide transparent provenance.
