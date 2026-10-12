@@ -1,8 +1,9 @@
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    AnnotationDef, MarkdownBatchOptions, MarkdownBatchReport, MarkdownDocFormat, OfficeInputFormat,
-    OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, Permissions,
-    RedactionRegion, RenderOptions, WatermarkSettings,
+    AnnotationDef, ExtractiveSummaryReport, MarkdownBatchOptions, MarkdownBatchReport,
+    MarkdownDocFormat, OfficeInputFormat, OfficeOutputFormat, PdfAConformance, PdfAPreflightReport,
+    PdfEngine, PdfInfo, Permissions, RedactionRegion, RenderOptions, SummaryLength,
+    WatermarkSettings,
 };
 use std::cell::RefCell;
 use std::fs;
@@ -286,6 +287,24 @@ impl PdfEngine for MockEngine {
             failed_files: 0,
             output_files: vec![output_dir.join("file1.pdf")],
             errors: vec![],
+        })
+    }
+    fn summarize_extractive(
+        &self,
+        _input_path: &Path,
+        output_path: &Path,
+        length: SummaryLength,
+    ) -> Result<ExtractiveSummaryReport> {
+        *self.last_called.borrow_mut() = format!("summarize_extractive:{:?}", length);
+        let content = "# Mock Summary\n- Key point 1\n- Key point 2\nSummary text";
+        let _ = fs::write(output_path, content);
+        Ok(ExtractiveSummaryReport {
+            output_path: output_path.to_path_buf(),
+            summary_text: content.to_string(),
+            key_points: vec!["Key point 1".into(), "Key point 2".into()],
+            keywords: vec!["mock".into(), "summary".into()],
+            source_word_count: 50,
+            summary_word_count: 10,
         })
     }
 }
@@ -819,4 +838,69 @@ fn test_e2e_cli_conversions() {
     let res_mock_ocr = lpdf_cli::run_cli_with_engine(&args_ocr, &mut mock);
     assert!(res_mock_ocr.is_ok());
     assert_eq!(*mock.last_called.borrow(), "ocr");
+
+    // Summarize: extractive summary
+    let out_sum = guard.path().join("summary.md");
+    let args_sum = vec![
+        "localpdf".into(),
+        "summarize".into(),
+        pdf.to_string_lossy().to_string(),
+        out_sum.to_string_lossy().to_string(),
+        "--length".into(),
+        "short".into(),
+    ];
+    let res_sum = lpdf_cli::run_cli(&args_sum);
+    assert!(res_sum.is_ok(), "summarize failed: {:?}", res_sum);
+    assert!(out_sum.exists());
+
+    let mut mock_sum = MockEngine::new();
+    let res_mock_sum = lpdf_cli::run_cli_with_engine(&args_sum, &mut mock_sum);
+    assert!(res_mock_sum.is_ok());
+    assert_eq!(*mock_sum.last_called.borrow(), "summarize_extractive:Short");
+}
+
+#[test]
+fn test_cli_summarize_options_and_lengths() {
+    let guard = TestDirGuard::new("cli_sum_options");
+    let pdf = guard.path().join("dummy.pdf");
+    write_mock_pdf(&pdf);
+    let out = guard.path().join("summary.md");
+
+    let mut mock = MockEngine::new();
+
+    // Default medium
+    let args1 = vec![
+        "localpdf".into(),
+        "summarize".into(),
+        pdf.to_string_lossy().to_string(),
+        out.to_string_lossy().to_string(),
+    ];
+    let res1 = lpdf_cli::run_cli_with_engine(&args1, &mut mock);
+    assert!(res1.is_ok());
+    assert_eq!(*mock.last_called.borrow(), "summarize_extractive:Medium");
+
+    // Detailed
+    let args2 = vec![
+        "localpdf".into(),
+        "summarize".into(),
+        pdf.to_string_lossy().to_string(),
+        out.to_string_lossy().to_string(),
+        "--length".into(),
+        "detailed".into(),
+    ];
+    let res2 = lpdf_cli::run_cli_with_engine(&args2, &mut mock);
+    assert!(res2.is_ok());
+    assert_eq!(*mock.last_called.borrow(), "summarize_extractive:Detailed");
+
+    // Invalid length
+    let args_bad = vec![
+        "localpdf".into(),
+        "summarize".into(),
+        pdf.to_string_lossy().to_string(),
+        out.to_string_lossy().to_string(),
+        "--length".into(),
+        "unknown_len".into(),
+    ];
+    let res_bad = lpdf_cli::run_cli_with_engine(&args_bad, &mut mock);
+    assert!(res_bad.is_err());
 }

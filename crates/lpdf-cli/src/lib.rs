@@ -3,7 +3,8 @@
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
     MarkdownBatchOptions, MarkdownBatchReport, MarkdownBatchTarget, MarkdownDocFormat,
-    OptimizeProfile, PdfAConformance, PdfEngine, Permissions, RedactionRegion, WatermarkSettings,
+    OptimizeProfile, PdfAConformance, PdfEngine, Permissions, RedactionRegion, SummaryLength,
+    WatermarkSettings,
 };
 use lpdf_engine_switcher::EngineSwitcher;
 use std::path::Path;
@@ -48,6 +49,7 @@ pub fn run_cli_with_engine<E: PdfEngine>(args: &[String], engine: &mut E) -> Res
         "to-images" => handle_to_images_command(&args[2..], engine),
         "pipeline" => handle_pipeline_command(&args[2..], engine),
         "md" | "markdown" => handle_markdown_command(&args[2..], engine),
+        "summarize" => handle_summarize_command(&args[2..], engine),
         other => Err(LpdfError::InvalidInput(format!(
             "Unknown command '{}'. Run 'localpdf --help' for usage.",
             other
@@ -121,6 +123,10 @@ COMMANDS:
     Markdown Toolset:
         md <SUBCOMMAND>
             Pandoc sidecar Markdown conversion operations.
+
+    AI & Intelligence:
+        summarize <input.pdf> <output.md> [--length <short|medium|detailed>]
+            Generate deterministic zero-model extractive summary report.
 
 Run 'localpdf <COMMAND> --help' for details on a specific command.
 "#
@@ -1479,4 +1485,72 @@ fn format_batch_report(report: &MarkdownBatchReport) -> String {
         }
     }
     msg
+}
+
+fn handle_summarize_command<E: PdfEngine>(args: &[String], engine: &mut E) -> Result<String> {
+    if args.is_empty() || args[0] == "-h" || args[0] == "--help" || args[0] == "help" {
+        return Ok(
+            "Usage: localpdf summarize <input.pdf> <output.md> [--length <short|medium|detailed>]"
+                .to_string(),
+        );
+    }
+
+    if args.len() < 2 {
+        return Err(LpdfError::InvalidInput(
+            "Both input PDF path and output Markdown path are required. Usage: localpdf summarize <input.pdf> <output.md> [--length <short|medium|detailed>]".into(),
+        ));
+    }
+
+    let input = Path::new(&args[0]);
+    if !input.exists() {
+        return Err(LpdfError::InvalidInput(format!(
+            "Input file '{}' does not exist",
+            input.display()
+        )));
+    }
+    let output = Path::new(&args[1]);
+
+    let mut length = SummaryLength::Medium;
+    let mut i = 2;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--length" => {
+                if i + 1 >= args.len() {
+                    return Err(LpdfError::InvalidInput("Missing value for --length".into()));
+                }
+                match args[i + 1].to_lowercase().as_str() {
+                    "short" => length = SummaryLength::Short,
+                    "medium" => length = SummaryLength::Medium,
+                    "detailed" => length = SummaryLength::Detailed,
+                    other => {
+                        return Err(LpdfError::InvalidInput(format!(
+                            "Invalid summary length '{}'. Supported values: short, medium, detailed",
+                            other
+                        )));
+                    }
+                }
+                i += 2;
+            }
+            other => {
+                return Err(LpdfError::InvalidInput(format!(
+                    "Unknown argument '{}'",
+                    other
+                )));
+            }
+        }
+    }
+
+    let report = engine.summarize_extractive(input, output, length)?;
+    Ok(format!(
+        "Extractive summary generated successfully -> {}\n- Source words: {}\n- Summary words: {}\n- Key points: {}\n- Keywords: {}",
+        report.output_path.display(),
+        report.source_word_count,
+        report.summary_word_count,
+        report.key_points.len(),
+        if report.keywords.is_empty() {
+            "none".to_string()
+        } else {
+            report.keywords.join(", ")
+        }
+    ))
 }

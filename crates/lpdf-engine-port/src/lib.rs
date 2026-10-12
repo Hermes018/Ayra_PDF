@@ -245,6 +245,28 @@ pub struct MarkdownBatchReport {
     pub errors: Vec<String>,
 }
 
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize, ts_rs::TS,
+)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub enum SummaryLength {
+    Short,
+    #[default]
+    Medium,
+    Detailed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub struct ExtractiveSummaryReport {
+    pub output_path: std::path::PathBuf,
+    pub summary_text: String,
+    pub key_points: Vec<String>,
+    pub keywords: Vec<String>,
+    pub source_word_count: usize,
+    pub summary_word_count: usize,
+}
+
 pub trait PdfEngine {
     fn load(&mut self, path: &Path) -> Result<()>;
     fn info(&self) -> Result<PdfInfo>;
@@ -377,6 +399,14 @@ pub trait PdfEngine {
         output_dir: &Path,
         options: MarkdownBatchOptions,
     ) -> Result<MarkdownBatchReport>;
+
+    // Extractive PDF Summarizer (Phase 10.5a)
+    fn summarize_extractive(
+        &self,
+        input_path: &Path,
+        output_path: &Path,
+        length: SummaryLength,
+    ) -> Result<ExtractiveSummaryReport>;
 }
 
 #[macro_export]

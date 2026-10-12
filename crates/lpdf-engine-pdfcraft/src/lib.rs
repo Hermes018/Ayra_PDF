@@ -2,15 +2,16 @@
 
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    MarkdownBatchOptions, MarkdownBatchReport, MarkdownDocFormat, OfficeInputFormat,
-    OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion,
-    RenderOptions,
+    ExtractiveSummaryReport, MarkdownBatchOptions, MarkdownBatchReport, MarkdownDocFormat,
+    OfficeInputFormat, OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine,
+    PdfInfo, RedactionRegion, RenderOptions, SummaryLength,
 };
 use std::path::Path;
 use std::sync::Arc;
 
 pub mod office_sidecar;
 pub mod pandoc_sidecar;
+pub mod summarizer;
 
 pub struct PdfcraftAdapter {
     session: pdfcraft_engine::Session,
@@ -1756,6 +1757,62 @@ impl PdfEngine for PdfcraftAdapter {
             |in_p, out_p| self.extract_all_images(in_p, out_p),
             |in_p, out_p| self.do_convert_to_pdf(in_p, out_p),
         )
+    }
+
+    fn summarize_extractive(
+        &self,
+        input_path: &Path,
+        output_path: &Path,
+        length: SummaryLength,
+    ) -> Result<ExtractiveSummaryReport> {
+        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let arc_bytes = Arc::new(bytes);
+        let name = input_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("document.pdf");
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let mut session = pdfcraft_engine::Session::new();
+            let doc_id = session
+                .open(
+                    name.to_string(),
+                    Some(input_path.to_string_lossy().to_string()),
+                    arc_bytes,
+                    None,
+                )
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+            let doc = session
+                .get(doc_id)
+                .ok_or_else(|| LpdfError::Engine("Failed to get document".into()))?;
+            let page_count = doc.info.pages.len();
+            let pages: Vec<usize> = (0..page_count).collect();
+            let mut exporter = pdfcraft_engine::export::Exporter::new(doc);
+            exporter
+                .text_of(&pages)
+                .map_err(|e| LpdfError::Engine(e.to_string()))
+        }));
+
+        let text = match result {
+            Ok(Ok(val)) => val,
+            Ok(Err(e)) => return Err(e),
+            Err(_) => {
+                return Err(LpdfError::Engine(
+                    "Panic during text extraction for summarization".into(),
+                ))
+            }
+        };
+
+        let summary_res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            summarizer::generate_extractive_summary(input_path, output_path, &text, length)
+        }));
+
+        match summary_res {
+            Ok(res) => res,
+            Err(_) => Err(LpdfError::Engine(
+                "Panic during extractive summarization".into(),
+            )),
+        }
     }
 }
 

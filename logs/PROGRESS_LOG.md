@@ -722,6 +722,37 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-fs-safety/tests/fs_safety_tests.rs` (2 tests added, 5 run), `crates/lpdf-core-types` (5 binding export tests), `app-tauri/src/lib/views/__tests__/SettingsView.test.ts` (5 tests added; total vitest 39/39; total nextest 101/101).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-12 19:30] Phase 10.5a — AI Summarizer Basic (Extractive, No Model)
+- **Status:** Complete (Tag: phase-10.5a-green)
+- **Work:**
+  - Backend Extractive Summarizer (`lpdf-engine-port`, `lpdf-engine-pdfcraft`, `lpdf-engine-fallback`, `lpdf-engine-switcher`):
+    - Defined `SummaryLength` (`Short`, `Medium`, `Detailed`) and `ExtractiveSummaryReport` (`output_path`, `summary_text`, `key_points`, `keywords`, `source_word_count`, `summary_word_count`) with `serde` and `ts-rs` exports.
+    - Added `summarize_extractive(input_path, output_path, length: SummaryLength) -> Result<ExtractiveSummaryReport>` to `PdfEngine` trait across all adapters.
+    - Implemented a pure-Rust, zero-model extractive summarization engine in `lpdf-engine-pdfcraft/src/summarizer.rs`:
+      - Reading-order text extraction natively via `pdfcraft`.
+      - Deterministic sentence segmentation with punctuation & boundary handling.
+      - Stopword filtering and keyword frequency analysis.
+      - Term-frequency centrality + position-weighted scoring preserving document order.
+      - Atomic report generation in structured Markdown (`# Executive Document Summary`, stats, keywords, bulleted key takeaways, and extractive summary) via `lpdf_fs_safety::atomic_write`.
+      - Guarded text extraction and summarization with `std::panic::catch_unwind` for fail-closed safety.
+    - Added unit and integration tests in `crates/lpdf-engine-pdfcraft/tests/summarizer_tests.rs` (4 tests) verifying tokenization, keyword filtering, length scaling, and end-to-end PDF summarization on corpus.
+  - Background Job & CLI (`lpdf-jobs`, `lpdf-cli`):
+    - Added `JobRequest::SummarizeExtractive { input_path: PathBuf, output_path: PathBuf, length: SummaryLength }` to `lpdf-jobs/src/queue.rs` with progress events and execution via `EngineSwitcher`.
+    - Extended `lpdf-cli` with `localpdf summarize <input.pdf> <output.md> [--length <short|medium|detailed>]`.
+    - Added CLI tests in `crates/lpdf-cli/tests/cli_tests.rs` (19 total tests).
+    - Regenerated TypeScript bindings (`SummaryLength.ts`, `ExtractiveSummaryReport.ts`, `JobRequest.ts`).
+  - Frontend AI Summarizer UI (`app-tauri`):
+    - Built `app-tauri/src/lib/views/AiSummarizeView.svelte` with Svelte 5 runes (`$state`, `$derived`, `$props`, `$effect`):
+      - Mode selector with "Basic Extractive (Instant, No Model Required)" active by default, and gated "Local LLM Mode" linking to Settings.
+      - Summary length controls (`Short`, `Medium`, `Detailed`), file selection inputs auto-synced with `appState`.
+      - "Generate Extractive Summary" button submitting `JobRequest::SummarizeExtractive` via `IpcClient.submitJob`.
+    - Wired `AiSummarizeView` into `Sidebar.svelte` ("AI Summarizer") and `+page.svelte`.
+    - Created unit tests in `app-tauri/src/lib/views/__tests__/AiSummarizeView.test.ts` (6 tests).
+- **Gate:** pass (`pnpm check` clean; `pnpm vitest run` 45/45 green; `cargo xtask gate` green: fmt, clippy, nextest 105/105, cargo-deny, cargo-audit, protocol-lint).
+- **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/summarizer_tests.rs` (4 tests), `crates/lpdf-cli/tests/cli_tests.rs` (2 tests added, 19 run), `app-tauri/src/lib/views/__tests__/AiSummarizeView.test.ts` (6 tests added, 45 total vitest run; 105 total nextest run).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 

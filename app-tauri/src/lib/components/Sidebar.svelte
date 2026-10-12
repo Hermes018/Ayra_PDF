@@ -11,6 +11,7 @@
         { id: 'Edit', label: 'Edit', icon: '✏️' },
         { id: 'Forms', label: 'Forms & Signatures', icon: '📝' },
         { id: 'Markdown', label: 'Markdown', icon: '📝' },
+        { id: 'Summarize', label: 'AI Summarizer', icon: '✨' },
         { id: 'Queue', label: 'Batch Queue', icon: '📋' },
         { id: 'Pipelines', label: 'Workflows', icon: '🔀' },
     ];

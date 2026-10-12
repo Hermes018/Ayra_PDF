@@ -5,9 +5,9 @@
 
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    MarkdownBatchOptions, MarkdownBatchReport, MarkdownDocFormat, OfficeInputFormat,
-    OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion,
-    RenderOptions,
+    ExtractiveSummaryReport, MarkdownBatchOptions, MarkdownBatchReport, MarkdownDocFormat,
+    OfficeInputFormat, OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine,
+    PdfInfo, RedactionRegion, RenderOptions, SummaryLength,
 };
 use std::path::{Path, PathBuf};
 
@@ -345,5 +345,15 @@ impl PdfEngine for EngineSwitcher {
     ) -> Result<MarkdownBatchReport> {
         self.primary
             .batch_markdown_convert(input_dir, output_dir, options)
+    }
+
+    fn summarize_extractive(
+        &self,
+        input_path: &Path,
+        output_path: &Path,
+        length: SummaryLength,
+    ) -> Result<ExtractiveSummaryReport> {
+        self.primary
+            .summarize_extractive(input_path, output_path, length)
     }
 }

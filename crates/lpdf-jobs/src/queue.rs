@@ -246,6 +246,11 @@ pub enum JobRequest {
         steps: Vec<crate::pipeline::PipelineStep>,
         preset_name: Option<String>,
     },
+    SummarizeExtractive {
+        input_path: PathBuf,
+        output_path: PathBuf,
+        length: lpdf_engine_port::SummaryLength,
+    },
 }
 
 /// Execution priority for queued jobs.
@@ -596,6 +601,15 @@ impl JobRequest {
                 };
                 (title, Some(input_path.clone()), Some(output_path.clone()))
             }
+            JobRequest::SummarizeExtractive {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Summarize (Extractive)".to_string(),
+                Some(input_path.to_string_lossy().to_string()),
+                Some(output_path.to_string_lossy().to_string()),
+            ),
         }
     }
 }
@@ -2188,6 +2202,47 @@ impl JobManager {
                 Ok(JobOutput {
                     output_path: Some(output_path.clone()),
                     degraded: false,
+                })
+            }
+
+            JobRequest::SummarizeExtractive {
+                input_path,
+                output_path,
+                length,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Extracting text and scoring informative content...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 50,
+                    message: "Generating extractive summary report...".into(),
+                });
+
+                let report = engine.summarize_extractive(input_path, output_path, *length)?;
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 100,
+                    message: format!(
+                        "Extractive summary generated ({} key points, {} words)",
+                        report.key_points.len(),
+                        report.summary_word_count
+                    ),
+                });
+
+                Ok(JobOutput {
+                    output_path: Some(report.output_path.to_string_lossy().to_string()),
+                    degraded: engine.is_degraded(),
                 })
             }
         }
