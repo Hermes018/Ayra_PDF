@@ -533,3 +533,24 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/sidecar_tests.rs` (7 tests), `app-tauri/src/lib/views/__tests__/ConvertToPdfView.test.ts` (6 tests).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-12 15:15] Phase 9.2 — Advanced Convert (PDF -> Office via Headless Sidecar)
+- **Status:** Complete (Tag: phase-9.2-green)
+- **Work:**
+  - Defined `OfficeOutputFormat` enum (`Docx`, `Xlsx`, `Pptx`, `Odt`, `Ods`, `Odp`) in `lpdf-engine-port` with `ts-rs` export, `infilter` mapping, and extension helper methods.
+  - Added `pdf_to_office` method to `PdfEngine` trait across `PdfcraftAdapter`, `FallbackAdapter`, and `EngineSwitcher`.
+  - Extended shell-injection-safe sidecar module `crates/lpdf-engine-pdfcraft/src/office_sidecar.rs`:
+    - Enforced Failsafe F22 cross-platform binary resolution with local/PATH fallbacks.
+    - Isolated command execution via `Command::arg` passing format-specific `--infilter` (`writer_pdf_import`, `calc_pdf_import`, `impress_pdf_import`), `--headless`, `--convert-to <ext>`, `--outdir <temp_dir>`.
+    - Profile isolation via unique `-env:UserInstallation=file://...` preventing collisions with active office suites.
+    - Enforced Failsafe F21 with 60s execution timeout watchdog, child process reaping, and typed `LpdfError::ExternalDependencyError` mapping.
+    - Verified output ZIP/OpenXML magic header `PK\x03\x04` (with fallback mock support) and atomic commit via `lpdf_fs_safety::atomic_write`.
+  - Added `PdfToOffice` variant to `JobRequest` in `lpdf-jobs`, wired job execution with progress reporting into `JobManager`.
+  - Regenerated TypeScript bindings (`JobRequest.ts`, `OfficeOutputFormat.ts`).
+  - Expanded `ConvertFromPdfView.svelte` with M10 sidecar export tiles: "PDF to Word (Complex Flowable via Sidecar)", "PDF to Excel (.xlsx)", and "PDF to PowerPoint (.pptx)", with dynamic engine reporting and IPC dispatch.
+  - Added unit tests in `ConvertFromPdfView.test.ts` verifying mode selection and correct job dispatch.
+  - Extended test suite in `crates/lpdf-engine-pdfcraft/tests/sidecar_tests.rs` with 6 new tests covering filter mappings, input PDF validation, mock conversion verification, non-zero exit error handling, and adapter integration (13 total sidecar tests passing).
+- **Gate:** pass (`cargo xtask gate` green: fmt, clippy, nextest 54/54, cargo-deny, cargo-audit, protocol-lint; `pnpm check` clean; `pnpm vitest run` 18/18 green).
+- **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/sidecar_tests.rs` (6 tests added, 13 run), `app-tauri/src/lib/views/__tests__/ConvertFromPdfView.test.ts` (3 tests added, 10 run; total vitest 18/18).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+

@@ -96,6 +96,63 @@ describe('ConvertFromPdfView', () => {
             conformance: 'PdfA3b'
         }));
     });
+
+    test('submits PdfToOffice sidecar for complex Word (.docx)', async () => {
+        appState.addFiles(['/path/to/my_document.pdf']);
+        const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-docx-job-1111');
+        render(ConvertFromPdfView);
+
+        const wordSidecarTile = screen.getByRole('button', { name: /PDF to Word \(Complex Flowable via Sidecar\)/i });
+        await fireEvent.click(wordSidecarTile);
+
+        const btn = screen.getByRole('button', { name: /Convert Now/i });
+        await fireEvent.click(btn);
+
+        expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
+            op: 'PdfToOffice',
+            input_path: '/path/to/my_document.pdf',
+            output_path: '/path/to/my_document.docx',
+            format: 'Docx'
+        }));
+    });
+
+    test('submits PdfToOffice sidecar for Excel (.xlsx)', async () => {
+        appState.addFiles(['/path/to/my_sheet.pdf']);
+        const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-xlsx-job-2222');
+        render(ConvertFromPdfView);
+
+        const excelTile = screen.getByRole('button', { name: /PDF to Excel \(\.xlsx\)/i });
+        await fireEvent.click(excelTile);
+
+        const btn = screen.getByRole('button', { name: /Convert Now/i });
+        await fireEvent.click(btn);
+
+        expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
+            op: 'PdfToOffice',
+            input_path: '/path/to/my_sheet.pdf',
+            output_path: '/path/to/my_sheet.xlsx',
+            format: 'Xlsx'
+        }));
+    });
+
+    test('submits PdfToOffice sidecar for PowerPoint (.pptx)', async () => {
+        appState.addFiles(['/path/to/my_slides.pdf']);
+        const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-pptx-job-3333');
+        render(ConvertFromPdfView);
+
+        const pptxTile = screen.getByRole('button', { name: /PDF to PowerPoint \(\.pptx\)/i });
+        await fireEvent.click(pptxTile);
+
+        const btn = screen.getByRole('button', { name: /Convert Now/i });
+        await fireEvent.click(btn);
+
+        expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
+            op: 'PdfToOffice',
+            input_path: '/path/to/my_slides.pdf',
+            output_path: '/path/to/my_slides.pptx',
+            format: 'Pptx'
+        }));
+    });
 });
 
 describe('ConvertView tab container', () => {
