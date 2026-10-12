@@ -164,6 +164,37 @@ impl OfficeOutputFormat {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub enum MarkdownDocFormat {
+    Docx,
+    Html,
+}
+
+impl MarkdownDocFormat {
+    pub fn extension(&self) -> &'static str {
+        match self {
+            Self::Docx => "docx",
+            Self::Html => "html",
+        }
+    }
+
+    pub fn pandoc_format(&self) -> &'static str {
+        match self {
+            Self::Docx => "docx",
+            Self::Html => "html5",
+        }
+    }
+
+    pub fn from_extension(ext: &str) -> Option<Self> {
+        match ext.to_ascii_lowercase().as_str() {
+            "docx" => Some(Self::Docx),
+            "html" | "htm" => Some(Self::Html),
+            _ => None,
+        }
+    }
+}
+
 pub trait PdfEngine {
     fn load(&mut self, path: &Path) -> Result<()>;
     fn info(&self) -> Result<PdfInfo>;
@@ -267,6 +298,25 @@ pub trait PdfEngine {
         &self,
         input_path: &Path,
         format: OfficeOutputFormat,
+        output_path: &Path,
+    ) -> Result<std::path::PathBuf>;
+
+    // Markdown Toolset via Pandoc Sidecar (Phase 9.3)
+    fn markdown_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<std::path::PathBuf>;
+
+    fn pdf_to_markdown(&self, input_path: &Path, output_path: &Path) -> Result<std::path::PathBuf>;
+
+    fn markdown_to_doc(
+        &self,
+        input_path: &Path,
+        format: MarkdownDocFormat,
+        output_path: &Path,
+    ) -> Result<std::path::PathBuf>;
+
+    fn doc_to_markdown(
+        &self,
+        input_path: &Path,
+        format: MarkdownDocFormat,
         output_path: &Path,
     ) -> Result<std::path::PathBuf>;
 }

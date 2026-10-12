@@ -153,6 +153,24 @@ describe('ConvertFromPdfView', () => {
             format: 'Pptx'
         }));
     });
+
+    test('submits PdfToMarkdown sidecar job request', async () => {
+        appState.addFiles(['/path/to/article.pdf']);
+        const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-md-job-4444');
+        render(ConvertFromPdfView);
+
+        const mdTile = screen.getByRole('button', { name: /PDF to Markdown \(\.md \+ assets\/\)/i });
+        await fireEvent.click(mdTile);
+
+        const btn = screen.getByRole('button', { name: /Convert Now/i });
+        await fireEvent.click(btn);
+
+        expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
+            op: 'PdfToMarkdown',
+            input_path: '/path/to/article.pdf',
+            output_path: '/path/to/article.md'
+        }));
+    });
 });
 
 describe('ConvertView tab container', () => {

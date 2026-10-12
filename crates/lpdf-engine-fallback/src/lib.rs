@@ -3,8 +3,8 @@
 use lopdf::Document;
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    OfficeInputFormat, OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine,
-    PdfInfo, RedactionRegion, RenderOptions,
+    MarkdownDocFormat, OfficeInputFormat, OfficeOutputFormat, PdfAConformance, PdfAPreflightReport,
+    PdfEngine, PdfInfo, RedactionRegion, RenderOptions,
 };
 use std::path::Path;
 
@@ -328,6 +328,48 @@ impl PdfEngine for FallbackAdapter {
     ) -> Result<std::path::PathBuf> {
         Err(LpdfError::Unsupported(
             "pdf_to_office sidecar conversion is not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn markdown_to_pdf(
+        &self,
+        _input_path: &Path,
+        _output_path: &Path,
+    ) -> Result<std::path::PathBuf> {
+        Err(LpdfError::Unsupported(
+            "markdown_to_pdf sidecar conversion is not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn pdf_to_markdown(
+        &self,
+        _input_path: &Path,
+        _output_path: &Path,
+    ) -> Result<std::path::PathBuf> {
+        Err(LpdfError::Unsupported(
+            "pdf_to_markdown sidecar conversion is not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn markdown_to_doc(
+        &self,
+        _input_path: &Path,
+        _format: MarkdownDocFormat,
+        _output_path: &Path,
+    ) -> Result<std::path::PathBuf> {
+        Err(LpdfError::Unsupported(
+            "markdown_to_doc sidecar conversion is not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn doc_to_markdown(
+        &self,
+        _input_path: &Path,
+        _format: MarkdownDocFormat,
+        _output_path: &Path,
+    ) -> Result<std::path::PathBuf> {
+        Err(LpdfError::Unsupported(
+            "doc_to_markdown sidecar conversion is not supported by FallbackAdapter".into(),
         ))
     }
 }
