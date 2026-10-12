@@ -5,6 +5,8 @@ import type { JobPriority } from './bindings/JobPriority';
 import type { JobRecord } from './bindings/JobRecord';
 import type { PipelinePreset } from './bindings/PipelinePreset';
 import type { PipelineStep } from './bindings/PipelineStep';
+import type { AppSettings } from './bindings/AppSettings';
+import type { AiModelInfo } from './bindings/AiModelInfo';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { JobEvent } from './bindings/JobEvent';
 
@@ -66,6 +68,41 @@ export class IpcClient {
     }
 
     /**
+     * Fetch active application settings
+     */
+    static async getSettings(): Promise<AppSettings> {
+        return await invoke<AppSettings>('get_settings');
+    }
+
+    /**
+     * Save application settings atomically
+     */
+    static async saveSettings(settings: AppSettings): Promise<AppSettings> {
+        return await invoke<AppSettings>('save_settings', { settings });
+    }
+
+    /**
+     * Fetch recent log lines from local rotating log
+     */
+    static async getRecentLogs(maxLines?: number): Promise<string[]> {
+        return await invoke<string[]>('get_recent_logs', { maxLines: maxLines ?? null });
+    }
+
+    /**
+     * Export sanitized local diagnostics report
+     */
+    static async exportDiagnostics(outputPath: string): Promise<string> {
+        return await invoke<string>('export_diagnostics', { outputPath });
+    }
+
+    /**
+     * Validate and import local AI model (.gguf, .onnx, etc.)
+     */
+    static async importLocalAiModel(modelPath: string): Promise<AiModelInfo> {
+        return await invoke<AiModelInfo>('import_local_ai_model', { modelPath });
+    }
+
+    /**
      * Listen for job events emitted by the backend
      */
     static async onJobEvent(handler: (event: JobEvent) => void): Promise<UnlistenFn> {
@@ -74,5 +111,3 @@ export class IpcClient {
         });
     }
 }
-
-

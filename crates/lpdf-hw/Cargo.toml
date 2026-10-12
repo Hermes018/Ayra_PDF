@@ -9,3 +9,4 @@ license.workspace = true
 [dependencies]
 sysinfo = "0.33.0"
 serde = { version = "1.0", features = ["derive"] }
+lpdf-core-types = { path = "../lpdf-core-types" }

@@ -93,6 +93,9 @@ name = "app-tauri"
 version = "0.1.0"
 dependencies = [
  "directories",
+ "lpdf-core-types",
+ "lpdf-fs-safety",
+ "lpdf-hw",
  "lpdf-jobs",
  "serde",
  "serde_json",
@@ -3193,12 +3196,14 @@ name = "lpdf-fs-safety"
 version = "0.1.0"
 dependencies = [
  "lpdf-core-types",
+ "toml 0.8.23",
 ]
 
 [[package]]
 name = "lpdf-hw"
 version = "0.1.0"
 dependencies = [
+ "lpdf-core-types",
  "serde",
  "sysinfo",
 ]

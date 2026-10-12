@@ -29,8 +29,10 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 directories = "5.0"
+lpdf-core-types = { path = "../../crates/lpdf-core-types" }
+lpdf-fs-safety = { path = "../../crates/lpdf-fs-safety" }
+lpdf-hw = { path = "../../crates/lpdf-hw" }
 lpdf-jobs = { path = "../../crates/lpdf-jobs" }
 tokio = { version = "1", features = ["rt", "sync"] }
 ts-rs = "12.0.1"
 tauri-plugin-dialog = "2.8.1"
-
