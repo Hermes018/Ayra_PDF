@@ -242,10 +242,350 @@ pub enum JobRequest {
     },
 }
 
+/// Execution priority for queued jobs.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize, ts_rs::TS,
+)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub enum JobPriority {
+    Low,
+    #[default]
+    Normal,
+    High,
+    Urgent,
+}
+
+/// Comprehensive record of a background job for queue inspection and control.
+#[derive(Debug, Clone, Serialize, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub struct JobRecord {
+    pub job_id: JobId,
+    pub title: String,
+    pub status: JobStatus,
+    pub progress: u8,
+    pub priority: JobPriority,
+    pub input_path: Option<String>,
+    pub output_path: Option<String>,
+    pub error_code: Option<String>,
+    pub error_message: Option<String>,
+    pub created_at_epoch_ms: u64,
+    pub request: JobRequest,
+}
+
+impl JobRequest {
+    /// Returns (title, input_path, output_path) for summary display.
+    pub fn summary(&self) -> (String, Option<String>, Option<String>) {
+        match self {
+            JobRequest::GetInfo { input_path } => {
+                ("Document Info".to_string(), Some(input_path.clone()), None)
+            }
+            JobRequest::DeletePages {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Delete Pages".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::RenderPage {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Render Page".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::Merge {
+                input_paths,
+                output_path,
+            } => {
+                let first = input_paths.first().cloned();
+                ("Merge PDFs".to_string(), first, Some(output_path.clone()))
+            }
+            JobRequest::ExtractPages {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Extract Pages".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::RotatePages {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Rotate Pages".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::RotateDocument {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Rotate Document".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::Compress {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Compress PDF".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::Repair {
+                input_path,
+                output_path,
+            } => (
+                "Repair PDF".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::Ocr {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "OCR Document".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::ProtectDocument {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Protect PDF".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::UnlockDocument {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Unlock PDF".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::AnnotateDocument {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Annotate PDF".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::WatermarkDocument {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Watermark PDF".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::FlattenComments {
+                input_path,
+                output_path,
+            } => (
+                "Flatten Comments".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::FlattenForms {
+                input_path,
+                output_path,
+            } => (
+                "Flatten Forms".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::FillForm {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Fill Form".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::SignDocument {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Sign PDF".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::RedactDocument {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Redact PDF".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::ImageToPdf {
+                input_path,
+                output_path,
+            } => (
+                "Image to PDF".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::DocxToPdf {
+                input_path,
+                output_path,
+            } => (
+                "DOCX to PDF".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::HtmlToPdf {
+                input_path,
+                output_path,
+            } => (
+                "HTML to PDF".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::PdfToImages {
+                input_path,
+                output_path,
+            } => (
+                "PDF to Images".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::ExtractAllImages {
+                input_path,
+                output_path,
+            } => (
+                "Extract Images".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::PdfToText {
+                input_path,
+                output_path,
+            } => (
+                "PDF to Text".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::PdfToDocx {
+                input_path,
+                output_path,
+            } => (
+                "PDF to DOCX".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::PdfToHtml {
+                input_path,
+                output_path,
+            } => (
+                "PDF to HTML".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::PdfToRtf {
+                input_path,
+                output_path,
+            } => (
+                "PDF to RTF".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::PdfToPdfA {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "PDF to PDF/A".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::OfficeToPdf {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Office to PDF".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::PdfToOffice {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "PDF to Office".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::MarkdownToPdf {
+                input_path,
+                output_path,
+            } => (
+                "Markdown to PDF".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::PdfToMarkdown {
+                input_path,
+                output_path,
+            } => (
+                "PDF to Markdown".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::MarkdownToDoc {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Markdown to Document".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::DocToMarkdown {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Document to Markdown".to_string(),
+                Some(input_path.clone()),
+                Some(output_path.clone()),
+            ),
+            JobRequest::BatchMarkdownConvert {
+                input_dir,
+                output_dir,
+                ..
+            } => (
+                "Batch Markdown Convert".to_string(),
+                Some(input_dir.clone()),
+                Some(output_dir.clone()),
+            ),
+        }
+    }
+}
+
 /// A tracked job entry in the manager.
 #[derive(Debug)]
 struct JobEntry {
-    status: JobStatus,
+    record: JobRecord,
     cancel_token: CancellationToken,
 }
 
@@ -272,17 +612,43 @@ impl JobManager {
         }
     }
 
-    /// Submit a job request. Returns the job ID immediately (< 1ms).
+    /// Submit a job request with default normal priority. Returns the job ID immediately (< 1ms).
     pub fn submit(&self, request: JobRequest) -> JobId {
+        self.submit_with_priority(request, JobPriority::Normal)
+    }
+
+    /// Submit a job request with an explicit priority. Returns the job ID immediately.
+    pub fn submit_with_priority(&self, request: JobRequest, priority: JobPriority) -> JobId {
         let job_id: JobId = uuid::Uuid::new_v4().to_string();
         let cancel_token = CancellationToken::new();
+
+        let (title, input_path, output_path) = request.summary();
+        let now_epoch_ms = match std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
+        {
+            Ok(dur) => dur.as_millis() as u64,
+            Err(_) => 0,
+        };
+
+        let record = JobRecord {
+            job_id: job_id.clone(),
+            title,
+            status: JobStatus::Queued,
+            progress: 0,
+            priority,
+            input_path,
+            output_path,
+            error_code: None,
+            error_message: None,
+            created_at_epoch_ms: now_epoch_ms,
+            request: request.clone(),
+        };
 
         {
             let mut jobs = self.jobs.lock().unwrap_or_else(|e| e.into_inner());
             jobs.insert(
                 job_id.clone(),
                 JobEntry {
-                    status: JobStatus::Queued,
+                    record,
                     cancel_token: cancel_token.clone(),
                 },
             );
@@ -316,18 +682,41 @@ impl JobManager {
                 job_id: jid.clone(),
             });
 
+            // Proxy channel to capture progress updates into memory
+            let (proxy_tx, mut proxy_rx) = tokio::sync::mpsc::unbounded_channel::<JobEvent>();
+            let proxy_tx_arc = Arc::new(proxy_tx);
+
+            let jobs_map_proxy = Arc::clone(&jobs_map);
+            let forward_event_tx = Arc::clone(&event_tx);
+            let proxy_task = tokio::spawn(async move {
+                while let Some(ev) = proxy_rx.recv().await {
+                    if let JobEvent::Progress {
+                        ref job_id,
+                        percent,
+                        ..
+                    } = ev
+                    {
+                        Self::set_progress(&jobs_map_proxy, job_id, percent);
+                    }
+                    let _ = forward_event_tx.send(ev);
+                }
+            });
+
             // Run the blocking PDF work on a dedicated thread
             let result = tokio::task::spawn_blocking({
                 let jid = jid.clone();
-                let event_tx = Arc::clone(&event_tx);
+                let p_tx = Arc::clone(&proxy_tx_arc);
                 let cancel_token = cancel_token.clone();
-                move || Self::execute_job(&jid, &request, &event_tx, &cancel_token)
+                move || Self::execute_job(&jid, &request, &p_tx, &cancel_token)
             })
             .await;
 
+            drop(proxy_tx_arc);
+            let _ = proxy_task.await;
+
             match result {
                 Ok(Ok(output_info)) => {
-                    Self::set_status(&jobs_map, &jid, JobStatus::Completed);
+                    Self::set_completed(&jobs_map, &jid, output_info.output_path.clone());
                     let _ = event_tx.send(JobEvent::Completed {
                         job_id: jid,
                         output_path: output_info.output_path,
@@ -335,25 +724,57 @@ impl JobManager {
                     });
                 }
                 Ok(Err(e)) => {
-                    Self::set_status(&jobs_map, &jid, JobStatus::Failed);
+                    let code = Self::error_code(&e);
+                    let msg = e.to_string();
+                    Self::set_failed(&jobs_map, &jid, code.clone(), msg.clone());
                     let _ = event_tx.send(JobEvent::Failed {
                         job_id: jid,
-                        error_code: Self::error_code(&e),
-                        error_message: e.to_string(),
+                        error_code: code,
+                        error_message: msg,
                     });
                 }
                 Err(_join_err) => {
-                    Self::set_status(&jobs_map, &jid, JobStatus::Failed);
+                    let code: String = "TASK_PANIC".to_string();
+                    let msg: String = "Job task panicked".to_string();
+                    Self::set_failed(&jobs_map, &jid, code.clone(), msg.clone());
                     let _ = event_tx.send(JobEvent::Failed {
                         job_id: jid,
-                        error_code: "TASK_PANIC".into(),
-                        error_message: "Job task panicked".into(),
+                        error_code: code,
+                        error_message: msg,
                     });
                 }
             }
         });
 
         job_id
+    }
+
+    /// Submit a batch of requests with an optional priority.
+    pub fn submit_batch(
+        &self,
+        requests: Vec<JobRequest>,
+        priority: Option<JobPriority>,
+    ) -> Vec<JobId> {
+        let p = match priority {
+            Some(p) => p,
+            None => JobPriority::Normal,
+        };
+        requests
+            .into_iter()
+            .map(|req| self.submit_with_priority(req, p))
+            .collect()
+    }
+
+    /// Return all tracked jobs sorted newest first.
+    pub fn list_jobs(&self) -> Vec<JobRecord> {
+        let jobs = self.jobs.lock().unwrap_or_else(|e| e.into_inner());
+        let mut records: Vec<JobRecord> = jobs.values().map(|e| e.record.clone()).collect();
+        records.sort_by(|a, b| {
+            b.created_at_epoch_ms
+                .cmp(&a.created_at_epoch_ms)
+                .then_with(|| a.job_id.cmp(&b.job_id))
+        });
+        records
     }
 
     /// Request cancellation of a running or queued job.
@@ -367,16 +788,108 @@ impl JobManager {
         }
     }
 
+    /// Alias for `cancel`.
+    pub fn cancel_job(&self, job_id: &str) -> bool {
+        self.cancel(job_id)
+    }
+
+    /// Clear all completed, failed, or cancelled jobs from memory.
+    /// Returns the number of removed entries.
+    pub fn clear_finished_jobs(&self) -> usize {
+        let mut jobs = self.jobs.lock().unwrap_or_else(|e| e.into_inner());
+        let initial_len = jobs.len();
+        jobs.retain(|_, entry| match entry.record.status {
+            JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled => false,
+            JobStatus::Queued | JobStatus::Running => true,
+        });
+        initial_len.saturating_sub(jobs.len())
+    }
+
+    /// Re-enqueue a failed or cancelled job.
+    pub fn retry_job(&self, job_id: &str) -> lpdf_core_types::Result<JobId> {
+        let (request, priority) = {
+            let jobs = self.jobs.lock().unwrap_or_else(|e| e.into_inner());
+            let entry = match jobs.get(job_id) {
+                Some(e) => e,
+                None => {
+                    return Err(LpdfError::InvalidInput(format!("Job '{job_id}' not found")));
+                }
+            };
+            match entry.record.status {
+                JobStatus::Failed | JobStatus::Cancelled => {
+                    (entry.record.request.clone(), entry.record.priority)
+                }
+                JobStatus::Queued | JobStatus::Running => {
+                    return Err(LpdfError::InvalidInput(format!(
+                        "Job '{job_id}' is currently active"
+                    )));
+                }
+                JobStatus::Completed => {
+                    return Err(LpdfError::InvalidInput(format!(
+                        "Job '{job_id}' already completed"
+                    )));
+                }
+            }
+        };
+
+        Ok(self.submit_with_priority(request, priority))
+    }
+
     /// Get the current status of a job.
     pub fn status(&self, job_id: &str) -> Option<JobStatus> {
         let jobs = self.jobs.lock().unwrap_or_else(|e| e.into_inner());
-        jobs.get(job_id).map(|e| e.status)
+        jobs.get(job_id).map(|e| e.record.status)
+    }
+
+    /// Get the full record of a job.
+    pub fn get_job(&self, job_id: &str) -> Option<JobRecord> {
+        let jobs = self.jobs.lock().unwrap_or_else(|e| e.into_inner());
+        jobs.get(job_id).map(|e| e.record.clone())
     }
 
     fn set_status(jobs: &Arc<Mutex<HashMap<JobId, JobEntry>>>, job_id: &str, status: JobStatus) {
         let mut jobs = jobs.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(entry) = jobs.get_mut(job_id) {
-            entry.status = status;
+            entry.record.status = status;
+            if status == JobStatus::Running && entry.record.progress == 0 {
+                entry.record.progress = 5;
+            }
+        }
+    }
+
+    fn set_progress(jobs: &Arc<Mutex<HashMap<JobId, JobEntry>>>, job_id: &str, percent: u8) {
+        let mut jobs = jobs.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(entry) = jobs.get_mut(job_id) {
+            entry.record.progress = percent;
+        }
+    }
+
+    fn set_completed(
+        jobs: &Arc<Mutex<HashMap<JobId, JobEntry>>>,
+        job_id: &str,
+        output_path: Option<String>,
+    ) {
+        let mut jobs = jobs.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(entry) = jobs.get_mut(job_id) {
+            entry.record.status = JobStatus::Completed;
+            entry.record.progress = 100;
+            if output_path.is_some() {
+                entry.record.output_path = output_path;
+            }
+        }
+    }
+
+    fn set_failed(
+        jobs: &Arc<Mutex<HashMap<JobId, JobEntry>>>,
+        job_id: &str,
+        error_code: String,
+        error_message: String,
+    ) {
+        let mut jobs = jobs.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(entry) = jobs.get_mut(job_id) {
+            entry.record.status = JobStatus::Failed;
+            entry.record.error_code = Some(error_code);
+            entry.record.error_message = Some(error_message);
         }
     }
 

@@ -12,4 +12,4 @@ pub mod events;
 pub mod queue;
 
 pub use events::{JobEvent, JobEventSender};
-pub use queue::{JobId, JobManager, JobRequest, JobStatus};
+pub use queue::{JobId, JobManager, JobPriority, JobRecord, JobRequest, JobStatus};
