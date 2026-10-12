@@ -5,8 +5,8 @@
 
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    OfficeInputFormat, OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine,
-    PdfInfo, RedactionRegion, RenderOptions,
+    MarkdownDocFormat, OfficeInputFormat, OfficeOutputFormat, PdfAConformance, PdfAPreflightReport,
+    PdfEngine, PdfInfo, RedactionRegion, RenderOptions,
 };
 use std::path::{Path, PathBuf};
 
@@ -306,5 +306,33 @@ impl PdfEngine for EngineSwitcher {
         output_path: &Path,
     ) -> Result<std::path::PathBuf> {
         self.primary.pdf_to_office(input_path, format, output_path)
+    }
+
+    fn markdown_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<std::path::PathBuf> {
+        self.primary.markdown_to_pdf(input_path, output_path)
+    }
+
+    fn pdf_to_markdown(&self, input_path: &Path, output_path: &Path) -> Result<std::path::PathBuf> {
+        self.primary.pdf_to_markdown(input_path, output_path)
+    }
+
+    fn markdown_to_doc(
+        &self,
+        input_path: &Path,
+        format: MarkdownDocFormat,
+        output_path: &Path,
+    ) -> Result<std::path::PathBuf> {
+        self.primary
+            .markdown_to_doc(input_path, format, output_path)
+    }
+
+    fn doc_to_markdown(
+        &self,
+        input_path: &Path,
+        format: MarkdownDocFormat,
+        output_path: &Path,
+    ) -> Result<std::path::PathBuf> {
+        self.primary
+            .doc_to_markdown(input_path, format, output_path)
     }
 }

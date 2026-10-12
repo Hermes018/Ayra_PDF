@@ -3,6 +3,7 @@
     import { IpcClient } from '$lib/ipc';
     import type { JobRequest } from '$lib/bindings/JobRequest';
     import type { OfficeInputFormat } from '$lib/bindings/OfficeInputFormat';
+    import type { MarkdownDocFormat } from '$lib/bindings/MarkdownDocFormat';
 
     let currentPath = $derived(appState.currentFile);
     let customOutputPath = $state<string>('');
@@ -14,13 +15,15 @@
         id: string;
         title: string;
         ext: string;
+        targetExt?: string;
         icon: string;
         desc: string;
         badge: string;
         engine: string;
-        kind: 'native' | 'office';
+        kind: 'native' | 'office' | 'pandoc';
         nativeOp?: 'ImageToPdf' | 'DocxToPdf' | 'HtmlToPdf';
         officeFormat?: OfficeInputFormat;
+        markdownDocFormat?: MarkdownDocFormat;
     }
 
     const convertOptions: ConvertOption[] = [
@@ -28,6 +31,7 @@
             id: 'OfficeDocx',
             title: 'Word to PDF (High-Fidelity Layout via Sidecar)',
             ext: '.docx',
+            targetExt: '.pdf',
             icon: '📝',
             desc: 'Converts Word documents (.docx/.odt) with pixel-perfect pagination and typography via headless Office sidecar.',
             badge: 'High-Fidelity',
@@ -39,6 +43,7 @@
             id: 'OfficeXlsx',
             title: 'Excel to PDF (.xlsx)',
             ext: '.xlsx',
+            targetExt: '.pdf',
             icon: '📊',
             desc: 'Converts spreadsheets (.xlsx/.ods) preserving multi-sheet tables, formulas, and print layouts.',
             badge: 'Spreadsheet',
@@ -50,6 +55,7 @@
             id: 'OfficePptx',
             title: 'PowerPoint to PDF (.pptx)',
             ext: '.pptx',
+            targetExt: '.pdf',
             icon: '📽️',
             desc: 'Renders slide decks (.pptx/.odp) into high-fidelity PDF slides with vector shapes and transitions.',
             badge: 'Presentation',
@@ -58,9 +64,69 @@
             officeFormat: 'Pptx'
         },
         {
+            id: 'MarkdownToPdf',
+            title: 'Markdown to PDF (.md)',
+            ext: '.md',
+            targetExt: '.pdf',
+            icon: '📑',
+            desc: 'Compiles Markdown (.md) to PDF preserving typography, tables, and code formatting via Pandoc.',
+            badge: 'Markdown',
+            engine: 'Pandoc Sidecar + Native Engine',
+            kind: 'pandoc'
+        },
+        {
+            id: 'MarkdownToDocx',
+            title: 'Markdown to Word (.docx)',
+            ext: '.md',
+            targetExt: '.docx',
+            icon: '📄',
+            desc: 'Translates Markdown (.md) into a styled Microsoft Word (.docx) document via Pandoc.',
+            badge: 'MD -> DOCX',
+            engine: 'Pandoc Sidecar',
+            kind: 'pandoc',
+            markdownDocFormat: 'Docx'
+        },
+        {
+            id: 'MarkdownToHtml',
+            title: 'Markdown to HTML (.html)',
+            ext: '.md',
+            targetExt: '.html',
+            icon: '🌐',
+            desc: 'Compiles Markdown (.md) into a standalone HTML5 document with inline styles via Pandoc.',
+            badge: 'MD -> HTML',
+            engine: 'Pandoc Sidecar',
+            kind: 'pandoc',
+            markdownDocFormat: 'Html'
+        },
+        {
+            id: 'DocxToMarkdown',
+            title: 'Word (.docx) to Markdown',
+            ext: '.docx',
+            targetExt: '.md',
+            icon: '📝',
+            desc: 'Converts Microsoft Word (.docx) to clean GFM Markdown, extracting embedded media to assets/ via Pandoc.',
+            badge: 'DOCX -> MD',
+            engine: 'Pandoc Sidecar',
+            kind: 'pandoc',
+            markdownDocFormat: 'Docx'
+        },
+        {
+            id: 'HtmlToMarkdown',
+            title: 'HTML to Markdown (.md)',
+            ext: '.html',
+            targetExt: '.md',
+            icon: '📝',
+            desc: 'Translates HTML web documents into clean GFM Markdown via Pandoc.',
+            badge: 'HTML -> MD',
+            engine: 'Pandoc Sidecar',
+            kind: 'pandoc',
+            markdownDocFormat: 'Html'
+        },
+        {
             id: 'ImageToPdf',
             title: 'Image to PDF',
             ext: '.png',
+            targetExt: '.pdf',
             icon: '🖼️',
             desc: 'Imports raster images (PNG, JPEG) into structured PDF pages natively.',
             badge: 'Native',
@@ -72,6 +138,7 @@
             id: 'DocxToPdf',
             title: 'Word (.docx) to PDF (Structural)',
             ext: '.docx',
+            targetExt: '.pdf',
             icon: '📄',
             desc: 'Fast, lightweight native conversion preserving structural flow and text without external dependencies.',
             badge: 'Native Fast',
@@ -83,6 +150,7 @@
             id: 'HtmlToPdf',
             title: 'HTML to PDF',
             ext: '.html',
+            targetExt: '.pdf',
             icon: '🌐',
             desc: 'Renders local HTML documents to PDF with zero network access and scripts disabled.',
             badge: 'Native Offline',
@@ -104,7 +172,8 @@
 
         const dotIdx = currentPath.lastIndexOf('.');
         const stem = dotIdx !== -1 ? currentPath.slice(0, dotIdx) : currentPath;
-        return `${stem}.pdf`;
+        const outExt = currentOption.targetExt || '.pdf';
+        return `${stem}${outExt}`;
     });
 
     async function handleConvert() {
@@ -125,7 +194,27 @@
         const opt = currentOption;
         let req: JobRequest;
 
-        if (opt.kind === 'office' && opt.officeFormat) {
+        if (opt.id === 'MarkdownToPdf') {
+            req = {
+                op: 'MarkdownToPdf',
+                input_path: currentPath,
+                output_path: out
+            };
+        } else if (opt.id === 'MarkdownToDocx' || opt.id === 'MarkdownToHtml') {
+            req = {
+                op: 'MarkdownToDoc',
+                input_path: currentPath,
+                output_path: out,
+                format: opt.markdownDocFormat!
+            };
+        } else if (opt.id === 'DocxToMarkdown' || opt.id === 'HtmlToMarkdown') {
+            req = {
+                op: 'DocToMarkdown',
+                input_path: currentPath,
+                output_path: out,
+                format: opt.markdownDocFormat!
+            };
+        } else if (opt.kind === 'office' && opt.officeFormat) {
             req = {
                 op: 'OfficeToPdf',
                 input_path: currentPath,

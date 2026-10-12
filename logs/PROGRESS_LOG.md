@@ -553,4 +553,30 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/sidecar_tests.rs` (6 tests added, 13 run), `app-tauri/src/lib/views/__tests__/ConvertFromPdfView.test.ts` (3 tests added, 10 run; total vitest 18/18).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-12 16:10] Phase 9.3 — Advanced Convert (Markdown Toolset via Pandoc Sidecar)
+- **Status:** Complete (Tag: phase-9.3-green)
+- **Work:**
+  - Defined `MarkdownDocFormat` enum (`Docx`, `Html`) in `lpdf-engine-port` with `ts-rs` and `serde` exports, format extensions, and conversion helper methods.
+  - Extended `PdfEngine` trait across `PdfcraftAdapter`, `FallbackAdapter`, and `EngineSwitcher` with `markdown_to_pdf`, `pdf_to_markdown`, `markdown_to_doc`, and `doc_to_markdown`.
+  - Created shell-injection-safe sidecar module `crates/lpdf-engine-pdfcraft/src/pandoc_sidecar.rs`:
+    - Enforced Failsafe F22 cross-platform binary resolution with target-triple naming (`pandoc-x86_64-unknown-linux-gnu`, `pandoc-x86_64-pc-windows-msvc.exe`, `pandoc-aarch64-apple-darwin`) and dev/CI system PATH fallback discovery.
+    - Strict argument and offline isolation via `Command::arg` (never `sh -c`).
+    - Enforced Failsafe F21 with 60-second timeout watchdog, child process reaping on timeout/failure, stdout/stderr capture, and clean error mapping to `LpdfError::ExternalDependencyError`.
+    - Bidirectional conversion pipelines:
+      - `markdown_to_pdf`: Pandoc GFM -> standalone HTML5, rendered natively to verified `%PDF-` via `pdfcraft` and committed via `lpdf_fs_safety::atomic_write`.
+      - `pdf_to_markdown`: Embedded images extracted into `<output_dir>/assets/` via `extract_all_images`, structural HTML extracted via native `pdfcraft`, translated to GFM via Pandoc with relative `assets/` links, and committed via `lpdf_fs_safety::atomic_write`.
+      - `markdown_to_doc`: Pandoc GFM -> DOCX (verifying `PK\x03\x04`) or standalone HTML.
+      - `doc_to_markdown`: Pandoc DOCX/HTML -> GFM, extracting DOCX media to `assets/`.
+  - Defined `MarkdownToPdf`, `PdfToMarkdown`, `MarkdownToDoc`, and `DocToMarkdown` variants in `JobRequest` (`lpdf-jobs`), wired into `JobManager` with typed progress events, and regenerated TypeScript bindings (`JobRequest.ts`, `MarkdownDocFormat.ts`).
+  - Updated frontend:
+    - In `ConvertToPdfView.svelte`: added options for Markdown to PDF (.md), Markdown to Word (.docx), Markdown to HTML (.html), Word to Markdown (.docx), and HTML to Markdown (.md).
+    - In `ConvertFromPdfView.svelte`: added tile for PDF to Markdown (.md + assets/) via Pandoc sidecar.
+    - Wired all options to `IpcClient.submitJob`.
+  - Added unit and integration tests:
+    - Added tests in `crates/lpdf-engine-pdfcraft/tests/pandoc_tests.rs` (7 tests covering target triple resolution, non-existent binary error handling, F21 error mapping, mock MD -> PDF, mock PDF -> MD with `assets/`, bidirectional MD <-> DOCX/HTML, and adapter integration).
+    - Extended `ConvertToPdfView.test.ts` and `ConvertFromPdfView.test.ts` verifying selection and job submissions for all Pandoc operations (vitest 22/22 green).
+- **Gate:** pass (`cargo xtask gate` green: fmt, clippy, nextest 61/61, cargo-deny, cargo-audit, protocol-lint; `pnpm check` clean; `pnpm vitest run` 22/22 green).
+- **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/pandoc_tests.rs` (7 tests), `app-tauri/src/lib/views/__tests__/ConvertToPdfView.test.ts` (3 tests added, 9 run), `app-tauri/src/lib/views/__tests__/ConvertFromPdfView.test.ts` (1 test added, 11 run; total vitest 22/22).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
 

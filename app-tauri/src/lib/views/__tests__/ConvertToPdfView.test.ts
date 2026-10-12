@@ -102,4 +102,60 @@ describe('ConvertToPdfView', () => {
             output_path: '/path/to/photo.pdf'
         }));
     });
+
+    test('submits MarkdownToPdf JobRequest when Markdown to PDF selected', async () => {
+        appState.addFiles(['/path/to/notes.md']);
+        const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-job-id-md-pdf');
+        render(ConvertToPdfView);
+
+        const mdTile = screen.getByRole('button', { name: /Markdown to PDF \(\.md\)/i });
+        await fireEvent.click(mdTile);
+
+        const btn = screen.getByRole('button', { name: /Convert to PDF/i });
+        await fireEvent.click(btn);
+
+        expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
+            op: 'MarkdownToPdf',
+            input_path: '/path/to/notes.md',
+            output_path: '/path/to/notes.pdf'
+        }));
+    });
+
+    test('submits MarkdownToDoc JobRequest for Word (.docx)', async () => {
+        appState.addFiles(['/path/to/readme.md']);
+        const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-job-id-md-docx');
+        render(ConvertToPdfView);
+
+        const mdDocxTile = screen.getByRole('button', { name: /Markdown to Word \(\.docx\)/i });
+        await fireEvent.click(mdDocxTile);
+
+        const btn = screen.getByRole('button', { name: /Convert to PDF/i });
+        await fireEvent.click(btn);
+
+        expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
+            op: 'MarkdownToDoc',
+            input_path: '/path/to/readme.md',
+            output_path: '/path/to/readme.docx',
+            format: 'Docx'
+        }));
+    });
+
+    test('submits DocToMarkdown JobRequest for Word to Markdown', async () => {
+        appState.addFiles(['/path/to/document.docx']);
+        const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-job-id-docx-md');
+        render(ConvertToPdfView);
+
+        const docxMdTile = screen.getByRole('button', { name: /Word \(\.docx\) to Markdown/i });
+        await fireEvent.click(docxMdTile);
+
+        const btn = screen.getByRole('button', { name: /Convert to PDF/i });
+        await fireEvent.click(btn);
+
+        expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
+            op: 'DocToMarkdown',
+            input_path: '/path/to/document.docx',
+            output_path: '/path/to/document.md',
+            format: 'Docx'
+        }));
+    });
 });

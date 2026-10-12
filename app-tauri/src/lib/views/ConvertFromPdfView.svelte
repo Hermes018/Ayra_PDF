@@ -11,6 +11,7 @@
         | 'PdfToWordSidecar'
         | 'PdfToExcelSidecar'
         | 'PdfToPowerPointSidecar'
+        | 'PdfToMarkdown'
         | 'PdfToPdfA'
         | 'PdfToImages'
         | 'ExtractAllImages'
@@ -57,6 +58,14 @@
             icon: '📽️',
             desc: 'Converts presentation slides into Microsoft PowerPoint (.pptx) via headless sidecar.',
             badge: 'Sidecar Slides'
+        },
+        {
+            id: 'PdfToMarkdown' as const,
+            title: 'PDF to Markdown (.md + assets/)',
+            ext: '.md',
+            icon: '📘',
+            desc: 'Extracts reading layout to Markdown via Pandoc and extracts all embedded images to assets/.',
+            badge: 'Sidecar Markdown'
         },
         {
             id: 'PdfToPdfA' as const,
@@ -163,6 +172,12 @@
                 input_path: currentPath,
                 output_path: out,
                 format: 'Pptx'
+            };
+        } else if (selectedFormat === 'PdfToMarkdown') {
+            req = {
+                op: 'PdfToMarkdown',
+                input_path: currentPath,
+                output_path: out
             };
         } else {
             req = {
@@ -343,7 +358,11 @@
                 <div class="summary-item">
                     <span class="summary-label">Engine:</span>
                     <span class="summary-val highlight">
-                        {selectedFormat.includes('Sidecar') ? 'Headless Sidecar (LibreOffice / OpenOffice)' : 'Pure Rust Native (`pdfcraft`)'}
+                        {selectedFormat === 'PdfToMarkdown'
+                            ? 'Headless Sidecar (Pandoc)'
+                            : selectedFormat.includes('Sidecar')
+                            ? 'Headless Sidecar (LibreOffice / OpenOffice)'
+                            : 'Pure Rust Native (`pdfcraft`)'}
                     </span>
                 </div>
                 <div class="summary-item">

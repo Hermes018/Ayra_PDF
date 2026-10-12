@@ -217,6 +217,24 @@ pub enum JobRequest {
         output_path: String,
         format: lpdf_engine_port::OfficeOutputFormat,
     },
+    MarkdownToPdf {
+        input_path: String,
+        output_path: String,
+    },
+    PdfToMarkdown {
+        input_path: String,
+        output_path: String,
+    },
+    MarkdownToDoc {
+        input_path: String,
+        output_path: String,
+        format: lpdf_engine_port::MarkdownDocFormat,
+    },
+    DocToMarkdown {
+        input_path: String,
+        output_path: String,
+        format: lpdf_engine_port::MarkdownDocFormat,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -1313,6 +1331,148 @@ impl JobManager {
                     job_id: job_id.into(),
                     percent: 100,
                     message: "Office export complete".into(),
+                });
+
+                Ok(JobOutput {
+                    output_path: Some(result_path.to_string_lossy().to_string()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::MarkdownToPdf {
+                input_path,
+                output_path,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Converting Markdown to PDF via Pandoc sidecar...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 50,
+                    message: "Rendering standalone document to PDF...".into(),
+                });
+
+                let result_path = engine.markdown_to_pdf(&path, &out)?;
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 100,
+                    message: "Markdown to PDF conversion complete".into(),
+                });
+
+                Ok(JobOutput {
+                    output_path: Some(result_path.to_string_lossy().to_string()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::PdfToMarkdown {
+                input_path,
+                output_path,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Converting PDF to Markdown via Pandoc sidecar...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 50,
+                    message: "Extracting structural layout and images to assets/...".into(),
+                });
+
+                let result_path = engine.pdf_to_markdown(&path, &out)?;
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 100,
+                    message: "PDF to Markdown conversion complete".into(),
+                });
+
+                Ok(JobOutput {
+                    output_path: Some(result_path.to_string_lossy().to_string()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::MarkdownToDoc {
+                input_path,
+                output_path,
+                format,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: format!("Converting Markdown to {:?} via Pandoc sidecar...", format),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let result_path = engine.markdown_to_doc(&path, *format, &out)?;
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 100,
+                    message: format!("Markdown to {:?} conversion complete", format),
+                });
+
+                Ok(JobOutput {
+                    output_path: Some(result_path.to_string_lossy().to_string()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::DocToMarkdown {
+                input_path,
+                output_path,
+                format,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: format!("Converting {:?} to Markdown via Pandoc sidecar...", format),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let result_path = engine.doc_to_markdown(&path, *format, &out)?;
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 100,
+                    message: format!("{:?} to Markdown conversion complete", format),
                 });
 
                 Ok(JobOutput {
