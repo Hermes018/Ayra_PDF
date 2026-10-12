@@ -13,6 +13,9 @@ lpdf-engine-pdfcraft = { path = "../lpdf-engine-pdfcraft" }
 lpdf-engine-fallback = { path = "../lpdf-engine-fallback" }
 lpdf-fs-safety = { path = "../lpdf-fs-safety" }
 lpdf-ai-worker = { path = "../lpdf-ai-worker" }
+lpdf-hw = { path = "../lpdf-hw" }
+serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tracing = "0.1"
+
 

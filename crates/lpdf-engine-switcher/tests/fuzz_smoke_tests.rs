@@ -1,9 +1,10 @@
-use lpdf_core_types::LpdfError;
+use lpdf_core_types::{HardwareTier, LpdfError};
 use lpdf_engine_fallback::FallbackAdapter;
 use lpdf_engine_pdfcraft::PdfcraftAdapter;
 use lpdf_engine_port::PdfEngine;
 use lpdf_engine_switcher::fuzz::*;
 use lpdf_engine_switcher::hostile::*;
+use lpdf_engine_switcher::perf::*;
 use lpdf_engine_switcher::EngineSwitcher;
 use std::fs;
 use std::path::PathBuf;
@@ -466,4 +467,141 @@ fn test_corpus_hostile_files_roundtrip() {
     }
 
     let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn test_tier_perf_suite_and_memory_sampling() {
+    let sample = sample_memory();
+    assert!(sample.rss_kb > 0, "RSS must be non-zero");
+    assert!(sample.hwm_kb > 0, "HWM must be non-zero");
+
+    let sample_pdf = get_corpus_pdf("standard-text.pdf");
+    assert!(sample_pdf.exists(), "Sample corpus PDF must exist");
+
+    let report = run_tier_perf_suite(HardwareTier::Low, &sample_pdf)
+        .expect("Tier perf suite must complete successfully");
+
+    assert_eq!(report.tier, HardwareTier::Low);
+    assert!(report.total_duration_ms > 0);
+    assert!(report.peak_rss_mb > 0.0);
+
+    let required_ops = [
+        "info",
+        "rotate_document",
+        "compress",
+        "pdf_to_text",
+        "summarize_extractive",
+        "redact",
+        "synthetic_multi_page",
+    ];
+
+    for op in &required_ops {
+        assert!(
+            report.operations.contains_key(*op),
+            "Report must contain metrics for operation '{}'",
+            op
+        );
+        let m = &report.operations[*op];
+        assert!(m.peak_rss_mb > 0.0);
+    }
+}
+
+#[test]
+fn test_perf_regression_detector_pass_and_fail() {
+    let mut baseline = default_tier_budgets()
+        .into_iter()
+        .find(|b| b.tier == HardwareTier::Low)
+        .expect("Low tier budget must exist");
+
+    // 1. Passing verification
+    let mut report = PerfProfileReport {
+        tier: HardwareTier::Low,
+        total_duration_ms: 100,
+        start_rss_mb: 50.0,
+        peak_rss_mb: 200.0,
+        operations: std::collections::HashMap::new(),
+    };
+    report.operations.insert(
+        "info".to_string(),
+        OperationMetrics {
+            latency_ms: 50,
+            peak_rss_mb: 100.0,
+        },
+    );
+    report.operations.insert(
+        "rotate_document".to_string(),
+        OperationMetrics {
+            latency_ms: 100,
+            peak_rss_mb: 120.0,
+        },
+    );
+
+    // Baseline: info 100ms, rotate 200ms, max_rss 500.0MB
+    baseline.latency_budgets_ms.insert("info".to_string(), 100);
+    baseline
+        .latency_budgets_ms
+        .insert("rotate_document".to_string(), 200);
+    baseline.max_rss_mb = 500.0;
+
+    let res_ok = verify_against_baseline(&report, &baseline, 10.0);
+    assert!(res_ok.is_ok(), "Under-budget run must pass");
+
+    // 2. Failing verification (> 10.0% latency regression)
+    // Baseline: 100ms. Allowed with 10% = 110ms. Measured = 125ms (25% regression).
+    report.operations.insert(
+        "info".to_string(),
+        OperationMetrics {
+            latency_ms: 125,
+            peak_rss_mb: 100.0,
+        },
+    );
+    let res_fail_lat = verify_against_baseline(&report, &baseline, 10.0);
+    assert!(res_fail_lat.is_err(), "Regressed latency must fail");
+    let violations = res_fail_lat.unwrap_err();
+    assert_eq!(violations.len(), 1);
+    assert_eq!(violations[0].metric_name, "info_latency_ms");
+    assert!((violations[0].regression_pct - 25.0).abs() < 1e-3);
+    assert_eq!(violations[0].baseline_value, 100.0);
+    assert_eq!(violations[0].measured_value, 125.0);
+
+    // 3. Failing verification (> 10.0% memory regression)
+    // Baseline: 500MB. Allowed with 10% = 550MB. Measured = 600MB (20% regression).
+    report.operations.insert(
+        "info".to_string(),
+        OperationMetrics {
+            latency_ms: 50,
+            peak_rss_mb: 100.0,
+        },
+    );
+    report.peak_rss_mb = 600.0;
+    let res_fail_mem = verify_against_baseline(&report, &baseline, 10.0);
+    assert!(res_fail_mem.is_err(), "Regressed memory must fail");
+    let violations_mem = res_fail_mem.unwrap_err();
+    assert_eq!(violations_mem.len(), 1);
+    assert_eq!(violations_mem[0].metric_name, "peak_rss_mb");
+    assert!((violations_mem[0].regression_pct - 20.0).abs() < 1e-3);
+}
+
+#[test]
+fn test_load_baseline_budgets_file() {
+    let budgets_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../protocol/perf_budgets.json");
+    assert!(
+        budgets_path.exists(),
+        "protocol/perf_budgets.json must exist"
+    );
+
+    let budgets = load_baseline_budgets(&budgets_path)
+        .expect("load_baseline_budgets must parse protocol/perf_budgets.json");
+
+    assert!(budgets.contains_key(&HardwareTier::Low));
+    assert!(budgets.contains_key(&HardwareTier::Medium));
+    assert!(budgets.contains_key(&HardwareTier::High));
+
+    let low = &budgets[&HardwareTier::Low];
+    assert_eq!(low.concurrency, 1);
+    assert_eq!(low.render_threads, 2);
+    assert!(low.max_rss_mb > 0.0);
+    assert!(low.latency_budgets_ms.contains_key("info"));
+    assert!(low.latency_budgets_ms.contains_key("synthetic_multi_page"));
 }

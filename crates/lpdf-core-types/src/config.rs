@@ -4,7 +4,7 @@ use std::fs::{self, File};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, ts_rs::TS)]
 #[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
 pub enum HardwareTier {
     Low,

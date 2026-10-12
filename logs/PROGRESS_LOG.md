@@ -885,6 +885,27 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs` (8 tests added, 13 total run; 139 nextest tests total).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-13 02:35] Phase 11.3 — Hardening: Perf/Memory Profiling per Tier & CI Regression Budgets
+- **Status:** Complete (Tag: phase-11.3-green)
+- **Work:**
+  - Per-Tier Perf & Memory Profiling Engine (`crates/lpdf-engine-switcher/src/perf.rs`):
+    - Implemented `TierPerfBudget`, `OperationMetrics`, and `PerfProfileReport` covering `HardwareTier::Low`, `HardwareTier::Medium`, and `HardwareTier::High` with strict `#![forbid(unsafe_code)]` and zero unwraps/panics in non-test code.
+    - Implemented pure-Rust memory sampler `sample_memory()` parsing `/proc/self/status` `VmRSS:` and `VmHWM:` on Linux with safe cross-platform fallback.
+    - Implemented `run_tier_perf_suite(tier, sample_pdf)` benchmarking core operations (`info`, `rotate_document`, `compress`, `pdf_to_text`, `summarize_extractive`, `redact`, and multi-page synthetic PDF processing) recording duration (ms) and peak RSS (KB/MB).
+    - Implemented `verify_against_baseline(measured, baseline, max_regression_pct)` enforcing typed regression failure (`RegressionViolation`) whenever peak RSS or per-operation latency regresses by `> 10.0%`.
+    - Implemented `load_baseline_budgets(path)` and calibrated `default_tier_budgets()`.
+  - Deterministic Baseline Budgets Configuration (`protocol/perf_budgets.json`):
+    - Committed deterministic baseline budget JSON calibrated for Low, Medium, and High hardware tiers with realistic CI-safe ceilings.
+  - Regression Test Harness & Verification (`crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs`):
+    - Added unit/integration tests reusing existing test binary (saving linker RAM on 8GB host): `test_tier_perf_suite_and_memory_sampling`, `test_perf_regression_detector_pass_and_fail` (verifying clean passes and `> 10.0%` regression rejection), and `test_load_baseline_budgets_file`.
+  - Tooling & CI Integration (`xtask/src/main.rs`, `.github/workflows/nightly.yml`):
+    - Added `cargo xtask perf-check` command running the tier perf suite and regression assertions.
+    - Updated `.github/workflows/nightly.yml` to run `cargo xtask perf-check` as part of nightly CI validation.
+- **Gate:** pass (`cargo xtask gate` green: fmt, clippy, nextest 142/142, cargo-deny, cargo-audit, protocol-lint).
+- **Tests added/run:** `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs` (3 tests added, 16 total run; 142 nextest tests total).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 
