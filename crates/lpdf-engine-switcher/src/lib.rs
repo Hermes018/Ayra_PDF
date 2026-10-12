@@ -16,6 +16,7 @@ pub mod fuzz;
 pub mod hostile;
 pub mod perf;
 pub mod sbom;
+pub mod soak;
 
 /// Tracks which engine is active after a load attempt.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

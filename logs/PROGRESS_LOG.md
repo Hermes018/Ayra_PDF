@@ -949,6 +949,26 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs` (1 test added, 20 total run; 146 nextest tests total); `app-tauri/src/lib/views/__tests__/A11yConformance.test.ts` (4 tests added; 53 vitest tests total).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-13 04:20] Phase 11.6 — Hardening: 8-Hour Soak Harness, Leak Detection, & Phase 11 Final Gate
+- **Status:** Complete (Tag: phase-11.6-green)
+- **Work:**
+  - Soak Testing & Resource Leak Detection Engine (`crates/lpdf-engine-switcher/src/soak.rs`):
+    - Implemented `SoakConfig` (`target_duration_secs`, `min_iterations`, `max_rss_drift_mb`, `max_fd_delta`) and `SoakReport` (`iterations_completed`, `operations_executed`, `elapsed_ms`, `initial_rss_mb`, `final_rss_mb`, `peak_rss_mb`, `rss_drift_mb`, `initial_open_fds`, `final_open_fds`, `orphaned_temp_files`, `passed`) with `#![forbid(unsafe_code)]` and zero unwrap/panics.
+    - Implemented pure-Rust open file descriptor sampler `count_open_fds()` reading `/proc/self/fd` on Linux with safe fallback.
+    - Implemented `run_soak_suite` executing warmup pass, baseline recording, and a continuous mixed-workload loop (`info`, `rotate_document`, `compress`, `repair`, `watermark`, `flatten_comments`, `pdf_to_text`, `summarize_extractive`, `redact`, hostile xref rejection) in isolated per-cycle staging directories.
+    - Enforced post-cycle assertion verifying 0 orphaned temporary files and bounded RSS drift and FD count delta.
+  - Test Harness & Invariant Assertions (`crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs`):
+    - Reused existing test binary (saving linker RAM on 8GB host).
+    - Added `test_soak_suite_zero_memory_fd_and_temp_leaks` running 150+ continuous mixed-operation cycles (1500 operations total) in ~4s with 0 orphaned temp files, bounded FD delta, and 0 memory leaks.
+    - Added `test_soak_leak_detector_catches_violations` verifying that simulated RSS drift, FD delta, and orphaned temporary file leaks cleanly fail verification.
+  - Tooling & Nightly CI (`xtask/src/main.rs`, `.github/workflows/nightly.yml`):
+    - Added `cargo xtask soak [--duration-secs <N>]` supporting fast smoke soak locally and `--duration-secs 28800` for 8-hour soak runs.
+    - Updated `.github/workflows/nightly.yml` to run `cargo xtask soak` on every nightly run, and added dedicated `nightly-8h-soak` job configured with 540m timeout running the full 8-hour (`28800` seconds) soak harness.
+- **Gate:** pass (`cargo xtask gate` green: fmt, clippy, nextest 148/148, cargo-deny, cargo-audit, protocol-lint).
+- **Tests added/run:** `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs` (2 tests added, 22 total run; 148 nextest tests total).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 

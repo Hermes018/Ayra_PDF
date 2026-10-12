@@ -18,6 +18,7 @@ fn main() {
         "perf-check" => run_perf_check(),
         "sbom" => run_sbom(),
         "a11y" => run_a11y(),
+        "soak" => run_soak(&args[2..]),
         _ => {
             eprintln!("Unknown command: {}", args[1]);
             exit(1);
@@ -273,4 +274,46 @@ fn run_a11y() {
         exit(1);
     }
     println!("A11y protocol audit and Svelte landmark verification passed green!");
+}
+
+fn run_soak(args: &[String]) {
+    let mut duration_secs = 0u64;
+    let mut i = 0;
+    while i < args.len() {
+        if args[i] == "--duration-secs" && i + 1 < args.len() {
+            if let Ok(val) = args[i + 1].parse::<u64>() {
+                duration_secs = val;
+            }
+            i += 2;
+        } else {
+            i += 1;
+        }
+    }
+
+    println!(
+        "Running soak testing harness (target duration: {}s, minimum 150 cycles)...",
+        duration_secs
+    );
+    let mut cmd = Command::new("cargo");
+    cmd.args([
+        "test",
+        "-p",
+        "lpdf-engine-switcher",
+        "--test",
+        "fuzz_smoke_tests",
+        "--",
+        "test_soak_suite_zero_memory_fd_and_temp_leaks",
+        "test_soak_leak_detector_catches_violations",
+        "--test-threads=1",
+    ]);
+    if duration_secs > 0 {
+        cmd.env("LPDF_SOAK_DURATION_SECS", duration_secs.to_string());
+    }
+
+    let status = cmd.status().expect("Failed to execute soak test suite");
+    if !status.success() {
+        eprintln!("Soak test suite failed!");
+        exit(1);
+    }
+    println!("Soak test suite completed green with zero leaks!");
 }

@@ -6,6 +6,7 @@ use lpdf_engine_switcher::fuzz::*;
 use lpdf_engine_switcher::hostile::*;
 use lpdf_engine_switcher::perf::*;
 use lpdf_engine_switcher::sbom::*;
+use lpdf_engine_switcher::soak::*;
 use lpdf_engine_switcher::EngineSwitcher;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -755,4 +756,116 @@ fn test_a11y_protocol_audit_and_svelte_landmarks() {
         "Must find status bar landmark in StatusBar"
     );
     assert!(found_tablist, "Must find WAI-ARIA tablist in ConvertView");
+}
+
+#[test]
+fn test_soak_suite_zero_memory_fd_and_temp_leaks() {
+    let sample_pdf_path = get_corpus_pdf("standard-text.pdf");
+    let sample_bytes = fs::read(&sample_pdf_path).expect("Read sample PDF");
+    let duration_secs = std::env::var("LPDF_SOAK_DURATION_SECS")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(0);
+
+    let config = SoakConfig {
+        target_duration_secs: duration_secs,
+        min_iterations: 150,
+        max_rss_drift_mb: 35.0,
+        max_fd_delta: 5,
+    };
+
+    let report = run_soak_suite(&config, &sample_bytes).expect("Run soak suite");
+    assert!(
+        report.passed,
+        "Soak suite failed leak limits: {:?}",
+        report.violations(&config)
+    );
+    assert!(
+        report.iterations_completed >= 150,
+        "Expected at least 150 iterations, got {}",
+        report.iterations_completed
+    );
+    assert!(
+        report.operations_executed >= 1500,
+        "Expected at least 1500 operations, got {}",
+        report.operations_executed
+    );
+    assert_eq!(
+        report.orphaned_temp_files, 0,
+        "Orphaned temporary files must be zero"
+    );
+    assert!(
+        report
+            .final_open_fds
+            .saturating_sub(report.initial_open_fds)
+            <= config.max_fd_delta,
+        "Open FD delta must not exceed {}",
+        config.max_fd_delta
+    );
+}
+
+#[test]
+fn test_soak_leak_detector_catches_violations() {
+    let config = SoakConfig {
+        target_duration_secs: 0,
+        min_iterations: 10,
+        max_rss_drift_mb: 10.0,
+        max_fd_delta: 2,
+    };
+
+    // 1. Simulated excessive RSS drift
+    let drift_report = SoakReport {
+        iterations_completed: 10,
+        operations_executed: 100,
+        elapsed_ms: 1000,
+        initial_rss_mb: 50.0,
+        final_rss_mb: 75.0,
+        peak_rss_mb: 80.0,
+        rss_drift_mb: 25.0,
+        initial_open_fds: 10,
+        final_open_fds: 11,
+        orphaned_temp_files: 0,
+        passed: false,
+    };
+    assert!(!drift_report.evaluate_leak_limits(&config));
+    let violations = drift_report.violations(&config);
+    assert!(violations.iter().any(|v| v.contains("RSS drift")));
+
+    // 2. Simulated FD leak
+    let fd_leak_report = SoakReport {
+        iterations_completed: 10,
+        operations_executed: 100,
+        elapsed_ms: 1000,
+        initial_rss_mb: 50.0,
+        final_rss_mb: 52.0,
+        peak_rss_mb: 55.0,
+        rss_drift_mb: 2.0,
+        initial_open_fds: 10,
+        final_open_fds: 18,
+        orphaned_temp_files: 0,
+        passed: false,
+    };
+    assert!(!fd_leak_report.evaluate_leak_limits(&config));
+    let violations = fd_leak_report.violations(&config);
+    assert!(violations.iter().any(|v| v.contains("Open FD delta")));
+
+    // 3. Simulated orphaned temp file leak
+    let temp_leak_report = SoakReport {
+        iterations_completed: 10,
+        operations_executed: 100,
+        elapsed_ms: 1000,
+        initial_rss_mb: 50.0,
+        final_rss_mb: 52.0,
+        peak_rss_mb: 55.0,
+        rss_drift_mb: 2.0,
+        initial_open_fds: 10,
+        final_open_fds: 10,
+        orphaned_temp_files: 3,
+        passed: false,
+    };
+    assert!(!temp_leak_report.evaluate_leak_limits(&config));
+    let violations = temp_leak_report.violations(&config);
+    assert!(violations
+        .iter()
+        .any(|v| v.contains("orphaned temporary files")));
 }
