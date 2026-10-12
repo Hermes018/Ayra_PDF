@@ -31,12 +31,14 @@ jobs:
           chmod +x corpus/fetch.sh
           ./corpus/fetch.sh
 
-      - name: Run deterministic adapter fuzz, hostile-file suite, perf check & sbom
+      - name: Run deterministic adapter fuzz, hostile suite, perf check, sbom, a11y & soak smoke
         run: |
           cargo xtask fuzz
           cargo xtask hostile
           cargo xtask perf-check
           cargo xtask sbom
+          cargo xtask a11y
+          cargo xtask soak
 
       - name: Verify cargo-fuzz target definitions
         run: |
@@ -55,3 +57,28 @@ jobs:
             fuzz/timeout-*
             fuzz/oom-*
           if-no-files-found: ignore
+
+  nightly-8h-soak:
+    name: 8-Hour Soak Test & Leak Detection
+    runs-on: ubuntu-latest
+    container: fedora:44
+    timeout-minutes: 540
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install system dependencies (Fedora)
+        run: |
+          dnf install -y qpdf curl gcc gcc-c++
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Setup nightly Rust
+        run: |
+          rustup default nightly
+
+      - name: Run 8-Hour Continuous Soak Harness
+        run: |
+          cargo xtask soak --duration-secs 28800
