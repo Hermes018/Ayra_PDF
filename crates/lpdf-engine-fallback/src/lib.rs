@@ -6,6 +6,7 @@ use lpdf_engine_port::{
     ExtractiveSummaryReport, LlmSummaryOptions, LlmSummaryReport, MarkdownBatchOptions,
     MarkdownBatchReport, MarkdownDocFormat, OfficeInputFormat, OfficeOutputFormat, PdfAConformance,
     PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion, RenderOptions, SummaryLength,
+    TranslateOptions, TranslatePdfReport,
 };
 use std::path::Path;
 
@@ -404,6 +405,17 @@ impl PdfEngine for FallbackAdapter {
     ) -> Result<LlmSummaryReport> {
         Err(LpdfError::Unsupported(
             "LLM Map-Reduce summarization is not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn translate_pdf_experimental(
+        &self,
+        _input_path: &Path,
+        _output_pdf_path: &Path,
+        _options: TranslateOptions,
+    ) -> Result<TranslatePdfReport> {
+        Err(LpdfError::Unsupported(
+            "PDF translation is not supported by FallbackAdapter".into(),
         ))
     }
 }

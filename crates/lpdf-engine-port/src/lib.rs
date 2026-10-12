@@ -291,6 +291,29 @@ pub struct LlmSummaryReport {
     pub summary_word_count: usize,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub struct TranslateOptions {
+    pub manifest: AiModelManifest,
+    pub ai_local_enabled: bool,
+    pub source_lang: String,
+    pub target_lang: String,
+    pub preserve_layout_blocks: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub struct TranslatePdfReport {
+    pub output_pdf_path: std::path::PathBuf,
+    pub report_path: std::path::PathBuf,
+    pub blocks_translated: usize,
+    pub pages_processed: usize,
+    pub source_lang: String,
+    pub target_lang: String,
+    pub model_sha256: String,
+    pub experimental_notice: String,
+}
+
 pub trait PdfEngine {
     fn load(&mut self, path: &Path) -> Result<()>;
     fn info(&self) -> Result<PdfInfo>;
@@ -439,6 +462,14 @@ pub trait PdfEngine {
         output_path: &Path,
         options: LlmSummaryOptions,
     ) -> Result<LlmSummaryReport>;
+
+    // Experimental PDF Translator (Phase 10.5d)
+    fn translate_pdf_experimental(
+        &self,
+        input_path: &Path,
+        output_pdf_path: &Path,
+        options: TranslateOptions,
+    ) -> Result<TranslatePdfReport>;
 }
 
 #[macro_export]
@@ -499,5 +530,7 @@ mod tests {
         assert!(ExtractiveSummaryReport::export().is_ok());
         assert!(LlmSummaryOptions::export().is_ok());
         assert!(LlmSummaryReport::export().is_ok());
+        assert!(TranslateOptions::export().is_ok());
+        assert!(TranslatePdfReport::export().is_ok());
     }
 }

@@ -11,10 +11,13 @@
     }>();
 
     // Svelte 5 runes state
-    let activeMode = $state<'extractive' | 'llm'>('extractive');
+    let activeMode = $state<'extractive' | 'llm' | 'translate'>('extractive');
     let selectedLength = $state<SummaryLength>('Medium');
     let chunkWordLimit = $state<number>(400);
     let temperature = $state<number>(0.2);
+    let sourceLang = $state<string>('Auto');
+    let targetLang = $state<string>('es');
+    let preserveLayoutBlocks = $state<boolean>(true);
     let inputPath = $state<string>('');
     let outputPath = $state<string>('');
     let isSubmitting = $state(false);
@@ -45,8 +48,23 @@
     // Auto-update output path when input path changes if output is blank or follows default convention
     function handleInputChange(newInput: string) {
         inputPath = newInput;
-        if (!outputPath || outputPath.endsWith('_summary.md')) {
-            outputPath = newInput.replace(/\.pdf$/i, '_summary.md');
+        if (!outputPath || outputPath.endsWith('_summary.md') || outputPath.includes('_translated_')) {
+            if (activeMode === 'translate') {
+                outputPath = newInput.replace(/\.pdf$/i, `_translated_${targetLang}.pdf`);
+            } else {
+                outputPath = newInput.replace(/\.pdf$/i, '_summary.md');
+            }
+        }
+    }
+
+    function selectMode(mode: 'extractive' | 'llm' | 'translate') {
+        activeMode = mode;
+        if (inputPath && (!outputPath || outputPath.endsWith('_summary.md') || outputPath.includes('_translated_'))) {
+            if (mode === 'translate') {
+                outputPath = inputPath.replace(/\.pdf$/i, `_translated_${targetLang}.pdf`);
+            } else {
+                outputPath = inputPath.replace(/\.pdf$/i, '_summary.md');
+            }
         }
     }
 
@@ -85,7 +103,37 @@
         isSubmitting = true;
         try {
             let req: JobRequest;
-            if (activeMode === 'llm') {
+            if (activeMode === 'translate') {
+                if (!appSettings?.local_ai_model_path) {
+                    throw new Error('Local AI model path is not configured.');
+                }
+                const modelPath = appSettings.local_ai_model_path;
+                let fmt = 'GGUF';
+                if (modelPath.endsWith('.onnx')) {
+                    fmt = 'ONNX';
+                } else if (modelPath.endsWith('.safetensors')) {
+                    fmt = 'SafeTensors';
+                }
+
+                req = {
+                    op: 'TranslatePdf',
+                    input_path: inputPath.trim(),
+                    output_path: outputPath.trim(),
+                    options: {
+                        manifest: {
+                            model_path: modelPath,
+                            sha256_hex: appSettings.ai_model_sha256 || '',
+                            format: fmt,
+                            license_spdx: appSettings.ai_model_license || 'Custom',
+                            license_acknowledged: Boolean(appSettings.ai_license_acknowledged),
+                        },
+                        ai_local_enabled: Boolean(appSettings.ai_local_enabled),
+                        source_lang: sourceLang,
+                        target_lang: targetLang,
+                        preserve_layout_blocks: preserveLayoutBlocks,
+                    },
+                };
+            } else if (activeMode === 'llm') {
                 if (!appSettings?.local_ai_model_path) {
                     throw new Error('Local AI model path is not configured.');
                 }
@@ -126,7 +174,8 @@
             }
 
             const jobId = await IpcClient.submitJob(req);
-            submissionStatus = `Summary job queued successfully (ID: ${jobId}). Check Batch Queue for progress.`;
+            const actionName = activeMode === 'translate' ? 'Translation' : 'Summary';
+            submissionStatus = `${actionName} job queued successfully (ID: ${jobId}). Check Batch Queue for progress.`;
         } catch (e: any) {
             errorMessage = e?.message || String(e) || 'Failed to submit summarization job.';
         } finally {
@@ -153,7 +202,7 @@
             type="button"
             class="mode-card"
             class:active={activeMode === 'extractive'}
-            onclick={() => { activeMode = 'extractive'; }}
+            onclick={() => selectMode('extractive')}
             data-testid="mode-extractive"
         >
             <div class="mode-header">
@@ -176,8 +225,8 @@
             class="mode-card"
             class:gated-mode={!isLlmReady}
             class:active={activeMode === 'llm'}
-            onclick={() => { if (isLlmReady) activeMode = 'llm'; }}
-            onkeydown={(e) => { if (isLlmReady && (e.key === 'Enter' || e.key === ' ')) activeMode = 'llm'; }}
+            onclick={() => { if (isLlmReady) selectMode('llm'); }}
+            onkeydown={(e) => { if (isLlmReady && (e.key === 'Enter' || e.key === ' ')) selectMode('llm'); }}
             data-testid="mode-local-llm"
         >
             <div class="mode-header">
@@ -221,27 +270,140 @@
                 </div>
             {/if}
         </div>
+
+        <!-- Translate PDF (Experimental) Mode Card -->
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+        <div
+            role={isLlmReady ? 'button' : undefined}
+            tabindex={isLlmReady ? 0 : undefined}
+            class="mode-card"
+            class:gated-mode={!isLlmReady}
+            class:active={activeMode === 'translate'}
+            onclick={() => { if (isLlmReady) selectMode('translate'); }}
+            onkeydown={(e) => { if (isLlmReady && (e.key === 'Enter' || e.key === ' ')) selectMode('translate'); }}
+            data-testid="mode-translate"
+        >
+            <div class="mode-header">
+                <span class="mode-icon">🌐</span>
+                {#if isLlmReady}
+                    <span class="mode-badge experimental-badge" data-testid="translate-status-badge">Experimental</span>
+                {:else}
+                    <span class="mode-badge gated-badge" data-testid="translate-status-badge">Gated Opt-In</span>
+                {/if}
+            </div>
+            <h3>Translate PDF (Experimental)</h3>
+            <p class="mode-desc">Block-level neural translation and re-typesetting. Generates a new PDF alongside an exhaustive Markdown companion report.</p>
+
+            {#if isLlmReady}
+                <div class="llm-ready-info" data-testid="translate-ready-info">
+                    <div class="info-row">
+                        <span class="info-label">Model:</span>
+                        <span class="info-val">{appSettings?.local_ai_model_path}</span>
+                    </div>
+                    <div class="info-row status-success">
+                        <span>✓ Block-level re-typesetting &amp; report</span>
+                    </div>
+                </div>
+            {:else}
+                <div class="gate-notice">
+                    <span>Requires <code>ai-local</code> feature, local model import, and licence acknowledgement.</span>
+                    <button
+                        type="button"
+                        class="settings-link-btn"
+                        onclick={(e) => { e.stopPropagation(); onNavigate('Settings'); }}
+                        data-testid="translate-settings-link"
+                    >
+                        Configure in Settings &rarr;
+                    </button>
+                </div>
+            {/if}
+        </div>
     </div>
 
     <!-- Configuration Panel -->
     <section class="config-panel" data-testid="config-panel">
-        <div class="panel-section">
-            <h2>1. Summary Length</h2>
-            <div class="length-selector">
-                {#each lengthOptions as opt}
-                    <button
-                        type="button"
-                        class="length-btn"
-                        class:selected={selectedLength === opt.id}
-                        onclick={() => { selectedLength = opt.id; }}
-                        data-testid={`length-${opt.id.toLowerCase()}`}
-                    >
-                        <span class="length-label">{opt.label}</span>
-                        <span class="length-desc">{opt.desc}</span>
-                    </button>
-                {/each}
+        {#if activeMode === 'translate'}
+            <div class="panel-section" data-testid="translate-config-section">
+                <div class="section-header-row">
+                    <h2>1. Translation Configuration</h2>
+                    <span class="badge-experimental">Experimental (ADR-006)</span>
+                </div>
+                <div class="info-callout">
+                    <span>⚠️ Block-level re-typesetting replaces document paragraphs and generates an atomic companion report (<code>.report.md</code>) recording block mappings and layout warnings.</span>
+                </div>
+                <div class="form-grid">
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label for="source-lang-select">Source Language</label>
+                            <select
+                                id="source-lang-select"
+                                bind:value={sourceLang}
+                                data-testid="source-lang-select"
+                            >
+                                <option value="Auto">Auto-Detect</option>
+                                <option value="en">English (en)</option>
+                                <option value="es">Spanish (es)</option>
+                                <option value="fr">French (fr)</option>
+                                <option value="de">German (de)</option>
+                                <option value="bn">Bengali (bn)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="target-lang-select">Target Language</label>
+                            <select
+                                id="target-lang-select"
+                                bind:value={targetLang}
+                                onchange={() => {
+                                    if (inputPath && (outputPath.includes('_translated_') || !outputPath)) {
+                                        outputPath = inputPath.replace(/\.pdf$/i, `_translated_${targetLang}.pdf`);
+                                    }
+                                }}
+                                data-testid="target-lang-select"
+                            >
+                                <option value="es">Spanish (es)</option>
+                                <option value="en">English (en)</option>
+                                <option value="fr">French (fr)</option>
+                                <option value="de">German (de)</option>
+                                <option value="bn">Bengali (bn)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="toggle-checkbox-label">
+                            <input
+                                type="checkbox"
+                                bind:checked={preserveLayoutBlocks}
+                                data-testid="preserve-layout-checkbox"
+                            />
+                            <span>
+                                <strong>Preserve Block-Level Layout</strong>
+                                <span class="help-text">(Extracts per-page text blocks and re-typesets paragraphs into valid PDF)</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
             </div>
-        </div>
+        {:else}
+            <div class="panel-section">
+                <h2>1. Summary Length</h2>
+                <div class="length-selector">
+                    {#each lengthOptions as opt}
+                        <button
+                            type="button"
+                            class="length-btn"
+                            class:selected={selectedLength === opt.id}
+                            onclick={() => { selectedLength = opt.id; }}
+                            data-testid={`length-${opt.id.toLowerCase()}`}
+                        >
+                            <span class="length-label">{opt.label}</span>
+                            <span class="length-desc">{opt.desc}</span>
+                        </button>
+                    {/each}
+                </div>
+            </div>
+        {/if}
 
         {#if activeMode === 'llm'}
             <div class="panel-section" data-testid="map-reduce-section">
@@ -322,12 +484,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="output-md-path">Output Summary Destination (.md or .txt)</label>
+                    <label for="output-md-path">{activeMode === 'translate' ? 'Output PDF Destination (.pdf)' : 'Output Summary Destination (.md or .txt)'}</label>
                     <div class="input-with-button">
                         <input
                             id="output-md-path"
                             type="text"
-                            placeholder="/path/to/document_summary.md"
+                            placeholder={activeMode === 'translate' ? '/path/to/document_translated.pdf' : '/path/to/document_summary.md'}
                             bind:value={outputPath}
                             data-testid="output-path"
                         />
@@ -361,7 +523,9 @@
             >
                 {#if isSubmitting}
                     <span class="spinner"></span>
-                    Queueing Summary Job...
+                    Queueing Job...
+                {:else if activeMode === 'translate'}
+                    <span>🌐 Translate Document (Experimental)</span>
                 {:else if activeMode === 'llm'}
                     <span>🧠 Generate Map-Reduce Summary</span>
                 {:else}
@@ -493,6 +657,82 @@
         background-color: rgba(137, 180, 250, 0.2);
         color: #89b4fa;
         border: 1px solid #89b4fa;
+    }
+
+    .experimental-badge {
+        background-color: rgba(250, 179, 135, 0.2);
+        color: #fab387;
+        border: 1px solid #fab387;
+    }
+
+    .badge-experimental {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        background-color: rgba(250, 179, 135, 0.15);
+        color: #fab387;
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+        border: 1px solid #fab387;
+    }
+
+    .section-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+
+    .section-header-row h2 {
+        margin: 0;
+    }
+
+    .info-callout {
+        background-color: rgba(249, 226, 175, 0.08);
+        border: 1px solid #fab387;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+        color: #fab387;
+        margin-bottom: 1rem;
+    }
+
+    .form-row-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+    }
+
+    select {
+        background-color: #252538;
+        border: 1px solid #313244;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        color: #cdd6f4;
+        font-size: 0.92rem;
+        outline: none;
+        transition: border-color 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    select:focus {
+        border-color: #cba6f7;
+    }
+
+    .toggle-checkbox-label {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .toggle-checkbox-label input[type="checkbox"] {
+        margin-top: 0.2rem;
+        accent-color: #cba6f7;
+        cursor: pointer;
+        width: 1.1rem;
+        height: 1.1rem;
     }
 
     .llm-ready-info {

@@ -8,6 +8,7 @@ use lpdf_engine_port::{
     ExtractiveSummaryReport, LlmSummaryOptions, LlmSummaryReport, MarkdownBatchOptions,
     MarkdownBatchReport, MarkdownDocFormat, OfficeInputFormat, OfficeOutputFormat, PdfAConformance,
     PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion, RenderOptions, SummaryLength,
+    TranslateOptions, TranslatePdfReport,
 };
 use std::path::{Path, PathBuf};
 
@@ -365,5 +366,15 @@ impl PdfEngine for EngineSwitcher {
     ) -> Result<LlmSummaryReport> {
         self.primary
             .summarize_llm_map_reduce(input_path, output_path, options)
+    }
+
+    fn translate_pdf_experimental(
+        &self,
+        input_path: &Path,
+        output_pdf_path: &Path,
+        options: TranslateOptions,
+    ) -> Result<TranslatePdfReport> {
+        self.primary
+            .translate_pdf_experimental(input_path, output_pdf_path, options)
     }
 }

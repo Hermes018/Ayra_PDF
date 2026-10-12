@@ -1,7 +1,9 @@
 use lpdf_core_types::compute_sha256_hex;
 use lpdf_engine_pdfcraft::summarizer::*;
 use lpdf_engine_pdfcraft::PdfcraftAdapter;
-use lpdf_engine_port::{AiModelManifest, LlmSummaryOptions, PdfEngine, SummaryLength};
+use lpdf_engine_port::{
+    AiModelManifest, LlmSummaryOptions, PdfEngine, SummaryLength, TranslateOptions,
+};
 use std::fs;
 use std::path::PathBuf;
 
@@ -200,6 +202,109 @@ fn test_e2e_pdf_llm_map_reduce_summarization() {
     assert!(content.contains("## Executive Synthesis"));
     assert!(content.contains("## Section-by-Section Intermediate Summaries"));
     assert!(content.contains("### Section 1"));
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn test_translate_pdf_f19_guards() {
+    let pdf_path = get_corpus_pdf("standard-text.pdf");
+    let temp_dir = std::env::temp_dir().join(format!("lpdf_test_trans_f19_{}", uuid_simple()));
+    let _ = fs::create_dir_all(&temp_dir);
+    let out_pdf = temp_dir.join("f19_translated.pdf");
+
+    let model_file = temp_dir.join("trans_model.gguf");
+    let model_bytes = b"GGUF\x03\x00\x00\x00_valid_model_header_payload";
+    let _ = fs::write(&model_file, model_bytes);
+    let sha256_hex = compute_sha256_hex(&model_file).expect("compute sha256");
+
+    let engine = PdfcraftAdapter::new();
+
+    // 1. Guard against ai_local_enabled = false
+    let mut opts = TranslateOptions {
+        manifest: AiModelManifest {
+            model_path: model_file.clone(),
+            sha256_hex: sha256_hex.clone(),
+            format: "GGUF".into(),
+            license_spdx: "Apache-2.0".into(),
+            license_acknowledged: true,
+        },
+        ai_local_enabled: false,
+        source_lang: "en".into(),
+        target_lang: "es".into(),
+        preserve_layout_blocks: true,
+    };
+    let res1 = engine.translate_pdf_experimental(&pdf_path, &out_pdf, opts.clone());
+    assert!(res1.is_err(), "Must reject when ai_local_enabled is false");
+
+    // 2. Guard against license_acknowledged = false
+    opts.ai_local_enabled = true;
+    opts.manifest.license_acknowledged = false;
+    let res2 = engine.translate_pdf_experimental(&pdf_path, &out_pdf, opts.clone());
+    assert!(res2.is_err(), "Must reject when license is unacknowledged");
+
+    // 3. Guard against SHA-256 mismatch
+    opts.manifest.license_acknowledged = true;
+    opts.manifest.sha256_hex =
+        "0000000000000000000000000000000000000000000000000000000000000000".into();
+    let res3 = engine.translate_pdf_experimental(&pdf_path, &out_pdf, opts);
+    assert!(res3.is_err(), "Must reject when SHA-256 mismatches");
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn test_e2e_translate_pdf_block_level() {
+    let pdf_path = get_corpus_pdf("standard-text.pdf");
+    let temp_dir = std::env::temp_dir().join(format!("lpdf_test_trans_e2e_{}", uuid_simple()));
+    let _ = fs::create_dir_all(&temp_dir);
+    let out_pdf = temp_dir.join("translated_out.pdf");
+
+    let model_file = temp_dir.join("valid_trans_model.gguf");
+    let model_bytes = b"GGUF\x03\x00\x00\x00_valid_model_weights_and_tensors_dummy_data";
+    let _ = fs::write(&model_file, model_bytes);
+    let sha256_hex = compute_sha256_hex(&model_file).expect("compute sha256");
+
+    let engine = PdfcraftAdapter::new();
+    let opts = TranslateOptions {
+        manifest: AiModelManifest {
+            model_path: model_file,
+            sha256_hex,
+            format: "GGUF".into(),
+            license_spdx: "Apache-2.0".into(),
+            license_acknowledged: true,
+        },
+        ai_local_enabled: true,
+        source_lang: "en".into(),
+        target_lang: "es".into(),
+        preserve_layout_blocks: true,
+    };
+
+    let report = engine
+        .translate_pdf_experimental(&pdf_path, &out_pdf, opts)
+        .expect("PDF translation should succeed");
+
+    assert!(out_pdf.exists(), "Output PDF must exist");
+    assert!(report.report_path.exists(), "Companion report must exist");
+    assert_eq!(report.output_pdf_path, out_pdf);
+    assert!(report.blocks_translated >= 1);
+    assert!(report.pages_processed >= 1);
+    assert_eq!(report.source_lang, "en");
+    assert_eq!(report.target_lang, "es");
+
+    let pdf_bytes = fs::read(&out_pdf).expect("read output pdf");
+    assert!(
+        pdf_bytes.starts_with(b"%PDF-"),
+        "Output must be valid PDF starting with %PDF-"
+    );
+
+    let report_content = fs::read_to_string(&report.report_path).expect("read report");
+    assert!(report_content
+        .contains("# Translation Companion Report (Experimental Block-Level Re-Typeset)"));
+    assert!(report_content.contains("- **Source Language:** `en`"));
+    assert!(report_content.contains("- **Target Language:** `es`"));
+    assert!(report_content.contains("## Block Translation Mappings"));
+    assert!(report_content.contains("### Page 1, Block 1"));
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

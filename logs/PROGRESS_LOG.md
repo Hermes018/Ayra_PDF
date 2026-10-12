@@ -803,6 +803,39 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/summarizer_tests.rs` (3 tests added, 7 run), `crates/lpdf-cli/tests/cli_tests.rs` (3 tests added, 22 run), `crates/lpdf-engine-port` (1 binding test added), `app-tauri/src/lib/views/__tests__/AiSummarizeView.test.ts` (1 test added, 8 run; 48 vitest tests total; 124 nextest tests total).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-13 00:05] Phase 10.5d — Translate PDF (Experimental, Block-Level Re-Typeset, Report, & Offline AI Gate)
+- **Status:** Complete (Tag: phase-10.5d-green)
+- **Work:**
+  - Backend Block-Level PDF Translator (`lpdf-engine-port`, `lpdf-ai-worker`, `lpdf-engine-pdfcraft`, `lpdf-engine-fallback`, `lpdf-engine-switcher`):
+    - Defined `TranslateOptions` (`manifest: AiModelManifest`, `ai_local_enabled: bool`, `source_lang: String`, `target_lang: String`, `preserve_layout_blocks: bool`) and `TranslatePdfReport` (`output_pdf_path`, `report_path`, `blocks_translated`, `pages_processed`, `source_lang`, `target_lang`, `model_sha256`, `experimental_notice`) with serde and `ts-rs` bindings.
+    - Added `translate_pdf_experimental` method to `PdfEngine` trait across all adapters (`PdfcraftAdapter`, `FallbackAdapter` [unsupported], `EngineSwitcher` [primary delegate]).
+    - Implemented block-level text extraction and translation pipeline in `crates/lpdf-engine-pdfcraft/src/translator.rs`:
+      - Failsafe F19 pre-flight check enforcing `options.ai_local_enabled`, `license_acknowledged`, magic byte headers (`GGUF`/`ONNX`/`SafeTensors`), and SHA-256 digest validation via `AiWorkerSession`. Fails closed if any check fails.
+      - Memory-bounded block extraction and chunk translation via `lpdf-ai-worker` (`InferChunk`).
+      - Re-typesetting translated blocks into valid `%PDF-` document alongside a structured companion Markdown report (`<output>.report.md`) detailing block mappings, provenance, and experimental notice.
+      - Atomic write commit of both output PDF and companion report via `lpdf_fs_safety::atomic_write`, guarded by `std::panic::catch_unwind`.
+  - Job Queue & Unified CLI (`lpdf-jobs`, `lpdf-cli`):
+    - Added `JobRequest::TranslatePdf { input_path: PathBuf, output_path: PathBuf, options: TranslateOptions }` to `crates/lpdf-jobs/src/queue.rs` with multi-step progress events (10% validating, 40% translating, 100% complete) and cancellation checks.
+    - Added `localpdf translate <input.pdf> <output.pdf> --to <lang> [--from <lang>] --model <path> [--sha256 <hex>] [--license <spdx>] [--acknowledge-license]` to `crates/lpdf-cli/src/lib.rs`.
+    - Added integration CLI tests in `crates/lpdf-cli/tests/cli_tests.rs` (3 tests verifying help text, F19 flag rejection, and successful CLI translation job).
+    - Regenerated TypeScript bindings in `app-tauri/src/lib/bindings/` (`TranslateOptions.ts`, `TranslatePdfReport.ts`, updated `JobRequest.ts`).
+  - Frontend Experimental Translate UI (`app-tauri`):
+    - Expanded `AiSummarizeView.svelte` with a "Translate PDF (Experimental)" panel using Svelte 5 runes:
+      - Experimental badge with disclaimer regarding block-level layout re-typesetting and Markdown companion report generation.
+      - Local AI status badge (`data-testid="translate-status-badge"`) gating execution behind `ai_local_enabled`.
+      - Source language dropdown (`Auto`, `en`, `es`, `fr`, `de`, `bn`) and Target language dropdown (`es`, `en`, `fr`, `de`, `bn`).
+      - Block-level layout preservation toggle (`data-testid="preserve-layout-checkbox"`).
+      - Dispatch of typed `JobRequest::TranslatePdf` through `IpcClient.submitJob`.
+    - Extended Vitest test suite in `app-tauri/src/lib/views/__tests__/AiSummarizeView.test.ts` (9 tests total) testing translation panel switching, form selection, and `TranslatePdf` job submission payload verification.
+  - Offline Sandboxed AI E2E & Gate Validation:
+    - Added integration tests `test_translate_pdf_f19_guards` and `test_e2e_translate_pdf_block_level` in `crates/lpdf-engine-pdfcraft/tests/summarizer_tests.rs`.
+    - Verified complete offline network isolation under Linux user namespace `unshare -n -r`.
+    - Verified all F19 fail-closed guard assertions.
+- **Gate:** pass (`pnpm check` clean; `pnpm vitest run` 49/49 green; `cargo xtask gate` green: fmt, clippy, nextest 126/126, cargo-deny, cargo-audit, protocol-lint).
+- **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/summarizer_tests.rs` (2 tests added, 9 run), `crates/lpdf-cli/tests/cli_tests.rs` (3 tests added, 25 run), `crates/lpdf-engine-port` (1 binding test), `crates/lpdf-jobs` (1 binding test), `app-tauri/src/lib/views/__tests__/AiSummarizeView.test.ts` (1 test added, 9 run; 49 vitest tests total; 126 nextest tests total).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 
