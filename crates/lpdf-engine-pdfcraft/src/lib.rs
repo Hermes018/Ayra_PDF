@@ -1223,6 +1223,319 @@ impl PdfEngine for PdfcraftAdapter {
     fn html_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
         self.do_convert_to_pdf(input_path, output_path)
     }
+
+    fn pdf_to_images(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let arc_bytes = Arc::new(bytes);
+        let name = input_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("document.pdf");
+        let stem = input_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("document");
+
+        let target_dir = if output_path.is_file() {
+            output_path.parent().unwrap_or_else(|| Path::new("."))
+        } else {
+            std::fs::create_dir_all(output_path).map_err(LpdfError::Io)?;
+            output_path
+        };
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let mut session = pdfcraft_engine::Session::new();
+            let doc_id = session
+                .open(
+                    name.to_string(),
+                    Some(input_path.to_string_lossy().to_string()),
+                    arc_bytes,
+                    None,
+                )
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+            let doc = session
+                .get(doc_id)
+                .ok_or_else(|| LpdfError::Engine("Failed to get document".into()))?;
+            let page_count = doc.info.pages.len();
+            let mut exporter = pdfcraft_engine::export::Exporter::new(doc);
+
+            let mut rendered_pages = Vec::with_capacity(page_count);
+            for p in 0..page_count {
+                let png_bytes = exporter
+                    .png(p, 150.0)
+                    .map_err(|e| LpdfError::Engine(e.to_string()))?;
+                rendered_pages.push((p + 1, png_bytes));
+            }
+            Ok::<_, LpdfError>(rendered_pages)
+        }));
+
+        let rendered_pages = match result {
+            Ok(Ok(val)) => val,
+            Ok(Err(e)) => return Err(e),
+            Err(_) => {
+                return Err(LpdfError::Engine(
+                    "Panic during pdf_to_images export".into(),
+                ))
+            }
+        };
+
+        // Strict enforcement: safe directory creation using established file-safety layer
+        let folder_prefix = format!("{}_images", stem);
+        let out_dir = lpdf_fs_safety::create_safe_output_dir(target_dir, &folder_prefix)?;
+
+        for (page_num, png_bytes) in rendered_pages {
+            let page_filename = format!("{}_page_{:04}.png", stem, page_num);
+            let page_path = out_dir.join(page_filename);
+            lpdf_fs_safety::atomic_write(&page_path, &png_bytes)?;
+        }
+
+        Ok(())
+    }
+
+    fn extract_all_images(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let arc_bytes = Arc::new(bytes);
+        let name = input_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("document.pdf");
+        let stem = input_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("document");
+
+        let target_dir = if output_path.is_file() {
+            output_path.parent().unwrap_or_else(|| Path::new("."))
+        } else {
+            std::fs::create_dir_all(output_path).map_err(LpdfError::Io)?;
+            output_path
+        };
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let mut session = pdfcraft_engine::Session::new();
+            let doc_id = session
+                .open(
+                    name.to_string(),
+                    Some(input_path.to_string_lossy().to_string()),
+                    arc_bytes,
+                    None,
+                )
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+            let doc = session
+                .get(doc_id)
+                .ok_or_else(|| LpdfError::Engine("Failed to get document".into()))?;
+            let page_count = doc.info.pages.len();
+            let pages: Vec<usize> = (0..page_count).collect();
+            let src = doc.export_source();
+            let extracted = pdfcraft_engine::export::extract_images(&src, &pages, 0)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+            Ok::<_, LpdfError>(extracted)
+        }));
+
+        let extracted = match result {
+            Ok(Ok(val)) => val,
+            Ok(Err(e)) => return Err(e),
+            Err(_) => return Err(LpdfError::Engine("Panic during extract_all_images".into())),
+        };
+
+        let folder_prefix = format!("{}_extracted_images", stem);
+        let out_dir = lpdf_fs_safety::create_safe_output_dir(target_dir, &folder_prefix)?;
+
+        for (idx, img) in extracted.images.into_iter().enumerate() {
+            let fname = pdfcraft_engine::export::image_file_name(stem, &img, idx + 1);
+            let img_path = out_dir.join(fname);
+            lpdf_fs_safety::atomic_write(&img_path, &img.data)?;
+        }
+
+        Ok(())
+    }
+
+    fn pdf_to_text(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let arc_bytes = Arc::new(bytes);
+        let name = input_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("document.pdf");
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let mut session = pdfcraft_engine::Session::new();
+            let doc_id = session
+                .open(
+                    name.to_string(),
+                    Some(input_path.to_string_lossy().to_string()),
+                    arc_bytes,
+                    None,
+                )
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+            let doc = session
+                .get(doc_id)
+                .ok_or_else(|| LpdfError::Engine("Failed to get document".into()))?;
+            let page_count = doc.info.pages.len();
+            let pages: Vec<usize> = (0..page_count).collect();
+            let mut exporter = pdfcraft_engine::export::Exporter::new(doc);
+            exporter
+                .text_of(&pages)
+                .map_err(|e| LpdfError::Engine(e.to_string()))
+        }));
+
+        let text = match result {
+            Ok(Ok(val)) => val,
+            Ok(Err(e)) => return Err(e),
+            Err(_) => return Err(LpdfError::Engine("Panic during pdf_to_text".into())),
+        };
+
+        let target_file = if output_path.is_dir() {
+            let stem = input_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("document");
+            output_path.join(format!("{}.txt", stem))
+        } else {
+            output_path.to_path_buf()
+        };
+
+        lpdf_fs_safety::atomic_write(&target_file, text.as_bytes())?;
+        Ok(())
+    }
+
+    fn pdf_to_structural_docx(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let arc_bytes = Arc::new(bytes);
+        let name = input_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("document.pdf");
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let mut session = pdfcraft_engine::Session::new();
+            let doc_id = session
+                .open(
+                    name.to_string(),
+                    Some(input_path.to_string_lossy().to_string()),
+                    arc_bytes,
+                    None,
+                )
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+            let doc = session
+                .get(doc_id)
+                .ok_or_else(|| LpdfError::Engine("Failed to get document".into()))?;
+            let docx_bytes = doc.export_office(pdfcraft_engine::compare::OfficeFormat::Docx);
+            Ok::<_, LpdfError>(docx_bytes)
+        }));
+
+        let docx_bytes = match result {
+            Ok(Ok(val)) => val,
+            Ok(Err(e)) => return Err(e),
+            Err(_) => return Err(LpdfError::Engine("Panic during docx export".into())),
+        };
+
+        let target_file = if output_path.is_dir() {
+            let stem = input_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("document");
+            output_path.join(format!("{}.docx", stem))
+        } else {
+            output_path.to_path_buf()
+        };
+
+        lpdf_fs_safety::atomic_write(&target_file, &docx_bytes)?;
+        Ok(())
+    }
+
+    fn pdf_to_html(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let arc_bytes = Arc::new(bytes);
+        let name = input_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("document.pdf");
+        let stem = input_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("document");
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let mut session = pdfcraft_engine::Session::new();
+            let doc_id = session
+                .open(
+                    name.to_string(),
+                    Some(input_path.to_string_lossy().to_string()),
+                    arc_bytes,
+                    None,
+                )
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+            let doc = session
+                .get(doc_id)
+                .ok_or_else(|| LpdfError::Engine("Failed to get document".into()))?;
+            let html_bytes = doc.export_office(pdfcraft_engine::compare::OfficeFormat::Html);
+            Ok::<_, LpdfError>(html_bytes)
+        }));
+
+        let html_bytes = match result {
+            Ok(Ok(val)) => val,
+            Ok(Err(e)) => return Err(e),
+            Err(_) => return Err(LpdfError::Engine("Panic during html export".into())),
+        };
+
+        // If target is a directory, place inside a newly created safe folder
+        if output_path.is_dir() {
+            let folder_prefix = format!("{}_html", stem);
+            let out_dir = lpdf_fs_safety::create_safe_output_dir(output_path, &folder_prefix)?;
+            let index_file = out_dir.join("index.html");
+            lpdf_fs_safety::atomic_write(&index_file, &html_bytes)?;
+        } else {
+            lpdf_fs_safety::atomic_write(output_path, &html_bytes)?;
+        }
+
+        Ok(())
+    }
+
+    fn pdf_to_rtf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let arc_bytes = Arc::new(bytes);
+        let name = input_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("document.pdf");
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let mut session = pdfcraft_engine::Session::new();
+            let doc_id = session
+                .open(
+                    name.to_string(),
+                    Some(input_path.to_string_lossy().to_string()),
+                    arc_bytes,
+                    None,
+                )
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+            let doc = session
+                .get(doc_id)
+                .ok_or_else(|| LpdfError::Engine("Failed to get document".into()))?;
+            let rtf_bytes = doc.export_office(pdfcraft_engine::compare::OfficeFormat::Rtf);
+            Ok::<_, LpdfError>(rtf_bytes)
+        }));
+
+        let rtf_bytes = match result {
+            Ok(Ok(val)) => val,
+            Ok(Err(e)) => return Err(e),
+            Err(_) => return Err(LpdfError::Engine("Panic during rtf export".into())),
+        };
+
+        let target_file = if output_path.is_dir() {
+            let stem = input_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("document");
+            output_path.join(format!("{}.rtf", stem))
+        } else {
+            output_path.to_path_buf()
+        };
+
+        lpdf_fs_safety::atomic_write(&target_file, &rtf_bytes)?;
+        Ok(())
+    }
 }
 
 impl PdfcraftAdapter {
@@ -1247,16 +1560,7 @@ impl PdfcraftAdapter {
             Err(_) => return Err(LpdfError::Engine("Panic during conversion".into())),
         };
 
-        let temp_path = output_path.with_extension("tmp");
-        std::fs::write(&temp_path, &*out_bytes).map_err(LpdfError::Io)?;
-
-        let written = std::fs::read(&temp_path).map_err(LpdfError::Io)?;
-        if written.is_empty() {
-            let _ = std::fs::remove_file(&temp_path);
-            return Err(LpdfError::Io(std::io::Error::other("Output size mismatch")));
-        }
-        std::fs::rename(&temp_path, output_path).map_err(LpdfError::Io)?;
-
+        lpdf_fs_safety::atomic_write(output_path, &out_bytes)?;
         Ok(())
     }
 }

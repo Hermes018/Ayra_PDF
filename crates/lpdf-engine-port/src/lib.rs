@@ -135,11 +135,19 @@ pub trait PdfEngine {
         output_path: &Path,
     ) -> Result<()>;
 
-    // Conversions
+    // Conversions to PDF
     fn image_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()>;
     fn text_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()>;
     fn structural_docx_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()>;
     fn html_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()>;
+
+    // Conversions from PDF (Phase 8.1)
+    fn pdf_to_images(&self, input_path: &Path, output_path: &Path) -> Result<()>;
+    fn extract_all_images(&self, input_path: &Path, output_path: &Path) -> Result<()>;
+    fn pdf_to_text(&self, input_path: &Path, output_path: &Path) -> Result<()>;
+    fn pdf_to_structural_docx(&self, input_path: &Path, output_path: &Path) -> Result<()>;
+    fn pdf_to_html(&self, input_path: &Path, output_path: &Path) -> Result<()>;
+    fn pdf_to_rtf(&self, input_path: &Path, output_path: &Path) -> Result<()>;
 }
 
 #[macro_export]

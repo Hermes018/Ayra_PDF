@@ -177,6 +177,31 @@ pub enum JobRequest {
         input_path: String,
         output_path: String,
     },
+
+    PdfToImages {
+        input_path: String,
+        output_path: String,
+    },
+    ExtractAllImages {
+        input_path: String,
+        output_path: String,
+    },
+    PdfToText {
+        input_path: String,
+        output_path: String,
+    },
+    PdfToDocx {
+        input_path: String,
+        output_path: String,
+    },
+    PdfToHtml {
+        input_path: String,
+        output_path: String,
+    },
+    PdfToRtf {
+        input_path: String,
+        output_path: String,
+    },
 }
 
 /// A tracked job entry in the manager.
@@ -992,6 +1017,162 @@ impl JobManager {
                 let out = PathBuf::from(output_path);
 
                 engine.html_to_pdf(&path, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::PdfToImages {
+                input_path,
+                output_path,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Rendering PDF pages as images...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                engine.pdf_to_images(&path, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::ExtractAllImages {
+                input_path,
+                output_path,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Extracting embedded images...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                engine.extract_all_images(&path, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::PdfToText {
+                input_path,
+                output_path,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Extracting text...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                engine.pdf_to_text(&path, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::PdfToDocx {
+                input_path,
+                output_path,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Exporting to structural Word (.docx)...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                engine.pdf_to_structural_docx(&path, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::PdfToHtml {
+                input_path,
+                output_path,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Exporting to HTML...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                engine.pdf_to_html(&path, &out)?;
+
+                Ok(JobOutput {
+                    output_path: Some(output_path.clone()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::PdfToRtf {
+                input_path,
+                output_path,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Exporting to RTF...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+                let path = PathBuf::from(input_path);
+                let out = PathBuf::from(output_path);
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                engine.pdf_to_rtf(&path, &out)?;
 
                 Ok(JobOutput {
                     output_path: Some(output_path.clone()),

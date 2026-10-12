@@ -252,4 +252,28 @@ impl PdfEngine for EngineSwitcher {
     fn html_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
         self.primary.html_to_pdf(input_path, output_path)
     }
+
+    fn pdf_to_images(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.primary.pdf_to_images(input_path, output_path)
+    }
+
+    fn extract_all_images(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.primary.extract_all_images(input_path, output_path)
+    }
+
+    fn pdf_to_text(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.primary.pdf_to_text(input_path, output_path)
+    }
+
+    fn pdf_to_structural_docx(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.primary.pdf_to_structural_docx(input_path, output_path)
+    }
+
+    fn pdf_to_html(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.primary.pdf_to_html(input_path, output_path)
+    }
+
+    fn pdf_to_rtf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        self.primary.pdf_to_rtf(input_path, output_path)
+    }
 }

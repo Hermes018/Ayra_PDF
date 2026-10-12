@@ -477,3 +477,19 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Gate:** pass (cargo xtask gate green)
 - **Tests added/run:** `cargo test -p lpdf-jobs` (3/3), frontend vitest tests.
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES
+
+## [2026-10-12 13:45] Phase 8.1 - Basic Convert from PDF
+- **Status:** Complete (Tag: phase-8.1-green)
+- **Work:**
+  - Implemented extraction methods in `PdfEngine` trait: `pdf_to_images`, `extract_all_images`, `pdf_to_text`, `pdf_to_structural_docx`, `pdf_to_html`, and `pdf_to_rtf`.
+  - Implemented filesystem safety primitives (`atomic_write`, `create_safe_output_dir`, `sanitize_filename`) in `lpdf-fs-safety` to safely isolate outputs into newly created folders and atomic destination files.
+  - Implemented export capabilities in `PdfcraftAdapter` using native `pdfcraft-engine` (`Exporter`, `extract_images`, `export_office`).
+  - Added stubs with typed `LpdfError::Unsupported` in `FallbackAdapter` and transparent delegation in `EngineSwitcher`.
+  - Added `PdfToImages`, `ExtractAllImages`, `PdfToText`, `PdfToDocx`, `PdfToHtml`, and `PdfToRtf` variants to `JobRequest` in `lpdf-jobs` and wired job execution with progress reporting and cancellation support.
+  - Regenerated TypeScript bindings via `cargo test -p lpdf-jobs`.
+  - Built `ConvertFromPdfView.svelte` with full format selection, preview/summary panel, and IPC submission.
+  - Expanded `ConvertView.svelte` with tab navigation between "Convert from PDF" and "Convert to PDF".
+- **Gate:** pass (`cargo xtask gate` green, `pnpm check` clean, `pnpm vitest run` green 7/7).
+- **Tests added/run:** `crates/lpdf-fs-safety/tests/fs_safety_tests.rs` (3 tests), `crates/lpdf-engine-pdfcraft/tests/extraction_tests.rs` (6 tests), `crates/lpdf-jobs` ts-rs tests (3 tests), `app-tauri/src/lib/views/__tests__/ConvertFromPdfView.test.ts` (5 tests).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
