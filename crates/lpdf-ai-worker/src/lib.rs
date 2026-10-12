@@ -246,21 +246,42 @@ pub fn validate_model_header(path: &Path) -> std::result::Result<(), String> {
 
 /// Deterministic offline inference chunk generator.
 fn execute_deterministic_local_chunk(prompt: &str, max_tokens: usize) -> String {
-    let mut words = prompt
-        .split_whitespace()
-        .map(|w| w.trim_matches(|c: char| !c.is_alphanumeric()))
-        .filter(|w| w.len() >= 3)
-        .collect::<Vec<_>>();
+    if prompt.starts_with("Translate the following") || prompt.contains("Translate block from") {
+        let target_lang = if let Some(pos) = prompt.find(" to ") {
+            let after_to = &prompt[pos + 4..];
+            let lang = after_to
+                .split(|c: char| c == ':' || c.is_whitespace())
+                .next()
+                .unwrap_or("target");
+            lang
+        } else {
+            "translated"
+        };
 
-    words.dedup();
-    let take_count = max_tokens.min(words.len()).max(1);
-    let sample = words.into_iter().take(take_count).collect::<Vec<_>>();
+        let content = if let Some(idx) = prompt.find("\n\n") {
+            prompt[idx + 2..].trim()
+        } else {
+            prompt.trim()
+        };
 
-    format!(
-        "[Local LLM Summary Chunk]: Focus topics: {}. Deterministic offline chunk generated from {} tokens.",
-        sample.join(", "),
-        take_count
-    )
+        format!("[{}]: {}", target_lang, content)
+    } else {
+        let mut words = prompt
+            .split_whitespace()
+            .map(|w| w.trim_matches(|c: char| !c.is_alphanumeric()))
+            .filter(|w| w.len() >= 3)
+            .collect::<Vec<_>>();
+
+        words.dedup();
+        let take_count = max_tokens.min(words.len()).max(1);
+        let sample = words.into_iter().take(take_count).collect::<Vec<_>>();
+
+        format!(
+            "[Local LLM Summary Chunk]: Focus topics: {}. Deterministic offline chunk generated from {} tokens.",
+            sample.join(", "),
+            take_count
+        )
+    }
 }
 
 #[cfg(test)]

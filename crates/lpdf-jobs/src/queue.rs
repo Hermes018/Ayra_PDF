@@ -256,6 +256,11 @@ pub enum JobRequest {
         output_path: PathBuf,
         options: lpdf_engine_port::LlmSummaryOptions,
     },
+    TranslatePdf {
+        input_path: PathBuf,
+        output_path: PathBuf,
+        options: lpdf_engine_port::TranslateOptions,
+    },
 }
 
 /// Execution priority for queued jobs.
@@ -621,6 +626,15 @@ impl JobRequest {
                 ..
             } => (
                 "Summarize (Local LLM Map-Reduce)".to_string(),
+                Some(input_path.to_string_lossy().to_string()),
+                Some(output_path.to_string_lossy().to_string()),
+            ),
+            JobRequest::TranslatePdf {
+                input_path,
+                output_path,
+                ..
+            } => (
+                "Translate PDF (Experimental)".to_string(),
                 Some(input_path.to_string_lossy().to_string()),
                 Some(output_path.to_string_lossy().to_string()),
             ),
@@ -2301,6 +2315,54 @@ impl JobManager {
 
                 Ok(JobOutput {
                     output_path: Some(report.output_path.to_string_lossy().to_string()),
+                    degraded: engine.is_degraded(),
+                })
+            }
+
+            JobRequest::TranslatePdf {
+                input_path,
+                output_path,
+                options,
+            } => {
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 10,
+                    message: "Validating model checksum and extracting text blocks...".into(),
+                });
+
+                let engine = EngineSwitcher::new();
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 40,
+                    message: format!(
+                        "Translating layout blocks from {} to {}...",
+                        options.source_lang, options.target_lang
+                    ),
+                });
+
+                let report =
+                    engine.translate_pdf_experimental(input_path, output_path, options.clone())?;
+
+                if cancel_token.is_cancelled() {
+                    return Err(LpdfError::Engine("Job cancelled".into()));
+                }
+
+                let _ = event_tx.send(JobEvent::Progress {
+                    job_id: job_id.into(),
+                    percent: 100,
+                    message: format!(
+                        "Translated {} blocks across {} pages",
+                        report.blocks_translated, report.pages_processed
+                    ),
+                });
+
+                Ok(JobOutput {
+                    output_path: Some(report.output_pdf_path.to_string_lossy().to_string()),
                     degraded: engine.is_degraded(),
                 })
             }

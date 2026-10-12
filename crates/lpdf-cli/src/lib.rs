@@ -4,7 +4,7 @@ use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
     AiModelManifest, LlmSummaryOptions, MarkdownBatchOptions, MarkdownBatchReport,
     MarkdownBatchTarget, MarkdownDocFormat, OptimizeProfile, PdfAConformance, PdfEngine,
-    Permissions, RedactionRegion, SummaryLength, WatermarkSettings,
+    Permissions, RedactionRegion, SummaryLength, TranslateOptions, WatermarkSettings,
 };
 use lpdf_engine_switcher::EngineSwitcher;
 use std::path::{Path, PathBuf};
@@ -50,6 +50,7 @@ pub fn run_cli_with_engine<E: PdfEngine>(args: &[String], engine: &mut E) -> Res
         "pipeline" => handle_pipeline_command(&args[2..], engine),
         "md" | "markdown" => handle_markdown_command(&args[2..], engine),
         "summarize" => handle_summarize_command(&args[2..], engine),
+        "translate" => handle_translate_command(&args[2..], engine),
         other => Err(LpdfError::InvalidInput(format!(
             "Unknown command '{}'. Run 'localpdf --help' for usage.",
             other
@@ -127,6 +128,8 @@ COMMANDS:
     AI & Intelligence:
         summarize <input.pdf> <output.md> [--length <short|medium|detailed>]
             Generate deterministic zero-model extractive summary report.
+        translate <input.pdf> <output.pdf> --to <lang> [--from <lang>] --model <path>
+            Experimental block-level translation and companion report.
 
 Run 'localpdf <COMMAND> --help' for details on a specific command.
 "#
@@ -1654,4 +1657,133 @@ fn handle_summarize_command<E: PdfEngine>(args: &[String], engine: &mut E) -> Re
             }
         ))
     }
+}
+
+fn handle_translate_command<E: PdfEngine>(args: &[String], engine: &mut E) -> Result<String> {
+    if args.is_empty() || args[0] == "-h" || args[0] == "--help" || args[0] == "help" {
+        return Ok(
+            "Usage: localpdf translate <input.pdf> <output.pdf> --to <lang> [--from <lang>] --model <path> [--sha256 <hex>] [--license <spdx>] [--acknowledge-license]"
+                .to_string(),
+        );
+    }
+
+    if args.len() < 2 {
+        return Err(LpdfError::InvalidInput(
+            "Both input PDF path and output PDF path are required. Usage: localpdf translate <input.pdf> <output.pdf> --to <lang> --model <path> ...".into(),
+        ));
+    }
+
+    let input = Path::new(&args[0]);
+    let output = Path::new(&args[1]);
+
+    let mut target_lang: Option<String> = None;
+    let mut source_lang = "Auto".to_string();
+    let mut model_path: Option<PathBuf> = None;
+    let mut expected_sha256: Option<String> = None;
+    let mut license: Option<String> = None;
+    let mut acknowledge_license = false;
+
+    let mut i = 2;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--to" => {
+                if i + 1 >= args.len() {
+                    return Err(LpdfError::InvalidInput("Missing value for --to".into()));
+                }
+                target_lang = Some(args[i + 1].clone());
+                i += 2;
+            }
+            "--from" => {
+                if i + 1 >= args.len() {
+                    return Err(LpdfError::InvalidInput("Missing value for --from".into()));
+                }
+                source_lang = args[i + 1].clone();
+                i += 2;
+            }
+            "--model" => {
+                if i + 1 >= args.len() {
+                    return Err(LpdfError::InvalidInput("Missing value for --model".into()));
+                }
+                model_path = Some(PathBuf::from(&args[i + 1]));
+                i += 2;
+            }
+            "--sha256" => {
+                if i + 1 >= args.len() {
+                    return Err(LpdfError::InvalidInput("Missing value for --sha256".into()));
+                }
+                expected_sha256 = Some(args[i + 1].clone());
+                i += 2;
+            }
+            "--license" => {
+                if i + 1 >= args.len() {
+                    return Err(LpdfError::InvalidInput(
+                        "Missing value for --license".into(),
+                    ));
+                }
+                license = Some(args[i + 1].clone());
+                i += 2;
+            }
+            "--acknowledge-license" => {
+                acknowledge_license = true;
+                i += 1;
+            }
+            other => {
+                return Err(LpdfError::InvalidInput(format!(
+                    "Unknown argument '{}'",
+                    other
+                )));
+            }
+        }
+    }
+
+    let to_lang = target_lang.ok_or_else(|| {
+        LpdfError::InvalidInput("Target language is required (--to <lang>)".into())
+    })?;
+
+    let m_path = model_path
+        .ok_or_else(|| LpdfError::InvalidInput("Model path is required (--model <path>)".into()))?;
+
+    let sha256_hex = match expected_sha256 {
+        Some(h) => h,
+        None => lpdf_core_types::compute_sha256_hex(&m_path)?,
+    };
+
+    let format = if m_path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.eq_ignore_ascii_case("onnx"))
+        .unwrap_or(false)
+    {
+        "ONNX".to_string()
+    } else {
+        "GGUF".to_string()
+    };
+
+    let manifest = AiModelManifest {
+        model_path: m_path,
+        sha256_hex,
+        format,
+        license_spdx: license.unwrap_or_else(|| "Apache-2.0".to_string()),
+        license_acknowledged: acknowledge_license,
+    };
+
+    let options = TranslateOptions {
+        manifest,
+        ai_local_enabled: acknowledge_license,
+        source_lang,
+        target_lang: to_lang,
+        preserve_layout_blocks: true,
+    };
+
+    let report = engine.translate_pdf_experimental(input, output, options)?;
+    Ok(format!(
+        "PDF translated successfully -> {}\n- Companion report: {}\n- Blocks translated: {}\n- Pages processed: {}\n- Language: {} -> {}\n- Model: {}",
+        report.output_pdf_path.display(),
+        report.report_path.display(),
+        report.blocks_translated,
+        report.pages_processed,
+        report.source_lang,
+        report.target_lang,
+        report.model_sha256,
+    ))
 }

@@ -326,6 +326,28 @@ impl PdfEngine for MockEngine {
             summary_word_count: 15,
         })
     }
+    fn translate_pdf_experimental(
+        &self,
+        _input_path: &Path,
+        output_pdf_path: &Path,
+        options: lpdf_engine_port::TranslateOptions,
+    ) -> Result<lpdf_engine_port::TranslatePdfReport> {
+        *self.last_called.borrow_mut() =
+            format!("translate:{}_{}", options.source_lang, options.target_lang);
+        write_mock_pdf(output_pdf_path);
+        let report_path = PathBuf::from(format!("{}.report.md", output_pdf_path.display()));
+        let _ = fs::write(&report_path, "# Mock Translation Report");
+        Ok(lpdf_engine_port::TranslatePdfReport {
+            output_pdf_path: output_pdf_path.to_path_buf(),
+            report_path,
+            blocks_translated: 2,
+            pages_processed: 1,
+            source_lang: options.source_lang,
+            target_lang: options.target_lang,
+            model_sha256: options.manifest.sha256_hex,
+            experimental_notice: "Mock notice".to_string(),
+        })
+    }
 }
 
 struct TestDirGuard(PathBuf);
@@ -965,4 +987,81 @@ fn test_cli_summarize_llm_map_reduce() {
     let res_ok = lpdf_cli::run_cli_with_engine(&args_ok, &mut mock);
     assert!(res_ok.is_ok(), "LLM summarize failed: {:?}", res_ok);
     assert_eq!(*mock.last_called.borrow(), "summarize_llm:Medium");
+}
+
+#[test]
+fn test_cli_translate_help() {
+    let mut mock = MockEngine::new();
+    let args = vec!["localpdf".into(), "translate".into(), "--help".into()];
+    let res = lpdf_cli::run_cli_with_engine(&args, &mut mock);
+    assert!(res.is_ok());
+    let msg = res.unwrap();
+    assert!(msg.contains("Usage: localpdf translate"));
+    assert!(msg.contains("--to <lang>"));
+}
+
+#[test]
+fn test_cli_translate_missing_args() {
+    let _g = TestDirGuard::new("cli_trans_err");
+    let pdf = get_corpus_pdf("standard-text.pdf");
+    let out = _g.path().join("translated.pdf");
+    let mut mock = MockEngine::new();
+
+    // Missing --to
+    let args1 = vec![
+        "localpdf".into(),
+        "translate".into(),
+        pdf.to_string_lossy().to_string(),
+        out.to_string_lossy().to_string(),
+    ];
+    let res1 = lpdf_cli::run_cli_with_engine(&args1, &mut mock);
+    assert!(res1.is_err());
+
+    // Missing --model
+    let args2 = vec![
+        "localpdf".into(),
+        "translate".into(),
+        pdf.to_string_lossy().to_string(),
+        out.to_string_lossy().to_string(),
+        "--to".into(),
+        "es".into(),
+    ];
+    let res2 = lpdf_cli::run_cli_with_engine(&args2, &mut mock);
+    assert!(res2.is_err());
+}
+
+#[test]
+fn test_cli_translate_success() {
+    let _g = TestDirGuard::new("cli_trans_ok");
+    let pdf = get_corpus_pdf("standard-text.pdf");
+    let out = _g.path().join("translated.pdf");
+    let model = _g.path().join("mock_translate_model.gguf");
+    let _ = fs::write(&model, b"GGUF_dummy_model_bytes");
+
+    let mut mock = MockEngine::new();
+
+    let args = vec![
+        "localpdf".into(),
+        "translate".into(),
+        pdf.to_string_lossy().to_string(),
+        out.to_string_lossy().to_string(),
+        "--from".into(),
+        "en".into(),
+        "--to".into(),
+        "es".into(),
+        "--model".into(),
+        model.to_string_lossy().to_string(),
+        "--sha256".into(),
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".into(),
+        "--license".into(),
+        "MIT".into(),
+        "--acknowledge-license".into(),
+    ];
+
+    let res = lpdf_cli::run_cli_with_engine(&args, &mut mock);
+    assert!(res.is_ok(), "Translate CLI failed: {:?}", res);
+    let msg = res.unwrap();
+    assert!(msg.contains("PDF translated successfully"));
+    assert!(msg.contains("Companion report"));
+    assert_eq!(*mock.last_called.borrow(), "translate:en_es");
 }

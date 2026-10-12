@@ -5,6 +5,7 @@ use lpdf_engine_port::{
     ExtractiveSummaryReport, LlmSummaryOptions, LlmSummaryReport, MarkdownBatchOptions,
     MarkdownBatchReport, MarkdownDocFormat, OfficeInputFormat, OfficeOutputFormat, PdfAConformance,
     PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion, RenderOptions, SummaryLength,
+    TranslateOptions, TranslatePdfReport,
 };
 use std::path::Path;
 use std::sync::Arc;
@@ -12,6 +13,7 @@ use std::sync::Arc;
 pub mod office_sidecar;
 pub mod pandoc_sidecar;
 pub mod summarizer;
+pub mod translator;
 
 pub struct PdfcraftAdapter {
     session: pdfcraft_engine::Session,
@@ -1866,6 +1868,71 @@ impl PdfEngine for PdfcraftAdapter {
             Ok(res) => res,
             Err(_) => Err(LpdfError::Engine(
                 "Panic during Map-Reduce LLM summarization".into(),
+            )),
+        }
+    }
+
+    fn translate_pdf_experimental(
+        &self,
+        input_path: &Path,
+        output_pdf_path: &Path,
+        options: TranslateOptions,
+    ) -> Result<TranslatePdfReport> {
+        let text_res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let mut session = pdfcraft_engine::Session::new();
+            let doc_name = input_path
+                .file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or("doc.pdf");
+            let data = std::fs::read(input_path).map_err(LpdfError::Io)?;
+            let arc_bytes = Arc::new(data);
+            let doc_id = session
+                .open(
+                    doc_name.to_string(),
+                    Some(input_path.to_string_lossy().to_string()),
+                    arc_bytes,
+                    None,
+                )
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+            let doc = session
+                .get(doc_id)
+                .ok_or_else(|| LpdfError::Engine("Failed to get document".into()))?;
+            let page_count = doc.info.pages.len();
+            let mut exporter = pdfcraft_engine::export::Exporter::new(doc);
+            let mut pages_text = Vec::with_capacity(page_count);
+            for p in 0..page_count {
+                let page_text = exporter
+                    .text(p)
+                    .map_err(|e| LpdfError::Engine(e.to_string()))?;
+                pages_text.push(page_text);
+            }
+            Ok((pages_text, page_count))
+        }));
+
+        let (pages_text, page_count) = match text_res {
+            Ok(Ok(val)) => val,
+            Ok(Err(e)) => return Err(e),
+            Err(_) => {
+                return Err(LpdfError::Engine(
+                    "Panic during text extraction for PDF translation".into(),
+                ))
+            }
+        };
+
+        let translate_res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            translator::execute_experimental_translation(
+                input_path,
+                output_pdf_path,
+                &pages_text,
+                page_count,
+                &options,
+            )
+        }));
+
+        match translate_res {
+            Ok(res) => res,
+            Err(_) => Err(LpdfError::Engine(
+                "Panic during experimental PDF translation".into(),
             )),
         }
     }

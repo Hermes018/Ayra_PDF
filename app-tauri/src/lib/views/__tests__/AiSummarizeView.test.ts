@@ -43,7 +43,8 @@ describe('AiSummarizeView', () => {
         const llmCard = screen.getByTestId('mode-local-llm');
         expect(llmCard).not.toHaveClass('active');
         expect(screen.getByText(/Local LLM Mode/i)).toBeInTheDocument();
-        expect(screen.getByText('Gated Opt-In')).toBeInTheDocument();
+        expect(screen.getByTestId('llm-status-badge')).toHaveTextContent('Gated Opt-In');
+        expect(screen.getByTestId('translate-status-badge')).toHaveTextContent('Gated Opt-In');
     });
 
     test('navigates to settings when clicking configure in settings link', async () => {
@@ -226,5 +227,81 @@ describe('AiSummarizeView', () => {
             'Summary job queued successfully (ID: test-llm-job-99)'
         );
     });
+
+    test('switches to Translate PDF mode when enabled, configures languages & layout preservation, and dispatches TranslatePdf', async () => {
+        vi.spyOn(IpcClient, 'getSettings').mockResolvedValue({
+            tier_override: null,
+            output_policy: 'SuffixNewFile',
+            backups_enabled: true,
+            language: 'en',
+            theme: 'System',
+            local_ai_model_path: '/models/translation-7b.gguf',
+            ai_local_enabled: true,
+            ai_license_acknowledged: true,
+            ai_model_sha256: 'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
+            ai_model_license: 'MIT',
+        });
+        const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-translate-job-101');
+
+        render(AiSummarizeView);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('translate-status-badge')).toHaveTextContent('Experimental');
+        });
+
+        const transCard = screen.getByTestId('mode-translate');
+        await fireEvent.click(transCard);
+
+        expect(transCard).toHaveClass('active');
+        expect(screen.getByTestId('translate-config-section')).toBeInTheDocument();
+
+        // Check source and target language selectors
+        const sourceSelect = screen.getByTestId('source-lang-select') as HTMLSelectElement;
+        const targetSelect = screen.getByTestId('target-lang-select') as HTMLSelectElement;
+        const preserveCheckbox = screen.getByTestId('preserve-layout-checkbox') as HTMLInputElement;
+
+        expect(sourceSelect.value).toBe('Auto');
+        expect(targetSelect.value).toBe('es');
+        expect(preserveCheckbox.checked).toBe(true);
+
+        // Change languages
+        await fireEvent.change(sourceSelect, { target: { value: 'en' } });
+        await fireEvent.change(targetSelect, { target: { value: 'fr' } });
+
+        // Input PDF path
+        const input = screen.getByTestId('input-path');
+        await fireEvent.input(input, { target: { value: '/docs/legal_brief.pdf' } });
+
+        const output = screen.getByTestId('output-path') as HTMLInputElement;
+        expect(output.value).toBe('/docs/legal_brief_translated_fr.pdf');
+
+        // Submit
+        const generateBtn = screen.getByTestId('generate-summary-btn');
+        await fireEvent.click(generateBtn);
+
+        expect(submitSpy).toHaveBeenCalledWith({
+            op: 'TranslatePdf',
+            input_path: '/docs/legal_brief.pdf',
+            output_path: '/docs/legal_brief_translated_fr.pdf',
+            options: {
+                manifest: {
+                    model_path: '/models/translation-7b.gguf',
+                    sha256_hex: 'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
+                    format: 'GGUF',
+                    license_spdx: 'MIT',
+                    license_acknowledged: true,
+                },
+                ai_local_enabled: true,
+                source_lang: 'en',
+                target_lang: 'fr',
+                preserve_layout_blocks: true,
+            },
+        });
+
+        expect(await screen.findByTestId('submission-status')).toHaveTextContent(
+            'Translation job queued successfully (ID: test-translate-job-101)'
+        );
+    });
 });
+
 
