@@ -627,6 +627,35 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-jobs/tests/queue_tests.rs` (3 tests), `app-tauri/src/lib/views/__tests__/BatchQueueView.test.ts` (6 tests added; total vitest 30/30).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-12 17:23] Phase 10.2 — Pipelines (Chain Tools & Presets — iLovePDF "Workflows" Equivalent)
+- **Status:** Complete (Tag: phase-10.2-green)
+- **Work:**
+  - Defined `PipelineStep` in `crates/lpdf-jobs/src/pipeline.rs` representing chainable single-file PDF transformations (`Repair`, `Compress`, `Ocr`, `Rotate`, `FlattenComments`, `FlattenForms`, `Watermark`, `Protect`, `PdfToPdfA`) with `serde` and `ts-rs` exports.
+  - Defined `PipelinePreset` (`id`, `name`, `description`, `steps`) with `builtin_pipeline_presets()`:
+    - **Archive & Searchable (OCR + PDF/A-2b):** `Repair` -> `Ocr` -> `Compress(Medium)` -> `PdfToPdfA(PdfA2b)`
+    - **Flatten & Confidential Release:** `FlattenForms` -> `FlattenComments` -> `Watermark("CONFIDENTIAL")` -> `Compress(Medium)`
+    - **Clean & Web Optimize:** `Repair` -> `FlattenComments` -> `Compress(High)`
+  - Added `JobRequest::RunPipeline` to `crates/lpdf-jobs/src/queue.rs` with title summary mapping.
+  - Implemented sequential, fail-closed pipeline execution in `JobManager::execute_job`:
+    - Isolated temporary staging workspace with RAII cleaner ensuring all intermediate step files (`step_1.pdf`, `step_2.pdf`, etc.) are cleaned up on error, cancellation, or exit.
+    - Scaled progress events (`0..100%`) emitted per step with cooperative cancellation checks between steps.
+    - Destination file left untouched until the entire chain finishes and final PDF is verified (`%PDF-`) and committed via `lpdf_fs_safety::atomic_write`.
+  - Added backend integration tests in `crates/lpdf-jobs/tests/queue_tests.rs`:
+    - `test_builtin_pipeline_presets`: validates all 3 built-in workflow presets.
+    - `test_run_pipeline_chaining`: tests multi-step pipeline chaining (`Repair` -> `FlattenComments` -> `Compress`) on standard corpus.
+    - `test_run_pipeline_fail_closed`: tests fail-closed behavior on invalid inputs ensuring destination file is never created.
+  - Exposed `list_pipeline_presets` in `app-tauri/src-tauri/src/lib.rs` and added `listPipelinePresets` to `IpcClient` in `app-tauri/src/lib/ipc.ts`.
+  - Built frontend `PipelinesView.svelte` using Svelte 5 runes (`$state`, `$derived`, `$effect`):
+    - Preset Workflows Grid with one-click cards applying built-in workflows.
+    - Interactive custom pipeline builder supporting step additions, deletions, re-ordering (Move Up / Move Down), and inline step parameter configurations (compression profiles, watermark text/opacity, rotation degrees, passwords/permissions, PDF/A standards).
+    - Execution panel with path selectors and "Run Workflow" action dispatching `RunPipeline` job.
+    - Wired `PipelinesView.svelte` into `Sidebar.svelte` (under "Workflows" tab) and `+page.svelte`.
+  - Added Vitest test suite in `app-tauri/src/lib/views/__tests__/PipelinesView.test.ts` (4 tests covering preset loading, preset switching, step addition/reordering/removal, and `RunPipeline` IPC submission).
+- **Gate:** pass (`cargo xtask gate` green: fmt, clippy, nextest 78/78, cargo-deny, cargo-audit, protocol-lint; `pnpm check` clean; `pnpm vitest run` 34/34 green).
+- **Tests added/run:** `crates/lpdf-jobs/tests/queue_tests.rs` (3 tests added, 6 run), `app-tauri/src/lib/views/__tests__/PipelinesView.test.ts` (4 tests added; total vitest 34/34).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 

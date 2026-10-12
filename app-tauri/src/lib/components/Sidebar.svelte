@@ -12,6 +12,7 @@
         { id: 'Forms', label: 'Forms & Signatures', icon: '📝' },
         { id: 'Markdown', label: 'Markdown', icon: '📝' },
         { id: 'Queue', label: 'Batch Queue', icon: '📋' },
+        { id: 'Pipelines', label: 'Workflows', icon: '🔀' },
     ];
 </script>
 

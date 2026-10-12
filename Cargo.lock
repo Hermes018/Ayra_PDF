@@ -3207,6 +3207,7 @@ dependencies = [
  "lpdf-core-types",
  "lpdf-engine-port",
  "lpdf-engine-switcher",
+ "lpdf-fs-safety",
  "serde",
  "serde_json",
  "tokio",

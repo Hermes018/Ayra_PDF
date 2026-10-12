@@ -9,7 +9,9 @@
 #![forbid(unsafe_code)]
 
 pub mod events;
+pub mod pipeline;
 pub mod queue;
 
 pub use events::{JobEvent, JobEventSender};
+pub use pipeline::{builtin_pipeline_presets, PipelinePreset, PipelineStep};
 pub use queue::{JobId, JobManager, JobPriority, JobRecord, JobRequest, JobStatus};
