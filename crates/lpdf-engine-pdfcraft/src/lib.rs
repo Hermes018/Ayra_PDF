@@ -1,7 +1,9 @@
 #![forbid(unsafe_code)]
 
 use lpdf_core_types::{LpdfError, Result};
-use lpdf_engine_port::{PdfEngine, PdfInfo, RedactionRegion, RenderOptions};
+use lpdf_engine_port::{
+    PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion, RenderOptions,
+};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -1535,6 +1537,147 @@ impl PdfEngine for PdfcraftAdapter {
 
         lpdf_fs_safety::atomic_write(&target_file, &rtf_bytes)?;
         Ok(())
+    }
+
+    fn pdf_to_pdfa(
+        &self,
+        input_path: &Path,
+        conformance: PdfAConformance,
+        output_path: &Path,
+    ) -> Result<PdfAPreflightReport> {
+        let level = match conformance {
+            PdfAConformance::PdfA1b => {
+                return Err(LpdfError::Unsupported(
+                    "PDF/A-1b is not supported by the native preflight engine; please use PDF/A-2b or PDF/A-3b.".into(),
+                ));
+            }
+            PdfAConformance::PdfA2b => pdfcraft_engine::pdfa::Level::A2b,
+            PdfAConformance::PdfA3b => pdfcraft_engine::pdfa::Level::A3b,
+        };
+
+        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let arc_bytes = Arc::new(bytes);
+        let name = input_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("document.pdf");
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let mut session = pdfcraft_engine::Session::new();
+            let doc_id = session
+                .open(
+                    name.to_string(),
+                    Some(input_path.to_string_lossy().to_string()),
+                    arc_bytes,
+                    None,
+                )
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            let initial_issues = session
+                .get(doc_id)
+                .map(|d| d.pdfa_verify(level))
+                .unwrap_or_default();
+
+            session
+                .apply(doc_id, pdfcraft_engine::Edit::ConvertPdfA { level })
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            let remaining_issues_raw = session
+                .get(doc_id)
+                .map(|d| d.pdfa_verify(level))
+                .unwrap_or_default();
+
+            let out_bytes = session
+                .save_bytes(doc_id)
+                .map_err(|e| LpdfError::Engine(e.to_string()))?;
+
+            Ok::<_, LpdfError>((initial_issues, remaining_issues_raw, out_bytes))
+        }));
+
+        let (initial_issues, remaining_issues_raw, out_bytes) = match result {
+            Ok(Ok(val)) => val,
+            Ok(Err(e)) => return Err(e),
+            Err(e) => {
+                let msg = if let Some(s) = e.downcast_ref::<&str>() {
+                    s.to_string()
+                } else if let Some(s) = e.downcast_ref::<String>() {
+                    s.clone()
+                } else {
+                    "Unknown panic".to_string()
+                };
+                return Err(LpdfError::Engine(format!(
+                    "Panic during PDF/A conversion or metadata injection: {}",
+                    msg
+                )));
+            }
+        };
+
+        let target_file = if output_path.is_dir() {
+            let stem = input_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("document");
+            output_path.join(format!("{}_pdfa.pdf", stem))
+        } else {
+            output_path.to_path_buf()
+        };
+
+        // F1: Atomic output
+        lpdf_fs_safety::atomic_write(&target_file, &out_bytes)?;
+
+        // F6: Verify-after-write
+        let written_bytes = std::fs::read(&target_file).map_err(LpdfError::Io)?;
+        if written_bytes.is_empty() || written_bytes.len() != out_bytes.len() {
+            let _ = std::fs::remove_file(&target_file);
+            return Err(LpdfError::Engine(
+                "Post-write verification failed: empty or corrupted output".into(),
+            ));
+        }
+
+        let mut fixed_issues = Vec::new();
+        for init in &initial_issues {
+            if !remaining_issues_raw
+                .iter()
+                .any(|r| r.clause == init.clause && r.message == init.message)
+            {
+                fixed_issues.push(format!("Fixed: {}", init.message));
+            }
+        }
+        if fixed_issues.is_empty() {
+            fixed_issues.push(format!(
+                "Applied {} metadata and output intent normalization",
+                match conformance {
+                    PdfAConformance::PdfA1b => "PDF/A-1b",
+                    PdfAConformance::PdfA2b => "PDF/A-2b",
+                    PdfAConformance::PdfA3b => "PDF/A-3b",
+                }
+            ));
+        }
+
+        let remaining_issues: Vec<String> = remaining_issues_raw
+            .iter()
+            .map(|issue| {
+                if let Some(pg) = issue.page {
+                    format!(
+                        "[Clause {}] Page {}: {}",
+                        issue.clause,
+                        pg + 1,
+                        issue.message
+                    )
+                } else {
+                    format!("[Clause {}] {}", issue.clause, issue.message)
+                }
+            })
+            .collect();
+
+        let is_compliant = remaining_issues.is_empty();
+
+        Ok(PdfAPreflightReport {
+            conformance,
+            is_compliant,
+            fixed_issues,
+            remaining_issues,
+        })
     }
 }
 

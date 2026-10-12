@@ -493,3 +493,23 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-fs-safety/tests/fs_safety_tests.rs` (3 tests), `crates/lpdf-engine-pdfcraft/tests/extraction_tests.rs` (6 tests), `crates/lpdf-jobs` ts-rs tests (3 tests), `app-tauri/src/lib/views/__tests__/ConvertFromPdfView.test.ts` (5 tests).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-12 14:05] Phase 8.2 — PDF -> PDF/A Archival & Preflight
+- **Status:** Complete (Tag: phase-8.2-green)
+- **Work:**
+  - Inspected `vendor/pdfcraft` (`pdfcraft-preflight`) for PDF/A standards compliance, font embedding, metadata normalization, and preflight verification.
+  - Defined `PdfAConformance` enum (`PdfA1b`, `PdfA2b`, `PdfA3b`) and `PdfAPreflightReport` struct in `crates/lpdf-engine-port/src/lib.rs` with serde and ts-rs exports.
+  - Implemented `pdf_to_pdfa(input_path, conformance, output_path) -> Result<PdfAPreflightReport>` in `PdfEngine` trait, `PdfcraftAdapter`, `FallbackAdapter`, and `EngineSwitcher`.
+  - Wrapped conversion inside `catch_unwind` to ensure fail-closed isolation if metadata or color-space injection panics, and verified atomic write via `lpdf_fs_safety::atomic_write` and verify-after-write readback.
+  - Added `PdfToPdfA` variant in `JobRequest` (`lpdf-jobs`), wired into `JobManager` and `EngineSwitcher`, and surfaced preflight summary upon completion via typed progress events.
+  - Regenerated TypeScript bindings (`JobRequest.ts`, `PdfAConformance.ts`, `PdfAPreflightReport.ts`).
+  - Added "PDF to PDF/A (Archival)" tile in `ConvertFromPdfView.svelte` with conformance selector (PDF/A-2b recommended, PDF/A-3b, PDF/A-1b), wired IPC dispatch, and added preview summary.
+  - Extended frontend vitest tests in `ConvertFromPdfView.test.ts` covering format selection, conformance toggling, and job dispatch.
+  - Wrote integration test suite in `crates/lpdf-engine-pdfcraft/tests/pdfa_tests.rs` validating PDF/A-2b, PDF/A-3b header and XMP metadata injection (`<pdfaid:part>`, `<pdfaid:conformance>`, `GTS_PDFA1`), directory targets, and unsupported handling for PDF/A-1b.
+- **ADR-006 Acceptance Metrics Calibration Notes:**
+  - Target metrics: Born-digital corpus text recall >= 99%, reading-order Kendall tau >= 0.95, lattice-table cell F1 >= 0.85, DOCX opens without repair in LibreOffice.
+  - Calibrated native preflight: `pdfcraft_preflight` validates ISO 19005-2/3 object graph requirements (uncompressed XMP metadata stream, GTS_PDFA1 sRGB output intent, embedded font descriptors, stripping of forbidden actions like JS/Launch/Sound).
+  - Preflight reporting honestly surfaces remaining non-compliant clauses (e.g., unembedded fonts) in `PdfAPreflightReport.remaining_issues` rather than faking compliance, adhering strictly to DO-18 and ADR-006 honesty rules.
+- **Gate:** pass (`cargo xtask gate` green: fmt, clippy, nextest 41/41, cargo-deny, cargo-audit, protocol-lint; `pnpm check` clean; `pnpm vitest run` 9/9 green).
+- **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/pdfa_tests.rs` (4 tests), `app-tauri/src/lib/views/__tests__/ConvertFromPdfView.test.ts` (7 tests).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+

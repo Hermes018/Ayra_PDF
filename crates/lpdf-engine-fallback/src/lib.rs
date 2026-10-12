@@ -2,7 +2,9 @@
 
 use lopdf::Document;
 use lpdf_core_types::{LpdfError, Result};
-use lpdf_engine_port::{PdfEngine, PdfInfo, RedactionRegion, RenderOptions};
+use lpdf_engine_port::{
+    PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion, RenderOptions,
+};
 use std::path::Path;
 
 pub struct FallbackAdapter {
@@ -292,6 +294,17 @@ impl PdfEngine for FallbackAdapter {
     fn pdf_to_rtf(&self, _input_path: &Path, _output_path: &Path) -> Result<()> {
         Err(LpdfError::Unsupported(
             "pdf_to_rtf not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn pdf_to_pdfa(
+        &self,
+        _input_path: &Path,
+        _conformance: PdfAConformance,
+        _output_path: &Path,
+    ) -> Result<PdfAPreflightReport> {
+        Err(LpdfError::Unsupported(
+            "pdf_to_pdfa archival conversion is not supported by FallbackAdapter".into(),
         ))
     }
 }

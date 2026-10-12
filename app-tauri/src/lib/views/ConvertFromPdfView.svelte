@@ -2,9 +2,11 @@
     import { appState } from '$lib/state.svelte';
     import { IpcClient } from '$lib/ipc';
     import type { JobRequest } from '$lib/bindings/JobRequest';
+    import type { PdfAConformance } from '$lib/bindings/PdfAConformance';
 
     let currentPath = $derived(appState.currentFile);
-    let selectedFormat = $state<'PdfToImages' | 'ExtractAllImages' | 'PdfToText' | 'PdfToDocx' | 'PdfToHtml' | 'PdfToRtf'>('PdfToDocx');
+    let selectedFormat = $state<'PdfToImages' | 'ExtractAllImages' | 'PdfToText' | 'PdfToDocx' | 'PdfToHtml' | 'PdfToRtf' | 'PdfToPdfA'>('PdfToDocx');
+    let selectedConformance = $state<PdfAConformance>('PdfA2b');
     let customOutputPath = $state<string>('');
     let statusMessage = $state<string | null>(null);
     let isSubmitting = $state<boolean>(false);
@@ -18,6 +20,14 @@
             icon: '📄',
             desc: 'Converts reading blocks, headings, tables, and images to structural Word format natively.',
             badge: 'Structural'
+        },
+        {
+            id: 'PdfToPdfA' as const,
+            title: 'PDF to PDF/A (Archival)',
+            ext: '_pdfa.pdf',
+            icon: '🏛️',
+            desc: 'Converts to ISO 19005 standard archival format with color intents and preflight verification.',
+            badge: 'Archival'
         },
         {
             id: 'PdfToImages' as const,
@@ -88,11 +98,18 @@
         isSubmitting = true;
         statusMessage = null;
 
-        const req: JobRequest = {
-            op: selectedFormat,
-            input_path: currentPath,
-            output_path: out
-        } as JobRequest;
+        const req: JobRequest = selectedFormat === 'PdfToPdfA'
+            ? {
+                op: 'PdfToPdfA',
+                input_path: currentPath,
+                output_path: out,
+                conformance: selectedConformance
+            }
+            : {
+                op: selectedFormat,
+                input_path: currentPath,
+                output_path: out
+            } as JobRequest;
 
         try {
             const jobId = await IpcClient.submitJob(req);
@@ -154,6 +171,57 @@
                 </div>
             </div>
 
+            {#if selectedFormat === 'PdfToPdfA'}
+                <div class="section-card conformance-card">
+                    <span class="card-title">PDF/A Conformance Level</span>
+                    <div class="conformance-selector">
+                        <label class="radio-label" class:selected={selectedConformance === 'PdfA2b'}>
+                            <input
+                                type="radio"
+                                name="conformance"
+                                value="PdfA2b"
+                                bind:group={selectedConformance}
+                            />
+                            <div class="radio-content">
+                                <div class="radio-head">
+                                    <span class="radio-title">PDF/A-2b</span>
+                                    <span class="rec-badge">Recommended</span>
+                                </div>
+                                <span class="radio-desc">ISO 19005-2. Preserves modern PDF 1.7 visual appearance, layers, transparency, and sRGB output intent.</span>
+                            </div>
+                        </label>
+                        <label class="radio-label" class:selected={selectedConformance === 'PdfA3b'}>
+                            <input
+                                type="radio"
+                                name="conformance"
+                                value="PdfA3b"
+                                bind:group={selectedConformance}
+                            />
+                            <div class="radio-content">
+                                <div class="radio-head">
+                                    <span class="radio-title">PDF/A-3b</span>
+                                </div>
+                                <span class="radio-desc">ISO 19005-3. Extends 2b by permitting embedded external files and invoice XML (ZUGFeRD/Factur-X).</span>
+                            </div>
+                        </label>
+                        <label class="radio-label" class:selected={selectedConformance === 'PdfA1b'}>
+                            <input
+                                type="radio"
+                                name="conformance"
+                                value="PdfA1b"
+                                bind:group={selectedConformance}
+                            />
+                            <div class="radio-content">
+                                <div class="radio-head">
+                                    <span class="radio-title">PDF/A-1b</span>
+                                </div>
+                                <span class="radio-desc">ISO 19005-1. Legacy baseline format based on PDF 1.4 (forbids transparency and JPEG2000).</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            {/if}
+
             <div class="section-card output-card">
                 <label class="card-title" for="output-path-input">Destination Path</label>
                 <div class="output-row">
@@ -205,6 +273,12 @@
                     <span class="summary-label">Format:</span>
                     <span class="summary-val">{formatDetails.find(f => f.id === selectedFormat)?.title}</span>
                 </div>
+                {#if selectedFormat === 'PdfToPdfA'}
+                    <div class="summary-item">
+                        <span class="summary-label">Conformance:</span>
+                        <span class="summary-val highlight">{selectedConformance}</span>
+                    </div>
+                {/if}
                 <div class="summary-item">
                     <span class="summary-label">Engine:</span>
                     <span class="summary-val highlight">Pure Rust Native (`pdfcraft`)</span>
@@ -421,6 +495,74 @@
         font-size: 0.75rem;
         color: #6c7086;
         line-height: 1.4;
+    }
+
+    .conformance-selector {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .radio-label {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        background: #181825;
+        border: 1px solid #313244;
+        border-radius: 8px;
+        padding: 0.85rem 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .radio-label:hover {
+        border-color: #89b4fa;
+    }
+
+    .radio-label.selected {
+        border-color: #89b4fa;
+        background: rgba(137, 180, 250, 0.08);
+        box-shadow: 0 0 0 1px #89b4fa;
+    }
+
+    .radio-label input[type='radio'] {
+        margin-top: 0.25rem;
+        accent-color: #89b4fa;
+    }
+
+    .radio-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .radio-head {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .radio-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #cdd6f4;
+    }
+
+    .radio-desc {
+        font-size: 0.75rem;
+        color: #a6adc8;
+        line-height: 1.35;
+    }
+
+    .rec-badge {
+        font-size: 0.65rem;
+        font-weight: 700;
+        background: rgba(166, 227, 161, 0.2);
+        color: #a6e3a1;
+        border: 1px solid #a6e3a1;
+        padding: 0.15rem 0.45rem;
+        border-radius: 4px;
+        text-transform: uppercase;
     }
 
     .status-banner {
