@@ -1,11 +1,13 @@
-name: Nightly Corpus Validation
+name: Nightly Fuzzing & Corpus Validation
 
 on:
   schedule:
-    - cron: "0 2 * * *" # Run at 2 AM every day
+    - cron: "0 2 * * *" # Run at 2 AM UTC every day
+  workflow_dispatch:
 
 jobs:
-  validate-corpus:
+  nightly-fuzz-and-corpus:
+    name: Nightly Fuzz & Corpus Validation
     runs-on: ubuntu-latest
     container: fedora:44
     steps:
@@ -16,7 +18,7 @@ jobs:
 
       - name: Install system dependencies (Fedora)
         run: |
-          dnf install -y qpdf curl
+          dnf install -y qpdf curl gcc gcc-c++
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
@@ -24,7 +26,29 @@ jobs:
         run: |
           rustup default nightly
 
-      - name: Run corpus fetch script
+      - name: Run corpus validation
         run: |
           chmod +x corpus/fetch.sh
           ./corpus/fetch.sh
+
+      - name: Run deterministic adapter fuzz smoke tests
+        run: |
+          cargo xtask fuzz
+
+      - name: Verify cargo-fuzz target definitions
+        run: |
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+          cargo binstall -y cargo-fuzz || cargo install cargo-fuzz --locked
+          cargo fuzz list
+
+      - name: Upload crash artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-failure-artifacts
+          path: |
+            fuzz/artifacts/
+            fuzz/crash-*
+            fuzz/timeout-*
+            fuzz/oom-*
+          if-no-files-found: ignore

@@ -11,4 +11,8 @@ lpdf-core-types = { path = "../lpdf-core-types" }
 lpdf-engine-port = { path = "../lpdf-engine-port" }
 lpdf-engine-pdfcraft = { path = "../lpdf-engine-pdfcraft" }
 lpdf-engine-fallback = { path = "../lpdf-engine-fallback" }
+lpdf-fs-safety = { path = "../lpdf-fs-safety" }
+lpdf-ai-worker = { path = "../lpdf-ai-worker" }
+serde_json = "1"
 tracing = "0.1"
+

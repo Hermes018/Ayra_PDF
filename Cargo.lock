@@ -3195,10 +3195,13 @@ dependencies = [
 name = "lpdf-engine-switcher"
 version = "0.1.0"
 dependencies = [
+ "lpdf-ai-worker",
  "lpdf-core-types",
  "lpdf-engine-fallback",
  "lpdf-engine-pdfcraft",
  "lpdf-engine-port",
+ "lpdf-fs-safety",
+ "serde_json",
  "tracing",
 ]
 
