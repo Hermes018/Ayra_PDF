@@ -3,6 +3,7 @@ use lpdf_engine_fallback::FallbackAdapter;
 use lpdf_engine_pdfcraft::PdfcraftAdapter;
 use lpdf_engine_port::PdfEngine;
 use lpdf_engine_switcher::fuzz::*;
+use lpdf_engine_switcher::hostile::*;
 use lpdf_engine_switcher::EngineSwitcher;
 use std::fs;
 use std::path::PathBuf;
@@ -326,6 +327,143 @@ fn test_fuzz_typed_lpdf_errors_on_malformed_inputs() {
         "etc_passwd"
     );
     assert_eq!(lpdf_fs_safety::sanitize_filename("CON.pdf"), "CON_pdf");
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
+fn run_hostile_vector_on_all_adapters(bytes: &[u8], name: &str) {
+    let temp_dir = std::env::temp_dir().join(format!(
+        "lpdf_hostile_test_{}_{}",
+        name,
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    fs::create_dir_all(&temp_dir).unwrap();
+    let pdf_path = temp_dir.join(format!("{}.pdf", name));
+    fs::write(&pdf_path, bytes).unwrap();
+
+    // 1. PdfcraftAdapter
+    let mut pdfcraft = PdfcraftAdapter::new();
+    exercise_all_operations_on_hostile_file(&mut pdfcraft, &pdf_path, &temp_dir)
+        .expect("PdfcraftAdapter hostile run failed");
+
+    // 2. FallbackAdapter
+    let mut fallback = FallbackAdapter::new();
+    exercise_all_operations_on_hostile_file(&mut fallback, &pdf_path, &temp_dir)
+        .expect("FallbackAdapter hostile run failed");
+
+    // 3. EngineSwitcher
+    let mut switcher = EngineSwitcher::new();
+    exercise_all_operations_on_hostile_file(&mut switcher, &pdf_path, &temp_dir)
+        .expect("EngineSwitcher hostile run failed");
+
+    let _ = fs::remove_dir_all(&temp_dir);
+}
+
+#[test]
+fn test_hostile_flate_bomb_handling() {
+    let bytes = generate_flate_bomb_pdf();
+    run_hostile_vector_on_all_adapters(&bytes, "flate_bomb");
+}
+
+#[test]
+fn test_hostile_deep_page_tree_handling() {
+    let bytes = generate_deep_page_tree_pdf(500);
+    run_hostile_vector_on_all_adapters(&bytes, "deep_page_tree");
+}
+
+#[test]
+fn test_hostile_cyclic_page_tree_handling() {
+    let bytes = generate_cyclic_page_tree_pdf();
+    run_hostile_vector_on_all_adapters(&bytes, "cyclic_page_tree");
+}
+
+#[test]
+fn test_hostile_broken_xref_handling() {
+    let bytes = generate_broken_xref_pdf();
+    run_hostile_vector_on_all_adapters(&bytes, "broken_xref");
+}
+
+#[test]
+fn test_hostile_js_launch_handling() {
+    let bytes = generate_js_launch_pdf();
+    run_hostile_vector_on_all_adapters(&bytes, "js_launch");
+}
+
+#[test]
+fn test_hostile_pathological_geometry_handling() {
+    let bytes = generate_pathological_geometry_pdf();
+    run_hostile_vector_on_all_adapters(&bytes, "geometry");
+}
+
+#[test]
+fn test_hostile_paths_and_device_names() {
+    let temp_parent = std::env::temp_dir().join(format!(
+        "lpdf_hostile_paths_{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    fs::create_dir_all(&temp_parent).unwrap();
+
+    for &path_str in hostile_path_candidates() {
+        // 1. sanitize_filename guarantees no traversal or invalid tokens
+        let sanitized = lpdf_fs_safety::sanitize_filename(path_str);
+        assert!(
+            !sanitized.is_empty(),
+            "Sanitized filename must never be empty"
+        );
+        assert!(!sanitized.contains('/'), "Must not contain forward slash");
+        assert!(!sanitized.contains('\\'), "Must not contain backslash");
+        assert!(!sanitized.contains('\0'), "Must not contain null bytes");
+        assert!(!sanitized.contains(".."), "Must not contain traversal dots");
+
+        // 2. Safe output dir creation under temp_parent
+        let safe_dir = lpdf_fs_safety::create_safe_output_dir(&temp_parent, path_str)
+            .expect("create_safe_output_dir must not fail");
+        assert!(safe_dir.exists(), "Safe dir must be created successfully");
+        assert!(
+            safe_dir.starts_with(&temp_parent),
+            "Safe dir must stay inside parent dir"
+        );
+
+        // 3. atomic_write with safe filenames
+        let target_file = safe_dir.join(format!("{}.pdf", sanitized));
+        lpdf_fs_safety::atomic_write(&target_file, b"%PDF-1.4\n%%EOF")
+            .expect("atomic_write must succeed");
+        assert!(target_file.exists());
+    }
+
+    let _ = fs::remove_dir_all(&temp_parent);
+}
+
+#[test]
+fn test_corpus_hostile_files_roundtrip() {
+    let temp_dir = std::env::temp_dir().join(format!(
+        "lpdf_corpus_hostile_{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    fs::create_dir_all(&temp_dir).unwrap();
+
+    let hostile_bomb = get_corpus_pdf("hostile-bombs.pdf");
+    if hostile_bomb.exists() {
+        let mut switcher = EngineSwitcher::new();
+        exercise_all_operations_on_hostile_file(&mut switcher, &hostile_bomb, &temp_dir)
+            .expect("Corpus hostile bomb exercise failed");
+    }
+
+    let hostile_xref = get_corpus_pdf("hostile-broken-xref.pdf");
+    if hostile_xref.exists() {
+        let mut switcher = EngineSwitcher::new();
+        exercise_all_operations_on_hostile_file(&mut switcher, &hostile_xref, &temp_dir)
+            .expect("Corpus hostile xref exercise failed");
+    }
 
     let _ = fs::remove_dir_all(&temp_dir);
 }

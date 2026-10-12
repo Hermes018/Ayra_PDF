@@ -858,6 +858,34 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs` (5 tests added, 600+ hostile iterations run; 131 nextest tests total).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-13 02:05] Phase 11.2 — Hardening: Hostile-File Suite & Parser Hardening
+- **Status:** Complete (Tag: phase-11.2-green)
+- **Work:**
+  - Hostile PDF Vector Generators (`crates/lpdf-engine-switcher/src/hostile.rs`):
+    - Implemented pure safe Rust generator suite with `#![forbid(unsafe_code)]` producing 6 hostile PDF vectors:
+      1. `generate_flate_bomb_pdf`: Decompression bomb with declared length mismatch (`/Length 1073741824`) and zlib stream.
+      2. `generate_deep_page_tree_pdf`: Deep `/Pages` hierarchy with 500+ nesting levels asserting recursion and stack bounds.
+      3. `generate_cyclic_page_tree_pdf`: Self-referential cyclic `/Pages` tree graph asserting cycle termination without infinite loop.
+      4. `generate_broken_xref_pdf`: Corrupted xref tables with negative byte offsets, out-of-bounds offsets (`9999999999`), and circular `/Prev` trailer pointers.
+      5. `generate_js_launch_pdf`: Malicious executable action dictionaries (`/OpenAction`, `/AA`, `/JavaScript`, `/JS`, `/Launch`, `/EmbeddedFiles`).
+      6. `generate_pathological_geometry_pdf`: Zero-area `MediaBox [0 0 0 0]`, inverted coordinates `[612 792 0 0]`, and astronomical floating point bounds (`[-1e11 -1e11 1e11 1e11]`).
+      7. `hostile_path_candidates`: Traversal sequences (`../../`), null-byte injections, Windows reserved device names (`CON`, `PRN`, `AUX`, `NUL`, `COM1`, `LPT1`), control characters, and trailing dots/spaces.
+  - Hardening Test Harness & Operations Matrix (`crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs`):
+    - Implemented `exercise_all_operations_on_hostile_file` exercising 8 distinct engine operations (`load`, `info`, `repair`, `rotate_document`, `compress`, `pdf_to_text`, `summarize_extractive`, `redact`) across `PdfcraftAdapter`, `FallbackAdapter`, and `EngineSwitcher`.
+    - Asserted zero panics or uncaught unwinds via `catch_unwind`.
+    - Enforced per-operation execution timeout bounds (<2s) ensuring no hangs or infinite loops.
+    - Verified strict immutability of original hostile input files (zero in-place corruption).
+    - Verified atomic fail-closed guarantees on disk (no corrupt partial outputs left behind on error).
+    - Added test coverage for `corpus/hostile-bombs.pdf` and `corpus/hostile-broken-xref.pdf` roundtrips.
+  - Corpus & CI Integration (`corpus/`, `xtask/src/main.rs`, `.github/workflows/nightly.yml`):
+    - Updated `corpus/MANIFEST`, `corpus/SHA256SUMS`, and `corpus/fetch.sh` with verified hashes for `hostile-bombs.pdf` and `hostile-broken-xref.pdf`.
+    - Extended `xtask` with `cargo xtask hostile` alias running both fuzz and hostile test suites.
+    - Updated `.github/workflows/nightly.yml` to run `cargo xtask fuzz` and `cargo xtask hostile` on scheduled nightly runs.
+- **Gate:** pass (`cargo xtask gate` green: fmt, clippy, nextest 139/139, cargo-deny, cargo-audit, protocol-lint).
+- **Tests added/run:** `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs` (8 tests added, 13 total run; 139 nextest tests total).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 
