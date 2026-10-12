@@ -16,3 +16,6 @@ lpdf-engine-pdfcraft = { path = "../lpdf-engine-pdfcraft" }
 lpdf-engine-fallback = { path = "../lpdf-engine-fallback" }
 lpdf-engine-switcher = { path = "../lpdf-engine-switcher" }
 lpdf-fs-safety = { path = "../lpdf-fs-safety" }
+lpdf-jobs = { path = "../lpdf-jobs" }
+serde_json = "1"
+uuid = { version = "1", features = ["v4"] }

@@ -3131,6 +3131,9 @@ dependencies = [
  "lpdf-engine-port",
  "lpdf-engine-switcher",
  "lpdf-fs-safety",
+ "lpdf-jobs",
+ "serde_json",
+ "uuid",
 ]
 
 [[package]]

@@ -549,7 +549,7 @@ impl PdfEngine for PdfcraftAdapter {
 
             let protection = pdfcraft_engine::Protection {
                 open_password: Some(password.clone()),
-                permissions_password: Some(password.clone()),
+                permissions_password: None,
                 printing: if permissions.allow_print {
                     pdfcraft_engine::Printing::High
                 } else {
@@ -1166,8 +1166,9 @@ impl PdfEngine for PdfcraftAdapter {
                     look: Default::default(),
                 };
 
+                let page_idx = region.page.saturating_sub(1);
                 let mark = pdfcraft_engine::Edit::AddAnnotation(pdfcraft_engine::NewAnnotation {
-                    page: region.page,
+                    page: page_idx,
                     style: pdfcraft_engine::Style::default_for(&shape),
                     shape,
                     contents: String::new(),
