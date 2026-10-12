@@ -3,7 +3,8 @@
 use lopdf::Document;
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion, RenderOptions,
+    OfficeInputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion,
+    RenderOptions,
 };
 use std::path::Path;
 
@@ -305,6 +306,17 @@ impl PdfEngine for FallbackAdapter {
     ) -> Result<PdfAPreflightReport> {
         Err(LpdfError::Unsupported(
             "pdf_to_pdfa archival conversion is not supported by FallbackAdapter".into(),
+        ))
+    }
+
+    fn office_to_pdf(
+        &self,
+        _input_path: &Path,
+        _format: OfficeInputFormat,
+        _output_path: &Path,
+    ) -> Result<std::path::PathBuf> {
+        Err(LpdfError::Unsupported(
+            "office_to_pdf sidecar conversion is not supported by FallbackAdapter".into(),
         ))
     }
 }

@@ -22,6 +22,9 @@ pub enum LpdfError {
 
     #[error("OCR Inference Error: {0}")]
     OcrInferenceError(String),
+
+    #[error("External Dependency Error: {0}")]
+    ExternalDependencyError(String),
 }
 
 pub type Result<T> = std::result::Result<T, LpdfError>;

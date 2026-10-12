@@ -84,6 +84,42 @@ pub struct PdfAPreflightReport {
     pub remaining_issues: Vec<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub enum OfficeInputFormat {
+    Docx,
+    Xlsx,
+    Pptx,
+    Odt,
+    Ods,
+    Odp,
+}
+
+impl OfficeInputFormat {
+    pub fn extension(&self) -> &'static str {
+        match self {
+            Self::Docx => "docx",
+            Self::Xlsx => "xlsx",
+            Self::Pptx => "pptx",
+            Self::Odt => "odt",
+            Self::Ods => "ods",
+            Self::Odp => "odp",
+        }
+    }
+
+    pub fn from_extension(ext: &str) -> Option<Self> {
+        match ext.to_ascii_lowercase().as_str() {
+            "docx" => Some(Self::Docx),
+            "xlsx" => Some(Self::Xlsx),
+            "pptx" => Some(Self::Pptx),
+            "odt" => Some(Self::Odt),
+            "ods" => Some(Self::Ods),
+            "odp" => Some(Self::Odp),
+            _ => None,
+        }
+    }
+}
+
 pub trait PdfEngine {
     fn load(&mut self, path: &Path) -> Result<()>;
     fn info(&self) -> Result<PdfInfo>;
@@ -173,6 +209,14 @@ pub trait PdfEngine {
         conformance: PdfAConformance,
         output_path: &Path,
     ) -> Result<PdfAPreflightReport>;
+
+    // Advanced Conversion via Headless Sidecar (Phase 9.1)
+    fn office_to_pdf(
+        &self,
+        input_path: &Path,
+        format: OfficeInputFormat,
+        output_path: &Path,
+    ) -> Result<std::path::PathBuf>;
 }
 
 #[macro_export]

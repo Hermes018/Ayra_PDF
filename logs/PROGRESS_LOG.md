@@ -513,3 +513,23 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/pdfa_tests.rs` (4 tests), `app-tauri/src/lib/views/__tests__/ConvertFromPdfView.test.ts` (7 tests).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-12 14:31] Phase 9.1 — Advanced Convert (Office -> PDF via Headless Sidecar)
+- **Status:** Complete (Tag: phase-9.1-green)
+- **Work:**
+  - Defined `OfficeInputFormat` enum (`Docx`, `Xlsx`, `Pptx`, `Odt`, `Ods`, `Odp`) in `lpdf-engine-port` with `ts-rs` export and helper extension methods.
+  - Added `office_to_pdf` method to `PdfEngine` trait across `PdfcraftAdapter`, `FallbackAdapter`, and `EngineSwitcher`.
+  - Built shell-injection-safe sidecar module `crates/lpdf-engine-pdfcraft/src/office_sidecar.rs`:
+    - Enforced Failsafe F22: Cross-platform target triple suffix resolution (`soffice-x86_64-unknown-linux-gnu`, `soffice-x86_64-pc-windows-msvc.exe`, `soffice-aarch64-apple-darwin`) with fallback discovery in PATH and known system install locations.
+    - Strict argument isolation: Passed all arguments strictly via `Command::arg` (never `sh -c`). Canonicalized and validated input paths.
+    - Profile isolation: Created disposable user profile directories via `-env:UserInstallation=file://...` preventing instance collision/locking with running desktops.
+    - Enforced Failsafe F21: Execution timeout watchdog, captured stdout/stderr, terminated zombie processes on failure/timeout, mapped exit codes and OS errors to typed `LpdfError::ExternalDependencyError`.
+    - Atomic output & header verification: Verified `%PDF-` header on generated files, atomic write via `lpdf_fs_safety::atomic_write`, and guaranteed cleanup of temp workspaces.
+  - Added `OfficeToPdf` variant to `JobRequest` in `lpdf-jobs`, wired job execution with progress reporting into `JobManager`.
+  - Regenerated TypeScript bindings (`JobRequest.ts`, `OfficeInputFormat.ts`).
+  - Expanded `ConvertToPdfView.svelte` with high-fidelity sidecar tiles: "Word to PDF (High-Fidelity Layout via Sidecar)", "Excel to PDF (.xlsx)", and "PowerPoint to PDF (.pptx)", with summary details and IPC dispatch.
+  - Created unit tests in `ConvertToPdfView.test.ts` verifying mode selection and correct job dispatch.
+  - Wrote integration test suite `crates/lpdf-engine-pdfcraft/tests/sidecar_tests.rs` (7 tests) covering target triple resolution, input validation, non-existent binary graceful error handling (F21), mock binary failure & success, and adapter integration.
+- **Gate:** pass (`cargo xtask gate` green: fmt, clippy, nextest 48/48, cargo-deny, cargo-audit, protocol-lint; `pnpm check` clean; `pnpm vitest run` 15/15 green).
+- **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/sidecar_tests.rs` (7 tests), `app-tauri/src/lib/views/__tests__/ConvertToPdfView.test.ts` (6 tests).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
