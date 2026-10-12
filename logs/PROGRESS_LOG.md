@@ -655,6 +655,44 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-jobs/tests/queue_tests.rs` (3 tests added, 6 run), `app-tauri/src/lib/views/__tests__/PipelinesView.test.ts` (4 tests added; total vitest 34/34).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-12 18:19] Phase 10.3 — Unified localpdf-cli on Core Engine
+- **Status:** Complete (Tag: phase-10.3-green)
+- **Work:**
+  - Extended unified CLI in `crates/lpdf-cli` (`src/lib.rs` and `src/main.rs`) on top of `lpdf-engine-switcher`, `lpdf-engine-port`, and `lpdf-jobs`, preserving existing Pandoc Markdown subcommands:
+    - **Document Inspection:** `localpdf info <input.pdf> [--json]` (page count, encryption status, PDF version, metadata).
+    - **Organize:**
+      - `localpdf merge <output.pdf> <input1.pdf> <input2.pdf> ...`
+      - `localpdf split <input.pdf> <output_dir> [--at <page_numbers...>]`
+      - `localpdf rotate <input.pdf> <output.pdf> --degrees <90|180|270> [--pages <1,2,...>]`
+      - `localpdf extract <input.pdf> <output.pdf> --pages <1,2,...>`
+      - `localpdf delete <input.pdf> <output.pdf> --pages <1,2,...>`
+    - **Process:**
+      - `localpdf compress <input.pdf> <output.pdf> [--profile <low|medium|high>]`
+      - `localpdf repair <input.pdf> <output.pdf>`
+      - `localpdf ocr <input.pdf> <output.pdf>`
+    - **Edit & Forms:**
+      - `localpdf watermark <input.pdf> <output.pdf> --text <TEXT> [--opacity <0.0-1.0>] [--rotation <deg>]`
+      - `localpdf flatten-comments <input.pdf> <output.pdf>`
+      - `localpdf flatten-forms <input.pdf> <output.pdf>`
+    - **Security & Redaction:**
+      - `localpdf protect <input.pdf> <output.pdf> --password <PASS> [--allow-print] [--allow-copy] [--allow-edit]`
+      - `localpdf unlock <input.pdf> <output.pdf> --password <PASS>`
+      - `localpdf redact <input.pdf> <output.pdf> --region <page:x,y,w,h> ...`
+    - **Convert & Archival:**
+      - `localpdf pdfa <input.pdf> <output.pdf> [--conformance <2b|3b|1b>]`
+      - `localpdf to-text <input.pdf> <output.txt>`
+      - `localpdf to-html <input.pdf> <output.html>`
+      - `localpdf to-images <input.pdf> <output_dir>`
+    - **Workflows / Pipelines:**
+      - `localpdf pipeline presets` (lists built-in workflow presets and transformation steps).
+      - `localpdf pipeline run <preset_id> <input.pdf> <output.pdf>` (executes multi-step preset workflow with atomic staging).
+  - Maintained `#![forbid(unsafe_code)]` with zero `unwrap()`/`todo!()` in non-test code, mapped error diagnostics cleanly to non-zero exit codes.
+  - Added comprehensive end-to-end integration test suite in `crates/lpdf-cli/tests/cli_tests.rs` (18 tests) covering argument parsing, errors, and end-to-end execution of all commands against local corpus.
+- **Gate:** pass (`cargo test -p lpdf-cli` 18/18 green; `pnpm check` clean; `pnpm vitest run` 34/34 green; `cargo xtask gate` green: fmt, clippy, nextest 96/96, cargo-deny, cargo-audit, protocol-lint).
+- **Tests added/run:** `crates/lpdf-cli/tests/cli_tests.rs` (11 tests added, 18 run; total nextest 96/96; total vitest 34/34).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 
