@@ -69,6 +69,11 @@ fn test_settings_atomic_save_and_load_roundtrip() {
         theme: ThemePreference::Dark,
         local_ai_model_path: Some(PathBuf::from("/models/llama.gguf")),
         ai_local_enabled: true,
+        ai_license_acknowledged: true,
+        ai_model_sha256: Some(
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855".to_string(),
+        ),
+        ai_model_license: Some("Apache-2.0".to_string()),
     };
 
     save_settings_atomic(&settings_path, &custom).unwrap();

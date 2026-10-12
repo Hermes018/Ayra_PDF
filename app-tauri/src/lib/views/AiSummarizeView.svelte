@@ -1,8 +1,10 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
     import { IpcClient } from '$lib/ipc';
     import { appState } from '$lib/state.svelte';
     import type { SummaryLength } from '$lib/bindings/SummaryLength';
     import type { JobRequest } from '$lib/bindings/JobRequest';
+    import type { AppSettings } from '$lib/bindings/AppSettings';
 
     let { onNavigate = (_view: string) => {} } = $props<{
         onNavigate?: (view: string) => void;
@@ -16,6 +18,19 @@
     let isSubmitting = $state(false);
     let submissionStatus = $state<string | null>(null);
     let errorMessage = $state<string | null>(null);
+    let appSettings = $state<AppSettings | null>(null);
+
+    let isLlmReady = $derived(
+        Boolean(appSettings?.ai_local_enabled && appSettings?.ai_license_acknowledged && appSettings?.local_ai_model_path)
+    );
+
+    onMount(async () => {
+        try {
+            appSettings = await IpcClient.getSettings();
+        } catch (e) {
+            console.warn('Failed to load settings in AiSummarizeView:', e);
+        }
+    });
 
     // Synchronize inputPath with appState if available
     $effect(() => {
@@ -125,21 +140,44 @@
         >
             <div class="mode-header">
                 <span class="mode-icon">🧠</span>
-                <span class="mode-badge gated-badge">Gated Opt-In</span>
+                {#if isLlmReady}
+                    <span class="mode-badge ready-badge" data-testid="llm-status-badge">Model Ready</span>
+                {:else}
+                    <span class="mode-badge gated-badge" data-testid="llm-status-badge">Gated Opt-In</span>
+                {/if}
             </div>
             <h3>Local LLM Mode</h3>
             <p class="mode-desc">Abstractive neural summarization with local quantized GGUF models via llama.cpp or Candle. Completely private and runs locally on your hardware.</p>
-            <div class="gate-notice">
-                <span>Requires <code>ai-local</code> compile feature and local model import.</span>
-                <button
-                    type="button"
-                    class="settings-link-btn"
-                    onclick={() => onNavigate('Settings')}
-                    data-testid="settings-link"
-                >
-                    Configure in Settings &rarr;
-                </button>
-            </div>
+
+            {#if isLlmReady}
+                <div class="llm-ready-info" data-testid="llm-ready-info">
+                    <div class="info-row">
+                        <span class="info-label">Model:</span>
+                        <span class="info-val" data-testid="llm-model-path">{appSettings?.local_ai_model_path}</span>
+                    </div>
+                    {#if appSettings?.ai_model_sha256}
+                        <div class="info-row">
+                            <span class="info-label">SHA-256:</span>
+                            <code class="info-hash" data-testid="llm-model-hash">{appSettings.ai_model_sha256.slice(0, 16)}...</code>
+                        </div>
+                    {/if}
+                    <div class="info-row status-success">
+                        <span>✓ Licence Acknowledged ({appSettings?.ai_model_license || 'SPDX'})</span>
+                    </div>
+                </div>
+            {:else}
+                <div class="gate-notice">
+                    <span>Requires <code>ai-local</code> feature, local model import, SHA-256 checksum, and licence acknowledgement.</span>
+                    <button
+                        type="button"
+                        class="settings-link-btn"
+                        onclick={() => onNavigate('Settings')}
+                        data-testid="settings-link"
+                    >
+                        Configure in Settings &rarr;
+                    </button>
+                </div>
+            {/if}
         </div>
     </div>
 
@@ -346,6 +384,53 @@
         background-color: rgba(249, 226, 175, 0.2);
         color: #f9e2af;
         border: 1px solid #f9e2af;
+    }
+
+    .ready-badge {
+        background-color: rgba(137, 180, 250, 0.2);
+        color: #89b4fa;
+        border: 1px solid #89b4fa;
+    }
+
+    .llm-ready-info {
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+        background-color: #181825;
+        border-radius: 8px;
+        border: 1px solid #313244;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        font-size: 0.82rem;
+    }
+
+    .info-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #cdd6f4;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #9399b2;
+    }
+
+    .info-val {
+        word-break: break-all;
+    }
+
+    .info-hash {
+        background-color: #313244;
+        padding: 0.1rem 0.3rem;
+        border-radius: 4px;
+        color: #a6e3a1;
+        font-size: 0.78rem;
+    }
+
+    .status-success {
+        color: #a6e3a1;
+        font-weight: 500;
     }
 
     .mode-card h3 {

@@ -1,13 +1,28 @@
 import { expect, test, vi, beforeEach, afterEach, describe } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/svelte';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/svelte';
 import AiSummarizeView from '../AiSummarizeView.svelte';
 import { IpcClient } from '$lib/ipc';
 import { appState } from '$lib/state.svelte';
+import type { AppSettings } from '$lib/bindings/AppSettings';
+
+const defaultSettings: AppSettings = {
+    tier_override: null,
+    output_policy: 'SuffixNewFile',
+    backups_enabled: true,
+    language: 'en',
+    theme: 'System',
+    local_ai_model_path: null,
+    ai_local_enabled: false,
+    ai_license_acknowledged: false,
+    ai_model_sha256: null,
+    ai_model_license: null,
+};
 
 describe('AiSummarizeView', () => {
     beforeEach(() => {
         appState.clear();
         vi.restoreAllMocks();
+        vi.spyOn(IpcClient, 'getSettings').mockResolvedValue({ ...defaultSettings });
     });
 
     afterEach(() => {
@@ -113,4 +128,29 @@ describe('AiSummarizeView', () => {
         expect(input.value).toBe('/test/state_doc.pdf');
         expect(output.value).toBe('/test/state_doc_summary.md');
     });
+
+    test('displays Model Ready badge and model metadata when Local AI is configured and acknowledged', async () => {
+        vi.spyOn(IpcClient, 'getSettings').mockResolvedValue({
+            tier_override: null,
+            output_policy: 'SuffixNewFile',
+            backups_enabled: true,
+            language: 'en',
+            theme: 'System',
+            local_ai_model_path: '/models/llama-3.2-1b.gguf',
+            ai_local_enabled: true,
+            ai_license_acknowledged: true,
+            ai_model_sha256: 'a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0',
+            ai_model_license: 'Apache-2.0',
+        });
+
+        render(AiSummarizeView);
+
+        await waitFor(() => {
+            expect(screen.getByTestId('llm-status-badge')).toHaveTextContent('Model Ready');
+        });
+        expect(screen.getByTestId('llm-model-path')).toHaveTextContent('/models/llama-3.2-1b.gguf');
+        expect(screen.getByTestId('llm-model-hash')).toHaveTextContent('a1b2c3d4e5f60718...');
+        expect(screen.getByText(/Licence Acknowledged \(Apache-2.0\)/i)).toBeInTheDocument();
+    });
 });
+

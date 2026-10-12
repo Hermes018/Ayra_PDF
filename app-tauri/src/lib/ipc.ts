@@ -96,10 +96,18 @@ export class IpcClient {
     }
 
     /**
-     * Validate and import local AI model (.gguf, .onnx, etc.)
+     * Validate and import local AI model (.gguf, .onnx, etc.) with license acknowledgement
      */
-    static async importLocalAiModel(modelPath: string): Promise<AiModelInfo> {
-        return await invoke<AiModelInfo>('import_local_ai_model', { modelPath });
+    static async importLocalAiModel(
+        modelPath: string,
+        licenseSpdx?: string,
+        acknowledgeLicense?: boolean
+    ): Promise<AiModelInfo> {
+        return await invoke<AiModelInfo>('import_local_ai_model', {
+            modelPath,
+            licenseSpdx: licenseSpdx ?? null,
+            acknowledgeLicense: acknowledgeLicense ?? false,
+        });
     }
 
     /**

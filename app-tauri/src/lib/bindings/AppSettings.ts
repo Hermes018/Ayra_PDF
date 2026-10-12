@@ -3,4 +3,4 @@ import type { HardwareTier } from "./HardwareTier";
 import type { OutputPolicy } from "./OutputPolicy";
 import type { ThemePreference } from "./ThemePreference";
 
-export type AppSettings = { tier_override: HardwareTier | null, output_policy: OutputPolicy, backups_enabled: boolean, language: string, theme: ThemePreference, local_ai_model_path: string | null, ai_local_enabled: boolean, };
+export type AppSettings = { tier_override: HardwareTier | null, output_policy: OutputPolicy, backups_enabled: boolean, language: string, theme: ThemePreference, local_ai_model_path: string | null, ai_local_enabled: boolean, ai_license_acknowledged: boolean, ai_model_sha256: string | null, ai_model_license: string | null, };

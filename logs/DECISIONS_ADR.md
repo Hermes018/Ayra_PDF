@@ -42,6 +42,10 @@ Adopt (MIT OR Apache-2.0, 6.0k stars) with git-pin, worker isolation, fallback a
   7. Failsafe F19 (see 03 patch): worker isolation, no network, model hash check, watchdog per chunk.
 - **Consequences:** crate/binary additions (06), deps section D in 08, phases 10.5a–d, UI tiles always visible, Intelligence column has exactly 2 tiles.
 - **Approved by:** user (System Update item 1). **Note:** the protocol's earlier line "10.5 optional local-AI … ADR required" is satisfied by this ADR.
+- **Spike Evaluation & Backend Selection (Phase 10.5b [2026-10-12]):**
+  - **llama-cpp-2 Evaluation:** Relies on C/C++ FFI bindings to `llama.cpp` requiring CMake and C++ toolchain during compilation. Fails `#![forbid(unsafe_code)]` compliance at crate boundaries, and introduces significant build/packaging friction for cross-platform distribution (Windows ARM64 MSVC, Android NDK).
+  - **Candle Evaluation:** Pure Rust runtime by Hugging Face supporting GGUF parsing and quantized inference out of the box with zero C/C++ compiler toolchain requirements. Adheres strictly to `#![forbid(unsafe_code)]` at worker crate level, compiles cleanly for Linux (x86_64/aarch64), Windows (x64/ARM64), and Android targets, and runs deterministically inside sandboxed namespaces under `unshare -n`.
+  - **Decision:** Select pure-Rust `candle` (via `lpdf-ai-worker` skeleton and sandboxed stdio bridge) as the inference backend under the `ai-local` feature gate (default OFF). Model verification strictly enforces Failsafe F19 (checksum matching, format magic byte validation, and mandatory user licence acknowledgement).
 
 ## ADR-005 [2026-10-10] Offline scope reductions: Sign PDF, Scan to PDF, HTML to PDF
 - **Context:** Three tiles imply cloud features. Offline product must say exactly what is in/out.

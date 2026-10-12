@@ -40,6 +40,10 @@ pub struct AppSettings {
     pub theme: ThemePreference,
     pub local_ai_model_path: Option<PathBuf>,
     pub ai_local_enabled: bool,
+    #[serde(default)]
+    pub ai_license_acknowledged: bool,
+    pub ai_model_sha256: Option<String>,
+    pub ai_model_license: Option<String>,
 }
 
 impl Default for AppSettings {
@@ -52,6 +56,9 @@ impl Default for AppSettings {
             theme: ThemePreference::System,
             local_ai_model_path: None,
             ai_local_enabled: false,
+            ai_license_acknowledged: false,
+            ai_model_sha256: None,
+            ai_model_license: None,
         }
     }
 }
@@ -64,6 +71,10 @@ pub struct AiModelInfo {
     pub size_bytes: u64,
     pub sha256_hex: String,
     pub format: String,
+    #[serde(default)]
+    pub license_spdx: Option<String>,
+    #[serde(default)]
+    pub license_acknowledged: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -312,5 +323,22 @@ pub fn inspect_ai_model(path: &Path) -> Result<AiModelInfo> {
         size_bytes,
         sha256_hex,
         format,
+        license_spdx: None,
+        license_acknowledged: false,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ts_rs::TS;
+
+    #[test]
+    fn test_export_bindings() {
+        assert!(AppSettings::export().is_ok());
+        assert!(AiModelInfo::export().is_ok());
+        assert!(HardwareTier::export().is_ok());
+        assert!(OutputPolicy::export().is_ok());
+        assert!(ThemePreference::export().is_ok());
+    }
 }
