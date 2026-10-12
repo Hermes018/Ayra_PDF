@@ -1,7 +1,9 @@
 #![forbid(unsafe_code)]
 
 use lpdf_core_types::{LpdfError, Result};
-use lpdf_engine_port::{ExtractiveSummaryReport, SummaryLength};
+use lpdf_engine_port::{
+    ExtractiveSummaryReport, LlmSummaryOptions, LlmSummaryReport, SummaryLength,
+};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
@@ -482,6 +484,245 @@ pub fn generate_extractive_summary(
         summary_text: markdown,
         key_points,
         keywords,
+        source_word_count,
+        summary_word_count,
+    })
+}
+
+/// Partitions text into bounded semantic chunks respecting sentence boundaries and `chunk_word_limit`.
+pub fn partition_into_chunks(text: &str, chunk_word_limit: usize) -> Vec<String> {
+    let limit = if chunk_word_limit == 0 {
+        400
+    } else {
+        chunk_word_limit
+    };
+    let sentences = split_into_sentences(text);
+    if sentences.is_empty() {
+        let trimmed = text.trim();
+        return if trimmed.is_empty() {
+            Vec::new()
+        } else {
+            vec![trimmed.to_string()]
+        };
+    }
+
+    let mut chunks = Vec::new();
+    let mut current_chunk_sentences = Vec::new();
+    let mut current_words = 0;
+
+    for sent in sentences {
+        let sent_words = tokenize_words(&sent).len();
+        if current_words + sent_words > limit && !current_chunk_sentences.is_empty() {
+            chunks.push(current_chunk_sentences.join(" "));
+            current_chunk_sentences.clear();
+            current_words = 0;
+        }
+
+        current_words += sent_words;
+        current_chunk_sentences.push(sent);
+    }
+
+    if !current_chunk_sentences.is_empty() {
+        chunks.push(current_chunk_sentences.join(" "));
+    }
+
+    chunks
+}
+
+/// Executes Map-Reduce LLM summarization on raw document text.
+pub fn generate_llm_map_reduce_summary(
+    input_path: &Path,
+    output_path: &Path,
+    raw_text: &str,
+    options: &LlmSummaryOptions,
+) -> Result<LlmSummaryReport> {
+    // Failsafe F19 Rule 1: Refuse when ai_local_enabled is false
+    if !options.ai_local_enabled {
+        return Err(LpdfError::InvalidInput(
+            "Local AI execution refused: ai_local_enabled is false.".to_string(),
+        ));
+    }
+
+    // Failsafe F19 Rule 2: Refuse when model license is unacknowledged
+    if !options.manifest.license_acknowledged {
+        return Err(LpdfError::InvalidInput(format!(
+            "Local AI execution refused: License '{}' for model has not been acknowledged.",
+            options.manifest.license_spdx
+        )));
+    }
+
+    // Failsafe F19 Rule 3 & 4: Pre-flight model header and SHA-256 validation via worker session
+    let mut session = lpdf_ai_worker::AiWorkerSession::new(true, Some(options.manifest.clone()));
+    let validation_resp = session.handle_request(&lpdf_ai_worker::AiWorkerRequest::ValidateModel {
+        path: options.manifest.model_path.clone(),
+        expected_sha256: options.manifest.sha256_hex.clone(),
+    });
+
+    match validation_resp {
+        lpdf_ai_worker::AiWorkerResponse::ModelValidated { .. } => {}
+        lpdf_ai_worker::AiWorkerResponse::Error { code, message } => {
+            return Err(LpdfError::InvalidInput(format!(
+                "Local AI model pre-flight check failed [{}]: {}",
+                code, message
+            )));
+        }
+        _ => {
+            return Err(LpdfError::Engine(
+                "Unexpected response during model pre-flight validation.".to_string(),
+            ));
+        }
+    }
+
+    let all_words = tokenize_words(raw_text);
+    let source_word_count = all_words.len();
+    if source_word_count == 0 {
+        return Err(LpdfError::InvalidInput(
+            "Source document contains no extractable text for summarization.".to_string(),
+        ));
+    }
+
+    let chunks = partition_into_chunks(raw_text, options.chunk_word_limit);
+    if chunks.is_empty() {
+        return Err(LpdfError::InvalidInput(
+            "No valid chunks could be partitioned from document text.".to_string(),
+        ));
+    }
+
+    // Map pass: summarize each chunk
+    let mut chunk_summaries = Vec::with_capacity(chunks.len());
+    for (idx, chunk) in chunks.iter().enumerate() {
+        let prompt = format!(
+            "Summarize the key information, arguments, and data points from Section {} concisely in 2-3 sentences:\n\n{}",
+            idx + 1,
+            chunk
+        );
+        let resp = session.handle_request(&lpdf_ai_worker::AiWorkerRequest::InferChunk {
+            prompt,
+            max_tokens: options.max_tokens as usize,
+            temperature: options.temperature,
+        });
+
+        let summary_text = match resp {
+            lpdf_ai_worker::AiWorkerResponse::ChunkInferred { text, .. } => text,
+            lpdf_ai_worker::AiWorkerResponse::Error { code, message } => {
+                return Err(LpdfError::Engine(format!(
+                    "Inference error on chunk {} [{}]: {}",
+                    idx + 1,
+                    code,
+                    message
+                )));
+            }
+            _ => {
+                return Err(LpdfError::Engine(
+                    "Unexpected inference response from AI worker.".to_string(),
+                ));
+            }
+        };
+
+        chunk_summaries.push(summary_text);
+    }
+
+    // Reduce pass: synthesize all chunk summaries into executive synthesis
+    let executive_synthesis = if chunk_summaries.len() == 1 {
+        chunk_summaries[0].clone()
+    } else {
+        let reduce_prompt = format!(
+            "Synthesize the following section summaries into a cohesive, executive-level summary scaled to {:?} length:\n\n{}",
+            options.length,
+            chunk_summaries
+                .iter()
+                .enumerate()
+                .map(|(i, s)| format!("Section {}: {}", i + 1, s))
+                .collect::<Vec<_>>()
+                .join("\n\n")
+        );
+
+        let resp = session.handle_request(&lpdf_ai_worker::AiWorkerRequest::InferChunk {
+            prompt: reduce_prompt,
+            max_tokens: (options.max_tokens * 2) as usize,
+            temperature: options.temperature,
+        });
+
+        match resp {
+            lpdf_ai_worker::AiWorkerResponse::ChunkInferred { text, .. } => text,
+            lpdf_ai_worker::AiWorkerResponse::Error { code, message } => {
+                return Err(LpdfError::Engine(format!(
+                    "Inference error during reduce step [{}]: {}",
+                    code, message
+                )));
+            }
+            _ => {
+                return Err(LpdfError::Engine(
+                    "Unexpected reduce inference response from AI worker.".to_string(),
+                ));
+            }
+        }
+    };
+
+    let summary_word_count = tokenize_words(&executive_synthesis).len();
+    let file_name = input_path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("document.pdf");
+    let model_name = options
+        .manifest
+        .model_path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("model.gguf");
+    let sha_snippet = if options.manifest.sha256_hex.len() >= 16 {
+        &options.manifest.sha256_hex[0..16]
+    } else {
+        &options.manifest.sha256_hex
+    };
+
+    let mut markdown = String::new();
+    markdown.push_str("# Executive Document Summary (Local LLM Map-Reduce)\n\n");
+    markdown.push_str(&format!("- **Source Document:** `{}`\n", file_name));
+    markdown.push_str(&format!(
+        "- **Model Provenance:** `{}` (Format: `{}`, SHA-256: `{}...`)\n",
+        model_name, options.manifest.format, sha_snippet
+    ));
+    markdown.push_str(&format!(
+        "- **Licence (SPDX):** `{}` (Acknowledged for offline execution)\n",
+        options.manifest.license_spdx
+    ));
+    markdown.push_str(&format!(
+        "- **Map-Reduce Chunks:** {} sections processed\n",
+        chunks.len()
+    ));
+    markdown.push_str(&format!("- **Length Setting:** {:?}\n", options.length));
+    markdown.push_str(&format!(
+        "- **Word Counts:** {} source words -> {} summary words\n\n",
+        source_word_count, summary_word_count
+    ));
+
+    markdown.push_str("## Executive Synthesis\n\n");
+    markdown.push_str(&executive_synthesis);
+    markdown.push_str("\n\n## Section-by-Section Intermediate Summaries\n\n");
+
+    for (i, chunk_sum) in chunk_summaries.iter().enumerate() {
+        markdown.push_str(&format!("### Section {}\n\n{}\n\n", i + 1, chunk_sum));
+    }
+
+    let target_file = if output_path.is_dir() {
+        let stem = input_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("document");
+        output_path.join(format!("{}_llm_summary.md", stem))
+    } else {
+        output_path.to_path_buf()
+    };
+
+    lpdf_fs_safety::atomic_write(&target_file, markdown.as_bytes())?;
+
+    Ok(LlmSummaryReport {
+        output_path: target_file,
+        summary_text: markdown,
+        chunk_summaries,
+        chunks_processed: chunks.len(),
+        model_sha256: options.manifest.sha256_hex.clone(),
         source_word_count,
         summary_word_count,
     })

@@ -77,6 +77,17 @@ pub struct AiModelInfo {
     pub license_acknowledged: bool,
 }
 
+/// Manifest describing a verified local AI model with licensing terms.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub struct AiModelManifest {
+    pub model_path: PathBuf,
+    pub sha256_hex: String,
+    pub format: String,
+    pub license_spdx: String,
+    pub license_acknowledged: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub version: u32,
@@ -337,6 +348,7 @@ mod tests {
     fn test_export_bindings() {
         assert!(AppSettings::export().is_ok());
         assert!(AiModelInfo::export().is_ok());
+        assert!(AiModelManifest::export().is_ok());
         assert!(HardwareTier::export().is_ok());
         assert!(OutputPolicy::export().is_ok());
         assert!(ThemePreference::export().is_ok());

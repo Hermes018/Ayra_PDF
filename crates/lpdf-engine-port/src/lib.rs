@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+pub use lpdf_core_types::AiModelManifest;
 use lpdf_core_types::Result;
 use std::path::Path;
 
@@ -267,6 +268,29 @@ pub struct ExtractiveSummaryReport {
     pub summary_word_count: usize,
 }
 
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub struct LlmSummaryOptions {
+    pub manifest: AiModelManifest,
+    pub ai_local_enabled: bool,
+    pub length: SummaryLength,
+    pub chunk_word_limit: usize,
+    pub max_tokens: u32,
+    pub temperature: f32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
+pub struct LlmSummaryReport {
+    pub output_path: std::path::PathBuf,
+    pub summary_text: String,
+    pub chunk_summaries: Vec<String>,
+    pub chunks_processed: usize,
+    pub model_sha256: String,
+    pub source_word_count: usize,
+    pub summary_word_count: usize,
+}
+
 pub trait PdfEngine {
     fn load(&mut self, path: &Path) -> Result<()>;
     fn info(&self) -> Result<PdfInfo>;
@@ -407,6 +431,14 @@ pub trait PdfEngine {
         output_path: &Path,
         length: SummaryLength,
     ) -> Result<ExtractiveSummaryReport>;
+
+    // Map-Reduce LLM Summarizer (Phase 10.5c)
+    fn summarize_llm_map_reduce(
+        &self,
+        input_path: &Path,
+        output_path: &Path,
+        options: LlmSummaryOptions,
+    ) -> Result<LlmSummaryReport>;
 }
 
 #[macro_export]
@@ -454,4 +486,18 @@ macro_rules! define_contract_tests {
             }
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ts_rs::TS;
+
+    #[test]
+    fn test_export_engine_port_bindings() {
+        assert!(SummaryLength::export().is_ok());
+        assert!(ExtractiveSummaryReport::export().is_ok());
+        assert!(LlmSummaryOptions::export().is_ok());
+        assert!(LlmSummaryReport::export().is_ok());
+    }
 }

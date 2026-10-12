@@ -13,6 +13,8 @@
     // Svelte 5 runes state
     let activeMode = $state<'extractive' | 'llm'>('extractive');
     let selectedLength = $state<SummaryLength>('Medium');
+    let chunkWordLimit = $state<number>(400);
+    let temperature = $state<number>(0.2);
     let inputPath = $state<string>('');
     let outputPath = $state<string>('');
     let isSubmitting = $state(false);
@@ -82,12 +84,46 @@
 
         isSubmitting = true;
         try {
-            const req: JobRequest = {
-                op: 'SummarizeExtractive',
-                input_path: inputPath.trim(),
-                output_path: outputPath.trim(),
-                length: selectedLength,
-            };
+            let req: JobRequest;
+            if (activeMode === 'llm') {
+                if (!appSettings?.local_ai_model_path) {
+                    throw new Error('Local AI model path is not configured.');
+                }
+                const modelPath = appSettings.local_ai_model_path;
+                let fmt = 'GGUF';
+                if (modelPath.endsWith('.onnx')) {
+                    fmt = 'ONNX';
+                } else if (modelPath.endsWith('.safetensors')) {
+                    fmt = 'SafeTensors';
+                }
+
+                req = {
+                    op: 'SummarizeLlm',
+                    input_path: inputPath.trim(),
+                    output_path: outputPath.trim(),
+                    options: {
+                        manifest: {
+                            model_path: modelPath,
+                            sha256_hex: appSettings.ai_model_sha256 || '',
+                            format: fmt,
+                            license_spdx: appSettings.ai_model_license || 'Custom',
+                            license_acknowledged: Boolean(appSettings.ai_license_acknowledged),
+                        },
+                        ai_local_enabled: Boolean(appSettings.ai_local_enabled),
+                        length: selectedLength,
+                        chunk_word_limit: Number(chunkWordLimit) || 400,
+                        max_tokens: 512,
+                        temperature: Number(temperature) || 0.2,
+                    },
+                };
+            } else {
+                req = {
+                    op: 'SummarizeExtractive',
+                    input_path: inputPath.trim(),
+                    output_path: outputPath.trim(),
+                    length: selectedLength,
+                };
+            }
 
             const jobId = await IpcClient.submitJob(req);
             submissionStatus = `Summary job queued successfully (ID: ${jobId}). Check Batch Queue for progress.`;
@@ -133,9 +169,15 @@
             </ul>
         </button>
 
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <div
-            class="mode-card gated-mode"
+            role={isLlmReady ? 'button' : undefined}
+            tabindex={isLlmReady ? 0 : undefined}
+            class="mode-card"
+            class:gated-mode={!isLlmReady}
             class:active={activeMode === 'llm'}
+            onclick={() => { if (isLlmReady) activeMode = 'llm'; }}
+            onkeydown={(e) => { if (isLlmReady && (e.key === 'Enter' || e.key === ' ')) activeMode = 'llm'; }}
             data-testid="mode-local-llm"
         >
             <div class="mode-header">
@@ -146,7 +188,7 @@
                     <span class="mode-badge gated-badge" data-testid="llm-status-badge">Gated Opt-In</span>
                 {/if}
             </div>
-            <h3>Local LLM Mode</h3>
+            <h3>Local LLM Mode (Map-Reduce)</h3>
             <p class="mode-desc">Abstractive neural summarization with local quantized GGUF models via llama.cpp or Candle. Completely private and runs locally on your hardware.</p>
 
             {#if isLlmReady}
@@ -171,7 +213,7 @@
                     <button
                         type="button"
                         class="settings-link-btn"
-                        onclick={() => onNavigate('Settings')}
+                        onclick={(e) => { e.stopPropagation(); onNavigate('Settings'); }}
                         data-testid="settings-link"
                     >
                         Configure in Settings &rarr;
@@ -181,92 +223,153 @@
         </div>
     </div>
 
-    <!-- Main Extractive Configuration Panel -->
-    {#if activeMode === 'extractive'}
-        <section class="config-panel">
-            <div class="panel-section">
-                <h2>1. Summary Length</h2>
-                <div class="length-selector">
-                    {#each lengthOptions as opt}
-                        <button
-                            type="button"
-                            class="length-btn"
-                            class:selected={selectedLength === opt.id}
-                            onclick={() => { selectedLength = opt.id; }}
-                            data-testid={`length-${opt.id.toLowerCase()}`}
-                        >
-                            <span class="length-label">{opt.label}</span>
-                            <span class="length-desc">{opt.desc}</span>
-                        </button>
-                    {/each}
-                </div>
+    <!-- Configuration Panel -->
+    <section class="config-panel" data-testid="config-panel">
+        <div class="panel-section">
+            <h2>1. Summary Length</h2>
+            <div class="length-selector">
+                {#each lengthOptions as opt}
+                    <button
+                        type="button"
+                        class="length-btn"
+                        class:selected={selectedLength === opt.id}
+                        onclick={() => { selectedLength = opt.id; }}
+                        data-testid={`length-${opt.id.toLowerCase()}`}
+                    >
+                        <span class="length-label">{opt.label}</span>
+                        <span class="length-desc">{opt.desc}</span>
+                    </button>
+                {/each}
             </div>
+        </div>
 
-            <div class="panel-section">
-                <h2>2. File Selection</h2>
+        {#if activeMode === 'llm'}
+            <div class="panel-section" data-testid="map-reduce-section">
+                <h2>2. Map-Reduce Parameters</h2>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="input-pdf-path">Input PDF Document</label>
-                        <div class="input-with-button">
+                        <label for="chunk-words-input">
+                            Chunk Word Limit: <strong>{chunkWordLimit} words</strong>
+                            <span class="help-text">(Partitions input into bounded semantic chunks)</span>
+                        </label>
+                        <div class="range-with-number">
                             <input
-                                id="input-pdf-path"
-                                type="text"
-                                placeholder="/path/to/document.pdf"
-                                value={inputPath}
-                                oninput={(e) => handleInputChange(e.currentTarget.value)}
-                                data-testid="input-path"
+                                id="chunk-words-range"
+                                type="range"
+                                min="100"
+                                max="2000"
+                                step="50"
+                                bind:value={chunkWordLimit}
+                                data-testid="chunk-words-slider"
+                            />
+                            <input
+                                id="chunk-words-input"
+                                type="number"
+                                min="50"
+                                max="5000"
+                                step="50"
+                                bind:value={chunkWordLimit}
+                                data-testid="chunk-words-input"
                             />
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="output-md-path">Output Summary Destination (.md or .txt)</label>
-                        <div class="input-with-button">
+                        <label for="temperature-input">
+                            Temperature: <strong>{temperature}</strong>
+                            <span class="help-text">(Deterministic inference ≤ 0.3 recommended)</span>
+                        </label>
+                        <div class="range-with-number">
                             <input
-                                id="output-md-path"
-                                type="text"
-                                placeholder="/path/to/document_summary.md"
-                                bind:value={outputPath}
-                                data-testid="output-path"
+                                id="temperature-range"
+                                type="range"
+                                min="0.0"
+                                max="1.0"
+                                step="0.05"
+                                bind:value={temperature}
+                                data-testid="temperature-slider"
+                            />
+                            <input
+                                id="temperature-input"
+                                type="number"
+                                min="0.0"
+                                max="1.0"
+                                step="0.05"
+                                bind:value={temperature}
+                                data-testid="temperature-input"
                             />
                         </div>
                     </div>
                 </div>
             </div>
+        {/if}
 
-            {#if errorMessage}
-                <div class="status-box error" role="alert" data-testid="error-message">
-                    <span class="status-icon">⚠️</span>
-                    <span>{errorMessage}</span>
+        <div class="panel-section">
+            <h2>{activeMode === 'llm' ? '3. File Selection' : '2. File Selection'}</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="input-pdf-path">Input PDF Document</label>
+                    <div class="input-with-button">
+                        <input
+                            id="input-pdf-path"
+                            type="text"
+                            placeholder="/path/to/document.pdf"
+                            value={inputPath}
+                            oninput={(e) => handleInputChange(e.currentTarget.value)}
+                            data-testid="input-path"
+                        />
+                    </div>
                 </div>
-            {/if}
 
-            {#if submissionStatus}
-                <div class="status-box success" role="status" data-testid="submission-status">
-                    <span class="status-icon">✅</span>
-                    <span>{submissionStatus}</span>
+                <div class="form-group">
+                    <label for="output-md-path">Output Summary Destination (.md or .txt)</label>
+                    <div class="input-with-button">
+                        <input
+                            id="output-md-path"
+                            type="text"
+                            placeholder="/path/to/document_summary.md"
+                            bind:value={outputPath}
+                            data-testid="output-path"
+                        />
+                    </div>
                 </div>
-            {/if}
-
-            <div class="panel-actions">
-                <button
-                    type="button"
-                    id="btn-generate-summary"
-                    class="primary-btn"
-                    disabled={isSubmitting}
-                    onclick={handleGenerateSummary}
-                    data-testid="generate-summary-btn"
-                >
-                    {#if isSubmitting}
-                        <span class="spinner"></span>
-                        Queueing Summary Job...
-                    {:else}
-                        <span>✨ Generate Extractive Summary</span>
-                    {/if}
-                </button>
             </div>
-        </section>
-    {/if}
+        </div>
+
+        {#if errorMessage}
+            <div class="status-box error" role="alert" data-testid="error-message">
+                <span class="status-icon">⚠️</span>
+                <span>{errorMessage}</span>
+            </div>
+        {/if}
+
+        {#if submissionStatus}
+            <div class="status-box success" role="status" data-testid="submission-status">
+                <span class="status-icon">✅</span>
+                <span>{submissionStatus}</span>
+            </div>
+        {/if}
+
+        <div class="panel-actions">
+            <button
+                type="button"
+                id="btn-generate-summary"
+                class="primary-btn"
+                disabled={isSubmitting}
+                onclick={handleGenerateSummary}
+                data-testid="generate-summary-btn"
+            >
+                {#if isSubmitting}
+                    <span class="spinner"></span>
+                    Queueing Summary Job...
+                {:else if activeMode === 'llm'}
+                    <span>🧠 Generate Map-Reduce Summary</span>
+                {:else}
+                    <span>✨ Generate Extractive Summary</span>
+                {/if}
+            </button>
+        </div>
+    </section>
 </div>
 
 <style>
@@ -579,6 +682,41 @@
         font-size: 0.88rem;
         font-weight: 500;
         color: #bac2de;
+    }
+
+    .help-text {
+        font-size: 0.78rem;
+        color: #9399b2;
+        font-weight: normal;
+        margin-left: 0.4rem;
+    }
+
+    .range-with-number {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .range-with-number input[type="range"] {
+        flex: 1;
+        accent-color: #cba6f7;
+        cursor: pointer;
+    }
+
+    .range-with-number input[type="number"] {
+        width: 90px;
+        background-color: #252538;
+        border: 1px solid #313244;
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        color: #cdd6f4;
+        font-size: 0.9rem;
+        text-align: right;
+    }
+
+    .range-with-number input[type="number"]:focus {
+        border-color: #cba6f7;
+        outline: none;
     }
 
     .input-with-button input {

@@ -3172,6 +3172,7 @@ dependencies = [
 name = "lpdf-engine-pdfcraft"
 version = "0.1.0"
 dependencies = [
+ "lpdf-ai-worker",
  "lpdf-core-types",
  "lpdf-engine-port",
  "lpdf-fs-safety",

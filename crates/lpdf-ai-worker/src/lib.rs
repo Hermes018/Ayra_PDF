@@ -1,22 +1,12 @@
 #![forbid(unsafe_code)]
 
+pub use lpdf_core_types::AiModelManifest;
 use lpdf_core_types::{compute_sha256_hex, inspect_ai_model, AiModelInfo};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
-
-/// Manifest describing a verified local AI model with licensing terms.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ts_rs::TS)]
-#[ts(export, export_to = "../../../app-tauri/src/lib/bindings/")]
-pub struct AiModelManifest {
-    pub model_path: PathBuf,
-    pub sha256_hex: String,
-    pub format: String,
-    pub license_spdx: String,
-    pub license_acknowledged: bool,
-}
 
 /// Request payloads sent to the `lpdf-ai-worker` process or session bridge.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ts_rs::TS)]
