@@ -1,7 +1,9 @@
 #![forbid(unsafe_code)]
 
 use lpdf_core_types::{LpdfError, Result};
-use lpdf_engine_port::MarkdownDocFormat;
+use lpdf_engine_port::{
+    MarkdownBatchOptions, MarkdownBatchReport, MarkdownBatchTarget, MarkdownDocFormat,
+};
 use std::path::{Path, PathBuf};
 
 /// Failsafe F22: Resolves the target-triple Pandoc sidecar binary name.
@@ -532,4 +534,454 @@ pub fn convert_doc_to_markdown(
     let _ = std::fs::remove_dir_all(&temp_dir);
 
     Ok(target_file)
+}
+
+/// Generates a standard UTC timestamp string in RFC3339 format without external dependencies.
+pub fn current_timestamp_str() -> String {
+    let now = std::time::SystemTime::now();
+    let duration = now
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default();
+    let total_secs = duration.as_secs();
+
+    let z = (total_secs / 86400) as i64 + 719468;
+    let era = (if z >= 0 { z } else { z - 146096 }) / 146097;
+    let doe = (z - era * 146097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+
+    let day_secs = total_secs % 86400;
+    let hours = day_secs / 3600;
+    let minutes = (day_secs % 3600) / 60;
+    let seconds = day_secs % 60;
+
+    format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+        y, m, d, hours, minutes, seconds
+    )
+}
+
+/// Extracts YAML front-matter block if present.
+/// Returns (Some(front_matter_str), remaining_body).
+pub fn parse_yaml_front_matter(content: &str) -> (Option<&str>, &str) {
+    if !content.starts_with("---") {
+        return (None, content);
+    }
+
+    let after_dashes = &content[3..];
+    if !after_dashes.starts_with('\n') && !after_dashes.starts_with("\r\n") {
+        return (None, content);
+    }
+
+    let close_delims = ["\n---\n", "\r\n---\r\n", "\n...\n", "\r\n...\r\n"];
+    for delim in &close_delims {
+        if let Some(pos) = after_dashes.find(delim) {
+            let fm_end = 3 + pos + delim.len();
+            let fm = &content[..fm_end];
+            let body = &content[fm_end..];
+            return (Some(fm), body);
+        }
+    }
+
+    if after_dashes.ends_with("\n---") || after_dashes.ends_with("\r\n---") {
+        return (Some(content), "");
+    }
+
+    (None, content)
+}
+
+/// Generates a YAML front-matter block.
+pub fn generate_yaml_front_matter(title: &str, source: &str, timestamp: &str) -> String {
+    format!(
+        "---\ntitle: \"{}\"\nsource: \"{}\"\ndate: \"{}\"\ngenerator: \"LocalPDF Studio\"\n---\n\n",
+        title.replace('"', "\\\""),
+        source.replace('"', "\\\""),
+        timestamp
+    )
+}
+
+/// Injects or preserves YAML front-matter in markdown content.
+pub fn inject_or_preserve_yaml_front_matter(
+    content: &str,
+    title: &str,
+    source: &str,
+    timestamp: &str,
+    preserve_existing: bool,
+) -> String {
+    let (existing, body) = parse_yaml_front_matter(content);
+    if preserve_existing && existing.is_some() {
+        return content.to_string();
+    }
+
+    let mut result = generate_yaml_front_matter(title, source, timestamp);
+    result.push_str(body.trim_start_matches(['\r', '\n']));
+    result
+}
+
+/// Deterministically rewrites image links in Markdown or HTML so local/extracted images point to `assets/<filename>`.
+pub fn rewrite_markdown_asset_links(content: &str) -> String {
+    let image_extensions = [
+        ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp", ".tiff",
+    ];
+
+    let mut output = String::with_capacity(content.len());
+    let mut rest = content;
+
+    while !rest.is_empty() {
+        let md_img_pos = rest.find("![");
+        let html_img_pos = rest.find("<img");
+
+        let next_tag = match (md_img_pos, html_img_pos) {
+            (Some(m), Some(h)) => {
+                if m <= h {
+                    Some((m, true))
+                } else {
+                    Some((h, false))
+                }
+            }
+            (Some(m), None) => Some((m, true)),
+            (None, Some(h)) => Some((h, false)),
+            (None, None) => None,
+        };
+
+        match next_tag {
+            None => {
+                output.push_str(rest);
+                break;
+            }
+            Some((pos, is_md)) => {
+                output.push_str(&rest[..pos]);
+                rest = &rest[pos..];
+
+                if is_md {
+                    let mut matched = false;
+                    if let Some(close_bracket) = rest.find("](") {
+                        let link_start = close_bracket + 2;
+                        if let Some(close_paren) = rest[link_start..].find(')') {
+                            let link_content = &rest[link_start..link_start + close_paren];
+                            let mut parts = link_content.split_whitespace();
+                            if let Some(url) = parts.next() {
+                                let url_lower = url.to_ascii_lowercase();
+                                let is_image =
+                                    image_extensions.iter().any(|ext| url_lower.ends_with(ext));
+                                if is_image
+                                    && !url.starts_with("http://")
+                                    && !url.starts_with("https://")
+                                    && !url.starts_with("data:")
+                                {
+                                    let filename = Path::new(url)
+                                        .file_name()
+                                        .and_then(|s| s.to_str())
+                                        .unwrap_or(url);
+                                    let new_url = format!("assets/{}", filename);
+                                    let remainder = &link_content[url.len()..];
+
+                                    output.push_str(&rest[..link_start]);
+                                    output.push_str(&new_url);
+                                    output.push_str(remainder);
+                                    output.push(')');
+                                    rest = &rest[link_start + close_paren + 1..];
+                                    matched = true;
+                                }
+                            }
+                        }
+                    }
+                    if !matched {
+                        output.push_str("![");
+                        rest = &rest[2..];
+                    }
+                } else {
+                    let mut matched = false;
+                    if let Some(close_gt) = rest.find('>') {
+                        let tag_slice = &rest[..=close_gt];
+                        if let Some(src_pos) = tag_slice.find("src=\"") {
+                            let val_start = src_pos + 5;
+                            if let Some(val_end) = tag_slice[val_start..].find('"') {
+                                let src_val = &tag_slice[val_start..val_start + val_end];
+                                let src_lower = src_val.to_ascii_lowercase();
+                                let is_image =
+                                    image_extensions.iter().any(|ext| src_lower.ends_with(ext));
+                                if is_image
+                                    && !src_val.starts_with("http://")
+                                    && !src_val.starts_with("https://")
+                                    && !src_val.starts_with("data:")
+                                {
+                                    let filename = Path::new(src_val)
+                                        .file_name()
+                                        .and_then(|s| s.to_str())
+                                        .unwrap_or(src_val);
+                                    let new_src = format!("assets/{}", filename);
+
+                                    output.push_str(&tag_slice[..val_start]);
+                                    output.push_str(&new_src);
+                                    output.push_str(&tag_slice[val_start + val_end..]);
+                                    rest = &rest[close_gt + 1..];
+                                    matched = true;
+                                }
+                            }
+                        }
+                    }
+                    if !matched {
+                        output.push_str("<img");
+                        rest = &rest[4..];
+                    }
+                }
+            }
+        }
+    }
+
+    output
+}
+
+/// Performs batch folder conversion across Markdown, PDF, DOCX, and HTML documents.
+pub fn batch_convert_markdown<H, I, P>(
+    input_dir: &Path,
+    output_dir: &Path,
+    options: MarkdownBatchOptions,
+    custom_binary: Option<&Path>,
+    html_extractor: H,
+    image_extractor: I,
+    pdf_converter: P,
+) -> Result<MarkdownBatchReport>
+where
+    H: Fn(&Path, &Path) -> Result<()>,
+    I: Fn(&Path, &Path) -> Result<()>,
+    P: Fn(&Path, &Path) -> Result<()>,
+{
+    if !input_dir.exists() {
+        return Err(LpdfError::InvalidInput(format!(
+            "Input directory '{}' does not exist",
+            input_dir.display()
+        )));
+    }
+    if !input_dir.is_dir() {
+        return Err(LpdfError::InvalidInput(format!(
+            "Input path '{}' is not a directory",
+            input_dir.display()
+        )));
+    }
+
+    let canonical_input = input_dir.canonicalize().map_err(LpdfError::Io)?;
+    std::fs::create_dir_all(output_dir).map_err(LpdfError::Io)?;
+
+    let assets_out_dir = output_dir.join("assets");
+    let _ = std::fs::create_dir_all(&assets_out_dir);
+
+    // If input directory has an assets folder, copy its contents over
+    let assets_in_dir = canonical_input.join("assets");
+    if assets_in_dir.exists() && assets_in_dir.is_dir() {
+        if let Ok(entries) = std::fs::read_dir(&assets_in_dir) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if p.is_file() {
+                    if let Some(name) = p.file_name() {
+                        let _ = std::fs::copy(&p, assets_out_dir.join(name));
+                    }
+                }
+            }
+        }
+    }
+
+    // Read entries from input_dir (non-recursive to respect F17 path safety)
+    let read_entries = std::fs::read_dir(&canonical_input).map_err(LpdfError::Io)?;
+    let mut candidate_files: Vec<PathBuf> = Vec::new();
+
+    for entry in read_entries.flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+
+        let ext = path
+            .extension()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+
+        let matches = match options.target {
+            MarkdownBatchTarget::Markdown => {
+                matches!(ext.as_str(), "pdf" | "docx" | "html" | "htm")
+            }
+            MarkdownBatchTarget::Pdf | MarkdownBatchTarget::Docx | MarkdownBatchTarget::Html => {
+                matches!(ext.as_str(), "md" | "markdown")
+            }
+        };
+
+        if matches {
+            candidate_files.push(path);
+        }
+    }
+
+    candidate_files.sort();
+
+    let total_files = candidate_files.len();
+    let mut converted_files = 0;
+    let mut failed_files = 0;
+    let mut output_files = Vec::new();
+    let mut errors = Vec::new();
+
+    let timestamp = current_timestamp_str();
+
+    for file in &candidate_files {
+        let file_stem = file
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("document");
+        let safe_stem = lpdf_fs_safety::sanitize_filename(file_stem);
+        let file_name_str = file.file_name().and_then(|s| s.to_str()).unwrap_or("file");
+
+        let target_file_path = match options.target {
+            MarkdownBatchTarget::Markdown => output_dir.join(format!("{}.md", safe_stem)),
+            MarkdownBatchTarget::Pdf => output_dir.join(format!("{}.pdf", safe_stem)),
+            MarkdownBatchTarget::Docx => output_dir.join(format!("{}.docx", safe_stem)),
+            MarkdownBatchTarget::Html => output_dir.join(format!("{}.html", safe_stem)),
+        };
+
+        let result: Result<PathBuf> = match options.target {
+            MarkdownBatchTarget::Markdown => {
+                let ext = file
+                    .extension()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("")
+                    .to_ascii_lowercase();
+
+                let conv_res = if ext == "pdf" {
+                    convert_pdf_to_markdown(
+                        file,
+                        &target_file_path,
+                        custom_binary,
+                        &html_extractor,
+                        &image_extractor,
+                    )
+                } else if ext == "docx" {
+                    convert_doc_to_markdown(
+                        file,
+                        MarkdownDocFormat::Docx,
+                        &target_file_path,
+                        custom_binary,
+                    )
+                } else {
+                    convert_doc_to_markdown(
+                        file,
+                        MarkdownDocFormat::Html,
+                        &target_file_path,
+                        custom_binary,
+                    )
+                };
+
+                match conv_res {
+                    Ok(out_p) => {
+                        if options.inject_front_matter || options.rewrite_assets {
+                            if let Ok(content) = std::fs::read_to_string(&out_p) {
+                                let mut updated = content;
+                                if options.rewrite_assets {
+                                    updated = rewrite_markdown_asset_links(&updated);
+                                }
+                                if options.inject_front_matter {
+                                    updated = inject_or_preserve_yaml_front_matter(
+                                        &updated,
+                                        file_stem,
+                                        file_name_str,
+                                        &timestamp,
+                                        options.preserve_front_matter,
+                                    );
+                                }
+                                let _ = lpdf_fs_safety::atomic_write(&out_p, updated.as_bytes());
+                            }
+                        }
+                        Ok(out_p)
+                    }
+                    Err(e) => Err(e),
+                }
+            }
+            MarkdownBatchTarget::Pdf => {
+                if options.rewrite_assets || options.inject_front_matter {
+                    if let Ok(content) = std::fs::read_to_string(file) {
+                        let mut updated = content;
+                        if options.rewrite_assets {
+                            updated = rewrite_markdown_asset_links(&updated);
+                        }
+                        if options.inject_front_matter {
+                            updated = inject_or_preserve_yaml_front_matter(
+                                &updated,
+                                file_stem,
+                                file_name_str,
+                                &timestamp,
+                                options.preserve_front_matter,
+                            );
+                        }
+                        let unique_id =
+                            format!("{}_{}", std::process::id(), lpdf_fs_safety::uuid_simple());
+                        let temp_dir =
+                            std::env::temp_dir().join(format!("lpdf_batch_md_{}", unique_id));
+                        let _ = std::fs::create_dir_all(&temp_dir);
+                        let temp_md = temp_dir.join(format!("{}.md", safe_stem));
+                        let write_res = std::fs::write(&temp_md, updated.as_bytes());
+                        let res = if write_res.is_ok() {
+                            convert_markdown_to_pdf(
+                                &temp_md,
+                                &target_file_path,
+                                custom_binary,
+                                &pdf_converter,
+                            )
+                        } else {
+                            convert_markdown_to_pdf(
+                                file,
+                                &target_file_path,
+                                custom_binary,
+                                &pdf_converter,
+                            )
+                        };
+                        let _ = std::fs::remove_dir_all(&temp_dir);
+                        res
+                    } else {
+                        convert_markdown_to_pdf(
+                            file,
+                            &target_file_path,
+                            custom_binary,
+                            &pdf_converter,
+                        )
+                    }
+                } else {
+                    convert_markdown_to_pdf(file, &target_file_path, custom_binary, &pdf_converter)
+                }
+            }
+            MarkdownBatchTarget::Docx => convert_markdown_to_doc(
+                file,
+                MarkdownDocFormat::Docx,
+                &target_file_path,
+                custom_binary,
+            ),
+            MarkdownBatchTarget::Html => convert_markdown_to_doc(
+                file,
+                MarkdownDocFormat::Html,
+                &target_file_path,
+                custom_binary,
+            ),
+        };
+
+        match result {
+            Ok(p) => {
+                converted_files += 1;
+                output_files.push(p);
+            }
+            Err(e) => {
+                failed_files += 1;
+                errors.push(format!("{}: {}", file_name_str, e));
+            }
+        }
+    }
+
+    Ok(MarkdownBatchReport {
+        total_files,
+        converted_files,
+        failed_files,
+        output_files,
+        errors,
+    })
 }

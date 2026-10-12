@@ -12,6 +12,7 @@
         | 'PdfToExcelSidecar'
         | 'PdfToPowerPointSidecar'
         | 'PdfToMarkdown'
+        | 'BatchMarkdownConvert'
         | 'PdfToPdfA'
         | 'PdfToImages'
         | 'ExtractAllImages'
@@ -25,6 +26,10 @@
     let statusMessage = $state<string | null>(null);
     let isSubmitting = $state<boolean>(false);
     let lastJobId = $state<string | null>(null);
+
+    let batchInjectFrontMatter = $state<boolean>(true);
+    let batchPreserveFrontMatter = $state<boolean>(true);
+    let batchRewriteAssets = $state<boolean>(true);
 
     const formatDetails = [
         {
@@ -66,6 +71,14 @@
             icon: '📘',
             desc: 'Extracts reading layout to Markdown via Pandoc and extracts all embedded images to assets/.',
             badge: 'Sidecar Markdown'
+        },
+        {
+            id: 'BatchMarkdownConvert' as const,
+            title: 'Batch Folder to Markdown (.md)',
+            ext: '_markdown_batch',
+            icon: '📁',
+            desc: 'Batch converts all documents in a folder to clean Markdown with assets/ extraction and YAML front-matter.',
+            badge: 'Batch Folder'
         },
         {
             id: 'PdfToPdfA' as const,
@@ -178,6 +191,18 @@
                 op: 'PdfToMarkdown',
                 input_path: currentPath,
                 output_path: out
+            };
+        } else if (selectedFormat === 'BatchMarkdownConvert') {
+            req = {
+                op: 'BatchMarkdownConvert',
+                input_dir: currentPath,
+                output_dir: out,
+                options: {
+                    target: 'Markdown',
+                    inject_front_matter: batchInjectFrontMatter,
+                    preserve_front_matter: batchPreserveFrontMatter,
+                    rewrite_assets: batchRewriteAssets
+                }
             };
         } else {
             req = {
@@ -293,6 +318,26 @@
                                 </div>
                                 <span class="radio-desc">ISO 19005-1. Legacy baseline format based on PDF 1.4 (forbids transparency and JPEG2000).</span>
                             </div>
+                        </label>
+                    </div>
+                </div>
+            {/if}
+
+            {#if selectedFormat === 'BatchMarkdownConvert'}
+                <div class="section-card options-card">
+                    <span class="card-title">Batch Markdown Settings</span>
+                    <div class="batch-settings">
+                        <label class="checkbox-label">
+                            <input type="checkbox" bind:checked={batchInjectFrontMatter} />
+                            <span>Inject YAML front-matter (title, source, timestamp)</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" bind:checked={batchPreserveFrontMatter} />
+                            <span>Preserve existing YAML front-matter</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" bind:checked={batchRewriteAssets} />
+                            <span>Extract images and rewrite links to assets/</span>
                         </label>
                     </div>
                 </div>

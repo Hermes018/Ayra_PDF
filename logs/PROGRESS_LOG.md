@@ -579,4 +579,28 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/pandoc_tests.rs` (7 tests), `app-tauri/src/lib/views/__tests__/ConvertToPdfView.test.ts` (3 tests added, 9 run), `app-tauri/src/lib/views/__tests__/ConvertFromPdfView.test.ts` (1 test added, 11 run; total vitest 22/22).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-12 16:40] Phase 9.4 — Advanced Convert (Markdown Batch Folder Conversion, Front-Matter, Link/Asset Rewriting, and CLI `localpdf md ...`)
+- **Status:** Complete (Tag: phase-9.4-green)
+- **Work:**
+  - Defined `MarkdownBatchTarget`, `MarkdownBatchOptions`, and `MarkdownBatchReport` in `lpdf-engine-port` with `serde` and `ts-rs` exports.
+  - Added `batch_markdown_convert(input_dir, output_dir, options: MarkdownBatchOptions) -> Result<MarkdownBatchReport>` to the `PdfEngine` trait across `PdfcraftAdapter`, `FallbackAdapter`, and `EngineSwitcher`.
+  - Extended `crates/lpdf-engine-pdfcraft/src/pandoc_sidecar.rs`:
+    - Batch folder traversal respecting F17 (single directory level to avoid symlink directory escapes) using `lpdf-fs-safety`.
+    - Generating, parsing, and injecting YAML front-matter blocks (`---` title, source, timestamp, generator).
+    - Deterministic link and asset path rewriting mapping all local and extracted media references (`![...](...)` and `<img src="...">`) to relative `assets/<filename>`.
+    - Implemented `batch_convert_markdown` supporting batch targets `Pdf`, `Docx`, `Html`, and `Markdown` with atomic commits.
+  - Extended `crates/lpdf-engine-pdfcraft/tests/pandoc_tests.rs` with integration tests verifying front-matter parsing and injection, asset link rewriting, mock batch directory conversions, and adapter integration (11 tests in suite).
+  - Built standalone CLI entrypoint in `crates/lpdf-cli`:
+    - Configured `localpdf` binary target in `Cargo.toml`.
+    - Implemented `localpdf md` subcommands: `to-pdf`, `from-pdf`, `to-doc`, `from-doc`, `batch`.
+    - Handled help flags (`--help`, `md --help`) and error reporting.
+    - Added comprehensive integration test suite `crates/lpdf-cli/tests/cli_tests.rs` (7 tests).
+  - Added `BatchMarkdownConvert` variant to `JobRequest` in `lpdf-jobs` with typed progress events and regenerated TypeScript bindings (`JobRequest.ts`, `MarkdownBatchOptions.ts`, `MarkdownBatchTarget.ts`, `MarkdownBatchReport.ts`).
+  - Added Batch Markdown Folder Conversion panels, settings, and IPC dispatch in `ConvertToPdfView.svelte` and `ConvertFromPdfView.svelte`.
+  - Added tests in `ConvertToPdfView.test.ts` and `ConvertFromPdfView.test.ts` (vitest 24/24 green).
+- **Gate:** pass (`cargo xtask gate` green: fmt, clippy, nextest 72/72, cargo-deny, cargo-audit, protocol-lint; `pnpm check` clean; `pnpm vitest run` 24/24 green).
+- **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/pandoc_tests.rs` (4 tests added, 11 run), `crates/lpdf-cli/tests/cli_tests.rs` (7 tests), `app-tauri/src/lib/views/__tests__/ConvertToPdfView.test.ts` (1 test added, 10 run), `app-tauri/src/lib/views/__tests__/ConvertFromPdfView.test.ts` (1 test added, 12 run; total vitest 24/24).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 

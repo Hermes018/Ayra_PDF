@@ -5,8 +5,9 @@
 
 use lpdf_core_types::{LpdfError, Result};
 use lpdf_engine_port::{
-    MarkdownDocFormat, OfficeInputFormat, OfficeOutputFormat, PdfAConformance, PdfAPreflightReport,
-    PdfEngine, PdfInfo, RedactionRegion, RenderOptions,
+    MarkdownBatchOptions, MarkdownBatchReport, MarkdownDocFormat, OfficeInputFormat,
+    OfficeOutputFormat, PdfAConformance, PdfAPreflightReport, PdfEngine, PdfInfo, RedactionRegion,
+    RenderOptions,
 };
 use std::path::{Path, PathBuf};
 
@@ -334,5 +335,15 @@ impl PdfEngine for EngineSwitcher {
     ) -> Result<std::path::PathBuf> {
         self.primary
             .doc_to_markdown(input_path, format, output_path)
+    }
+
+    fn batch_markdown_convert(
+        &self,
+        input_dir: &Path,
+        output_dir: &Path,
+        options: MarkdownBatchOptions,
+    ) -> Result<MarkdownBatchReport> {
+        self.primary
+            .batch_markdown_convert(input_dir, output_dir, options)
     }
 }

@@ -5,5 +5,14 @@ version.workspace = true
 authors.workspace = true
 rust-version.workspace = true
 license.workspace = true
+[[bin]]
+name = "localpdf"
+path = "src/main.rs"
 
 [dependencies]
+lpdf-core-types = { path = "../lpdf-core-types" }
+lpdf-engine-port = { path = "../lpdf-engine-port" }
+lpdf-engine-pdfcraft = { path = "../lpdf-engine-pdfcraft" }
+lpdf-engine-fallback = { path = "../lpdf-engine-fallback" }
+lpdf-engine-switcher = { path = "../lpdf-engine-switcher" }
+lpdf-fs-safety = { path = "../lpdf-fs-safety" }

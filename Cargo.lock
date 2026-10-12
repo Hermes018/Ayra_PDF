@@ -3124,6 +3124,14 @@ dependencies = [
 [[package]]
 name = "lpdf-cli"
 version = "0.1.0"
+dependencies = [
+ "lpdf-core-types",
+ "lpdf-engine-fallback",
+ "lpdf-engine-pdfcraft",
+ "lpdf-engine-port",
+ "lpdf-engine-switcher",
+ "lpdf-fs-safety",
+]
 
 [[package]]
 name = "lpdf-core-types"
