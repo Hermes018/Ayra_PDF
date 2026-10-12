@@ -602,5 +602,31 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-engine-pdfcraft/tests/pandoc_tests.rs` (4 tests added, 11 run), `crates/lpdf-cli/tests/cli_tests.rs` (7 tests), `app-tauri/src/lib/views/__tests__/ConvertToPdfView.test.ts` (1 test added, 10 run), `app-tauri/src/lib/views/__tests__/ConvertFromPdfView.test.ts` (1 test added, 12 run; total vitest 24/24).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-12 17:05] Phase 10.1 — Batch Queue UI
+- **Status:** Complete (Tag: phase-10.1-green)
+- **Work:**
+  - Extended `JobManager` in `crates/lpdf-jobs`:
+    - Defined `JobPriority` (`Low`, `Normal`, `High`, `Urgent`) with `Default` and `ts-rs` export.
+    - Defined `JobRecord` (`job_id`, `title`, `status`, `progress`, `priority`, `input_path`, `output_path`, `error_code`, `error_message`, `created_at_epoch_ms`, `request`) with `ts-rs` export.
+    - Added `JobRequest::summary(&self) -> (String, Option<String>, Option<String>)` mapping all operations to human-readable titles and input/output paths.
+    - Implemented `submit_with_priority`, `submit_batch`, `list_jobs` (sorted newest first), `cancel_job`, `clear_finished_jobs`, `retry_job` (re-enqueuing failed/cancelled jobs), and in-memory progress tracking proxy.
+    - Re-exported `JobPriority` and `JobRecord` from `crates/lpdf-jobs/src/lib.rs`.
+    - Added backend tests in `crates/lpdf-jobs/tests/queue_tests.rs` (3 tests covering batch submit & list, cancellation, clear finished, and retry).
+  - Exposed typed Tauri commands in `app-tauri/src-tauri/src/lib.rs`:
+    - `submit_batch`, `list_jobs`, `clear_finished_jobs`, `retry_job`, and wired into `generate_handler!`.
+  - Updated `IpcClient` in `app-tauri/src/lib/ipc.ts`:
+    - Added typed wrappers `submitBatch`, `listJobs`, `clearFinishedJobs`, and `retryJob`.
+  - Built frontend `BatchQueueView.svelte` using Svelte 5 runes (`$state`, `$derived`):
+    - Summary metrics counters (Running, Queued, Completed, Failed).
+    - Status filtering tabs (`All`, `Active`, `Completed`, `Failed`).
+    - Bulk action controls: "Submit Batch Demo / Add Files", "Clear Finished", and "Cancel All Active".
+    - Rich per-job cards with operation badge, priority pill, file paths, dynamic progress bar (0-100%), failure diagnostics box with error code/message, cancel button for active jobs, and retry button for failed/cancelled jobs.
+    - Wired `BatchQueueView.svelte` into `Sidebar.svelte` and `+page.svelte`.
+  - Added frontend test suite in `app-tauri/src/lib/views/__tests__/BatchQueueView.test.ts` (6 tests covering header counts, status filtering, cancel dispatch, retry dispatch, clear finished, and batch submit).
+- **Gate:** pass (`cargo xtask gate` green: fmt, clippy, nextest 75/75, cargo-deny, cargo-audit, protocol-lint; `pnpm check` clean; `pnpm vitest run` 30/30 green).
+- **Tests added/run:** `crates/lpdf-jobs/tests/queue_tests.rs` (3 tests), `app-tauri/src/lib/views/__tests__/BatchQueueView.test.ts` (6 tests added; total vitest 30/30).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 

@@ -1,6 +1,6 @@
 use directories::ProjectDirs;
 use lpdf_jobs::events::job_event_channel;
-use lpdf_jobs::queue::{JobManager, JobRequest};
+use lpdf_jobs::queue::{JobManager, JobPriority, JobRecord, JobRequest, JobStatus};
 use std::sync::Arc;
 use tauri::Emitter;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
@@ -17,6 +17,16 @@ fn submit_job(state: tauri::State<'_, AppState>, request: JobRequest) -> String 
     state.job_manager.submit(request)
 }
 
+/// Submit a batch of jobs at once.
+#[tauri::command]
+fn submit_batch(
+    state: tauri::State<'_, AppState>,
+    requests: Vec<JobRequest>,
+    priority: Option<JobPriority>,
+) -> Vec<String> {
+    state.job_manager.submit_batch(requests, priority)
+}
+
 /// Cancel a running or queued job by ID.
 #[tauri::command]
 fn cancel_job(state: tauri::State<'_, AppState>, job_id: String) -> bool {
@@ -25,11 +35,29 @@ fn cancel_job(state: tauri::State<'_, AppState>, job_id: String) -> bool {
 
 /// Query the current status of a job by ID.
 #[tauri::command]
-fn get_job_status(
-    state: tauri::State<'_, AppState>,
-    job_id: String,
-) -> Option<lpdf_jobs::queue::JobStatus> {
+fn get_job_status(state: tauri::State<'_, AppState>, job_id: String) -> Option<JobStatus> {
     state.job_manager.status(&job_id)
+}
+
+/// List all jobs currently tracked in the queue.
+#[tauri::command]
+fn list_jobs(state: tauri::State<'_, AppState>) -> Vec<JobRecord> {
+    state.job_manager.list_jobs()
+}
+
+/// Clear finished (completed, failed, cancelled) jobs from memory.
+#[tauri::command]
+fn clear_finished_jobs(state: tauri::State<'_, AppState>) -> usize {
+    state.job_manager.clear_finished_jobs()
+}
+
+/// Re-enqueue a failed or cancelled job.
+#[tauri::command]
+fn retry_job(state: tauri::State<'_, AppState>, job_id: String) -> Result<String, String> {
+    state
+        .job_manager
+        .retry_job(&job_id)
+        .map_err(|e| e.to_string())
 }
 
 /// Read file bytes into frontend memory for PdfViewer.
@@ -79,8 +107,12 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             submit_job,
+            submit_batch,
             cancel_job,
             get_job_status,
+            list_jobs,
+            clear_finished_jobs,
+            retry_job,
             read_file_bytes
         ])
         .setup(|app| {
