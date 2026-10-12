@@ -5,8 +5,8 @@
 - standard-form.pdf (sha256: 92444d8856ce55d9e25dca8b6d1420634fc68b11e1ab1f760916ea29ddd312b2): A PDF with form fields.
 
 ## Hostile / Edge-cases
-- hostile-bombs.pdf: (To be added) A zip bomb or extremely complex vector PDF.
-- hostile-broken-xref.pdf: (To be added) A PDF with a manually corrupted cross-reference table.
+- hostile-bombs.pdf (sha256: 90acddd99a49aec681be616a1ba3c7f470db1ab0b95b3d9290cdecf1568c1d78): A decompression/flate bomb with declared length mismatch.
+- hostile-broken-xref.pdf (sha256: 9e6a9015489803807ef3b3f2ca6cca2b0c94dc509feb742aa257e21905fd3cd0): A PDF with a manually corrupted cross-reference table and looping /Prev pointers.
 
 ## Synthetic files
 - synthetic-1k.pdf (sha256: a45efb448a911e4edf765c15eb779ee1958f0dd9da18e218e40e977bf48b74d4): A 1,000-page PDF generated via qpdf by duplicating pages.

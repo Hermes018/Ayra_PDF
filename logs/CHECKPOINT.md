@@ -1,9 +1,9 @@
 # CHECKPOINT (OVERWRITE this file; single source of "where am I")
 - Date: 2026-10-13
-- Phase / sub-phase: 11.2 Hostile-file suite
-- Last green tag: phase-11.1-green
+- Phase / sub-phase: 11.3 Perf/memory profiling per tier (systemd-run -p MemoryMax=2G -p CPUQuota=200%)
+- Last green tag: phase-11.2-green
 - In progress: None
-- Open risks: Decompression bombs and cyclic object graphs causing resource exhaustion (Failsafe F4). Hostile broken xref structures requiring graceful error recovery. Rendering performance on >1000 pages for the grid editor might require IntersectionObserver virtualization.
-- Next 3 actions: 1) Generate and integrate hostile corpus test cases (zip/decompression bombs, deep trees, cyclic references, corrupted xrefs) in corpus/ 2) Add resource guard caps (object count, recursion depth, render timeout) in PdfEngine adapters 3) Validate crash isolation under cgroup memory bounds with zero unhandled panics
+- Open risks: Memory spikes on large rasterized render passes across low tiers (ADR-002). Rendering performance on >1000 pages for the grid editor might require IntersectionObserver virtualization.
+- Next 3 actions: 1) Implement automated benchmark harness for memory consumption per hardware tier (Tier 1..3) under systemd-run MemoryMax=2G 2) Verify memory budget compliance and CPU quotas on 1k-page synthetic files 3) Integrate automated budget regression thresholds (>10% regression fails CI)
 - Active ADRs: 001-010, 004 (Local LLM Architecture & Candle Selection), 005 (Native Feature Expansion), 006 (Document Reconstruction Reality Check)
 - Pinned pdfcraft commit: dc4b3eee84f73bad8564906c141bdda9caad0fd6

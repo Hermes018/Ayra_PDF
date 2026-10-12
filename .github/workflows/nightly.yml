@@ -31,9 +31,10 @@ jobs:
           chmod +x corpus/fetch.sh
           ./corpus/fetch.sh
 
-      - name: Run deterministic adapter fuzz smoke tests
+      - name: Run deterministic adapter fuzz & hostile-file suite
         run: |
           cargo xtask fuzz
+          cargo xtask hostile
 
       - name: Verify cargo-fuzz target definitions
         run: |

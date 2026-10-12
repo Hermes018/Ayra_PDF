@@ -13,6 +13,7 @@ use lpdf_engine_port::{
 use std::path::{Path, PathBuf};
 
 pub mod fuzz;
+pub mod hostile;
 
 /// Tracks which engine is active after a load attempt.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
