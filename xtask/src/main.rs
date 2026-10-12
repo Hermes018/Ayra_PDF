@@ -16,6 +16,7 @@ fn main() {
         "test-offline" => run_test_offline(),
         "fuzz" | "hostile" => run_fuzz(&args[2..]),
         "perf-check" => run_perf_check(),
+        "sbom" => run_sbom(),
         _ => {
             eprintln!("Unknown command: {}", args[1]);
             exit(1);
@@ -223,4 +224,29 @@ fn run_perf_check() {
         exit(1);
     }
     println!("Perf & memory profiling regression check passed green!");
+}
+
+fn run_sbom() {
+    println!("Generating CycloneDX 1.5 SBOM and verifying supply chain invariants...");
+    let status = Command::new("cargo")
+        .args([
+            "test",
+            "-p",
+            "lpdf-engine-switcher",
+            "--test",
+            "fuzz_smoke_tests",
+            "--",
+            "test_cyclonedx_sbom_generation",
+            "test_supply_chain_forbid_unsafe_revet",
+            "test_threat_model_matrix_coverage",
+            "--test-threads=1",
+        ])
+        .status()
+        .expect("Failed to execute SBOM generation tests");
+
+    if !status.success() {
+        eprintln!("SBOM generation or supply chain verification failed!");
+        exit(1);
+    }
+    println!("CycloneDX SBOM generated at logs/sbom.cdx.json and supply chain verified green!");
 }

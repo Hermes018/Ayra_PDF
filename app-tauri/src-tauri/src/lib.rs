@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 use directories::ProjectDirs;
 use lpdf_core_types::{AiModelInfo, AppSettings};
 use lpdf_jobs::events::job_event_channel;

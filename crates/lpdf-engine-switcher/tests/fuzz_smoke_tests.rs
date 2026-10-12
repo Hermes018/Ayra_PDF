@@ -5,6 +5,7 @@ use lpdf_engine_port::PdfEngine;
 use lpdf_engine_switcher::fuzz::*;
 use lpdf_engine_switcher::hostile::*;
 use lpdf_engine_switcher::perf::*;
+use lpdf_engine_switcher::sbom::*;
 use lpdf_engine_switcher::EngineSwitcher;
 use std::fs;
 use std::path::PathBuf;
@@ -604,4 +605,76 @@ fn test_load_baseline_budgets_file() {
     assert!(low.max_rss_mb > 0.0);
     assert!(low.latency_budgets_ms.contains_key("info"));
     assert!(low.latency_budgets_ms.contains_key("synthetic_multi_page"));
+}
+
+#[test]
+fn test_cyclonedx_sbom_generation() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let cargo_lock = workspace_root.join("Cargo.lock");
+    let package_json = workspace_root.join("app-tauri/package.json");
+    let sbom_out = workspace_root.join("logs/sbom.cdx.json");
+
+    assert!(cargo_lock.exists(), "Cargo.lock must exist");
+    assert!(package_json.exists(), "app-tauri/package.json must exist");
+
+    let bom = generate_cyclonedx_sbom(&cargo_lock, &package_json)
+        .expect("CycloneDX SBOM generation must succeed");
+
+    assert_eq!(bom.bom_format, "CycloneDX");
+    assert_eq!(bom.spec_version, "1.5");
+    assert!(
+        bom.components.len() > 100,
+        "SBOM must contain comprehensive list of dependencies"
+    );
+
+    // Verify presence of both Cargo crates and npm packages
+    let has_cargo = bom
+        .components
+        .iter()
+        .any(|c| c.name == "serde" || c.name == "lpdf-core-types");
+    let has_npm = bom
+        .components
+        .iter()
+        .any(|c| c.name == "svelte" || c.name == "typescript");
+    assert!(has_cargo, "SBOM must include Cargo crate components");
+    assert!(has_npm, "SBOM must include npm package components");
+
+    // Write to logs/sbom.cdx.json
+    write_sbom_to_file(&bom, &sbom_out).expect("Writing SBOM to logs/sbom.cdx.json must succeed");
+    assert!(sbom_out.exists(), "logs/sbom.cdx.json must exist on disk");
+
+    let written_content = fs::read_to_string(&sbom_out).expect("Read written SBOM");
+    assert!(!written_content.is_empty(), "SBOM must not be empty");
+    let reparsed: CycloneDxBom =
+        serde_json::from_str(&written_content).expect("Re-parsed SBOM must be valid JSON");
+    assert_eq!(reparsed.bom_format, "CycloneDX");
+}
+
+#[test]
+fn test_supply_chain_forbid_unsafe_revet() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let crates_dir = workspace_root.join("crates");
+    let app_tauri_dir = workspace_root.join("app-tauri");
+    let cargo_lock = workspace_root.join("Cargo.lock");
+    let deny_toml = workspace_root.join("deny.toml");
+
+    let verified_entrypoints = verify_forbid_unsafe_in_workspace(&crates_dir, &app_tauri_dir)
+        .expect("All workspace crates must enforce #![forbid(unsafe_code)]");
+    assert!(
+        verified_entrypoints.len() >= 15,
+        "Expected at least 15 entrypoints with #![forbid(unsafe_code)], verified {}",
+        verified_entrypoints.len()
+    );
+
+    verify_no_copyleft_dependencies(&cargo_lock, &deny_toml)
+        .expect("No copyleft GPL/AGPL dependencies may be linked");
+}
+
+#[test]
+fn test_threat_model_matrix_coverage() {
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let threat_model_path = workspace_root.join("protocol/THREAT_MODEL.md");
+
+    verify_threat_model_coverage(&threat_model_path)
+        .expect("Threat model must cover all required threats T1 through T6");
 }

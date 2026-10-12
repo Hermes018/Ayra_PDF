@@ -31,11 +31,12 @@ jobs:
           chmod +x corpus/fetch.sh
           ./corpus/fetch.sh
 
-      - name: Run deterministic adapter fuzz, hostile-file suite & perf check
+      - name: Run deterministic adapter fuzz, hostile-file suite, perf check & sbom
         run: |
           cargo xtask fuzz
           cargo xtask hostile
           cargo xtask perf-check
+          cargo xtask sbom
 
       - name: Verify cargo-fuzz target definitions
         run: |
