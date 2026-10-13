@@ -964,9 +964,13 @@ impl JobManager {
             LpdfError::OcrInferenceError(_) => "OCR_INFERENCE_ERROR".into(),
             LpdfError::ExternalDependencyError(_) => "EXTERNAL_DEPENDENCY_ERROR".into(),
         }
+    }
+
     /// Spawns the isolated `lpdf-worker` child process for untrusted workloads.
     /// On Linux, wraps the worker invocation in `unshare -n -r` to guarantee absolute network isolation (Failsafe F3, F9, F20).
-    pub fn spawn_sandboxed_worker(request: &JobRequest) -> lpdf_core_types::Result<std::process::Child> {
+    pub fn spawn_sandboxed_worker(
+        request: &JobRequest,
+    ) -> lpdf_core_types::Result<std::process::Child> {
         let payload = serde_json::to_string(request)
             .map_err(|e| LpdfError::InvalidInput(format!("Failed to serialize JobRequest: {e}")))?;
 
@@ -995,7 +999,9 @@ impl JobManager {
             .stderr(std::process::Stdio::piped());
 
         let mut child = cmd.spawn().map_err(|e| {
-            LpdfError::ExternalDependencyError(format!("Failed to spawn sandboxed lpdf-worker: {e}"))
+            LpdfError::ExternalDependencyError(format!(
+                "Failed to spawn sandboxed lpdf-worker: {e}"
+            ))
         })?;
 
         if let Some(mut stdin) = child.stdin.take() {
@@ -2414,4 +2420,11 @@ impl JobManager {
 struct JobOutput {
     output_path: Option<String>,
     degraded: bool,
+}
+
+/// Spawns the isolated `lpdf-worker` child process for untrusted workloads.
+pub fn spawn_sandboxed_worker(
+    request: &JobRequest,
+) -> lpdf_core_types::Result<std::process::Child> {
+    JobManager::spawn_sandboxed_worker(request)
 }

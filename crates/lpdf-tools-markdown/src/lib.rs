@@ -1,9 +1,7 @@
 #![forbid(unsafe_code)]
 
 use lpdf_core_types::Result;
-use lpdf_engine_port::{
-    MarkdownBatchOptions, MarkdownBatchReport, MarkdownDocFormat, PdfEngine,
-};
+use lpdf_engine_port::{MarkdownBatchOptions, MarkdownBatchReport, MarkdownDocFormat, PdfEngine};
 use std::path::{Path, PathBuf};
 
 /// Compiles Markdown to PDF via Pandoc sidecar.

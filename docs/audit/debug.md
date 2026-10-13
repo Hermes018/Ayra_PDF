@@ -73,3 +73,20 @@
   - Deleted dummy `add` functions and `it_works` tests.
   - Implemented typed, domain-specific proxy functions routing directly to `PdfEngine`.
 - **Status**: Strike 2 / Phase 11.7c complete.
+
+## Strike 3 (Phase 11.7d): Throttled Validation & Gate
+- **Step 1: Throttled Workspace Compilation Check**
+  - Ran `tools/sb.sh cargo check --workspace --tests`.
+  - Resolved compiler syntax error in `crates/lpdf-jobs/src/queue.rs` (`error_code` brace and module-level export of `spawn_sandboxed_worker`).
+  - Resolved Landlock trait imports (`Access`, `RulesetAttr`, `RulesetCreatedAttr`) and API method usage (`.add_rule`) in `crates/lpdf-worker/src/main.rs`.
+  - Exposed test harness modules in `crates/lpdf-engine-switcher` via a dedicated `test-utils` feature flag, keeping them hidden in production release builds while enabling integration tests in `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs`.
+  - Verified `tools/sb.sh cargo check --workspace --tests` passed cleanly with exit code 0.
+- **Step 2: Throttled Test Validation**
+  - Ran `tools/sb.sh cargo nextest run --workspace` with throttled resources.
+  - All 147 integration, fuzz, hostile input, soak, queue, fs-safety, sidecar, summarizer, pandoc, pdfa, and type tests passed cleanly (147 passed, 0 skipped, 0 failed).
+- **Step 3: Xtask Gate & Final Review**
+  - Executed `tools/sb.sh cargo fmt` across the workspace.
+  - Executed `tools/sb.sh cargo xtask protocol-lint` — verified zero unwrap/expect in production crates and complete protocol compliance.
+  - Checked disk capacity (`df -h .`) — confirmed free disk space remains stable at 14GB+.
+- **Status**: Phase 11.7d green. Workspace ready for Phase 12.1.
+
