@@ -3001,6 +3001,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "landlock"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9baa9eeb6e315942429397e617a190f4fdc696ef1ee0342939d641029cbb4ea7"
+dependencies = [
+ "enumflags2",
+ "libc",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3200,6 +3211,7 @@ dependencies = [
  "lpdf-engine-fallback",
  "lpdf-engine-pdfcraft",
  "lpdf-engine-port",
+ "lpdf-engine-switcher",
  "lpdf-fs-safety",
  "lpdf-hw",
  "serde",
@@ -3244,30 +3256,63 @@ dependencies = [
 [[package]]
 name = "lpdf-tools-convert"
 version = "0.1.0"
+dependencies = [
+ "lpdf-core-types",
+ "lpdf-engine-port",
+]
 
 [[package]]
 name = "lpdf-tools-edit"
 version = "0.1.0"
+dependencies = [
+ "lpdf-core-types",
+ "lpdf-engine-port",
+]
 
 [[package]]
 name = "lpdf-tools-markdown"
 version = "0.1.0"
+dependencies = [
+ "lpdf-core-types",
+ "lpdf-engine-port",
+]
 
 [[package]]
 name = "lpdf-tools-optimize"
 version = "0.1.0"
+dependencies = [
+ "lpdf-core-types",
+ "lpdf-engine-port",
+]
 
 [[package]]
 name = "lpdf-tools-organize"
 version = "0.1.0"
+dependencies = [
+ "lpdf-core-types",
+ "lpdf-engine-port",
+]
 
 [[package]]
 name = "lpdf-tools-security"
 version = "0.1.0"
+dependencies = [
+ "lpdf-core-types",
+ "lpdf-engine-port",
+]
 
 [[package]]
 name = "lpdf-worker"
 version = "0.1.0"
+dependencies = [
+ "landlock",
+ "lpdf-core-types",
+ "lpdf-engine-port",
+ "lpdf-engine-switcher",
+ "lpdf-jobs",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "markup5ever"

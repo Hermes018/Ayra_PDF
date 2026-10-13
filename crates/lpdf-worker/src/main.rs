@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 #[cfg(target_os = "linux")]
 use landlock::{
-    Access, AccessFs, PathBeneath, PathFd, Ruleset, RulesetAttr, RulesetCreated, RulesetStatus,
+    Access, AccessFs, PathBeneath, PathFd, Ruleset, RulesetAttr, RulesetCreatedAttr, RulesetStatus,
     ABI,
 };
 
@@ -33,7 +33,7 @@ fn apply_sandbox(read_paths: &[PathBuf], write_paths: &[PathBuf]) -> Result<(), 
             };
             if let Ok(fd) = PathFd::new(&target_path) {
                 ruleset = ruleset
-                    .add_rules(PathBeneath::new(fd, AccessFs::from_read(abi)))
+                    .add_rule(PathBeneath::new(fd, AccessFs::from_read(abi)))
                     .map_err(|e| {
                         format!(
                             "Landlock read rule error for {}: {e}",
@@ -56,7 +56,7 @@ fn apply_sandbox(read_paths: &[PathBuf], write_paths: &[PathBuf]) -> Result<(), 
         if target_dir.exists() {
             if let Ok(fd) = PathFd::new(&target_dir) {
                 ruleset = ruleset
-                    .add_rules(PathBeneath::new(fd, AccessFs::from_all(abi)))
+                    .add_rule(PathBeneath::new(fd, AccessFs::from_all(abi)))
                     .map_err(|e| {
                         format!(
                             "Landlock write rule error for {}: {e}",
@@ -72,7 +72,7 @@ fn apply_sandbox(read_paths: &[PathBuf], write_paths: &[PathBuf]) -> Result<(), 
     if tmp.exists() {
         if let Ok(fd) = PathFd::new(tmp) {
             ruleset = ruleset
-                .add_rules(PathBeneath::new(fd, AccessFs::from_all(abi)))
+                .add_rule(PathBeneath::new(fd, AccessFs::from_all(abi)))
                 .map_err(|e| format!("Landlock /tmp rule error: {e}"))?;
         }
     }
