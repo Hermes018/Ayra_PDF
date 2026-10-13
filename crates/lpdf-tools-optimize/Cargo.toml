@@ -7,3 +7,5 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
+lpdf-core-types = { path = "../lpdf-core-types" }
+lpdf-engine-port = { path = "../lpdf-engine-port" }

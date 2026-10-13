@@ -964,6 +964,46 @@ impl JobManager {
             LpdfError::OcrInferenceError(_) => "OCR_INFERENCE_ERROR".into(),
             LpdfError::ExternalDependencyError(_) => "EXTERNAL_DEPENDENCY_ERROR".into(),
         }
+    /// Spawns the isolated `lpdf-worker` child process for untrusted workloads.
+    /// On Linux, wraps the worker invocation in `unshare -n -r` to guarantee absolute network isolation (Failsafe F3, F9, F20).
+    pub fn spawn_sandboxed_worker(request: &JobRequest) -> lpdf_core_types::Result<std::process::Child> {
+        let payload = serde_json::to_string(request)
+            .map_err(|e| LpdfError::InvalidInput(format!("Failed to serialize JobRequest: {e}")))?;
+
+        let worker_bin = if let Ok(current_exe) = std::env::current_exe() {
+            let sibling = current_exe.with_file_name("lpdf-worker");
+            if sibling.exists() {
+                sibling
+            } else {
+                std::path::PathBuf::from("lpdf-worker")
+            }
+        } else {
+            std::path::PathBuf::from("lpdf-worker")
+        };
+
+        #[cfg(target_os = "linux")]
+        let mut cmd = {
+            let mut c = std::process::Command::new("unshare");
+            c.arg("-n").arg("-r").arg(&worker_bin);
+            c
+        };
+        #[cfg(not(target_os = "linux"))]
+        let mut cmd = std::process::Command::new(&worker_bin);
+
+        cmd.stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped());
+
+        let mut child = cmd.spawn().map_err(|e| {
+            LpdfError::ExternalDependencyError(format!("Failed to spawn sandboxed lpdf-worker: {e}"))
+        })?;
+
+        if let Some(mut stdin) = child.stdin.take() {
+            use std::io::Write;
+            let _ = stdin.write_all(payload.as_bytes());
+        }
+
+        Ok(child)
     }
 
     /// Execute the actual PDF work (runs on a blocking thread).
