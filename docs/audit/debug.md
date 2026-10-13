@@ -44,3 +44,18 @@
 - **Action**: Staged `docs/audit/`, `tools/`, and `.allowed-deletions`.
 - **Action**: Committed as `docs(audit): automated v1 inventory, debug logs, and guardrails`.
 - **Status**: Phase 11.7 completed green.
+
+## Strike 1: Hygiene, Sandboxing & ADR Compliance
+- **Step 1: Workspace Hygiene (Q9, Q10)**
+  - Updated `.allowed-deletions` with `deny_out.txt`, `install_deps.sh`, and `corpus/test_contract_out*.pdf`.
+  - Removed stray test output artifacts (`corpus/test_contract_out*.pdf`), stale `deny_out.txt`, and unverified `install_deps.sh`.
+- **Step 2: Harness Leakage Remediation (Q3)**
+  - Wrapped `fuzz`, `hostile`, `perf`, `sbom`, and `soak` modules in `crates/lpdf-engine-switcher/src/lib.rs` with `#[cfg(test)]` to prevent compilation into production artifacts.
+- **Step 3: Sidecar Network Security Patch (Q6)**
+  - Patched `crates/lpdf-engine-pdfcraft/src/office_sidecar.rs` (`convert_office_to_pdf_headless` and `convert_pdf_to_office_flowable_headless`) to execute via `unshare -n -r` on Linux targets (`#[cfg(target_os = "linux")]`).
+  - Patched `crates/lpdf-engine-pdfcraft/src/pandoc_sidecar.rs` (`execute_pandoc`) to execute via `unshare -n -r` on Linux targets (`#[cfg(target_os = "linux")]`).
+- **Step 4: Architectural Compliance ADRs (Q1, Q2)**
+  - Created `logs/ADR-008-sveltekit-spa.md` documenting the SvelteKit SPA adapter-static exception.
+  - Created `logs/ADR-009-vendored-pdfjs.md` documenting the vendored Mozilla `pdf.js` webview preview exception.
+  - Appended ADR-011 and ADR-012 records to `logs/DECISIONS_ADR.md`.
+- **Status**: Strike 1 fixes complete.

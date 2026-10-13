@@ -1,0 +1,5 @@
+deny_out.txt
+install_deps.sh
+corpus/test_contract_out.pdf
+corpus/test_contract_out_FallbackAdapter.pdf
+corpus/test_contract_out_PdfcraftAdapter.pdf

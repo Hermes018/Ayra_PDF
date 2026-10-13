@@ -177,6 +177,14 @@ pub fn convert_office_to_pdf(
     std::fs::create_dir_all(&temp_out_dir).map_err(LpdfError::Io)?;
 
     // Construct command strictly via args (no shell execution)
+    // Failsafe F20: enforce offline isolation via unshare -n -r on Linux
+    #[cfg(target_os = "linux")]
+    let mut cmd = {
+        let mut c = std::process::Command::new("unshare");
+        c.arg("-n").arg("-r").arg(&binary_path);
+        c
+    };
+    #[cfg(not(target_os = "linux"))]
     let mut cmd = std::process::Command::new(&binary_path);
     cmd.arg(format!("-env:UserInstallation={}", profile_url));
     cmd.arg("--headless");
@@ -367,6 +375,14 @@ pub fn convert_pdf_to_office(
     std::fs::create_dir_all(&temp_out_dir).map_err(LpdfError::Io)?;
 
     // Construct command strictly via args (no shell execution)
+    // Failsafe F20: enforce offline isolation via unshare -n -r on Linux
+    #[cfg(target_os = "linux")]
+    let mut cmd = {
+        let mut c = std::process::Command::new("unshare");
+        c.arg("-n").arg("-r").arg(&binary_path);
+        c
+    };
+    #[cfg(not(target_os = "linux"))]
     let mut cmd = std::process::Command::new(&binary_path);
     cmd.arg(format!("-env:UserInstallation={}", profile_url));
     cmd.arg("--headless");

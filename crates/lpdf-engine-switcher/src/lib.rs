@@ -12,10 +12,15 @@ use lpdf_engine_port::{
 };
 use std::path::{Path, PathBuf};
 
+#[cfg(test)]
 pub mod fuzz;
+#[cfg(test)]
 pub mod hostile;
+#[cfg(test)]
 pub mod perf;
+#[cfg(test)]
 pub mod sbom;
+#[cfg(test)]
 pub mod soak;
 
 /// Tracks which engine is active after a load attempt.
