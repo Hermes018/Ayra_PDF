@@ -121,6 +121,14 @@ pub fn resolve_pandoc_binary(custom_path: Option<&Path>) -> Result<PathBuf> {
 
 /// Executes a Pandoc command with strict argument isolation, child process watchdog, and timeout (Failsafe F21).
 fn execute_pandoc(binary: &Path, args: &[std::ffi::OsString]) -> Result<()> {
+    // Failsafe F20: enforce offline isolation via unshare -n -r on Linux
+    #[cfg(target_os = "linux")]
+    let mut cmd = {
+        let mut c = std::process::Command::new("unshare");
+        c.arg("-n").arg("-r").arg(binary);
+        c
+    };
+    #[cfg(not(target_os = "linux"))]
     let mut cmd = std::process::Command::new(binary);
     for arg in args {
         cmd.arg(arg);

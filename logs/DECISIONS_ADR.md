@@ -99,3 +99,15 @@ Home grid = exactly ORGANIZE PDF, OPTIMIZE PDF, CONVERT TO PDF, CONVERT FROM PDF
 - **Decision:** Use `typst` (Apache-2.0) as the backend engine. We will use `comrak` to parse Markdown and emit Typst code, then use `typst` to render the PDF. Typst is fast, produces professional typography, and is a pure Rust dependency.
 - **Consequences:** Adds Typst to the dependency tree. Requires maintaining a Markdown-to-Typst translation layer.
 - **Approved by:** agent-within-scope.
+
+## ADR-011 [2026-10-13] SvelteKit Static SPA Mode Architectural Exception (ADR-008-sveltekit-spa)
+- **Context:** Protocol 02 DON'T-18 strictly specifies "no SvelteKit/SSR". However, `app-tauri` was built with `@sveltejs/kit` and `@sveltejs/adapter-static`.
+- **Decision:** Using `@sveltejs/kit` with `@sveltejs/adapter-static` (`fallback: "index.html"`) and `ssr = false` in `+layout.ts` is formally approved as an architectural exception. It produces a pure client-side SPA compatible with Tauri v2 offline operation.
+- **Consequences:** Documented in `logs/ADR-008-sveltekit-spa.md`. `export const ssr = false;` must remain strictly enforced.
+- **Approved by:** Staff Software Engineer & Enterprise Security Auditor.
+
+## ADR-012 [2026-10-13] Vendored Mozilla pdf.js Webview Rendering Exception (ADR-009-vendored-pdfjs)
+- **Context:** Frontend uses vendored Mozilla `pdf.min.js` and `pdf.worker.min.js` in `static/` to render visual PDF previews inside `PdfViewer.svelte` and `GridEditor.svelte`.
+- **Decision:** Vendoring Mozilla's `pdf.min.js` for visual webview canvas preview rendering is formally approved as an architectural exception under strict constraints: 1) Strict CSP blocks external script execution, 2) No PDF parsing/mutation logic happens in JS (only rendering bytes passed from Rust), and 3) The Apache 2.0 license is maintained.
+- **Consequences:** Documented in `logs/ADR-009-vendored-pdfjs.md`.
+- **Approved by:** Staff Software Engineer & Enterprise Security Auditor.
