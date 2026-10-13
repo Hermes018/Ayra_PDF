@@ -1,15 +1,34 @@
 #![forbid(unsafe_code)]
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+
+use lpdf_core_types::Result;
+use lpdf_engine_port::{OptimizeProfile, PdfEngine};
+use std::path::Path;
+
+/// Compresses a PDF document according to the specified profile.
+pub fn compress_pdf<E: PdfEngine + ?Sized>(
+    engine: &E,
+    input_path: &Path,
+    profile: OptimizeProfile,
+    output_path: &Path,
+) -> Result<()> {
+    engine.compress(input_path, profile, output_path)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// Repairs a corrupted PDF cross-reference table and structure.
+pub fn repair_pdf<E: PdfEngine + ?Sized>(
+    engine: &E,
+    input_path: &Path,
+    output_path: &Path,
+) -> Result<Vec<String>> {
+    engine.repair(input_path, output_path)
+}
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+/// Performs optical character recognition (OCR) and injects searchable text.
+pub fn ocr_pdf<E: PdfEngine + ?Sized>(
+    engine: &E,
+    input_path: &Path,
+    lang: &str,
+    output_path: &Path,
+) -> Result<()> {
+    engine.ocr(input_path, lang, output_path)
 }

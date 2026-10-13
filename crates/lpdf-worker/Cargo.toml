@@ -7,3 +7,12 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
+lpdf-core-types = { path = "../lpdf-core-types" }
+lpdf-engine-port = { path = "../lpdf-engine-port" }
+lpdf-engine-switcher = { path = "../lpdf-engine-switcher" }
+lpdf-jobs = { path = "../lpdf-jobs" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+landlock = "0.3"

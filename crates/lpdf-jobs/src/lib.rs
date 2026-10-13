@@ -14,4 +14,6 @@ pub mod queue;
 
 pub use events::{JobEvent, JobEventSender};
 pub use pipeline::{builtin_pipeline_presets, PipelinePreset, PipelineStep};
-pub use queue::{JobId, JobManager, JobPriority, JobRecord, JobRequest, JobStatus};
+pub use queue::{
+    spawn_sandboxed_worker, JobId, JobManager, JobPriority, JobRecord, JobRequest, JobStatus,
+};

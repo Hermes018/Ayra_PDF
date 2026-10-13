@@ -59,3 +59,17 @@
   - Created `logs/ADR-009-vendored-pdfjs.md` documenting the vendored Mozilla `pdf.js` webview preview exception.
   - Appended ADR-011 and ADR-012 records to `logs/DECISIONS_ADR.md`.
 - **Status**: Strike 1 fixes complete.
+
+## Strike 2 (Phase 11.7c): Landlock Sandbox & Tool Routing
+- **Step 1: Implement Worker Sandbox (Q7)**
+  - Configured `crates/lpdf-worker/Cargo.toml` with `landlock = "0.3"` under Linux target dependencies along with core engine dependencies.
+  - Rewrote `crates/lpdf-worker/src/main.rs` to parse JSON `JobRequest` payloads, extract read/write paths, and enforce strict Landlock filesystem sandboxing on Linux (`ABI::V1`). Configured to fail closed if sandbox enforcement fails. Delegated work to `EngineSwitcher`.
+- **Step 2: Secure Worker Spawner**
+  - Added `spawn_sandboxed_worker` to `crates/lpdf-jobs/src/queue.rs` and exported via `crates/lpdf-jobs/src/lib.rs`.
+  - On Linux, wraps worker execution with `unshare -n -r` to guarantee complete network isolation and unprivileged sandbox activation.
+- **Step 3: Eradicate Tool Stubs (Q4)**
+  - Rewrote all 6 `lpdf-tools-*` crates: `lpdf-tools-organize`, `lpdf-tools-optimize`, `lpdf-tools-security`, `lpdf-tools-edit`, `lpdf-tools-convert`, `lpdf-tools-markdown`.
+  - Added dependencies to `lpdf-core-types` and `lpdf-engine-port`.
+  - Deleted dummy `add` functions and `it_works` tests.
+  - Implemented typed, domain-specific proxy functions routing directly to `PdfEngine`.
+- **Status**: Strike 2 / Phase 11.7c complete.
