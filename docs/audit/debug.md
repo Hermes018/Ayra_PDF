@@ -90,3 +90,73 @@
   - Checked disk capacity (`df -h .`) — confirmed free disk space remains stable at 14GB+.
 - **Status**: Phase 11.7d green. Workspace ready for Phase 12.1.
 
+## Phase 12.1: Release Candidate 1 (Fedora Packaging & KDE Integration)
+- **Step 1: Configuration Key Verification**
+  - Inspected `tauri-utils-2.10.1` and `@tauri-apps/cli@2.12.1` (`config.schema.json`).
+  - Documented verified keys for `productName`, `mainBinaryName`, `bundle.targets`, `bundle.category`, `bundle.fileAssociations`, and `bundle.linux.rpm.*` in `protocol/ENGINE_NOTES.md`.
+- **Step 2: KDE Integration & RPM Configuration (`tauri.conf.json`)**
+  - Updated `app-tauri/src-tauri/tauri.conf.json` with `targets: ["rpm"]`, `mainBinaryName: "localpdf-studio"`, `category: "Utility"`, and `fileAssociations` for `application/pdf`.
+  - Created `app-tauri/src-tauri/desktop.template` ensuring `Exec=localpdf-studio %F`, `Categories=Office;Utility;`, and `MimeType=application/pdf` for seamless KDE Dolphin "Open With..." context menu integration.
+  - Specified RPM runtime dependencies (`libreoffice-core`, `pandoc`).
+- **Step 3: CLI Packaging & Installation Documentation**
+  - Authored `docs/FEDORA_INSTALL.md` covering system requirements, DNF/RPM installation, upgrade, uninstallation, KDE Dolphin integration, and detailed headless CLI workflows for `localpdf`.
+- **Step 4: Enterprise QA Checklist**
+  - Authored `docs/QA_VETTING_CHECKLIST.md` establishing a rigorous manual QA vetting script across all 31 tools, sidecar degradation, UI responsiveness, hostile file tests, and offline air-gapped guarantees.
+- **Step 5: Throttled Validation & Release Build**
+  - `tools/sb.sh cargo fmt --all`: Passed cleanly.
+  - `tools/sb.sh pnpm --dir app-tauri check`: Passed with 0 errors and 0 warnings.
+  - `tools/sb.sh pnpm --dir app-tauri vitest run --no-file-parallelism --maxWorkers=1`: 8 test files passed (53/53 tests).
+  - Fixed clippy redundant closure warning in `crates/lpdf-worker/src/main.rs`.
+  - `tools/sb.sh cargo xtask gate`: Passed green (fmt, clippy, nextest 147/147, cargo deny, cargo audit, protocol-lint).
+  - `SB_RELEASE=1 tools/sb.sh pnpm --dir app-tauri tauri build --bundles rpm`: Successfully built optimized release binary `target/release/localpdf-studio` (38 MB).
+  - `SB_RELEASE=1 tools/sb.sh pnpm --dir app-tauri tauri bundle --bundles rpm`: Successfully packaged RPM bundle in 32s.
+- **Step 6: RPM Package Inspection Output**
+  - Package Path: `target/release/bundle/rpm/LocalPDF Studio-0.1.0-1.x86_64.rpm`
+  - Size: 14.86 MiB (15 MB), vastly below the 1 GB constraint.
+  - File Listing (`rpm -qpl`):
+    ```
+    /usr/bin/localpdf-studio
+    /usr/share/applications/LocalPDF Studio.desktop
+    /usr/share/icons/hicolor/128x128/apps/localpdf-studio.png
+    /usr/share/icons/hicolor/256x256@2/apps/localpdf-studio.png
+    /usr/share/icons/hicolor/32x32/apps/localpdf-studio.png
+    ```
+  - Dependencies (`rpm -qp --requires`):
+    ```
+    libreoffice-core
+    pandoc
+    libwebkit2gtk-4.1.so.0()(64bit)
+    libgtk-3.so.0()(64bit)
+    rpmlib(CompressedFileNames) = 3.0.4-1
+    rpmlib(FileDigests) = 4.6.0-1
+    rpmlib(PayloadFilesHavePrefix) = 4.0-1
+    ```
+  - Package Info (`rpm -qp --info`):
+    ```
+    Name        : local-pdf-studio
+    Epoch       : 0
+    Version     : 0.1.0
+    Release     : 1
+    Architecture: x86_64
+    Group       : Unspecified
+    Size        : 39597070
+    License     : MIT
+    Summary     : Offline, private, enterprise-grade PDF studio and toolchain
+    Description : LocalPDF Studio is a high-performance offline PDF manipulation suite...
+    ```
+  - Desktop Entry Verification:
+    ```ini
+    [Desktop Entry]
+    Categories=Office;Utility;
+    Comment=Offline, private, enterprise-grade PDF studio and toolchain
+    Exec=localpdf-studio %F
+    StartupWMClass=localpdf-studio
+    Icon=localpdf-studio
+    Name=LocalPDF Studio
+    Terminal=false
+    Type=Application
+    MimeType=application/pdf
+    ```
+- **Status**: Phase 12.1 RC1 RPM packaging & KDE Dolphin integration complete. Ready for Phase 12.1b (Clean Install Testing).
+
+
