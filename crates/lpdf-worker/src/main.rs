@@ -128,7 +128,7 @@ fn execute_request(request: &JobRequest) -> Result<String, String> {
             input_paths,
             output_path,
         } => {
-            let in_refs: Vec<&Path> = input_paths.iter().map(|p| Path::new(p)).collect();
+            let in_refs: Vec<&Path> = input_paths.iter().map(Path::new).collect();
             engine
                 .merge(&in_refs, Path::new(output_path))
                 .map_err(|e| e.to_string())?;

@@ -968,6 +968,25 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** `crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs` (2 tests added, 22 total run; 148 nextest tests total).
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-14 06:58] Phase 12.1 — Release Candidate 1: Fedora Packaging & KDE Integration
+- **Status:** Complete (Tag: phase-12.1-rc1)
+- **Work:**
+  - Verified exact Tauri v2 Linux RPM bundle and KDE integration schema keys from `tauri-utils-2.10.1` and `@tauri-apps/cli@2.12.1`, documented in `protocol/ENGINE_NOTES.md`.
+  - Configured `app-tauri/src-tauri/tauri.conf.json` with `targets: ["rpm"]`, `mainBinaryName: "localpdf-studio"`, `category: "Utility"`, and `fileAssociations` for `application/pdf`.
+  - Created custom `app-tauri/src-tauri/desktop.template` ensuring `.desktop` entry binds to `application/pdf`, specifies categories `Office;Utility;`, and passes `%F` for native KDE Dolphin "Open With..." context menu support.
+  - Specified RPM runtime dependencies for sidecars (`libreoffice-core`, `pandoc`) without bundling GPL binaries.
+  - Authored comprehensive enterprise installation manual `docs/FEDORA_INSTALL.md` covering system requirements, DNF/RPM install/upgrade/uninstall, air-gapped offline guarantees, KDE Dolphin integration, and headless `localpdf` CLI workflows.
+  - Authored rigorous manual QA vetting checklist `docs/QA_VETTING_CHECKLIST.md` spanning all 31 tools, sidecar degradation, UI responsiveness, hostile file tests, and air-gapped network verification.
+  - Validated frontend and workspace: `cargo fmt --all`, `pnpm check` (0 errors, 0 warnings), `pnpm vitest run` (8/8 test files, 53/53 tests passing).
+  - Executed full workspace gate `cargo xtask gate` (fmt, clippy, nextest 147/147, cargo deny, cargo audit, protocol-lint) — 100% green.
+  - Executed throttled release build with `SB_RELEASE=1` disabling LTO and restricting codegen units (`CARGO_PROFILE_RELEASE_LTO=false`, `CARGO_PROFILE_RELEASE_CODEGEN_UNITS=4`).
+  - Successfully generated RPM package `target/release/bundle/rpm/LocalPDF Studio-0.1.0-1.x86_64.rpm` (14.86 MiB, well below the 1GB ceiling).
+  - Verified package contents via `rpm -qpl`, `rpm -qp --requires`, `rpm -qp --info`, and inspected generated `.desktop` file verifying `%F` and `MimeType=application/pdf`.
+- **Gate:** pass (`cargo xtask gate` green, `pnpm check` clean, `pnpm vitest run` 53/53 green, release RPM bundle generated).
+- **Tests added/run:** Workspace nextest (147 tests), Vitest (53 tests), RPM package inspection.
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 
