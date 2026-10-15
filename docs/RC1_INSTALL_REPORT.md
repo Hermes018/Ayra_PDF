@@ -189,3 +189,37 @@ git push && git push --tags
 ✅ **RPM package is structurally sound.** Binary links correctly, .desktop file validates, icons are bundled, SELinux is enforcing with no observed AVC denials. The package can be installed and launched on Fedora 44 x86_64.
 
 ⚠️ **Two functional gaps** (F-RC1-001, F-RC1-002) need addressing in RC2 before the "Open With..." UX works as expected from file managers.
+
+---
+
+## 10. RC2 Verification & Punch List Resolution
+
+**Phase:** 12.2 (RC2 Build)  
+**Date:** 2026-10-15  
+**Tag:** `phase-12.2-rc2`  
+**RPM:** `LocalPDF Studio-0.1.0-1.x86_64.rpm`  
+**SHA-256:** `e36150a2afee39c60cd57f513c42beb32c56f2ea8a84d38e26494069da130003`  
+**Size:** 36 MB (36,888,674 bytes)
+
+### RPM Payload (`rpm -qpl`)
+
+```
+/usr/bin/localpdf
+/usr/bin/localpdf-studio
+/usr/bin/lpdf-worker
+/usr/share/applications/LocalPDF Studio.desktop
+/usr/share/icons/hicolor/128x128/apps/localpdf-studio.png
+/usr/share/icons/hicolor/256x256@2/apps/localpdf-studio.png
+/usr/share/icons/hicolor/32x32/apps/localpdf-studio.png
+```
+
+### Punch List Status
+
+| ID | Finding | Status in RC2 | Verification |
+|---|---|---|---|
+| **F-RC1-001** | argv file paths ignored on startup and single-instance launch | **RESOLVED** ✅ | `extract_pdf_args` filter + `get_startup_files` Tauri command implemented and invoked on frontend mount; `tauri_plugin_single_instance` forwards secondary instance args via `lpdf://open-files` event to `appState.addFiles`. |
+| **F-RC1-002** | No `/usr/bin/localpdf` CLI or `lpdf-worker` binary in RPM | **RESOLVED** ✅ | Mapped `/usr/bin/localpdf` and `/usr/bin/lpdf-worker` via `bundle.linux.rpm.files` in `tauri.conf.json`. Verified present in RPM payload via `rpm -qpl`. |
+
+### Overall RC2 Verdict
+✅ **RC2 RPM build verified and complete.** All three binaries packaged into `/usr/bin`, CLI startup file arguments properly forwarded, and single-instance events bound. Ready for Phase 12.3 (Human UAT & Final Release).
+

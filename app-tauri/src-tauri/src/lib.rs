@@ -250,6 +250,31 @@ fn setup_logging() -> Option<tracing_appender::non_blocking::WorkerGuard> {
     }
 }
 
+fn extract_pdf_args<I: IntoIterator<Item = String>>(args: I) -> Vec<String> {
+    args.into_iter()
+        .skip(1)
+        .filter(|a| !a.starts_with('-'))
+        .filter_map(|a| {
+            let p = std::path::PathBuf::from(&a);
+            if p.is_file()
+                && p.extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| e.eq_ignore_ascii_case("pdf"))
+                    .unwrap_or(false)
+            {
+                Some(a)
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+#[tauri::command]
+fn get_startup_files() -> Vec<String> {
+    extract_pdf_args(std::env::args())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let _log_guard = setup_logging();
@@ -264,7 +289,12 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
-        .plugin(tauri_plugin_single_instance::init(|_app, _argv, _cwd| {}))
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            let files = extract_pdf_args(argv);
+            if !files.is_empty() {
+                let _ = app.emit("lpdf://open-files", files);
+            }
+        }))
         .manage(AppState {
             job_manager: Arc::clone(&job_manager),
         })
@@ -282,7 +312,8 @@ pub fn run() {
             save_settings,
             get_recent_logs,
             export_diagnostics,
-            import_local_ai_model
+            import_local_ai_model,
+            get_startup_files
         ])
         .setup(|app| {
             // Forward job events to the Tauri frontend as structured events

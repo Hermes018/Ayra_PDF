@@ -1,4 +1,8 @@
 <script lang="ts">
+    import { onMount, onDestroy } from 'svelte';
+    import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+    import { appState } from '$lib/state.svelte';
+    import { getStartupFiles } from '$lib/ipc';
     import MainLayout from '$lib/components/MainLayout.svelte';
     import OrganizeView from '$lib/views/OrganizeView.svelte';
     import OptimizeView from '$lib/views/OptimizeView.svelte';
@@ -14,6 +18,32 @@
 
     // Svelte 5 reactive state for view routing
     let currentView = $state('Organize');
+
+    let unlistenOpenFiles: UnlistenFn | undefined;
+
+    onMount(() => {
+        getStartupFiles().then((files) => {
+            if (files && files.length > 0) {
+                appState.addFiles(files);
+            }
+        });
+
+        listen<string[]>('lpdf://open-files', (event) => {
+            if (event.payload && event.payload.length > 0) {
+                appState.addFiles(event.payload);
+            }
+        }).then((unlisten) => {
+            unlistenOpenFiles = unlisten;
+        }).catch((err) => {
+            console.error('Failed to listen for lpdf://open-files:', err);
+        });
+    });
+
+    onDestroy(() => {
+        if (unlistenOpenFiles) {
+            unlistenOpenFiles();
+        }
+    });
 </script>
 
 <MainLayout bind:currentView>

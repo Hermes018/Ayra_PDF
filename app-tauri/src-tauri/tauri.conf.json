@@ -50,7 +50,11 @@
         "depends": [
           "libreoffice-core",
           "pandoc"
-        ]
+        ],
+        "files": {
+          "/usr/bin/localpdf": "../../target/release/localpdf",
+          "/usr/bin/lpdf-worker": "../../target/release/lpdf-worker"
+        }
       }
     }
   }
