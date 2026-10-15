@@ -279,6 +279,11 @@ fn get_startup_files() -> Vec<String> {
 pub fn run() {
     let _log_guard = setup_logging();
 
+    // Enter the Tauri-managed Tokio runtime context so that plugin init
+    // code (e.g. single-instance D-Bus) and channel construction that
+    // depend on an active reactor do not panic.
+    let _rt_guard = tauri::async_runtime::handle().inner().enter();
+
     // Create the job event channel
     let (event_tx, mut event_rx) = job_event_channel();
 
@@ -318,7 +323,7 @@ pub fn run() {
         .setup(|app| {
             // Forward job events to the Tauri frontend as structured events
             let handle = app.handle().clone();
-            tokio::spawn(async move {
+            tauri::async_runtime::spawn(async move {
                 while let Some(event) = event_rx.recv().await {
                     tracing::debug!("Job event: {:?}", event);
                     // Emit to all windows; the frontend filters by job_id

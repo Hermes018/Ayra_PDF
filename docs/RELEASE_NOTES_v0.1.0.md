@@ -1,9 +1,9 @@
 # LocalPDF Studio v0.1.0 Release Notes
 
-**Release:** `v0.1.0-rc2`  
-**Date:** 2026-10-15  
+**Release:** `v0.1.0-rc3`  
+**Date:** 2026-10-16  
 **Target Platform:** Linux x86_64 (Fedora 40+, RHEL 9+, openSUSE)  
-**Status:** RC2 Build Verified & Approved for Host Installation  
+**Status:** RC3 Build Verified & Approved for Host Installation  
 
 ---
 
@@ -13,8 +13,8 @@
 |---|---|
 | **Package** | `LocalPDF Studio-0.1.0-1.x86_64.rpm` |
 | **Path** | `target/release/bundle/rpm/LocalPDF Studio-0.1.0-1.x86_64.rpm` |
-| **Size** | `35.18 MiB` (36,888,674 bytes) |
-| **SHA-256** | `e36150a2afee39c60cd57f513c42beb32c56f2ea8a84d38e26494069da130003` |
+| **Size** | `35.18 MiB` (36,892,056 bytes) |
+| **SHA-256** | `8f65a3508dceab6ebe5f8f81579c443dc25e698128b669485de572dd397a158c` |
 
 ### Packaged Binaries & Payload
 
@@ -35,6 +35,7 @@ The RPM bundle places all executables in `/usr/bin/`:
 - **Network-Isolated Sidecars (F20)**: External sidecars (e.g., LibreOffice, Pandoc) execute inside an unprivileged network namespace (`unshare -n -r`), ensuring zero external network egress.
 - **True Content-Stream Redaction (F25)**: Destructive, physical content-stream removal of text and graphical vectors—never superficial visual overlays.
 - **KDE Dolphin / GNOME Files `%F` Integration**: Seamless right-click "Open With..." support via `extract_pdf_args` CLI filtering and Tauri single-instance forwarding over IPC (`lpdf://open-files`).
+- **Tokio Runtime Guard & Clean Startup (RC3)**: Fixed startup reactor panic (`there is no reactor running`) by acquiring Tauri's managed Tokio async runtime context (`tauri::async_runtime::handle().inner().enter()`) and routing event listener tasks through `tauri::async_runtime::spawn`.
 - **Original Document Immutability**: All operations write atomically to new files; original files remain byte-for-byte untouched.
 
 ---
