@@ -119,3 +119,11 @@ export class IpcClient {
         });
     }
 }
+
+export async function getStartupFiles(): Promise<string[]> {
+  try {
+    return await invoke<string[]>('get_startup_files');
+  } catch {
+    return [];
+  }
+}
