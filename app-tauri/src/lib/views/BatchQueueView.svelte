@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
-    import { IpcClient } from '$lib/ipc';
+    import { IpcClient, pickFilesDialog } from '$lib/ipc';
+    import { appState } from '$lib/state.svelte';
     import type { JobRecord } from '$lib/bindings/JobRecord';
     import type { JobEvent } from '$lib/bindings/JobEvent';
     import type { JobPriority } from '$lib/bindings/JobPriority';
@@ -202,6 +203,32 @@
         }
     }
 
+    async function handleAddFiles() {
+        try {
+            const files = await pickFilesDialog(true, ['pdf']);
+            if (!files || files.length === 0) return;
+
+            appState.addFiles(files);
+
+            const requests: JobRequest[] = files.map(file => {
+                const out = file.replace(/\.pdf$/i, '_compressed.pdf');
+                return {
+                    op: 'Compress',
+                    input_path: file,
+                    output_path: out,
+                    profile: 'Medium'
+                };
+            });
+
+            const ids = await IpcClient.submitBatch(requests, 'Normal');
+            actionMessage = `Enqueued ${ids.length} batch job(s) for selected files.`;
+            await loadQueue();
+        } catch (e) {
+            console.error('Failed to add files to batch queue:', e);
+            actionMessage = `Failed to add files: ${e}`;
+        }
+    }
+
     function formatFilename(filePath: string | null): string {
         if (!filePath) return '—';
         const parts = filePath.split('/');
@@ -244,8 +271,11 @@
             <button class="btn btn-secondary" onclick={loadQueue} disabled={loading} title="Refresh Queue">
                 🔄 Refresh
             </button>
-            <button class="btn btn-primary" onclick={handleAddBatchDemo} data-testid="btn-add-batch-demo">
-                ⚡ Submit Batch Demo / Add Files
+            <button class="btn btn-primary" onclick={handleAddFiles} data-testid="btn-add-batch-files" title="Select PDF files from Dolphin / File Manager">
+                📁 Add Files...
+            </button>
+            <button class="btn btn-outline" onclick={handleAddBatchDemo} data-testid="btn-add-batch-demo" title="Submit simulated sample batch jobs">
+                ⚡ Demo Batch
             </button>
         </div>
     </header>
@@ -487,6 +517,7 @@
     .header-actions {
         display: flex;
         gap: 0.75rem;
+        flex-wrap: wrap;
     }
 
     .alert-banner {
@@ -582,6 +613,7 @@
     .filter-tabs {
         display: flex;
         gap: 0.5rem;
+        flex-wrap: wrap;
     }
 
     .tab-btn {
@@ -609,7 +641,8 @@
 
     .bulk-actions {
         display: flex;
-        gap: 0.5rem;
+        gap: 0.75rem;
+        flex-wrap: wrap;
     }
 
     /* Buttons */

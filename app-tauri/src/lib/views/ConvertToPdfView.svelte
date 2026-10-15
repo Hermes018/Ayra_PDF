@@ -1,6 +1,7 @@
 <script lang="ts">
+    import { onMount, onDestroy } from 'svelte';
     import { appState } from '$lib/state.svelte';
-    import { IpcClient } from '$lib/ipc';
+    import { IpcClient, pickFilesDialog, pickFolderDialog, saveFileDialog } from '$lib/ipc';
     import type { JobRequest } from '$lib/bindings/JobRequest';
     import type { OfficeInputFormat } from '$lib/bindings/OfficeInputFormat';
     import type { MarkdownDocFormat } from '$lib/bindings/MarkdownDocFormat';
@@ -12,10 +13,92 @@
     let isSubmitting = $state<boolean>(false);
     let lastJobId = $state<string | null>(null);
 
+    let completedResult = $state<{ op: string; outputPath: string } | null>(null);
+    let failedResult = $state<{ op: string; message: string } | null>(null);
+    let unlistenEvents: (() => void) | undefined;
+
     let batchTarget = $state<MarkdownBatchTarget>('Pdf');
     let batchInjectFrontMatter = $state<boolean>(true);
     let batchPreserveFrontMatter = $state<boolean>(true);
     let batchRewriteAssets = $state<boolean>(true);
+
+    async function handleBrowseSource() {
+        try {
+            if (selectedOptionId === 'BatchMarkdownConvert') {
+                const folder = await pickFolderDialog();
+                if (folder) appState.addFiles([folder]);
+            } else {
+                const exts = ['docx', 'xlsx', 'pptx', 'odt', 'ods', 'odp', 'md', 'html', 'png', 'jpg', 'jpeg'];
+                const files = await pickFilesDialog(false, exts);
+                if (files && files.length > 0) {
+                    appState.addFiles(files);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to browse source file:', e);
+        }
+    }
+
+    async function handleBrowseSaveAs() {
+        try {
+            const defaultName = computedOutputPath.split(/[\/\\]/).pop() || 'converted.pdf';
+            const savePath = await saveFileDialog(defaultName);
+            if (savePath) {
+                customOutputPath = savePath;
+            }
+        } catch (e) {
+            console.error('Failed to browse save path:', e);
+        }
+    }
+
+    async function handleBrowseOutputFolder() {
+        try {
+            const folder = await pickFolderDialog();
+            if (folder) {
+                const defaultName = computedOutputPath.split(/[\/\\]/).pop() || '';
+                customOutputPath = folder + (folder.endsWith('/') ? '' : '/') + defaultName;
+            }
+        } catch (e) {
+            console.error('Failed to browse output folder:', e);
+        }
+    }
+
+    onMount(async () => {
+        unlistenEvents = await IpcClient.onJobEvent((event) => {
+            if (!lastJobId) return;
+            const eventJobId = (event as any)?.data?.job_id;
+            if (eventJobId !== lastJobId) return;
+
+            if (event.kind === 'Completed') {
+                const out = (event as any)?.data?.output_path || customOutputPath || computedOutputPath;
+                completedResult = {
+                    op: 'Convert to PDF',
+                    outputPath: out
+                };
+                failedResult = null;
+                statusMessage = null;
+            } else if (event.kind === 'Failed') {
+                failedResult = {
+                    op: 'Convert to PDF',
+                    message: (event as any)?.data?.error_message || 'Conversion failed'
+                };
+                completedResult = null;
+                statusMessage = null;
+            }
+        });
+    });
+
+    onDestroy(() => {
+        if (unlistenEvents) unlistenEvents();
+    });
+
+    function resetConversion() {
+        completedResult = null;
+        failedResult = null;
+        statusMessage = null;
+        customOutputPath = '';
+        lastJobId = null;
+    }
 
     interface ConvertOption {
         id: string;
@@ -285,7 +368,12 @@
     <div class="content">
         <div class="controls-panel">
             <div class="section-card file-card">
-                <span class="card-title">Source File</span>
+                <div class="card-head-row">
+                    <span class="card-title">Source File</span>
+                    <button type="button" class="btn-picker" onclick={handleBrowseSource}>
+                        📁 Browse File...
+                    </button>
+                </div>
                 {#if currentPath}
                     <div class="file-info-box">
                         <span class="file-icon">📁</span>
@@ -297,6 +385,9 @@
                 {:else}
                     <div class="empty-file-box">
                         <p>No file loaded. Open a file via the Organize tab or drag and drop a document.</p>
+                        <button type="button" class="btn-picker" onclick={handleBrowseSource} style="margin-top: 0.5rem;">
+                            📁 Browse File...
+                        </button>
                     </div>
                 {/if}
             </div>
@@ -364,13 +455,45 @@
                         placeholder={computedOutputPath}
                         bind:value={customOutputPath}
                     />
+                    <button type="button" class="btn-picker" onclick={handleBrowseSaveAs} title="Select destination file">
+                        💾 Save As...
+                    </button>
+                    <button type="button" class="btn-picker" onclick={handleBrowseOutputFolder} title="Select output directory">
+                        📁 Select Folder...
+                    </button>
                 </div>
                 <span class="help-text">
                     Leave blank to save as a new PDF next to the original file. Output is written atomically.
                 </span>
             </div>
 
-            {#if statusMessage}
+            {#if completedResult}
+                <div class="toast-banner success-toast" role="status" aria-live="polite">
+                    <div class="toast-content">
+                        <div class="toast-header">
+                            <span class="toast-icon">✅</span>
+                            <span class="toast-title">{completedResult.op} — Completed</span>
+                        </div>
+                        <p class="toast-path"><strong>Saved to:</strong> {completedResult.outputPath}</p>
+                    </div>
+                    <button type="button" class="btn-toast" onclick={resetConversion}>
+                        🔄 Clear / Convert Another
+                    </button>
+                </div>
+            {:else if failedResult}
+                <div class="toast-banner error-toast" role="alert" aria-live="assertive">
+                    <div class="toast-content">
+                        <div class="toast-header">
+                            <span class="toast-icon">❌</span>
+                            <span class="toast-title">{failedResult.op} — Failed</span>
+                        </div>
+                        <p class="toast-path">{failedResult.message}</p>
+                    </div>
+                    <button type="button" class="btn-toast" onclick={() => { failedResult = null; }}>
+                        Dismiss
+                    </button>
+                </div>
+            {:else if statusMessage}
                 <div class="status-banner" class:error={statusMessage.startsWith('Error') || statusMessage.startsWith('Conversion failed')}>
                     <span>{statusMessage}</span>
                 </div>
@@ -468,6 +591,7 @@
         gap: 1.5rem;
         flex: 1;
         min-height: 0;
+        min-width: 0;
     }
 
     .controls-panel {
@@ -475,6 +599,19 @@
         display: flex;
         flex-direction: column;
         gap: 1.25rem;
+        min-width: 0;
+    }
+
+    @media (max-width: 1100px) {
+        .content {
+            flex-direction: column;
+        }
+        .controls-panel,
+        .preview-panel {
+            flex: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
     }
 
     .section-card {
@@ -556,6 +693,8 @@
         gap: 0.5rem;
         cursor: pointer;
         text-align: left;
+        min-width: 0;
+        word-break: break-word;
         transition: all 0.2s ease-in-out;
     }
 
@@ -764,5 +903,101 @@
 
     .lock-icon {
         font-size: 1.5rem;
+    }
+
+    .card-head-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .btn-picker {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.45rem 0.85rem;
+        background: #313244;
+        color: #cdd6f4;
+        border: 1px solid #45475a;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+    }
+
+    .btn-picker:hover {
+        background: #45475a;
+        color: #ffffff;
+        border-color: #89b4fa;
+    }
+
+    .output-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .output-row .text-input {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .toast-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1.25rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        animation: fadeIn 0.2s ease-in-out;
+    }
+
+    .success-toast {
+        background: rgba(166, 227, 161, 0.12);
+        border: 1px solid #a6e3a1;
+        color: #a6e3a1;
+    }
+
+    .error-toast {
+        background: rgba(243, 139, 168, 0.12);
+        border: 1px solid #f38ba8;
+        color: #f38ba8;
+    }
+
+    .toast-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .toast-path {
+        margin: 0.35rem 0 0 0;
+        font-size: 0.85rem;
+        color: #cdd6f4;
+        word-break: break-all;
+    }
+
+    .btn-toast {
+        padding: 0.5rem 1rem;
+        background: #89b4fa;
+        color: #11111b;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.15s ease;
+    }
+
+    .btn-toast:hover {
+        background: #b4befe;
     }
 </style>

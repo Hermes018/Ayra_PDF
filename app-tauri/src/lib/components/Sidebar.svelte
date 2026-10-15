@@ -55,12 +55,13 @@
 <style>
     .sidebar {
         width: 250px;
-        background-color: #1e1e2e;
-        color: #cdd6f4;
+        background-color: var(--surface-bg, #1e1e2e);
+        color: var(--text-color, #cdd6f4);
         display: flex;
         flex-direction: column;
         height: 100%;
-        border-right: 1px solid #313244;
+        border-right: 1px solid var(--border-color, #313244);
+        transition: background-color 0.2s ease, border-color 0.2s ease;
     }
 
     .logo {
@@ -70,7 +71,7 @@
         padding: 1.5rem;
         font-size: 1.25rem;
         font-weight: bold;
-        color: #cba6f7;
+        color: var(--primary-color, #cba6f7);
     }
 
     nav {
@@ -96,7 +97,7 @@
         padding: 0.75rem 1rem;
         background: transparent;
         border: none;
-        color: #cdd6f4;
+        color: var(--text-color, #cdd6f4);
         font-size: 0.95rem;
         text-align: left;
         border-radius: 8px;
@@ -105,22 +106,22 @@
     }
 
     button:hover {
-        background-color: #313244;
+        background-color: var(--surface-elevated, #313244);
     }
 
     button:focus-visible {
-        outline: 2px solid #cba6f7;
+        outline: 2px solid var(--primary-color, #cba6f7);
         outline-offset: 2px;
     }
 
     button.active {
-        background-color: #89b4fa;
-        color: #11111b;
+        background-color: var(--primary-color, #89b4fa);
+        color: #ffffff;
         font-weight: 600;
     }
 
     .bottom-nav {
         padding: 1rem;
-        border-top: 1px solid #313244;
+        border-top: 1px solid var(--border-color, #313244);
     }
 </style>
