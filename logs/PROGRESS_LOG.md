@@ -1006,6 +1006,18 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** RPM cpio extraction, ldd, desktop-file-validate, SELinux check.
 - **Pre-commit checklist:** 1 N/A 2 N/A 3 YES 4 N/A 5 N/A 6 N/A 7 N/A 8 YES 9 YES 10 YES 11 N/A
 
+### Phase 12.2 & 12.3 — RC2 Build, E2E Smoke Testing, & v0.1.0 Signoff (2026-10-15)
+
+- **What:**
+  - Resolved F-RC1-001: Implemented `extract_pdf_args` filter, `get_startup_files` Tauri command in `lib.rs` and `ipc.ts`, single-instance forwarding via `lpdf://open-files` event, and `onMount` integration in `+page.svelte`.
+  - Resolved F-RC1-002: Built release binaries for `lpdf-cli` and `lpdf-worker`; configured `bundle.linux.rpm.files` mapping in `tauri.conf.json` to package `/usr/bin/localpdf` and `/usr/bin/lpdf-worker`.
+  - Bundled RC2 RPM: `target/release/bundle/rpm/LocalPDF Studio-0.1.0-1.x86_64.rpm` (35.18 MiB, SHA-256: `e36150a2afee39c60cd57f513c42beb32c56f2ea8a84d38e26494069da130003`). Verified payload contains all 3 binaries.
+  - Phase 12.3 E2E Smoke Testing: Executed real-binary test suite in `/tmp/lpdf-rc2-smoke` using `target/release/localpdf`. Verified `info`, `merge` (validated with `pdfinfo` and `qpdf --check`), `compress` (validated with `qpdf --check`), hostile/empty input graceful error handling (exit code 1, zero panics), and original document immutability (SHA-256 unchanged).
+  - Authored `docs/RELEASE_NOTES_v0.1.0.md` with complete artifact metrics, architecture highlights, and host installation commands.
+- **Gate:** pass (`cargo fmt`, `pnpm check`, Tauri RPM bundle build, E2E binary smoke tests green).
+- **Tests added/run:** CLI E2E smoke tests (info, merge, compress, hostile inputs), qpdf structural checks, pdfinfo metadata verification, rpm payload inspection.
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
 
 
 
