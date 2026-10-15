@@ -271,6 +271,307 @@ fn extract_pdf_args<I: IntoIterator<Item = String>>(args: I) -> Vec<String> {
 }
 
 #[tauri::command]
+fn pick_files_dialog(
+    multiple: bool,
+    extensions: Option<Vec<String>>,
+) -> Result<Vec<String>, String> {
+    #[cfg(target_os = "linux")]
+    {
+        let filter_str = match &extensions {
+            Some(exts) if !exts.is_empty() => {
+                let patterns: Vec<String> = exts
+                    .iter()
+                    .map(|e| format!("*.{}", e.trim_start_matches('.')))
+                    .collect();
+                patterns.join(" ")
+            }
+            _ => String::from("*"),
+        };
+
+        // Try kdialog first (native KDE Dolphin picker)
+        let mut kcmd = std::process::Command::new("kdialog");
+        if multiple {
+            kcmd.arg("--multiple").arg("--separate-output");
+        }
+        kcmd.arg("--getopenfilename").arg(":").arg(&filter_str);
+        if let Ok(output) = kcmd.output() {
+            if output.status.success() {
+                let out = String::from_utf8_lossy(&output.stdout);
+                let files: Vec<String> = out
+                    .lines()
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                if !files.is_empty() {
+                    return Ok(files);
+                }
+            }
+        }
+
+        // Fallback to zenity (native GTK / GNOME portal picker)
+        let mut zcmd = std::process::Command::new("zenity");
+        zcmd.arg("--file-selection");
+        if multiple {
+            zcmd.arg("--multiple").arg("--separator=\n");
+        }
+        if let Some(exts) = &extensions {
+            if !exts.is_empty() {
+                let patterns: Vec<String> = exts
+                    .iter()
+                    .map(|e| format!("*.{}", e.trim_start_matches('.')))
+                    .collect();
+                zcmd.arg(format!("--file-filter={}", patterns.join(" ")));
+            }
+        }
+        if let Ok(output) = zcmd.output() {
+            if output.status.success() {
+                let out = String::from_utf8_lossy(&output.stdout);
+                let files: Vec<String> = out
+                    .lines()
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                return Ok(files);
+            }
+        }
+
+        Ok(Vec::new())
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let script = if multiple {
+            "set f to choose file with multiple selections allowed\nset out to \"\"\nrepeat with i in f\nset out to out & POSIX path of i & \"\\n\"\nend repeat\nreturn out"
+        } else {
+            "POSIX path of (choose file)"
+        };
+        let output = std::process::Command::new("osascript")
+            .arg("-e")
+            .arg(script)
+            .output()
+            .map_err(|e| e.to_string())?;
+        if output.status.success() {
+            let out = String::from_utf8_lossy(&output.stdout);
+            let files: Vec<String> = out
+                .lines()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+            Ok(files)
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let mult = if multiple {
+            "$d.Multiselect = $true;"
+        } else {
+            ""
+        };
+        let filter = match &extensions {
+            Some(exts) if !exts.is_empty() => {
+                let patterns: Vec<String> = exts
+                    .iter()
+                    .map(|e| format!("*.{}", e.trim_start_matches('.')))
+                    .collect();
+                format!(
+                    "$d.Filter = 'Files ({})|{}';",
+                    patterns.join(";"),
+                    patterns.join(";")
+                )
+            }
+            _ => String::from("$d.Filter = 'All Files (*.*)|*.*';"),
+        };
+        let ps_cmd = format!(
+            "Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.OpenFileDialog; {} {} if ($d.ShowDialog() -eq 'OK') {{ if ($d.Multiselect) {{ $d.FileNames -join [Environment]::NewLine }} else {{ $d.FileName }} }}",
+            mult, filter
+        );
+        let output = std::process::Command::new("powershell")
+            .args(["-NoProfile", "-Command", &ps_cmd])
+            .output()
+            .map_err(|e| e.to_string())?;
+        if output.status.success() {
+            let out = String::from_utf8_lossy(&output.stdout);
+            let files: Vec<String> = out
+                .lines()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+            Ok(files)
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    {
+        Ok(Vec::new())
+    }
+}
+
+#[tauri::command]
+fn pick_folder_dialog() -> Result<Option<String>, String> {
+    #[cfg(target_os = "linux")]
+    {
+        // Try kdialog
+        if let Ok(output) = std::process::Command::new("kdialog")
+            .arg("--getexistingdirectory")
+            .arg(":")
+            .output()
+        {
+            if output.status.success() {
+                let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !out.is_empty() {
+                    return Ok(Some(out));
+                }
+            }
+        }
+
+        // Try zenity
+        if let Ok(output) = std::process::Command::new("zenity")
+            .arg("--file-selection")
+            .arg("--directory")
+            .output()
+        {
+            if output.status.success() {
+                let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !out.is_empty() {
+                    return Ok(Some(out));
+                }
+            }
+        }
+
+        Ok(None)
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let output = std::process::Command::new("osascript")
+            .arg("-e")
+            .arg("POSIX path of (choose folder)")
+            .output()
+            .map_err(|e| e.to_string())?;
+        if output.status.success() {
+            let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            Ok(if out.is_empty() { None } else { Some(out) })
+        } else {
+            Ok(None)
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let ps_cmd = "Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.FolderBrowserDialog; if ($d.ShowDialog() -eq 'OK') { $d.SelectedPath }";
+        let output = std::process::Command::new("powershell")
+            .args(["-NoProfile", "-Command", ps_cmd])
+            .output()
+            .map_err(|e| e.to_string())?;
+        if output.status.success() {
+            let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            Ok(if out.is_empty() { None } else { Some(out) })
+        } else {
+            Ok(None)
+        }
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    {
+        Ok(None)
+    }
+}
+
+#[tauri::command]
+fn save_file_dialog(default_name: Option<String>) -> Result<Option<String>, String> {
+    #[cfg(target_os = "linux")]
+    {
+        let start_arg = default_name.as_deref().unwrap_or("");
+        // Try kdialog
+        if let Ok(output) = std::process::Command::new("kdialog")
+            .arg("--getsavefilename")
+            .arg(start_arg)
+            .output()
+        {
+            if output.status.success() {
+                let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !out.is_empty() {
+                    return Ok(Some(out));
+                }
+            }
+        }
+
+        // Try zenity
+        let mut zcmd = std::process::Command::new("zenity");
+        zcmd.arg("--file-selection")
+            .arg("--save")
+            .arg("--confirm-overwrite");
+        if let Some(ref name) = default_name {
+            zcmd.arg(format!("--filename={}", name));
+        }
+        if let Ok(output) = zcmd.output() {
+            if output.status.success() {
+                let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !out.is_empty() {
+                    return Ok(Some(out));
+                }
+            }
+        }
+
+        Ok(None)
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let script = match &default_name {
+            Some(name) => format!(
+                "POSIX path of (choose file name default name \"{}\")",
+                name.replace('"', "\\\"")
+            ),
+            None => "POSIX path of (choose file name)".to_string(),
+        };
+        let output = std::process::Command::new("osascript")
+            .arg("-e")
+            .arg(&script)
+            .output()
+            .map_err(|e| e.to_string())?;
+        if output.status.success() {
+            let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            Ok(if out.is_empty() { None } else { Some(out) })
+        } else {
+            Ok(None)
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let file_arg = match &default_name {
+            Some(name) => format!("$d.FileName = '{}';", name.replace('\'', "''")),
+            None => String::new(),
+        };
+        let ps_cmd = format!(
+            "Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.SaveFileDialog; {} if ($d.ShowDialog() -eq 'OK') {{ $d.FileName }}",
+            file_arg
+        );
+        let output = std::process::Command::new("powershell")
+            .args(["-NoProfile", "-Command", &ps_cmd])
+            .output()
+            .map_err(|e| e.to_string())?;
+        if output.status.success() {
+            let out = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            Ok(if out.is_empty() { None } else { Some(out) })
+        } else {
+            Ok(None)
+        }
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    {
+        Ok(None)
+    }
+}
+
+#[tauri::command]
 fn get_startup_files() -> Vec<String> {
     extract_pdf_args(std::env::args())
 }
@@ -318,7 +619,10 @@ pub fn run() {
             get_recent_logs,
             export_diagnostics,
             import_local_ai_model,
-            get_startup_files
+            get_startup_files,
+            pick_files_dialog,
+            pick_folder_dialog,
+            save_file_dialog
         ])
         .setup(|app| {
             // Forward job events to the Tauri frontend as structured events

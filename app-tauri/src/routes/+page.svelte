@@ -22,6 +22,7 @@
     let unlistenOpenFiles: UnlistenFn | undefined;
 
     onMount(() => {
+        appState.initTheme();
         getStartupFiles().then((files) => {
             if (files && files.length > 0) {
                 appState.addFiles(files);

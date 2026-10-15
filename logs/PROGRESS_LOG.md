@@ -1018,6 +1018,47 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** CLI E2E smoke tests (info, merge, compress, hostile inputs), qpdf structural checks, pdfinfo metadata verification, rpm payload inspection.
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+### Phase 12.4 — Tokio Reactor Startup Panic Fix & RC3 Packaging (2026-10-16)
+
+- **What:**
+  - Resolved startup panic (`there is no reactor running`) at `lib.rs:321` caused by early initialization of single-instance D-Bus plugin prior to active Tokio reactor context.
+  - Entered Tauri Tokio runtime handle context (`tauri::async_runtime::handle().inner().enter()`) at application startup and routed event listener loop through `tauri::async_runtime::spawn`.
+  - Rebuilt RC3 RPM: `LocalPDF Studio-0.1.0-1.x86_64.rpm` (35.18 MiB, SHA-256: `8f65a3508dceab6ebe5f8f81579c443dc25e698128b669485de572dd397a158c`).
+  - Validated live GUI binary execution with 5-second smoke test (`EXIT_CODE=124`).
+- **Gate:** pass (`cargo fmt`, `pnpm check`, Tauri release RPM build, live binary smoke test).
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+### Phase 12.5 — Native Dialogs, Notifications, Responsive Layouts & Theme Engine (RC4) (2026-10-16)
+
+- **Phase A (Native OS File & Folder Pickers):**
+  - Implemented cross-platform native dialog commands in `app-tauri/src-tauri/src/lib.rs`: `pick_files_dialog`, `pick_folder_dialog`, and `save_file_dialog` without adding new Cargo crate dependencies. On Linux, integrates with KDE Dolphin via `kdialog` with fallback to GTK `zenity`; macOS via `osascript`; Windows via PowerShell.
+  - Exposed dialog APIs in `app-tauri/src/lib/ipc.ts`.
+  - Integrated "Browse Files..." buttons in `Dropzone.svelte`, "Browse File...", "Select Folder...", and "Save As..." in `ConvertView` (`ConvertFromPdfView` & `ConvertToPdfView`), "Browse..." in `SettingsView`, and "Add Files..." in `BatchQueueView`.
+- **Phase B (Post-Operation Feedback, PDF-to-Images & Markdown Studio):**
+  - Added real-time dismissible toast notification banners across conversion views displaying operation status (`Completed` / `Failed`), destination paths, and "Clear / Convert Another" reset actions.
+  - Exposed `PDF to Images (PNG / JPEG)` target format card with native folder destination picker in `ConvertFromPdfView`.
+  - Replaced Markdown placeholder with full Markdown Studio UI in `MarkdownView.svelte` supporting two-way conversion (`PdfToMarkdown`, `MarkdownToPdf`, `BatchMarkdownConvert`), frontmatter options, and destination pickers.
+- **Phase C (Windowed-Mode Responsive Layouts):**
+  - Updated main content wrapper with `min-width: 0; overflow-x: hidden; overflow-y: auto; box-sizing: border-box;`.
+  - Added flex-wrap and responsive gap to `BatchQueueView` header and action bars.
+  - Converted `SettingsView` hardware tier grid to responsive auto-fit (`repeat(auto-fit, minmax(180px, 1fr))`).
+  - Added responsive column wrapping (`@media (max-width: 1100px)`) and word-break rules in `OrganizeView`, `ConvertFromPdfView`, and `ConvertToPdfView`.
+- **Phase D (Reactive Theme Engine & Input Contrast Fix):**
+  - Implemented reactive theme management in `app-tauri/src/lib/state.svelte.ts` supporting `System`, `Light`, and `Dark` modes with `localStorage` persistence and OS `prefers-color-scheme` listeners.
+  - Added high-contrast CSS custom property tokens and global styling for `<select>`, `<option>`, and `<input>` in `MainLayout.svelte`, eliminating white-on-white dropdowns.
+  - Connected live theme switching in `SettingsView.svelte` with instant reactivity and zero restart requirement.
+  - Updated `Sidebar.svelte` and `StatusBar.svelte` to dynamically adapt to active theme colors.
+- **Verification & Packaging:**
+  - Ran `tools/sb.sh cargo fmt --all` (clean).
+  - Ran `tools/sb.sh pnpm --dir app-tauri check` (0 errors, 0 warnings).
+  - Built release RPM incrementally: `SB_RELEASE=1 tools/sb.sh pnpm --dir app-tauri tauri build --bundles rpm`.
+  - Ran live binary smoke test: `RUST_BACKTRACE=1 timeout 5s ./target/release/localpdf-studio` (stayed alive, timed out cleanly with `EXIT_CODE=124`).
+  - Verified RPM payload: `rpm -qpl` confirmed `/usr/bin/localpdf`, `/usr/bin/localpdf-studio`, `/usr/bin/lpdf-worker`, `.desktop`, and icon assets.
+  - RPM Checksum: `a58c7af2208ee7a5817dfc28b873398d7008321924c2845c57b4950709913939` (36,891,548 bytes).
+- **Gate:** pass.
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+
+
 
 
 

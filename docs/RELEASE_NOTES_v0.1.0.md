@@ -1,9 +1,9 @@
 # LocalPDF Studio v0.1.0 Release Notes
 
-**Release:** `v0.1.0-rc3`  
+**Release:** `v0.1.0-rc4`  
 **Date:** 2026-10-16  
 **Target Platform:** Linux x86_64 (Fedora 40+, RHEL 9+, openSUSE)  
-**Status:** RC3 Build Verified & Approved for Host Installation  
+**Status:** RC4 Build Verified & Approved for Host Installation  
 
 ---
 
@@ -13,8 +13,8 @@
 |---|---|
 | **Package** | `LocalPDF Studio-0.1.0-1.x86_64.rpm` |
 | **Path** | `target/release/bundle/rpm/LocalPDF Studio-0.1.0-1.x86_64.rpm` |
-| **Size** | `35.18 MiB` (36,892,056 bytes) |
-| **SHA-256** | `8f65a3508dceab6ebe5f8f81579c443dc25e698128b669485de572dd397a158c` |
+| **Size** | `35.18 MiB` (36,891,548 bytes) |
+| **SHA-256** | `a58c7af2208ee7a5817dfc28b873398d7008321924c2845c57b4950709913939` |
 
 ### Packaged Binaries & Payload
 
@@ -31,11 +31,16 @@ The RPM bundle places all executables in `/usr/bin/`:
 ## 2. Security & Architecture Highlights
 
 - **`#![forbid(unsafe_code)]`**: Unconditional compile-time guarantee across core and UI application layers.
+- **Native OS File & Directory Dialogs (RC4)**: Cross-platform native pickers (`pick_files_dialog`, `pick_folder_dialog`, `save_file_dialog`) utilizing KDE Dolphin (`kdialog`) and GTK (`zenity`) on Linux, `osascript` on macOS, and PowerShell on Windows.
+- **Post-Operation Feedback & Toast Banners (RC4)**: Real-time dismissible notification banners showing operation status (`Completed` / `Failed`), exact destination paths, and "Clear / Convert Another" reset buttons.
+- **PDF to Images & Markdown Studio (RC4)**: Direct page image extraction (PNG / JPEG) and full two-way Markdown <-> PDF conversion UI with customizable frontmatter and folder routing.
+- **Windowed-Mode Responsive Layouts (RC4)**: Auto-fit grids and wrapping toolbars preventing any clipping or right-side cutoff in non-maximized windows.
+- **Reactive Theme Engine & High-Contrast Inputs (RC4)**: Instant live switching between `System`, `Light`, and `Dark` modes with OS `prefers-color-scheme` synchronization, zero white-on-white text, and persistent `localStorage` state.
 - **Linux Landlock Worker Sandbox**: Restricts worker file system access strictly to required input and output staging directories.
 - **Network-Isolated Sidecars (F20)**: External sidecars (e.g., LibreOffice, Pandoc) execute inside an unprivileged network namespace (`unshare -n -r`), ensuring zero external network egress.
 - **True Content-Stream Redaction (F25)**: Destructive, physical content-stream removal of text and graphical vectors—never superficial visual overlays.
 - **KDE Dolphin / GNOME Files `%F` Integration**: Seamless right-click "Open With..." support via `extract_pdf_args` CLI filtering and Tauri single-instance forwarding over IPC (`lpdf://open-files`).
-- **Tokio Runtime Guard & Clean Startup (RC3)**: Fixed startup reactor panic (`there is no reactor running`) by acquiring Tauri's managed Tokio async runtime context (`tauri::async_runtime::handle().inner().enter()`) and routing event listener tasks through `tauri::async_runtime::spawn`.
+- **Tokio Runtime Guard & Clean Startup**: Tauri's managed Tokio async runtime context (`tauri::async_runtime::handle().inner().enter()`) guarantees clean, panic-free startup with single-instance D-Bus daemon.
 - **Original Document Immutability**: All operations write atomically to new files; original files remain byte-for-byte untouched.
 
 ---

@@ -302,10 +302,15 @@
         flex: 1;
         gap: 1rem;
         min-height: 0; /* Important for flex child scrolling */
+        min-width: 0;
     }
 
     .tools-sidebar {
         width: 250px;
+        flex-shrink: 0;
+        min-width: 0;
+        word-break: break-word;
+        box-sizing: border-box;
         background-color: #1e1e2e;
         border: 1px solid #313244;
         border-radius: 8px;
@@ -319,9 +324,19 @@
 
     .viewer-main {
         flex: 1;
+        min-width: 0;
         border: 1px solid #313244;
         border-radius: 8px;
         overflow: hidden;
+    }
+
+    @media (max-width: 1100px) {
+        .viewer-layout {
+            flex-direction: column;
+        }
+        .tools-sidebar {
+            width: 100%;
+        }
     }
 
     .tool-section {

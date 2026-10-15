@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { IpcClient } from '$lib/ipc';
+    import { IpcClient, pickFilesDialog } from '$lib/ipc';
+    import { appState } from '$lib/state.svelte';
     import type { AppSettings } from '$lib/bindings/AppSettings';
     import type { HardwareTier } from '$lib/bindings/HardwareTier';
     import type { OutputPolicy } from '$lib/bindings/OutputPolicy';
@@ -47,6 +48,11 @@
             const fetched = await IpcClient.getSettings();
             if (fetched) {
                 settings = fetched;
+                if (settings.theme) {
+                    appState.setTheme(settings.theme);
+                } else if (appState.themePreference) {
+                    settings.theme = appState.themePreference;
+                }
                 if (settings.local_ai_model_path) {
                     modelPathInput = settings.local_ai_model_path;
                 }
@@ -108,6 +114,17 @@
         }
     }
 
+    async function handleBrowseModel() {
+        try {
+            const files = await pickFilesDialog(false, ['gguf', 'onnx', 'bin']);
+            if (files && files.length > 0) {
+                modelPathInput = files[0];
+            }
+        } catch (e) {
+            console.error('Failed to browse model file:', e);
+        }
+    }
+
     async function handleImportModel() {
         if (!modelPathInput.trim()) {
             modelError = 'Please specify a local model file path (.gguf or .onnx).';
@@ -155,6 +172,7 @@
 
     function setTheme(theme: ThemePreference) {
         settings.theme = theme;
+        appState.setTheme(theme);
     }
 </script>
 
@@ -311,6 +329,14 @@
                         placeholder="/path/to/model.gguf or model.onnx"
                         bind:value={modelPathInput}
                     />
+                    <button
+                        type="button"
+                        class="btn secondary"
+                        onclick={handleBrowseModel}
+                        title="Browse local storage for model file"
+                    >
+                        📁 Browse...
+                    </button>
                     <button
                         type="button"
                         class="btn secondary"
@@ -518,18 +544,20 @@
 
     .settings-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
         gap: 1.5rem;
     }
 
     .card {
-        background-color: #1e1e2e;
-        border: 1px solid #313244;
+        background-color: var(--surface-bg, #1e1e2e);
+        border: 1px solid var(--border-color, #313244);
         border-radius: 12px;
         padding: 1.5rem;
         display: flex;
         flex-direction: column;
         gap: 1rem;
+        min-width: 0;
+        box-sizing: border-box;
     }
 
     .card.full-width {
@@ -539,41 +567,41 @@
     .card h3 {
         margin: 0;
         font-size: 1.15rem;
-        color: #f5e0dc;
+        color: var(--text-color, #f5e0dc);
     }
 
     .description {
         margin: 0;
         font-size: 0.85rem;
-        color: #9399b2;
+        color: var(--text-muted, #9399b2);
     }
 
     .tier-options {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 0.75rem;
     }
 
     .tier-btn {
-        background-color: #252538;
-        border: 1px solid #313244;
+        background-color: var(--surface-elevated, #252538);
+        border: 1px solid var(--border-color, #313244);
         border-radius: 8px;
         padding: 0.75rem;
         text-align: left;
         cursor: pointer;
-        color: #cdd6f4;
+        color: var(--text-color, #cdd6f4);
         transition: all 0.15s ease;
     }
 
     .tier-btn:hover {
-        border-color: #cba6f7;
-        background-color: #2e2e42;
+        border-color: var(--primary-color, #cba6f7);
+        background-color: var(--surface-elevated, #2e2e42);
     }
 
     .tier-btn.active {
-        border-color: #cba6f7;
+        border-color: var(--primary-color, #cba6f7);
         background-color: rgba(203, 166, 247, 0.15);
-        color: #cba6f7;
+        color: var(--primary-color, #cba6f7);
     }
 
     .tier-name {
@@ -584,7 +612,7 @@
 
     .tier-desc {
         font-size: 0.75rem;
-        color: #9399b2;
+        color: var(--text-muted, #9399b2);
     }
 
     .form-group {
@@ -597,21 +625,27 @@
     .field-label {
         font-size: 0.85rem;
         font-weight: 500;
-        color: #bac2de;
+        color: var(--text-color, #bac2de);
     }
 
     select, input[type="text"] {
-        background-color: #252538;
-        border: 1px solid #313244;
+        background-color: var(--input-bg, #252538);
+        border: 1px solid var(--input-border, #313244);
         border-radius: 6px;
         padding: 0.6rem 0.8rem;
-        color: #cdd6f4;
+        color: var(--input-text, #cdd6f4);
         font-size: 0.9rem;
         outline: none;
     }
 
+    select option {
+        background-color: var(--option-bg, #1e293b);
+        color: var(--option-text, #f8fafc);
+        padding: 0.4rem;
+    }
+
     select:focus, input[type="text"]:focus {
-        border-color: #cba6f7;
+        border-color: var(--primary-color, #cba6f7);
     }
 
     .checkbox-row {
@@ -623,7 +657,7 @@
 
     .checkbox-row input[type="checkbox"] {
         margin-top: 0.2rem;
-        accent-color: #cba6f7;
+        accent-color: var(--primary-color, #cba6f7);
         cursor: pointer;
     }
 
@@ -636,7 +670,7 @@
 
     .subtext {
         font-size: 0.75rem;
-        color: #9399b2;
+        color: var(--text-muted, #9399b2);
     }
 
     .theme-buttons {
@@ -647,23 +681,23 @@
     .theme-btn {
         flex: 1;
         padding: 0.6rem;
-        background-color: #252538;
-        border: 1px solid #313244;
+        background-color: var(--surface-elevated, #252538);
+        border: 1px solid var(--border-color, #313244);
         border-radius: 6px;
-        color: #cdd6f4;
+        color: var(--text-color, #cdd6f4);
         cursor: pointer;
         font-size: 0.85rem;
         transition: all 0.15s ease;
     }
 
     .theme-btn:hover {
-        border-color: #89b4fa;
+        border-color: var(--primary-color, #89b4fa);
     }
 
     .theme-btn.active {
-        border-color: #89b4fa;
+        border-color: var(--primary-color, #89b4fa);
         background-color: rgba(137, 180, 250, 0.15);
-        color: #89b4fa;
+        color: var(--primary-color, #89b4fa);
         font-weight: 600;
     }
 

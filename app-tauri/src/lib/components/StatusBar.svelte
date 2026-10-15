@@ -13,14 +13,15 @@
 <style>
     .status-bar {
         height: 32px;
-        background-color: #11111b;
-        color: #a6adc8;
+        background-color: var(--surface-bg, #11111b);
+        color: var(--text-muted, #a6adc8);
         display: flex;
         justify-content: space-between;
         align-items: center;
         padding: 0 1rem;
         font-size: 0.8rem;
-        border-top: 1px solid #313244;
+        border-top: 1px solid var(--border-color, #313244);
+        transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     }
 
     .status-left, .status-right {

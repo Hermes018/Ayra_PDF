@@ -118,6 +118,44 @@ export class IpcClient {
             handler(event.payload);
         });
     }
+
+    /**
+     * Open native OS file picker dialog
+     */
+    static async pickFilesDialog(multiple = false, extensions?: string[]): Promise<string[]> {
+        return await invoke<string[]>('pick_files_dialog', {
+            multiple,
+            extensions: extensions ?? null,
+        });
+    }
+
+    /**
+     * Open native OS folder picker dialog
+     */
+    static async pickFolderDialog(): Promise<string | null> {
+        return await invoke<string | null>('pick_folder_dialog');
+    }
+
+    /**
+     * Open native OS save file dialog
+     */
+    static async saveFileDialog(defaultName?: string): Promise<string | null> {
+        return await invoke<string | null>('save_file_dialog', {
+            defaultName: defaultName ?? null,
+        });
+    }
+}
+
+export async function pickFilesDialog(multiple = false, extensions?: string[]): Promise<string[]> {
+    return IpcClient.pickFilesDialog(multiple, extensions);
+}
+
+export async function pickFolderDialog(): Promise<string | null> {
+    return IpcClient.pickFolderDialog();
+}
+
+export async function saveFileDialog(defaultName?: string): Promise<string | null> {
+    return IpcClient.saveFileDialog(defaultName);
 }
 
 export async function getStartupFiles(): Promise<string[]> {
