@@ -159,4 +159,22 @@
     ```
 - **Status**: Phase 12.1 RC1 RPM packaging & KDE Dolphin integration complete. Ready for Phase 12.1b (Clean Install Testing).
 
+### Phase 12.1b — RC1 Install & Package Verification (2026-10-15)
+
+- **Surgical Disk Cleanup:**
+  - Removed `target/debug` (70 GB) and `target/release/incremental` (empty).
+  - Disk free: 13 GB → 37 GB (+24 GB recovered, 89% → 66% usage).
+  - `target/release/bundle/rpm/` and release binaries preserved intact.
+- **RPM Verification:**
+  - SHA-256: `18c484e22397632a46800eaf593f6fcf33361b11ad4279d0fb562fc84015ceca`
+  - Size: 15 MB, 77340 cpio blocks.
+  - Contents: `/usr/bin/localpdf-studio`, `.desktop`, 3 icon sizes.
+- **`ldd` Check:** ✅ All shared libraries resolved, zero `not found`.
+- **`desktop-file-validate`:** ✅ Pass (hint-only: multiple main categories).
+- **argv / "Open With..." (F-RC1-001):** ⚠️ Not implemented — `std::env::args` and single-instance `_argv` ignored. Track for RC2.
+- **CLI/Worker packaging (F-RC1-002):** ⚠️ No `/usr/bin/localpdf` or `lpdf-worker` in RPM. Track for RC2.
+- **SELinux:** Enforcing, no observed AVC denials.
+- **Host oracles:** qpdf, pdftotext, pdfinfo, pdfsig, soffice present. pandoc missing.
+- **GitHub push:** ⚠️ Requires user credential setup (HTTPS PAT or SSH key).
+- **Status**: Phase 12.1b verification complete. Full report in `docs/RC1_INSTALL_REPORT.md`. Advancing to Phase 12.2.
 

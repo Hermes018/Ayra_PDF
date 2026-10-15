@@ -986,6 +986,25 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Tests added/run:** Workspace nextest (147 tests), Vitest (53 tests), RPM package inspection.
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+### Phase 12.1b — RC1 Install & Package Verification (2026-10-15)
+
+- **What:** Surgical disk cleanup (purged 70 GB `target/debug`), RPM verification (sha256, ldd, desktop-file-validate), argv code audit, SELinux & host oracle check.
+- **Disk recovery:** 13 GB free → 37 GB free (+24 GB reclaimed, 89% → 66% usage). RPM preserved intact (15 MB).
+- **RPM SHA-256:** `18c484e22397632a46800eaf593f6fcf33361b11ad4279d0fb562fc84015ceca`
+- **ldd:** ✅ All shared libraries resolved on Fedora 44 x86_64.
+- **desktop-file-validate:** ✅ Pass (hint only).
+- **Findings:**
+  - F-RC1-001 (Medium): argv file paths not forwarded to frontend — "Open With..." from KDE Dolphin/GNOME Files opens blank. Needs RC2 fix.
+  - F-RC1-002 (Low): No `/usr/bin/localpdf` CLI or `lpdf-worker` in RPM. Map via `bundle.linux.rpm.files` in RC2 if needed.
+  - F-RC1-003 (Info): Desktop categories hint.
+  - F-RC1-004 (Info): `pandoc` not installed on host.
+  - F-RC1-005 (Blocker): GitHub push requires credential config (HTTPS PAT or SSH key).
+- **SELinux:** Enforcing, no AVC denials observed.
+- **Host oracles:** qpdf ✅ pdftotext ✅ pdfinfo ✅ pdfsig ✅ soffice ✅ pandoc ❌
+- **Full report:** `docs/RC1_INSTALL_REPORT.md`
+- **Gate:** N/A (documentation-only phase, no code changes)
+- **Tests added/run:** RPM cpio extraction, ldd, desktop-file-validate, SELinux check.
+- **Pre-commit checklist:** 1 N/A 2 N/A 3 YES 4 N/A 5 N/A 6 N/A 7 N/A 8 YES 9 YES 10 YES 11 N/A
 
 
 
