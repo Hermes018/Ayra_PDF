@@ -57,6 +57,9 @@
         overflow-y: auto;
         padding: clamp(1rem, 2.5vw, 2rem);
         box-sizing: border-box;
+        background-color: var(--glass-bg-canvas);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
         color: var(--text-primary);
         outline: none;
         transition: background-color var(--dur-med, 0.2s) ease, color var(--dur-med, 0.2s) ease;

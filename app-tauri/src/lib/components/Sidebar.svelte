@@ -4,9 +4,9 @@
     }>();
 
     const menuItems = [
+        { id: 'Convert', label: 'Convert', icon: '🔄' },
         { id: 'Organize', label: 'Organize', icon: '🗂️' },
         { id: 'Optimize', label: 'Optimize', icon: '⚡' },
-        { id: 'Convert', label: 'Convert', icon: '🔄' },
         { id: 'Security', label: 'Security', icon: '🔒' },
         { id: 'Edit', label: 'Edit', icon: '✏️' },
         { id: 'Forms', label: 'Forms & Signatures', icon: '📝' },

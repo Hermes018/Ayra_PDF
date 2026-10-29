@@ -431,7 +431,7 @@
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
-        color: #cdd6f4;
+        color: var(--text-primary);
         max-width: 1200px;
         margin: 0 auto;
         width: 100%;
@@ -451,13 +451,13 @@
         font-size: 1.75rem;
         margin: 0;
         font-weight: 700;
-        color: #f5e0dc;
+        color: var(--text-primary);
     }
 
     .subtitle {
         margin: 0.25rem 0 0;
         font-size: 0.9rem;
-        color: #a6adc8;
+        color: var(--text-secondary);
     }
 
     .alert-banner {

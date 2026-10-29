@@ -1058,6 +1058,20 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Gate:** pass.
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 
+## [2026-10-29 16:44] Phase 12.5 UI Refinement — DONE
+- Changes:
+  - Eliminated hardcoded dark backgrounds (`#11111b`, `#181825`, `#313244`, `#45475a`, etc.) in `ConvertView`, `ConvertFromPdfView`, and `ConvertToPdfView`, binding all elements to glass theme tokens (`--glass-bg-canvas`, `--glass-bg-surface`, `--glass-bg-input`, `--text-primary`, `--text-secondary`).
+  - Fixed light theme glass background tokens in `app.css` and added glass backdrop filter to `.main-content` in `MainLayout.svelte`.
+  - Moved `Convert` navigation item to the top of the sidebar above `Organize` in `Sidebar.svelte`.
+  - Added prominent `Browse Files` buttons in `OrganizeView.svelte` and `OptimizeView.svelte`.
+  - Fixed contrast on `PipelinesView.svelte` (`Workflows & Tool Chaining` header) using `var(--text-primary)` and `var(--text-secondary)`.
+- Gate: pass (`svelte-check` 0 errors/warnings; vitest 16/16 passed; release RPM build green; smoke test `EXIT_CODE=0`).
+- Tests added/run: vitest unit tests across convert/a11y/pipelines views (16 passed).
+- Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+- Risks / follow-ups: None.
+- Commit / tag: `fix(ui): eliminate scoped dark overrides in Convert views and enforce glass tokens`
+
+
 
 
 
