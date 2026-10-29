@@ -10,6 +10,19 @@ import type { AiModelInfo } from './bindings/AiModelInfo';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { JobEvent } from './bindings/JobEvent';
 
+export interface ConvertPdfPayload {
+    inputPath: string;
+    outputPath: string;
+    format?: string;
+    nativeTextOnly?: boolean;
+}
+
+export interface ExtractTextPayload {
+    inputPath: string;
+    outputPath: string;
+    nativeTextOnly?: boolean;
+}
+
 export class IpcClient {
     /**
      * Submit a job to the Rust backend
@@ -144,6 +157,39 @@ export class IpcClient {
             defaultName: defaultName ?? null,
         });
     }
+
+    /**
+     * Convert PDF with native text extraction option
+     */
+    static async convertPdf(payload: ConvertPdfPayload): Promise<string> {
+        return await invoke<string>('convert_pdf', {
+            payload: {
+                input_path: payload.inputPath,
+                output_path: payload.outputPath,
+                format: payload.format ?? null,
+                native_text_only: payload.nativeTextOnly ?? null,
+            }
+        });
+    }
+
+    /**
+     * Extract text with native_text_only option
+     */
+    static async extractText(payload: ExtractTextPayload): Promise<string> {
+        return await invoke<string>('extract_text', {
+            inputPath: payload.inputPath,
+            outputPath: payload.outputPath,
+            nativeTextOnly: payload.nativeTextOnly ?? null,
+        });
+    }
+}
+
+export async function convertPdf(payload: ConvertPdfPayload): Promise<string> {
+    return IpcClient.convertPdf(payload);
+}
+
+export async function extractText(payload: ExtractTextPayload): Promise<string> {
+    return IpcClient.extractText(payload);
 }
 
 export async function pickFilesDialog(multiple = false, extensions?: string[]): Promise<string[]> {

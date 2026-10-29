@@ -181,6 +181,16 @@ impl PdfEngine for EngineSwitcher {
         self.primary.ocr(input_path, lang, output_path)
     }
 
+    fn ocr_with_options(
+        &self,
+        input_path: &Path,
+        lang: &str,
+        output_path: &Path,
+        native_text_only: bool,
+    ) -> Result<()> {
+        self.primary.ocr_with_options(input_path, lang, output_path, native_text_only)
+    }
+
     fn protect(
         &self,
         input_path: &Path,

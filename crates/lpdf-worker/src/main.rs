@@ -203,9 +203,16 @@ fn execute_request(request: &JobRequest) -> Result<String, String> {
             input_path,
             output_path,
             lang,
+            native_text_only,
         } => {
+            let native_only = native_text_only.unwrap_or(false);
             engine
-                .ocr(Path::new(input_path), lang, Path::new(output_path))
+                .ocr_with_options(
+                    Path::new(input_path),
+                    lang,
+                    Path::new(output_path),
+                    native_only,
+                )
                 .map_err(|e| e.to_string())?;
             Ok(output_path.clone())
         }

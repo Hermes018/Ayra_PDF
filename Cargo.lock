@@ -95,6 +95,7 @@ dependencies = [
  "directories",
  "lpdf-core-types",
  "lpdf-engine-pdfcraft",
+ "lpdf-engine-port",
  "lpdf-fs-safety",
  "lpdf-hw",
  "lpdf-jobs",

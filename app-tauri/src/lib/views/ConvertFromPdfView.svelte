@@ -291,7 +291,8 @@
             req = {
                 op: selectedFormat,
                 input_path: currentPath,
-                output_path: out
+                output_path: out,
+                native_text_only: appState.preferNativeText
             } as JobRequest;
         }
 
@@ -363,6 +364,25 @@
                             </button>
                         {/snippet}
                     </For>
+                </div>
+            </div>
+
+            <div class="section-card native-toggle-card">
+                <div class="toggle-row">
+                    <div class="toggle-text">
+                        <span class="toggle-title">Native Text Only (Bypass OCR)</span>
+                        <span class="toggle-subtitle">Dramatically speeds up conversion for digital PDFs by skipping image rasterization.</span>
+                    </div>
+                    <label class="apple-switch" for="native-text-toggle">
+                        <input
+                            type="checkbox"
+                            id="native-text-toggle"
+                            checked={appState.preferNativeText}
+                            onchange={(e) => appState.setPreferNativeText((e.target as HTMLInputElement).checked)}
+                            aria-label="Native Text Only (Bypass OCR)"
+                        />
+                        <span class="switch-slider"></span>
+                    </label>
                 </div>
             </div>
 
@@ -744,6 +764,87 @@
         font-size: 0.75rem;
         color: var(--text-secondary);
         line-height: 1.35;
+    }
+
+    .native-toggle-card {
+        padding: 0.9rem 1.1rem;
+        background: var(--glass-bg-subtle);
+        border: 1px solid var(--glass-border-subtle);
+        border-radius: var(--radius-md, 8px);
+        margin-top: 0.25rem;
+    }
+
+    .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .toggle-text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .toggle-title {
+        font-size: 0.92rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .toggle-subtitle {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        line-height: 1.35;
+    }
+
+    .apple-switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+        flex-shrink: 0;
+        cursor: pointer;
+    }
+
+    .apple-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+    }
+
+    .switch-slider {
+        position: absolute;
+        inset: 0;
+        background-color: var(--glass-bg-input);
+        border: 1px solid var(--glass-border-subtle);
+        border-radius: 24px;
+        transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease;
+    }
+
+    .switch-slider::before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 2px;
+        bottom: 2px;
+        background-color: var(--text-primary);
+        border-radius: 50%;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: var(--glass-shadow-sm);
+    }
+
+    .apple-switch input:checked + .switch-slider {
+        background-color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
+
+    .apple-switch input:checked + .switch-slider::before {
+        transform: translateX(20px);
+        background-color: var(--text-on-accent);
     }
 
     .text-input {

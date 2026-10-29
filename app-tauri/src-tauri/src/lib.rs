@@ -2,6 +2,7 @@
 
 use directories::ProjectDirs;
 use lpdf_core_types::{AiModelInfo, AppSettings};
+use lpdf_engine_port::PdfEngine;
 use lpdf_jobs::events::job_event_channel;
 use lpdf_jobs::queue::{JobManager, JobPriority, JobRecord, JobRequest, JobStatus};
 use std::path::PathBuf;
@@ -576,6 +577,64 @@ fn get_startup_files() -> Vec<String> {
     extract_pdf_args(std::env::args())
 }
 
+/// Payload for converting a PDF with options.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ConvertPdfPayload {
+    pub input_path: String,
+    pub output_path: String,
+    pub format: Option<String>,
+    pub native_text_only: Option<bool>,
+}
+
+/// Payload for extracting text with options.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ExtractTextPayload {
+    pub input_path: String,
+    pub output_path: String,
+    pub native_text_only: Option<bool>,
+}
+
+/// Convert a PDF with native text extraction option or structural conversion.
+#[tauri::command]
+fn convert_pdf(payload: ConvertPdfPayload) -> Result<String, String> {
+    let native_only = payload.native_text_only.unwrap_or(false);
+    let input = PathBuf::from(&payload.input_path);
+    let output = PathBuf::from(&payload.output_path);
+    let engine = lpdf_engine_pdfcraft::PdfcraftAdapter::new();
+    let format = payload.format.as_deref().unwrap_or("text");
+    match format {
+        "docx" | "structural_docx" => {
+            engine
+                .pdf_to_structural_docx(&input, &output)
+                .map_err(|e| e.to_string())?;
+        }
+        "ocr" => {
+            engine
+                .ocr_with_options(&input, "eng", &output, native_only)
+                .map_err(|e| e.to_string())?;
+        }
+        _ => {
+            engine.pdf_to_text(&input, &output).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(payload.output_path)
+}
+
+/// Extract text from a PDF with native_text_only option.
+#[tauri::command]
+fn extract_text(
+    input_path: String,
+    output_path: String,
+    native_text_only: Option<bool>,
+) -> Result<String, String> {
+    let _native_only = native_text_only.unwrap_or(false);
+    let input = PathBuf::from(&input_path);
+    let output = PathBuf::from(&output_path);
+    let engine = lpdf_engine_pdfcraft::PdfcraftAdapter::new();
+    engine.pdf_to_text(&input, &output).map_err(|e| e.to_string())?;
+    Ok(output_path)
+}
+
 /// Returns the active backend engine version info.
 #[tauri::command]
 fn get_engine_version() -> String {
@@ -627,6 +686,8 @@ pub fn run() {
             import_local_ai_model,
             get_startup_files,
             get_engine_version,
+            convert_pdf,
+            extract_text,
             pick_files_dialog,
             pick_folder_dialog,
             save_file_dialog
