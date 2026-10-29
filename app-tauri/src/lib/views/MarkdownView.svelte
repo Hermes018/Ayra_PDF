@@ -565,9 +565,9 @@
     }
 
     .btn-picker:hover {
-        background: #45475a;
-        color: #ffffff;
-        border-color: #89b4fa;
+        background: var(--glass-bg-hover);
+        color: var(--text-primary);
+        border-color: var(--accent-primary);
     }
 
     .help-text {

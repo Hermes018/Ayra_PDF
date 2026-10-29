@@ -587,15 +587,16 @@
     }
 
     .content {
-        display: flex;
-        gap: 1.5rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+        gap: 1.25rem;
         flex: 1;
         min-height: 0;
         min-width: 0;
+        width: 100%;
     }
 
     .controls-panel {
-        flex: 1.6;
         display: flex;
         flex-direction: column;
         gap: 1.25rem;
@@ -603,26 +604,24 @@
     }
 
     @media (max-width: 1100px) {
-        .content {
-            flex-direction: column;
-        }
         .controls-panel,
         .preview-panel {
-            flex: none;
             width: 100%;
             box-sizing: border-box;
         }
     }
 
     .section-card {
-        background: var(--surface-bg, #1e1e2e);
-        border: 1px solid var(--border-color, #313244);
-        border-radius: 10px;
+        background: var(--glass-bg-surface);
+        -webkit-backdrop-filter: var(--glass-blur);
+        backdrop-filter: var(--glass-blur);
+        border: 1px solid var(--glass-border-subtle);
+        border-radius: var(--radius-lg, 14px);
         padding: 1.25rem;
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-sm);
     }
 
     .card-title {
@@ -818,16 +817,18 @@
     }
 
     .preview-panel {
-        flex: 1;
-        background: var(--surface-bg, #1e1e2e);
-        border: 1px solid var(--border-color, #313244);
-        border-radius: 10px;
+        background: var(--glass-bg-surface);
+        -webkit-backdrop-filter: var(--glass-blur);
+        backdrop-filter: var(--glass-blur);
+        border: 1px solid var(--glass-border-subtle);
+        border-radius: var(--radius-lg, 14px);
         padding: 1.5rem;
         display: flex;
         flex-direction: column;
         gap: 1.25rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-sm);
         height: fit-content;
+        min-width: 0;
     }
 
     .preview-header h3 {
@@ -929,9 +930,9 @@
     }
 
     .btn-picker:hover {
-        background: #45475a;
-        color: #ffffff;
-        border-color: #89b4fa;
+        background: var(--glass-bg-hover);
+        color: var(--text-primary);
+        border-color: var(--accent-primary);
     }
 
     .output-row {

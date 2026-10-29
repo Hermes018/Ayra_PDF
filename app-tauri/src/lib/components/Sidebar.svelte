@@ -10,14 +10,14 @@
         { id: 'Security', label: 'Security', icon: '🔒' },
         { id: 'Edit', label: 'Edit', icon: '✏️' },
         { id: 'Forms', label: 'Forms & Signatures', icon: '📝' },
-        { id: 'Markdown', label: 'Markdown', icon: '📝' },
+        { id: 'Markdown', label: 'Markdown', icon: '📄' },
         { id: 'Summarize', label: 'AI Summarizer', icon: '✨' },
         { id: 'Queue', label: 'Batch Queue', icon: '📋' },
         { id: 'Pipelines', label: 'Workflows', icon: '🔀' },
     ];
 </script>
 
-<aside class="sidebar" aria-label="Application Sidebar">
+<aside class="sidebar glass--sidebar" aria-label="Application Sidebar">
     <div class="logo">
         <span class="icon" aria-hidden="true">📄</span>
         <h2>LocalPDF</h2>
@@ -28,6 +28,7 @@
             {#each menuItems as item}
                 <li>
                     <button
+                        class="sidebar__item"
                         class:active={currentView === item.id}
                         aria-current={currentView === item.id ? 'page' : undefined}
                         onclick={() => { currentView = item.id; }}
@@ -42,6 +43,7 @@
 
     <div class="bottom-nav">
         <button
+            class="sidebar__item"
             class:active={currentView === 'Settings'}
             aria-current={currentView === 'Settings' ? 'page' : undefined}
             onclick={() => { currentView = 'Settings'; }}
@@ -54,29 +56,40 @@
 
 <style>
     .sidebar {
-        width: 250px;
-        background-color: var(--surface-bg, #1e1e2e);
-        color: var(--text-color, #cdd6f4);
+        width: var(--sidebar-width, 210px);
+        min-width: var(--sidebar-width, 210px);
+        background-color: var(--glass-bg-sidebar);
+        -webkit-backdrop-filter: var(--glass-blur);
+        backdrop-filter: var(--glass-blur);
+        color: var(--text-primary);
         display: flex;
         flex-direction: column;
         height: 100%;
-        border-right: 1px solid var(--border-color, #313244);
-        transition: background-color 0.2s ease, border-color 0.2s ease;
+        border-right: 1px solid var(--glass-border-subtle);
+        transition: background-color var(--dur-med, 0.2s) ease, border-color var(--dur-med, 0.2s) ease;
+        box-sizing: border-box;
     }
 
     .logo {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 1.5rem;
-        font-size: 1.25rem;
-        font-weight: bold;
-        color: var(--primary-color, #cba6f7);
+        padding: 1.25rem 1rem;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--accent-primary);
+        letter-spacing: -0.01em;
+    }
+
+    .logo h2 {
+        margin: 0;
+        font-size: inherit;
+        font-weight: inherit;
     }
 
     nav {
         flex: 1;
-        padding: 0 1rem;
+        padding: 0 0.5rem;
         overflow-y: auto;
     }
 
@@ -86,42 +99,45 @@
         margin: 0;
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
+        gap: 2px;
     }
 
-    button {
+    .sidebar__item {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 0.6rem;
         width: 100%;
-        padding: 0.75rem 1rem;
+        padding: 0.5rem 0.75rem;
         background: transparent;
         border: none;
-        color: var(--text-color, #cdd6f4);
-        font-size: 0.95rem;
+        color: var(--text-primary);
+        font-size: 0.9rem;
         text-align: left;
-        border-radius: 8px;
+        border-radius: var(--radius-md, 10px);
         cursor: pointer;
-        transition: all 0.2s;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: background-color var(--dur-fast, 120ms) ease, color var(--dur-fast, 120ms) ease;
     }
 
-    button:hover {
-        background-color: var(--surface-elevated, #313244);
+    .sidebar__item:hover {
+        background-color: var(--glass-bg-hover);
     }
 
-    button:focus-visible {
-        outline: 2px solid var(--primary-color, #cba6f7);
-        outline-offset: 2px;
+    .sidebar__item:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--accent-ring);
     }
 
-    button.active {
-        background-color: var(--primary-color, #89b4fa);
-        color: #ffffff;
+    .sidebar__item.active {
+        background-color: var(--glass-bg-active);
+        color: var(--accent-primary);
         font-weight: 600;
     }
 
     .bottom-nav {
-        padding: 1rem;
-        border-top: 1px solid var(--border-color, #313244);
+        padding: 0.75rem 0.5rem;
+        border-top: 1px solid var(--glass-border-subtle);
     }
 </style>

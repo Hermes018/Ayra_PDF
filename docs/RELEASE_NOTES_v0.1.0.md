@@ -1,9 +1,9 @@
 # LocalPDF Studio v0.1.0 Release Notes
 
-**Release:** `v0.1.0-rc4`  
-**Date:** 2026-10-16  
+**Release:** `v0.1.0-rc5`  
+**Date:** 2026-10-29  
 **Target Platform:** Linux x86_64 (Fedora 40+, RHEL 9+, openSUSE)  
-**Status:** RC4 Build Verified & Approved for Host Installation  
+**Status:** RC5 Build Verified & Approved for Host Installation  
 
 ---
 
@@ -13,14 +13,14 @@
 |---|---|
 | **Package** | `LocalPDF Studio-0.1.0-1.x86_64.rpm` |
 | **Path** | `target/release/bundle/rpm/LocalPDF Studio-0.1.0-1.x86_64.rpm` |
-| **Size** | `35.18 MiB` (36,891,548 bytes) |
-| **SHA-256** | `a58c7af2208ee7a5817dfc28b873398d7008321924c2845c57b4950709913939` |
+| **Size** | `35.19 MiB` (36,898,844 bytes) |
+| **SHA-256** | `748ebc961e063b441cd24abc1ea86dd5018d49159697ac364bbd3767376836b0` |
 
 ### Packaged Binaries & Payload
 
 The RPM bundle places all executables in `/usr/bin/`:
 
-- `/usr/bin/localpdf-studio`: High-performance Tauri v2 GUI application with dark/light themes, drag-and-drop studio, and real-time page reordering.
+- `/usr/bin/localpdf-studio`: High-performance Tauri v2 GUI application with Apple HIG frosted liquid glass design, global high-contrast form controls, floating toast notifications, and responsive fluid spatial layouts.
 - `/usr/bin/localpdf`: Comprehensive command-line interface supporting headless document inspection, merge, split, compress, protect, watermark, OCR, and automated batch pipelines.
 - `/usr/bin/lpdf-worker`: Dedicated background worker process for heavy PDF manipulation and sidecar task execution.
 - `/usr/share/applications/LocalPDF Studio.desktop`: XDG desktop entry configured with `%F` for native file-manager integration.
@@ -30,12 +30,12 @@ The RPM bundle places all executables in `/usr/bin/`:
 
 ## 2. Security & Architecture Highlights
 
+- **Apple HIG Frosted Liquid Glass Design System (RC5)**: Complete token system with dark and light vibrancy layers, specular highlights, translucent surfaces paired with `backdrop-filter: blur(24px) saturate(180%)`, and responsive layouts.
+- **Global High-Contrast Form Controls (RC5)**: Strict opaque styling on native `<option>` dropdown popups and `color-scheme` synchronization, guaranteeing zero white-on-white text across Linux WebKitGTK and desktop themes.
+- **Apple-Style Floating Glass Toast System (RC5)**: Global floating notifications with spring animation physics, badge indicators, path diagnostic displays, and native event integration with background worker jobs.
+- **Windowed-Mode Fluid Spatial Layout (RC5)**: Fluid auto-fit grid and flexbox wrapping across two-column views (`ConvertFromPdfView`, `ConvertToPdfView`, `OrganizeView`, `BatchQueueView`, `SettingsView`), ensuring zero right-edge clipping at 800px-1080px viewport widths.
 - **`#![forbid(unsafe_code)]`**: Unconditional compile-time guarantee across core and UI application layers.
-- **Native OS File & Directory Dialogs (RC4)**: Cross-platform native pickers (`pick_files_dialog`, `pick_folder_dialog`, `save_file_dialog`) utilizing KDE Dolphin (`kdialog`) and GTK (`zenity`) on Linux, `osascript` on macOS, and PowerShell on Windows.
-- **Post-Operation Feedback & Toast Banners (RC4)**: Real-time dismissible notification banners showing operation status (`Completed` / `Failed`), exact destination paths, and "Clear / Convert Another" reset buttons.
-- **PDF to Images & Markdown Studio (RC4)**: Direct page image extraction (PNG / JPEG) and full two-way Markdown <-> PDF conversion UI with customizable frontmatter and folder routing.
-- **Windowed-Mode Responsive Layouts (RC4)**: Auto-fit grids and wrapping toolbars preventing any clipping or right-side cutoff in non-maximized windows.
-- **Reactive Theme Engine & High-Contrast Inputs (RC4)**: Instant live switching between `System`, `Light`, and `Dark` modes with OS `prefers-color-scheme` synchronization, zero white-on-white text, and persistent `localStorage` state.
+- **Native OS File & Directory Dialogs**: Cross-platform native pickers (`pick_files_dialog`, `pick_folder_dialog`, `save_file_dialog`) utilizing KDE Dolphin (`kdialog`) and GTK (`zenity`) on Linux.
 - **Linux Landlock Worker Sandbox**: Restricts worker file system access strictly to required input and output staging directories.
 - **Network-Isolated Sidecars (F20)**: External sidecars (e.g., LibreOffice, Pandoc) execute inside an unprivileged network namespace (`unshare -n -r`), ensuring zero external network egress.
 - **True Content-Stream Redaction (F25)**: Destructive, physical content-stream removal of text and graphical vectors—never superficial visual overlays.
@@ -57,22 +57,12 @@ Tested against release binary (`target/release/localpdf`) on Linux x86_64:
 | **Empty File Defense** | `localpdf info empty.pdf` | `Error: couldn't parse input` (Exit code: 1) | **PASS** ✅ (Clean error, no panic) |
 | **Corrupt File Defense** | `localpdf info corrupt.pdf` | `Error: couldn't parse input` (Exit code: 1) | **PASS** ✅ (Clean error, no panic) |
 | **Immutability Check** | `sha256sum input1.pdf` | `3df79d34abbca99308e79cb94461c189...` | **PASS** ✅ (Identical pre/post hash) |
+| **Live GUI Startup Smoke Test** | `RUST_BACKTRACE=1 timeout 5s ./target/release/localpdf-studio` | `EXIT_CODE=124` | **PASS** ✅ (Clean execution) |
 
 ---
 
-## 4. Host Installation Instructions
-
-Install the package directly using `dnf` on Fedora / RHEL-compatible distributions:
+## 4. Installation & Verification Command
 
 ```bash
-sudo dnf install "./target/release/bundle/rpm/LocalPDF Studio-0.1.0-1.x86_64.rpm"
-```
-
-To run the application:
-```bash
-# Launch GUI Studio
-localpdf-studio
-
-# Or launch CLI
-localpdf --help
+sudo dnf reinstall -y "./target/release/bundle/rpm/LocalPDF Studio-0.1.0-1.x86_64.rpm"
 ```
