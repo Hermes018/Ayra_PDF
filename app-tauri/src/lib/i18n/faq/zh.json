@@ -1,0 +1,99 @@
+{
+  "locale": "zh",
+  "language": "简体中文",
+  "title": "常见问题解答 (FAQ)",
+  "searchPlaceholder": "搜索功能、工作流与离线安全策略...",
+  "emptySearch": "未找到匹配的功能。",
+  "items": [
+    {
+      "id": "convert",
+      "feature": "文档转换 (Convert)",
+      "question": "在无需上传文档的情况下，PDF 转换是如何运行的？",
+      "answer": "转换完全在您的设备本地运行，由原生 Rust 矢量引擎与沙箱化文档适配器提供支持。",
+      "usage": "在侧边栏中选择“转换”，选择“PDF 导出”或“转换为 PDF”，配置目标格式（Office、图片、PDF/A、HTML、TXT）并启动转换。",
+      "outputs": "原子化写入高质量 DOCX、XLSX、PPTX、PNG、JPEG、PDF/A-2b/3b、HTML 或 TXT 至目标目录。",
+      "offlineBoundaries": "完全零网络请求，无远程云端遥测。所有操作均在隔离的本地子工作进程中完成。"
+    },
+    {
+      "id": "organize",
+      "feature": "页面整理 (Organize)",
+      "question": "我能安全地重排、旋转、删除和提取页面吗？",
+      "answer": "可以。“整理”工作区支持直观的拖拽式网格视图，并提供实时的无损页面管理。",
+      "usage": "在页面网格中拖放调整顺序，对单页或所有页面应用旋转，删除页面或拆分章节。",
+      "outputs": "以原子写入模式生成全新的有效 PDF，原文件在未显式要求覆盖时绝对保持只读与原样。",
+      "offlineBoundaries": "所有页面树重组均在本地内存及安全临时文件中完成，无需任何外部运行时依赖。"
+    },
+    {
+      "id": "optimize",
+      "feature": "压缩优化 (Optimize)",
+      "question": "PDF 压缩如何在不降低可读性的情况下缩减文件体积？",
+      "answer": "优化采用数据流 Deflate 压缩、未引用字体/图片资源清理以及可选的双三次图片重采样。",
+      "usage": "选择优化预设档位（无损、标准网页、最大压缩），预览预估压缩率并执行。",
+      "outputs": "输出保留完整矢量清晰度、剔除冗余对象的合规优化 PDF。",
+      "offlineBoundaries": "严格的防体积膨胀安全机制：若压缩后体积大于原件，则自动保留原件，绝不发起网络调用。"
+    },
+    {
+      "id": "security",
+      "feature": "安全与数字签名 (Security)",
+      "question": "LocalPDF Studio 的加密与数字签名安全性如何？",
+      "answer": "采用军用级 AES-256 及 AES-128 加密体系，结合 fail-closed 密码学完整性检查与 PKCS#12 签名。",
+      "usage": "设定用户/所有者密码，精细化配置打印与复制权限，或导入 PKCS#12 (.p12/.pfx) 证书执行数字签署。",
+      "outputs": "生成符合 ISO 标准的加密 PDF 或具备防篡改校验特征的 PAdES 数字签名文档。",
+      "offlineBoundaries": "密码与私钥使用完毕后在内存中立即归零清空 (Zeroize)，不进行远程时间戳服务器轮询。"
+    },
+    {
+      "id": "edit",
+      "feature": "编辑与批注 (Edit)",
+      "question": "支持添加批注、高亮、水印与贝茨编号吗？",
+      "answer": "支持。编辑模块支持标准 PDF 标记注释、下划线、图钉附注、水印图章以及法律案卷贝茨编码。",
+      "usage": "在编辑视图中打开 PDF，选取批注工具定制色彩与样式，即可实时应用并保存。",
+      "outputs": "生成包含标准化 ISO 32000-2 批注字典的高兼容性修改文档。",
+      "offlineBoundaries": "所有文字排版、字形渲染及注释图元均完全在本地原生 Rust 代码中直接合成。"
+    },
+    {
+      "id": "forms",
+      "feature": "交互式表单 (Forms)",
+      "question": "AcroForm 与 XFA 表单的填写与扁平化如何运行？",
+      "answer": "支持智能检测表单控件、数据填充、XFDF 导入导出以及一键扁平化为只读矢量图层。",
+      "usage": "在表单视图中填写字段，或选择“扁平化表单”将所有控件转换为不可更改的标准矢量图形。",
+      "outputs": "填充完毕的交互式 PDF 或完全扁平化的防篡改归档文档。",
+      "offlineBoundaries": "表单输入数据在本地实施缓冲区溢出防御和脚本净化，杜绝任何外部跟踪代码。"
+    },
+    {
+      "id": "markdown",
+      "feature": "Markdown 双向转换",
+      "question": "可以实现 Markdown 与 PDF 的互转吗？",
+      "answer": "可以。提供高保真双向转换引擎，支持代码语法高亮、数学公式及复杂表格渲染。",
+      "usage": "在编辑器中实时编写 Markdown 并查看排版效果，或导入 PDF 提取结构化的 Markdown 文本。",
+      "outputs": "排版精致的矢量 PDF 或格式标准的 CommonMark Markdown 文档。",
+      "offlineBoundaries": "渲染完全依赖本地排版算法与语法着色引擎，无外部资源拉取。"
+    },
+    {
+      "id": "ai_summarizer",
+      "feature": "AI 离线摘要 (AI Summarizer)",
+      "question": "在没有云端 API 的情况下，AI 摘要是如何实现的？",
+      "answer": "默认采用纯本地抽取式统计算法，亦支持导入离线 ONNX/GGUF 模型执行本地推理。",
+      "usage": "选取抽取式模式获取秒级关键句摘要，或载入本地 GGUF 模型进行多层 Map-Reduce 合成。",
+      "outputs": "清晰简练的 Markdown 摘要报告或要点大纲。",
+      "offlineBoundaries": "遵循 F19 隔离规则：严格封禁运行时网络套接字，数据绝不离开当前终端。"
+    },
+    {
+      "id": "batch_queue",
+      "feature": "批量处理队列 (Batch Queue)",
+      "question": "能够同时批量处理数百个文件吗？",
+      "answer": "批量队列提供异步多线程作业调度，可根据检测到的硬件配置档位自动调整并发并发数。",
+      "usage": "批量添加文档或整个文件夹，指定统一处理操作与任务优先级，实时查看进度。",
+      "outputs": "批量文件原子写入至指定目录，并附带针对单个任务的执行状态记录。",
+      "offlineBoundaries": "任务由独立的本地 Worker 子进程承载，意外中断不会影响主界面与其它任务。"
+    },
+    {
+      "id": "workflows",
+      "feature": "自动化工作流 (Workflows)",
+      "question": "什么是工具链式调用，工作流流水线如何运作？",
+      "answer": "工作流可将多道工序（如：OCR -> 文本脱敏 -> 压缩 -> 签名）无缝拼接为一键自动化流程。",
+      "usage": "选用内置预设工作流（合规归档、极速脱敏、网络优化）或根据业务需要组装自定义流水线。",
+      "outputs": "经过流水线逐级严密处理并完成各阶段原子完整性校验的最终 PDF 文档。",
+      "offlineBoundaries": "流水线阶段之间使用本地 WAL 轻量日志传递临时文件，零网络云端交互。"
+    }
+  ]
+}

@@ -576,6 +576,12 @@ fn get_startup_files() -> Vec<String> {
     extract_pdf_args(std::env::args())
 }
 
+/// Returns the active backend engine version info.
+#[tauri::command]
+fn get_engine_version() -> String {
+    format!("pdfcraft v0.15.0 ({})", "75360d1d")
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let _log_guard = setup_logging();
@@ -620,6 +626,7 @@ pub fn run() {
             export_diagnostics,
             import_local_ai_model,
             get_startup_files,
+            get_engine_version,
             pick_files_dialog,
             pick_folder_dialog,
             save_file_dialog

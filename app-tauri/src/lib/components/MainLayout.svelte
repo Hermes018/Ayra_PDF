@@ -4,6 +4,8 @@
     import StatusBar from './StatusBar.svelte';
     import Dropzone from './Dropzone.svelte';
     import ToastContainer from './ToastContainer.svelte';
+    import FaqModal from './FaqModal.svelte';
+    import { faqStore } from '$lib/i18n/faqStore.svelte';
 
     let { children, currentView = $bindable() } = $props<{
         children: Snippet;
@@ -26,8 +28,19 @@
         <StatusBar />
     </div>
     
+    <button
+        type="button"
+        class="faq-floating-trigger"
+        onclick={() => faqStore.toggle()}
+        aria-label="Frequently Asked Questions and Help"
+        title="Help & FAQ"
+    >
+        ?
+    </button>
+
     <Dropzone />
     <ToastContainer />
+    <FaqModal />
 </div>
 
 <style>
@@ -89,5 +102,35 @@
         top: 1rem;
         outline: 3px solid var(--accent-ring);
         outline-offset: 2px;
+    }
+
+    .faq-floating-trigger {
+        position: fixed;
+        bottom: calc(var(--statusbar-height, 28px) + 0.85rem);
+        right: 1.25rem;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: var(--glass-bg-elevated);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid var(--glass-border-specular);
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--glass-shadow-sm);
+        z-index: 9000;
+        transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    }
+
+    .faq-floating-trigger:hover {
+        background-color: var(--glass-bg-hover);
+        border-color: var(--accent-primary);
+        color: var(--accent-primary);
+        transform: scale(1.1);
     }
 </style>

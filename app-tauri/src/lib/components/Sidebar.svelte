@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { faqStore } from '$lib/i18n/faqStore.svelte';
+
     let { currentView = $bindable() } = $props<{
         currentView: string;
     }>();
@@ -42,6 +44,15 @@
     </nav>
 
     <div class="bottom-nav">
+        <button
+            type="button"
+            class="sidebar__item"
+            onclick={() => faqStore.open()}
+            aria-label="Frequently Asked Questions and Help"
+        >
+            <span class="icon" aria-hidden="true">❓</span>
+            Help & FAQ
+        </button>
         <button
             class="sidebar__item"
             class:active={currentView === 'Settings'}

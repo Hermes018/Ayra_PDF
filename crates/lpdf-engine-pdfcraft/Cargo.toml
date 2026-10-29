@@ -11,7 +11,7 @@ lpdf-core-types = { path = "../lpdf-core-types" }
 lpdf-engine-port = { path = "../lpdf-engine-port" }
 lpdf-fs-safety = { path = "../lpdf-fs-safety" }
 lpdf-ai-worker = { path = "../lpdf-ai-worker" }
-pdfcraft-engine = { git = "https://github.com/storytold/pdfcraft", rev = "dc4b3eee84f73bad8564906c141bdda9caad0fd6" }
-pdfcraft-forms = { git = "https://github.com/storytold/pdfcraft", rev = "dc4b3eee84f73bad8564906c141bdda9caad0fd6" }
-pdfcraft-sign = { git = "https://github.com/storytold/pdfcraft", rev = "dc4b3eee84f73bad8564906c141bdda9caad0fd6" }
-pdfcraft-cos = { git = "https://github.com/storytold/pdfcraft", rev = "dc4b3eee84f73bad8564906c141bdda9caad0fd6" }
+pdfcraft-engine = { git = "https://github.com/storytold/pdfcraft", rev = "75360d1d7db06fed974f48c914d4c04132757187" }
+pdfcraft-forms = { git = "https://github.com/storytold/pdfcraft", rev = "75360d1d7db06fed974f48c914d4c04132757187" }
+pdfcraft-sign = { git = "https://github.com/storytold/pdfcraft", rev = "75360d1d7db06fed974f48c914d4c04132757187" }
+pdfcraft-cos = { git = "https://github.com/storytold/pdfcraft", rev = "75360d1d7db06fed974f48c914d4c04132757187" }

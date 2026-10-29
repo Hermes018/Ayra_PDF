@@ -480,6 +480,7 @@ impl PdfEngine for PdfcraftAdapter {
                 language: lang,
                 dpi: 300.0,
                 skip_text_pages: true,
+                native_text_only: false,
             };
 
             // This is where ML inference runs and might panic
@@ -1100,6 +1101,8 @@ impl PdfEngine for PdfcraftAdapter {
                 date: "D:20261010000000Z".to_string(), // placeholder date
                 certify: None,
                 appearance: pdfcraft_sign::Appearance::default(),
+                appearance_labels: pdfcraft_sign::AppearanceLabels::default(),
+                graphic: None,
             };
 
             let signed_bytes = pdfcraft_sign::sign(&doc, &digital_id, &opts)
@@ -1340,10 +1343,10 @@ impl PdfEngine for PdfcraftAdapter {
             let src = doc.export_source();
             let extracted = pdfcraft_engine::export::extract_images(&src, &pages, 0)
                 .map_err(|e| LpdfError::Engine(e.to_string()))?;
-            Ok::<_, LpdfError>(extracted)
+            Ok::<_, LpdfError>((extracted, page_count))
         }));
 
-        let extracted = match result {
+        let (extracted, page_count) = match result {
             Ok(Ok(val)) => val,
             Ok(Err(e)) => return Err(e),
             Err(_) => return Err(LpdfError::Engine("Panic during extract_all_images".into())),
@@ -1353,7 +1356,7 @@ impl PdfEngine for PdfcraftAdapter {
         let out_dir = lpdf_fs_safety::create_safe_output_dir(target_dir, &folder_prefix)?;
 
         for (idx, img) in extracted.images.into_iter().enumerate() {
-            let fname = pdfcraft_engine::export::image_file_name(stem, &img, idx + 1);
+            let fname = pdfcraft_engine::export::image_file_name(stem, &img, idx + 1, page_count);
             let img_path = out_dir.join(fname);
             lpdf_fs_safety::atomic_write(&img_path, &img.data)?;
         }
