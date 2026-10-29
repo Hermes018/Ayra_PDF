@@ -1,0 +1,99 @@
+{
+  "locale": "fr",
+  "language": "Français",
+  "title": "Foire Aux Questions (FAQ)",
+  "searchPlaceholder": "Rechercher des fonctionnalités, workflows et politiques hors ligne...",
+  "emptySearch": "Aucune fonctionnalité correspondante trouvée.",
+  "items": [
+    {
+      "id": "convert",
+      "feature": "Convertir",
+      "question": "Comment fonctionne la conversion PDF sans transférer mes documents ?",
+      "answer": "La conversion s'exécute entièrement sur votre appareil grâce à des moteurs vectoriels Rust natifs et des adaptateurs isolés.",
+      "usage": "Sélectionnez Convertir dans la barre latérale, choisissez Convertir depuis ou vers PDF, configurez le format cible et lancez l'exportation.",
+      "outputs": "Génère des fichiers DOCX, XLSX, PPTX, PNG, JPEG, PDF/A-2b/3b, HTML ou TXT de manière atomique dans votre dossier de destination.",
+      "offlineBoundaries": "Aucune requête réseau, aucune télémétrie cloud. Tout s'exécute dans des processus de travail locaux et cloisonnés."
+    },
+    {
+      "id": "organize",
+      "feature": "Organiser",
+      "question": "Puis-je réorganiser, faire pivoter, supprimer et extraire des pages en toute sécurité ?",
+      "answer": "Oui. L'espace de travail Organiser permet de manipuler visuellement les pages par glisser-déposer de manière non destructive.",
+      "usage": "Glissez les vignettes de pages pour réorganiser l'ordre, appliquez des rotations globales ou par page, supprimez ou divisez en chapitres.",
+      "outputs": "Enregistre un nouveau fichier PDF atomique et vérifié en conservant l'original intact.",
+      "offlineBoundaries": "Les modifications de l'arborescence des pages ont lieu en mémoire et sur fichiers temporaires locaux."
+    },
+    {
+      "id": "optimize",
+      "feature": "Optimiser",
+      "question": "Comment la compression réduit-elle la taille sans dégrader la lisibilité ?",
+      "answer": "L'optimisation applique la déflation des flux, l'élagage des ressources inutilisées et le sous-échantillonnage d'images optionnel.",
+      "usage": "Choisissez un préréglage d'optimisation (Sans perte, Web standard, Compression maximale) et visualisez l'estimation de gain.",
+      "outputs": "Un PDF optimisé préservant la netteté vectorielle, avec suppression des objets dupliqués.",
+      "offlineBoundaries": "Garde-fou strict : si le fichier compressé est plus volumineux que l'original, l'original est conservé sans modification."
+    },
+    {
+      "id": "security",
+      "feature": "Sécurité et Signatures",
+      "question": "Quel est le niveau de sécurité du chiffrement et de la signature numérique ?",
+      "answer": "La sécurité s'appuie sur le chiffrement AES-256 et AES-128 de niveau militaire et des signatures numériques PKCS#12 vérifiables.",
+      "usage": "Définissez les mots de passe utilisateur et propriétaire, configurez les permissions ou signez avec un certificat PKCS#12 (.p12/.pfx).",
+      "outputs": "Document PDF chiffré conforme aux normes ISO ou document signé numériquement au standard PAdES.",
+      "offlineBoundaries": "Les mots de passe et clés privées sont purgés (zeroized) de la mémoire vive immédiatement après leur utilisation."
+    },
+    {
+      "id": "edit",
+      "feature": "Édition et Annotations",
+      "question": "Puis-je ajouter des annotations, filigranes et numérotations Bates ?",
+      "answer": "Oui. La suite d'édition prend en charge le surlignage, le soulignement, les notes repositionnables, filigranes et tampons juridiques.",
+      "usage": "Ouvrez un PDF en mode Édition, choisissez vos outils d'annotation, personnalisez les styles et enregistrez.",
+      "outputs": "PDF modifié contenant des dictionnaires d'annotation ISO 32000-2 normalisés.",
+      "offlineBoundaries": "La mise en page du texte et le rendu des glyphes sont synthétisés localement dans les bibliothèques Rust natives."
+    },
+    {
+      "id": "forms",
+      "feature": "Formulaires Interactifs",
+      "question": "Comment fonctionne le remplissage et l'aplatissement des formulaires AcroForm et XFA ?",
+      "answer": "LocalPDF Studio détecte, renseigne, exporte et aplatit les champs de formulaires (textes, cases à cocher, listes) de manière fluide.",
+      "usage": "Complétez les champs de manière interactive, importez des données XFDF ou choisissez 'Aplatir' pour convertir les champs en vecteurs statiques.",
+      "outputs": "PDF interactif complété ou document figé en lecture seule prêt pour transmission officielle.",
+      "offlineBoundaries": "Les entrées formulaires sont assainies localement contre les dépassements de mémoire tampon et injections de scripts."
+    },
+    {
+      "id": "markdown",
+      "feature": "Markdown",
+      "question": "Puis-je convertir des documents Markdown vers PDF et inversement ?",
+      "answer": "Oui. Une chaîne de traitement bidirectionnelle haute fidélité prend en charge la coloration syntaxique et les tableaux.",
+      "usage": "Rédigez ou collez du Markdown dans l'éditeur avec aperçu instantané, ou importez un PDF pour en extraire du Markdown sémantique.",
+      "outputs": "PDF vectoriel élégamment composé ou fichier CommonMark structuré.",
+      "offlineBoundaries": "Le rendu est calculé intégralement par des algorithmes de composition typographique locaux."
+    },
+    {
+      "id": "ai_summarizer",
+      "feature": "Résumeur IA",
+      "question": "Comment le résumeur IA fonctionne-t-il sans connexion cloud ?",
+      "answer": "Les résumés sont générés en local par des algorithmes extractifs ou un modèle local optionnel ONNX/GGUF.",
+      "usage": "Sélectionnez le mode extractif pour un résumé statistique immédiat, ou chargez votre propre modèle GGUF/ONNX.",
+      "outputs": "Synthèses concises en Markdown ou plans thématiques détaillés.",
+      "offlineBoundaries": "Sécurité F19 : exécution strictement locale. Tout accès aux sockets réseau est bloqué par le bac à sable."
+    },
+    {
+      "id": "batch_queue",
+      "feature": "File de Traitement par Lot",
+      "question": "Puis-je traiter des centaines de fichiers simultanément ?",
+      "answer": "La file de traitement planifie des tâches asynchrones multithread avec adaptation automatique aux capacités de votre matériel.",
+      "usage": "Ajoutez des fichiers ou des dossiers entiers, assignez des actions, organisez les priorités et suivez l'avancement.",
+      "outputs": "Fichiers traités écrits de manière atomique dans le dossier cible avec rapport d'état individuel.",
+      "offlineBoundaries": "Les tâches en arrière-plan sont isolées dans des processus distincts, prévenant toute corruption de l'application."
+    },
+    {
+      "id": "workflows",
+      "feature": "Workflows et Chaînage",
+      "question": "Qu'est-ce que le chaînage d'outils et comment fonctionnent les pipelines ?",
+      "answer": "Les workflows permettent d'enchaîner plusieurs opérations (ex: OCR -> Caviardage -> Compression -> Signature) en un clic.",
+      "usage": "Sélectionnez un préréglage intégré (Conformité juridique, Archivage, Optimisation web) ou assemblez une séquence sur mesure.",
+      "outputs": "Un PDF final validé ayant franchi chaque étape avec vérification atomique entre chaque phase.",
+      "offlineBoundaries": "Les étapes intermédiaires transitent par un journal WAL local sans aucun recours à des services cloud."
+    }
+  ]
+}

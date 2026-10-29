@@ -1089,3 +1089,17 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 
 
 
+
+## [2026-10-29 21:42] Phase 12.6 Core Engine Bump (`pdfcraft` 75360d1) & Multilingual FAQ Modal — DONE
+- Changes:
+  - Upgraded pinned `pdfcraft` engine to commit `75360d1d7db06fed974f48c914d4c04132757187` across workspace and submodule.
+  - Adapted `lpdf-engine-pdfcraft` to `pdfcraft` API upgrades: configured `appearance_labels` and `graphic` on digital signature options, supported `native_text_only` flag in OCR, and passed total `page_count` to `image_file_name` for extracted images.
+  - Implemented `get_engine_version` Tauri IPC command reporting the active backend engine version.
+  - Implemented lazy-loaded multilingual FAQ modal (`FaqModal.svelte`) with search filtering, responsive frosted glass design tokens, and keyboard accessibility (Esc/backdrop handling).
+  - Added dynamic multilingual FAQ catalog store (`faqStore.svelte.ts`) supporting 6 languages: English (`en`), Bengali (`bn`), French (`fr`), Japanese (`ja`), Tamil (`ta`), and Chinese (`zh`).
+  - Integrated FAQ triggers into `MainLayout.svelte` (floating quick-access button) and `Sidebar.svelte` (navigation item).
+- Gate: pass (`pnpm check` 0 errors/warnings; vitest 8/8 suites & 53/53 tests pass; `cargo check --workspace` clean; release RPM built at 37.43 MiB; live smoke test `EXIT_CODE=124`).
+- Tests added/run: vitest 8 test suites, 53 tests passed; cargo check clean; 5s GUI launch smoke test.
+- Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+- Risks / follow-ups: None.
+- Commit / tag: `feat(core): upgrade pdfcraft to 75360d1, add lazy-loaded multilingual FAQ modal and help trigger`
