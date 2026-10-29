@@ -101,6 +101,9 @@ pub enum JobRequest {
         input_path: String,
         output_path: String,
         lang: String,
+        #[ts(optional)]
+        #[serde(default)]
+        native_text_only: Option<bool>,
     },
 
     /// Protect a PDF with a password and permissions.
@@ -189,18 +192,30 @@ pub enum JobRequest {
     PdfToText {
         input_path: String,
         output_path: String,
+        #[ts(optional)]
+        #[serde(default)]
+        native_text_only: Option<bool>,
     },
     PdfToDocx {
         input_path: String,
         output_path: String,
+        #[ts(optional)]
+        #[serde(default)]
+        native_text_only: Option<bool>,
     },
     PdfToHtml {
         input_path: String,
         output_path: String,
+        #[ts(optional)]
+        #[serde(default)]
+        native_text_only: Option<bool>,
     },
     PdfToRtf {
         input_path: String,
         output_path: String,
+        #[ts(optional)]
+        #[serde(default)]
+        native_text_only: Option<bool>,
     },
     PdfToPdfA {
         input_path: String,
@@ -500,6 +515,7 @@ impl JobRequest {
             JobRequest::PdfToText {
                 input_path,
                 output_path,
+                ..
             } => (
                 "PDF to Text".to_string(),
                 Some(input_path.clone()),
@@ -508,6 +524,7 @@ impl JobRequest {
             JobRequest::PdfToDocx {
                 input_path,
                 output_path,
+                ..
             } => (
                 "PDF to DOCX".to_string(),
                 Some(input_path.clone()),
@@ -516,6 +533,7 @@ impl JobRequest {
             JobRequest::PdfToHtml {
                 input_path,
                 output_path,
+                ..
             } => (
                 "PDF to HTML".to_string(),
                 Some(input_path.clone()),
@@ -524,6 +542,7 @@ impl JobRequest {
             JobRequest::PdfToRtf {
                 input_path,
                 output_path,
+                ..
             } => (
                 "PDF to RTF".to_string(),
                 Some(input_path.clone()),
@@ -1362,6 +1381,7 @@ impl JobManager {
                 input_path,
                 output_path,
                 lang,
+                native_text_only,
             } => {
                 let _ = event_tx.send(JobEvent::Progress {
                     job_id: job_id.into(),
@@ -1384,7 +1404,8 @@ impl JobManager {
                 let path = PathBuf::from(input_path);
                 let out = PathBuf::from(output_path);
 
-                engine.ocr(&path, lang, &out)?;
+                let native_only = native_text_only.unwrap_or(false);
+                engine.ocr_with_options(&path, lang, &out, native_only)?;
 
                 if cancel_token.is_cancelled() {
                     return Err(LpdfError::Engine("Job cancelled".into()));
@@ -1737,6 +1758,7 @@ impl JobManager {
             JobRequest::PdfToText {
                 input_path,
                 output_path,
+                ..
             } => {
                 let _ = event_tx.send(JobEvent::Progress {
                     job_id: job_id.into(),
@@ -1763,6 +1785,7 @@ impl JobManager {
             JobRequest::PdfToDocx {
                 input_path,
                 output_path,
+                ..
             } => {
                 let _ = event_tx.send(JobEvent::Progress {
                     job_id: job_id.into(),
@@ -1789,6 +1812,7 @@ impl JobManager {
             JobRequest::PdfToHtml {
                 input_path,
                 output_path,
+                ..
             } => {
                 let _ = event_tx.send(JobEvent::Progress {
                     job_id: job_id.into(),
@@ -1815,6 +1839,7 @@ impl JobManager {
             JobRequest::PdfToRtf {
                 input_path,
                 output_path,
+                ..
             } => {
                 let _ = event_tx.send(JobEvent::Progress {
                     job_id: job_id.into(),

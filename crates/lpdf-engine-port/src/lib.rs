@@ -339,6 +339,16 @@ pub trait PdfEngine {
     ) -> Result<()>;
     fn repair(&self, input_path: &Path, output_path: &Path) -> Result<Vec<String>>;
     fn ocr(&self, input_path: &Path, lang: &str, output_path: &Path) -> Result<()>;
+    fn ocr_with_options(
+        &self,
+        input_path: &Path,
+        lang: &str,
+        output_path: &Path,
+        native_text_only: bool,
+    ) -> Result<()> {
+        let _ = native_text_only;
+        self.ocr(input_path, lang, output_path)
+    }
     fn protect(
         &self,
         input_path: &Path,

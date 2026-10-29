@@ -33,6 +33,7 @@ lpdf-core-types = { path = "../../crates/lpdf-core-types" }
 lpdf-fs-safety = { path = "../../crates/lpdf-fs-safety" }
 lpdf-hw = { path = "../../crates/lpdf-hw" }
 lpdf-jobs = { path = "../../crates/lpdf-jobs" }
+lpdf-engine-port = { path = "../../crates/lpdf-engine-port" }
 lpdf-engine-pdfcraft = { path = "../../crates/lpdf-engine-pdfcraft" }
 pdfcraft-engine = { git = "https://github.com/storytold/pdfcraft", rev = "75360d1d7db06fed974f48c914d4c04132757187" }
 tokio = { version = "1", features = ["rt", "sync"] }

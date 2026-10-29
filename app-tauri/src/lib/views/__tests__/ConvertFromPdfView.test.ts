@@ -194,6 +194,26 @@ describe('ConvertFromPdfView', () => {
             })
         }));
     });
+
+    test('toggles native text only switch and passes flag to JobRequest', async () => {
+        appState.addFiles(['/path/to/my_document.pdf']);
+        const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-native-job');
+        render(ConvertFromPdfView);
+
+        const toggle = screen.getByLabelText(/Native Text Only \(Bypass OCR\)/i) as HTMLInputElement;
+        expect(toggle.checked).toBe(false);
+
+        await fireEvent.click(toggle);
+        expect(appState.preferNativeText).toBe(true);
+
+        const btn = screen.getByRole('button', { name: /Convert Now/i });
+        await fireEvent.click(btn);
+
+        expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
+            op: 'PdfToDocx',
+            native_text_only: true
+        }));
+    });
 });
 
 describe('ConvertView tab container', () => {

@@ -16,6 +16,7 @@ class AppState {
     themePreference = $state<ThemePreference>('System');
     effectiveTheme = $state<'light' | 'dark'>('dark');
     toasts = $state<ToastItem[]>([]);
+    preferNativeText = $state<boolean>(false);
 
     private mediaQueryList: MediaQueryList | null = null;
     private mediaListener: ((e: MediaQueryListEvent) => void) | null = null;
@@ -31,6 +32,7 @@ class AppState {
         if (typeof window !== 'undefined') {
             this.initTheme();
             this.initJobListener();
+            this.initPreferences();
         }
     }
 
@@ -210,6 +212,31 @@ class AppState {
         } else {
             docEl.classList.add('light');
             docEl.classList.remove('dark');
+        }
+    }
+
+    /* ---------- User Preferences Persistence ---------- */
+    initPreferences() {
+        if (typeof window === 'undefined') return;
+        try {
+            const saved = localStorage.getItem('localpdf_prefer_native_text');
+            if (saved !== null) {
+                const parsed = JSON.parse(saved);
+                this.preferNativeText = typeof parsed === 'boolean' ? parsed : false;
+            } else {
+                this.preferNativeText = false;
+            }
+        } catch {
+            this.preferNativeText = false;
+        }
+    }
+
+    setPreferNativeText(val: boolean) {
+        this.preferNativeText = val;
+        try {
+            localStorage.setItem('localpdf_prefer_native_text', JSON.stringify(val));
+        } catch {
+            // Failsafe: ignore localStorage write errors (e.g. private mode/quota)
         }
     }
 }

@@ -453,6 +453,16 @@ impl PdfEngine for PdfcraftAdapter {
     }
 
     fn ocr(&self, input_path: &Path, lang: &str, output_path: &Path) -> Result<()> {
+        self.ocr_with_options(input_path, lang, output_path, false)
+    }
+
+    fn ocr_with_options(
+        &self,
+        input_path: &Path,
+        lang: &str,
+        output_path: &Path,
+        native_text_only: bool,
+    ) -> Result<()> {
         let input_path = input_path.to_owned();
         let lang = lang.to_owned();
 
@@ -480,7 +490,7 @@ impl PdfEngine for PdfcraftAdapter {
                 language: lang,
                 dpi: 300.0,
                 skip_text_pages: true,
-                native_text_only: false,
+                native_text_only,
             };
 
             // This is where ML inference runs and might panic
