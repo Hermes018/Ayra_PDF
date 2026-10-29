@@ -25,7 +25,7 @@ describe('ConvertFromPdfView', () => {
         expect(screen.getByText('my_document.pdf')).toBeInTheDocument();
         expect(screen.getByText(/Convert from PDF/i)).toBeInTheDocument();
         expect(screen.getAllByText(/Word Document \(\.docx\)/i).length).toBeGreaterThan(0);
-        expect(screen.getByText(/Render to Images \(PNG\)/i)).toBeInTheDocument();
+        expect(screen.getByText(/PDF to Images/i)).toBeInTheDocument();
         expect(screen.getByText(/Extract Embedded Images/i)).toBeInTheDocument();
         expect(screen.getByText(/HTML Document \(\.html\)/i)).toBeInTheDocument();
         expect(screen.getByText(/Plain Text \(\.txt\)/i)).toBeInTheDocument();

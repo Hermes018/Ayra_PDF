@@ -1,7 +1,7 @@
 <script lang="ts">
     import GridEditor from '$lib/components/GridEditor.svelte';
     import { appState } from '$lib/state.svelte';
-    import { IpcClient } from '$lib/ipc';
+    import { IpcClient, pickFilesDialog } from '$lib/ipc';
     import type { JobRequest } from '$lib/bindings/JobRequest';
 
     // The viewer reactive path comes directly from the global active files
@@ -144,12 +144,26 @@
             console.error("Failed to submit merge job:", e);
         }
     }
+
+    async function handleBrowseFiles() {
+        try {
+            const files = await pickFilesDialog(true, ['pdf']);
+            if (files && files.length > 0) {
+                appState.addFiles(files);
+            }
+        } catch (e) {
+            console.error("Failed to open file picker:", e);
+        }
+    }
 </script>
 
 <div class="view-container">
     <div class="header">
         <h2>Organize PDFs</h2>
         <div class="controls">
+            <button type="button" class="browse-button" onclick={handleBrowseFiles} aria-label="Browse PDF files">
+                📁 Browse Files
+            </button>
             <span class="active-file-path">
                 {currentPath || 'No file selected. Drag and drop a PDF.'}
             </span>
@@ -287,7 +301,35 @@
 
     .controls {
         display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .browse-button {
+        display: inline-flex;
+        align-items: center;
         gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--accent-primary);
+        color: var(--text-on-accent);
+        font-weight: 600;
+        font-size: 0.85rem;
+        border: none;
+        border-radius: var(--radius-md, 10px);
+        box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-sm);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: opacity var(--dur-fast, 120ms) ease, transform var(--dur-fast, 120ms) ease;
+    }
+
+    .browse-button:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+
+    .browse-button:active {
+        transform: translateY(0);
     }
 
     .active-file-path {
