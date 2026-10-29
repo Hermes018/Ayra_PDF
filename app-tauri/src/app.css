@@ -4,6 +4,7 @@
    ========================================================================== */
 
 :root {
+  color-scheme: light dark;
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
     "Inter", "Inter Variable", "Cantarell", "Noto Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", monospace;

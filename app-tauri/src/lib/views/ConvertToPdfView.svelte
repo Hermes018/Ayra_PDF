@@ -2,6 +2,7 @@
     import { onMount, onDestroy } from 'svelte';
     import { appState } from '$lib/state.svelte';
     import { IpcClient, pickFilesDialog, pickFolderDialog, saveFileDialog } from '$lib/ipc';
+    import For from '$lib/components/For.svelte';
     import type { JobRequest } from '$lib/bindings/JobRequest';
     import type { OfficeInputFormat } from '$lib/bindings/OfficeInputFormat';
     import type { MarkdownDocFormat } from '$lib/bindings/MarkdownDocFormat';
@@ -395,22 +396,24 @@
             <div class="section-card format-card">
                 <span class="card-title">Select Conversion Mode</span>
                 <div class="formats-grid">
-                    {#each convertOptions as opt}
-                        <button
-                            type="button"
-                            class="format-tile"
-                            class:active={selectedOptionId === opt.id}
-                            aria-pressed={selectedOptionId === opt.id}
-                            onclick={() => { selectedOptionId = opt.id; }}
-                        >
-                            <div class="tile-header">
-                                <span class="tile-icon">{opt.icon}</span>
-                                <span class="badge" class:sidecar-badge={opt.kind === 'office'}>{opt.badge}</span>
-                            </div>
-                            <span class="tile-title">{opt.title}</span>
-                            <span class="tile-desc">{opt.desc}</span>
-                        </button>
-                    {/each}
+                    <For items={convertOptions}>
+                        {#snippet children(opt)}
+                            <button
+                                type="button"
+                                class="format-tile"
+                                class:active={selectedOptionId === opt.id}
+                                aria-pressed={selectedOptionId === opt.id}
+                                onclick={() => { selectedOptionId = opt.id; }}
+                            >
+                                <div class="tile-header">
+                                    <span class="tile-icon">{opt.icon}</span>
+                                    <span class="badge" class:sidecar-badge={opt.kind === 'office'}>{opt.badge}</span>
+                                </div>
+                                <span class="tile-title">{opt.title}</span>
+                                <span class="tile-desc">{opt.desc}</span>
+                            </button>
+                        {/snippet}
+                    </For>
                 </div>
             </div>
 

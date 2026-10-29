@@ -340,11 +340,13 @@
     }
     
     .secondary-button {
-        background: var(--secondary-color, #6b7280);
+        background: var(--glass-bg-elevated);
+        color: var(--text-primary);
     }
 
     .danger-button {
-        background: #dc2626;
+        background: var(--semantic-danger);
+        color: var(--text-on-accent);
     }
 
     .help-text {

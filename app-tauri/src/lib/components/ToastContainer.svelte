@@ -83,14 +83,14 @@
         place-items: center;
         font-weight: 700;
         font-size: 14px;
-        color: #fff;
+        color: var(--text-on-accent);
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
     }
 
-    .toast--success .toast__badge { background: var(--semantic-success, #34C759); }
-    .toast--error   .toast__badge { background: var(--semantic-danger, #FF3B30); }
-    .toast--warning .toast__badge { background: var(--semantic-warning, #FF9F0A); }
-    .toast--info    .toast__badge { background: var(--accent-primary, #0A84FF); }
+    .toast--success .toast__badge { background: var(--semantic-success); }
+    .toast--error   .toast__badge { background: var(--semantic-danger); }
+    .toast--warning .toast__badge { background: var(--semantic-warning); }
+    .toast--info    .toast__badge { background: var(--accent-primary); }
 
     .toast__body {
         grid-area: body;

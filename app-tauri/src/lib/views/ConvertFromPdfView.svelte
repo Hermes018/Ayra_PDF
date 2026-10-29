@@ -2,6 +2,7 @@
     import { onMount, onDestroy } from 'svelte';
     import { appState } from '$lib/state.svelte';
     import { IpcClient, pickFilesDialog, pickFolderDialog, saveFileDialog } from '$lib/ipc';
+    import For from '$lib/components/For.svelte';
     import type { JobRequest } from '$lib/bindings/JobRequest';
     import type { PdfAConformance } from '$lib/bindings/PdfAConformance';
     import type { OfficeOutputFormat } from '$lib/bindings/OfficeOutputFormat';
@@ -344,22 +345,24 @@
             <div class="section-card format-card">
                 <span class="card-title">Select Target Format</span>
                 <div class="formats-grid">
-                    {#each formatDetails as fmt}
-                        <button
-                            type="button"
-                            class="format-tile"
-                            class:active={selectedFormat === fmt.id}
-                            aria-pressed={selectedFormat === fmt.id}
-                            onclick={() => { selectedFormat = fmt.id; }}
-                        >
-                            <div class="tile-header">
-                                <span class="tile-icon">{fmt.icon}</span>
-                                <span class="badge">{fmt.badge}</span>
-                            </div>
-                            <span class="tile-title">{fmt.title}</span>
-                            <span class="tile-desc">{fmt.desc}</span>
-                        </button>
-                    {/each}
+                    <For items={formatDetails}>
+                        {#snippet children(fmt)}
+                            <button
+                                type="button"
+                                class="format-tile"
+                                class:active={selectedFormat === fmt.id}
+                                aria-pressed={selectedFormat === fmt.id}
+                                onclick={() => { selectedFormat = fmt.id; }}
+                            >
+                                <div class="tile-header">
+                                    <span class="tile-icon">{fmt.icon}</span>
+                                    <span class="badge">{fmt.badge}</span>
+                                </div>
+                                <span class="tile-title">{fmt.title}</span>
+                                <span class="tile-desc">{fmt.desc}</span>
+                            </button>
+                        {/snippet}
+                    </For>
                 </div>
             </div>
 

@@ -239,9 +239,9 @@
 
     .sidebar {
         width: 300px;
-        background-color: #181825;
-        border-radius: 8px;
-        border: 1px solid #313244;
+        background-color: var(--glass-bg-surface);
+        border-radius: var(--radius-lg, 14px);
+        border: 1px solid var(--glass-border-subtle);
         padding: 1rem;
         display: flex;
         flex-direction: column;
@@ -251,19 +251,19 @@
 
     .viewer-main {
         flex: 1;
-        background-color: #11111b;
-        border-radius: 8px;
-        border: 1px solid #313244;
+        background-color: var(--glass-bg-surface);
+        border-radius: var(--radius-lg, 14px);
+        border: 1px solid var(--glass-border-subtle);
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
     .tool-section {
-        background-color: #1e1e2e;
+        background-color: var(--glass-bg-input);
         padding: 1rem;
-        border-radius: 6px;
-        border: 1px solid #313244;
+        border-radius: var(--radius-md, 10px);
+        border: 1px solid var(--glass-border-subtle);
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
@@ -271,71 +271,72 @@
 
     .tool-section h4 {
         margin: 0 0 0.5rem 0;
-        color: #f5c2e7;
+        color: var(--text-primary);
         font-size: 1.1rem;
     }
 
     .file-label {
         margin: 0;
-        color: #a6adc8;
+        color: var(--text-secondary);
         font-size: 0.9rem;
         word-break: break-all;
     }
 
     .profile-label {
         font-size: 0.9rem;
-        color: #bac2de;
+        color: var(--text-secondary);
     }
 
     .profile-select {
         width: 100%;
-        background-color: #11111b;
-        border: 1px solid #45475a;
-        color: #cdd6f4;
+        background-color: var(--glass-bg-input);
+        border: 1px solid var(--glass-border-subtle);
+        color: var(--text-primary);
         padding: 0.5rem;
-        border-radius: 4px;
+        border-radius: var(--radius-sm, 8px);
         outline: none;
     }
 
     .action-button {
         width: 100%;
-        background-color: #cba6f7;
-        color: #11111b;
+        background-color: var(--accent-primary);
+        color: var(--text-on-accent);
         border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
+        padding: 0.65rem 1rem;
+        border-radius: var(--radius-md, 10px);
         font-weight: 600;
         cursor: pointer;
-        transition: background-color 0.2s;
+        transition: opacity var(--dur-fast, 120ms) ease;
     }
 
     .action-button:hover {
-        background-color: #b4befe;
+        opacity: 0.9;
     }
 
     .secondary-button {
-        background-color: #89b4fa;
+        background-color: var(--glass-bg-elevated);
+        color: var(--text-primary);
     }
 
     .secondary-button:hover {
-        background-color: #74c7ec;
+        background-color: var(--glass-bg-hover);
     }
 
     .help-text {
         font-size: 0.8rem;
-        color: #6c7086;
+        color: var(--text-secondary);
         margin-top: 0.5rem;
         line-height: 1.4;
     }
 
     .empty-text, .empty-state p {
-        color: #6c7086;
+        color: var(--text-tertiary);
         text-align: center;
         font-style: italic;
     }
     
     .placeholder-preview {
-        color: #a6adc8;
+        color: var(--text-secondary);
         text-align: center;
     }
 </style>
