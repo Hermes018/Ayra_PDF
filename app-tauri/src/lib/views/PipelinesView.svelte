@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { IpcClient } from '$lib/ipc';
+    import For from '$lib/components/For.svelte';
     import { appState } from '$lib/state.svelte';
     import type { PipelinePreset } from '$lib/bindings/PipelinePreset';
     import type { PipelineStep } from '$lib/bindings/PipelineStep';
@@ -199,7 +200,8 @@
             <span class="badge">iLovePDF Equivalent</span>
         </div>
         <div class="presets-grid">
-            {#each presets as preset (preset.id)}
+            <For items={presets}>
+                {#snippet children(preset)}
                 <div
                     class="preset-card"
                     class:selected={selectedPresetId === preset.id}
@@ -218,15 +220,18 @@
                     </div>
                     <p class="preset-desc">{preset.description}</p>
                     <div class="preset-steps-chips">
-                        {#each preset.steps as step, idx}
+                        <For items={preset.steps}>
+                            {#snippet children(step, idx)}
                             <span class="step-chip">{step.type}</span>
                             {#if idx < preset.steps.length - 1}
                                 <span class="chip-arrow">➔</span>
                             {/if}
-                        {/each}
+                            {/snippet}
+                        </For>
                     </div>
                 </div>
-            {/each}
+                {/snippet}
+            </For>
         </div>
     </section>
 
@@ -258,7 +263,8 @@
             </div>
         {:else}
             <div class="steps-list" data-testid="active-steps-list">
-                {#each activeSteps as step, index (index)}
+                <For items={activeSteps}>
+                    {#snippet children(step, index)}
                     <div class="step-card" data-testid="step-card">
                         <div class="step-card-header">
                             <div class="step-card-title">
@@ -376,7 +382,8 @@
                             {/if}
                         </div>
                     </div>
-                {/each}
+                    {/snippet}
+                </For>
             </div>
         {/if}
     </section>
@@ -464,26 +471,27 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: #313244;
-        border-left: 4px solid #89b4fa;
+        background: var(--glass-bg-input);
+        border-left: 4px solid var(--accent-primary);
         padding: 0.75rem 1rem;
-        border-radius: 6px;
+        border-radius: var(--radius-sm, 8px);
         font-size: 0.9rem;
-        color: #cdd6f4;
+        color: var(--text-primary);
     }
 
     .close-alert {
         background: none;
         border: none;
-        color: #a6adc8;
+        color: var(--text-secondary);
         font-size: 1.25rem;
         cursor: pointer;
     }
 
     .section {
-        background: #1e1e2e;
-        border: 1px solid #313244;
-        border-radius: 12px;
+        background: var(--glass-bg-surface);
+        border: 1px solid var(--glass-border-subtle);
+        border-radius: var(--radius-lg, 14px);
+        box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-sm);
         padding: 1.5rem;
         display: flex;
         flex-direction: column;
@@ -501,16 +509,16 @@
     .section-header h3 {
         margin: 0;
         font-size: 1.2rem;
-        color: #f5e0dc;
+        color: var(--text-primary);
     }
 
     .badge {
         font-size: 0.75rem;
-        background: #89b4fa;
-        color: #11111b;
+        background: var(--accent-primary);
+        color: var(--text-on-accent);
         font-weight: 700;
         padding: 0.25rem 0.5rem;
-        border-radius: 4px;
+        border-radius: var(--radius-xs, 6px);
         text-transform: uppercase;
     }
 
@@ -522,26 +530,27 @@
     }
 
     .preset-card {
-        background: #181825;
-        border: 1px solid #313244;
-        border-radius: 10px;
+        background: var(--glass-bg-input);
+        border: 1px solid var(--glass-border-subtle);
+        border-radius: var(--radius-md, 10px);
         padding: 1.25rem;
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all var(--dur-fast, 120ms) ease;
     }
 
     .preset-card:hover {
-        border-color: #89b4fa;
+        border-color: var(--accent-primary);
+        background: var(--glass-bg-hover);
         transform: translateY(-2px);
     }
 
     .preset-card.selected {
-        border-color: #cba6f7;
-        background: #1e1d2f;
-        box-shadow: 0 0 12px rgba(203, 166, 247, 0.2);
+        border-color: var(--accent-primary);
+        background: var(--glass-bg-active);
+        box-shadow: 0 0 12px var(--accent-ring);
     }
 
     .preset-header {
@@ -553,22 +562,22 @@
     .preset-title {
         font-weight: 700;
         font-size: 1.05rem;
-        color: #cdd6f4;
+        color: var(--text-primary);
     }
 
     .preset-active-badge {
-        background: #cba6f7;
-        color: #11111b;
+        background: var(--accent-primary);
+        color: var(--text-on-accent);
         font-size: 0.7rem;
         font-weight: 700;
         padding: 0.2rem 0.5rem;
-        border-radius: 4px;
+        border-radius: var(--radius-xs, 6px);
         text-transform: uppercase;
     }
 
     .preset-desc {
         font-size: 0.85rem;
-        color: #a6adc8;
+        color: var(--text-secondary);
         margin: 0;
         line-height: 1.4;
     }
@@ -582,16 +591,17 @@
     }
 
     .step-chip {
-        background: #313244;
-        color: #89b4fa;
+        background: var(--glass-bg-input);
+        color: var(--accent-primary);
+        border: 1px solid var(--glass-border-subtle);
         font-size: 0.75rem;
         font-weight: 600;
         padding: 0.2rem 0.5rem;
-        border-radius: 4px;
+        border-radius: var(--radius-xs, 6px);
     }
 
     .chip-arrow {
-        color: #6c7086;
+        color: var(--text-tertiary);
         font-size: 0.75rem;
     }
 
@@ -610,9 +620,9 @@
     }
 
     .step-card {
-        background: #181825;
-        border: 1px solid #313244;
-        border-radius: 8px;
+        background: var(--glass-bg-surface);
+        border: 1px solid var(--glass-border-subtle);
+        border-radius: var(--radius-md, 10px);
         padding: 1rem;
         display: flex;
         flex-direction: column;
@@ -633,11 +643,12 @@
 
     .step-number {
         font-size: 0.8rem;
-        font-family: monospace;
-        color: #a6adc8;
-        background: #313244;
+        font-family: var(--font-mono, monospace);
+        color: var(--text-secondary);
+        background: var(--glass-bg-input);
+        border: 1px solid var(--glass-border-subtle);
         padding: 0.15rem 0.4rem;
-        border-radius: 4px;
+        border-radius: var(--radius-xs, 6px);
     }
 
     .step-icon {
@@ -646,7 +657,7 @@
 
     .step-name {
         font-weight: 600;
-        color: #cdd6f4;
+        color: var(--text-primary);
         font-size: 0.95rem;
     }
 
@@ -656,18 +667,18 @@
     }
 
     .icon-btn {
-        background: #313244;
-        border: none;
-        color: #cdd6f4;
+        background: var(--glass-bg-input);
+        border: 1px solid var(--glass-border-subtle);
+        color: var(--text-primary);
         padding: 0.3rem 0.6rem;
-        border-radius: 4px;
+        border-radius: var(--radius-xs, 6px);
         cursor: pointer;
         font-size: 0.8rem;
-        transition: background 0.2s;
+        transition: background var(--dur-fast, 120ms) ease;
     }
 
     .icon-btn:hover:not(:disabled) {
-        background: #45475a;
+        background: var(--glass-bg-hover);
     }
 
     .icon-btn:disabled {
@@ -676,18 +687,18 @@
     }
 
     .btn-delete:hover:not(:disabled) {
-        background: #f38ba8;
-        color: #11111b;
+        background: var(--semantic-danger);
+        color: var(--text-on-accent);
     }
 
     .step-config-body {
-        border-top: 1px solid #313244;
+        border-top: 1px solid var(--glass-border-subtle);
         padding-top: 0.6rem;
         font-size: 0.85rem;
     }
 
     .step-hint {
-        color: #a6adc8;
+        color: var(--text-secondary);
         font-style: italic;
     }
 
@@ -695,7 +706,7 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        color: #bac2de;
+        color: var(--text-secondary);
     }
 
     .field-row {
@@ -714,7 +725,7 @@
         display: flex;
         align-items: center;
         gap: 0.35rem;
-        color: #cdd6f4;
+        color: var(--text-primary);
         cursor: pointer;
     }
 
@@ -734,15 +745,15 @@
     .input-group label {
         font-size: 0.85rem;
         font-weight: 600;
-        color: #a6adc8;
+        color: var(--text-secondary);
     }
 
     .text-input {
-        background: #181825;
-        border: 1px solid #313244;
-        border-radius: 6px;
+        background: var(--glass-bg-input);
+        border: 1px solid var(--glass-border-subtle);
+        border-radius: var(--radius-sm, 8px);
         padding: 0.6rem 0.85rem;
-        color: #cdd6f4;
+        color: var(--text-primary);
         font-size: 0.9rem;
     }
 
@@ -751,11 +762,11 @@
     }
 
     .select-input {
-        background: #181825;
-        border: 1px solid #313244;
-        border-radius: 6px;
+        background: var(--glass-bg-input);
+        border: 1px solid var(--glass-border-subtle);
+        border-radius: var(--radius-sm, 8px);
         padding: 0.5rem 0.75rem;
-        color: #cdd6f4;
+        color: var(--text-primary);
         font-size: 0.85rem;
     }
 
@@ -765,25 +776,25 @@
         align-items: center;
         flex-wrap: wrap;
         gap: 1rem;
-        border-top: 1px solid #313244;
+        border-top: 1px solid var(--glass-border-subtle);
         padding-top: 1rem;
     }
 
     .fail-closed-notice {
         font-size: 0.8rem;
-        color: #a6adc8;
+        color: var(--text-secondary);
         max-width: 600px;
         line-height: 1.4;
     }
 
     .btn {
         padding: 0.5rem 1rem;
-        border-radius: 6px;
+        border-radius: var(--radius-sm, 8px);
         font-size: 0.9rem;
         font-weight: 600;
         cursor: pointer;
         border: 1px solid transparent;
-        transition: all 0.2s;
+        transition: all var(--dur-fast, 120ms) ease;
         display: inline-flex;
         align-items: center;
         gap: 0.4rem;
@@ -795,19 +806,20 @@
     }
 
     .btn-primary {
-        background: #89b4fa;
-        color: #11111b;
+        background: var(--accent-primary);
+        color: var(--text-on-accent);
     }
     .btn-primary:hover:not(:disabled) {
-        background: #b4befe;
+        opacity: 0.9;
     }
 
     .btn-secondary {
-        background: #313244;
-        color: #cdd6f4;
+        background: var(--glass-bg-input);
+        color: var(--text-primary);
+        border: 1px solid var(--glass-border-subtle);
     }
     .btn-secondary:hover:not(:disabled) {
-        background: #45475a;
+        background: var(--glass-bg-hover);
     }
 
     .btn-large {
@@ -818,9 +830,9 @@
     .empty-steps {
         padding: 2rem;
         text-align: center;
-        color: #a6adc8;
-        background: #181825;
-        border-radius: 8px;
-        border: 1px dashed #313244;
+        color: var(--text-secondary);
+        background: var(--glass-bg-surface);
+        border-radius: var(--radius-md, 10px);
+        border: 1px dashed var(--glass-border-subtle);
     }
 </style>

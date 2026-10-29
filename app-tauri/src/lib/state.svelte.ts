@@ -147,9 +147,11 @@ class AppState {
             const saved = localStorage.getItem('localpdf_theme') as ThemePreference | null;
             if (saved === 'Light' || saved === 'Dark' || saved === 'System') {
                 this.themePreference = saved;
+            } else {
+                this.themePreference = 'System';
             }
         } catch {
-            // ignore localStorage quota or security errors
+            this.themePreference = 'System';
         }
 
         if (window.matchMedia) {
@@ -188,8 +190,12 @@ class AppState {
         } else if (this.themePreference === 'Dark') {
             resolved = 'dark';
         } else {
-            // System preference
-            const prefersDark = this.mediaQueryList ? this.mediaQueryList.matches : true;
+            // System preference failsafe
+            const prefersDark = this.mediaQueryList
+                ? this.mediaQueryList.matches
+                : (typeof window !== 'undefined' && window.matchMedia
+                    ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                    : true);
             resolved = prefersDark ? 'dark' : 'light';
         }
 
@@ -197,6 +203,7 @@ class AppState {
 
         const docEl = document.documentElement;
         docEl.setAttribute('data-theme', resolved);
+        docEl.style.colorScheme = resolved;
         if (resolved === 'dark') {
             docEl.classList.add('dark');
             docEl.classList.remove('light');

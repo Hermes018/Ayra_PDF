@@ -1,5 +1,6 @@
 <script lang="ts">
     import GridEditor from '$lib/components/GridEditor.svelte';
+    import For from '$lib/components/For.svelte';
     import { appState } from '$lib/state.svelte';
     import { IpcClient, pickFilesDialog } from '$lib/ipc';
     import type { JobRequest } from '$lib/bindings/JobRequest';
@@ -251,9 +252,11 @@
                 <h4>Files to Merge</h4>
                 {#if activeFiles.length > 0}
                     <ul class="file-list">
-                        {#each activeFiles as file}
-                            <li>{file.split(/[\/\\]/).pop()}</li>
-                        {/each}
+                        <For items={activeFiles}>
+                            {#snippet children(file)}
+                                <li>{file.split(/[\/\\]/).pop()}</li>
+                            {/snippet}
+                        </For>
                     </ul>
                     <button class="merge-button" onclick={handleMerge} disabled={activeFiles.length < 2}>
                         Merge All

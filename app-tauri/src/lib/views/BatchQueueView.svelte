@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import { IpcClient, pickFilesDialog } from '$lib/ipc';
+    import For from '$lib/components/For.svelte';
     import { appState } from '$lib/state.svelte';
     import type { JobRecord } from '$lib/bindings/JobRecord';
     import type { JobEvent } from '$lib/bindings/JobEvent';
@@ -389,7 +390,8 @@
                 </button>
             </div>
         {:else}
-            {#each filteredJobs as job (job.job_id)}
+            <For items={filteredJobs}>
+                {#snippet children(job)}
                 <article class="job-card" data-testid="job-card" id={`job-${job.job_id}`}>
                     <div class="job-card-header">
                         <div class="job-title-group">
@@ -466,7 +468,8 @@
                         </div>
                     </div>
                 </article>
-            {/each}
+                {/snippet}
+            </For>
         {/if}
     </main>
 </div>

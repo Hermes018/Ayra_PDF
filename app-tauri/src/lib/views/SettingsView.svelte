@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { IpcClient, pickFilesDialog } from '$lib/ipc';
+    import For from '$lib/components/For.svelte';
     import { appState } from '$lib/state.svelte';
     import type { AppSettings } from '$lib/bindings/AppSettings';
     import type { HardwareTier } from '$lib/bindings/HardwareTier';
@@ -455,9 +456,11 @@
             {#if recentLogs.length === 0}
                 <div class="log-empty">No recent logs recorded.</div>
             {:else}
-                {#each recentLogs as line}
-                    <div class="log-line">{line}</div>
-                {/each}
+                <For items={recentLogs}>
+                    {#snippet children(line)}
+                        <div class="log-line">{line}</div>
+                    {/snippet}
+                </For>
             {/if}
         </div>
 

@@ -319,16 +319,19 @@
     }
 
     .secondary-button {
-        background: var(--secondary-color, #4f46e5);
+        background: var(--accent-primary);
+        color: var(--text-on-accent);
     }
     
     .tertiary-button {
-        background: var(--secondary-color, #10b981);
+        background: var(--semantic-success);
+        color: var(--text-on-accent);
         margin-top: 0;
     }
 
     .danger-button {
-        background: #ef4444;
+        background: var(--semantic-danger);
+        color: var(--text-on-accent);
         margin-top: 0;
     }
 

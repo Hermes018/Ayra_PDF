@@ -112,7 +112,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background-color: #11111b;
+        background-color: var(--glass-bg-canvas);
         border-radius: 8px;
         overflow: hidden;
     }
@@ -138,26 +138,27 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: rgba(17, 17, 27, 0.8);
+        background-color: var(--glass-bg-canvas);
+        backdrop-filter: var(--glass-blur);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        color: #cdd6f4;
+        color: var(--text-primary);
         z-index: 10;
     }
 
     .error-message {
-        color: #f38ba8;
+        color: var(--semantic-danger);
         padding: 1rem;
-        background-color: rgba(243, 139, 168, 0.1);
-        border: 1px solid #f38ba8;
+        background-color: var(--glass-bg-surface);
+        border: 1px solid var(--semantic-danger);
         border-radius: 4px;
         margin: 2rem;
     }
 
     .empty-state {
-        color: #6c7086;
+        color: var(--text-secondary);
         font-size: 1.2rem;
     }
 </style>
