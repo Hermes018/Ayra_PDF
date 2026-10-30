@@ -1103,3 +1103,12 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 - Risks / follow-ups: None.
 - Commit / tag: `feat(core): upgrade pdfcraft to 75360d1, add lazy-loaded multilingual FAQ modal and help trigger`
+
+## [2026-10-30 06:20] Phase 13.0 Windows 10/11 Enterprise Master Plan & ADR-011 — DONE
+- Changes:
+  - Authored `docs/adr/ADR-011-windows-platform-architecture.md` establishing binding architectural decisions for Windows 10 (1809+) and Windows 11 (21H2-24H2+): MSVC Fat LTO & PE mitigations (`/HIGHENTROPYVA`, `/NXCOMPAT`, `/GUARD:CF`, `/CETCOMPAT`), 3-tier DWM vibrancy engine (Mica -> Acrylic -> Opaque fallback) with cold-start white-flash elimination, NTFS atomic write with exponential backoff on `ERROR_SHARING_VIOLATION` (OS Error 32), `\\?\` verbatim path sanitization for sidecars, `CREATE_NO_WINDOW` (`0x08000000`), Win32 Job Object containment (`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` + 1 GiB `JOB_OBJECT_LIMIT_JOB_MEMORY`), and `GlobalMemoryStatusEx` + Windows 11 EcoQoS resource governance.
+  - Authored `docs/WINDOWS_MASTER_PLAN.md` (7 comprehensive sections) detailing cross-platform invariants, compiler/linker flags, memory/thread-pool governance, vibrancy/DWM failsafes, NTFS atomic I/O & Job Object sandboxing, WebView2 offline hardening, and a 4-phase execution roadmap (Phases W1-W4) with pre-phase backups, complete production-ready code specifications, validation gates, and rollback failsafes.
+- Gate: pass (Planning-only deliverable; zero `.rs`, `.ts`, `.svelte`, `.css`, or `.json` source files modified).
+- Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+- Risks / follow-ups: Execute Phase W1 next.
+- Commit / tag: `docs(windows): author enterprise Windows 10/11 architecture master plan and ADR-011`
