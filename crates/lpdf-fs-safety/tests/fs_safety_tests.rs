@@ -140,3 +140,25 @@ fn test_sha256_vector_and_ai_model_inspection() {
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
+
+#[test]
+fn test_simplify_path_and_format_file_url() {
+    use std::path::Path;
+
+    let p = Path::new("/tmp/test_doc.pdf");
+    let simplified = simplify_path_for_sidecar(p);
+    assert_eq!(simplified, p);
+
+    let url = format_file_url_from_path(p);
+    assert_eq!(url, "file:///tmp/test_doc.pdf");
+}
+
+#[test]
+fn test_child_process_sandbox_creation() {
+    let sandbox = ChildProcessSandbox::new_sidecar_limit();
+    let mut cmd = std::process::Command::new("true");
+    ChildProcessSandbox::configure_command(&mut cmd);
+    if let Ok(child) = cmd.spawn() {
+        sandbox.attach(&child);
+    }
+}

@@ -1112,3 +1112,17 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 - Risks / follow-ups: Execute Phase W1 next.
 - Commit / tag: `docs(windows): author enterprise Windows 10/11 architecture master plan and ADR-011`
+
+## [2026-10-30 07:28] Phase W1 — NTFS Atomic I/O & Win32 Job Object Sandbox — DONE
+- Changes:
+  - Added target-specific `windows-sys` (0.61.2) and `dunce` (1.0.5) dependencies to `crates/lpdf-fs-safety/Cargo.toml` under `[target.'cfg(target_os = "windows")'.dependencies]`.
+  - Upgraded `crates/lpdf-fs-safety/src/lib.rs` with `win_fs::atomic_replace_with_backoff` using `MoveFileExW` (`MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH`) with exponential backoff on OS errors 5, 32, and 33, disk flushing (`sync_all()`), and recovery fallback path (`{stem}_saved_{uuid}.{ext}`).
+  - Implemented `simplify_path_for_sidecar` (converting `\\?\` verbatim paths via `dunce::simplified` on Windows) and `format_file_url_from_path` (normalizing backslashes to forward slashes).
+  - Implemented `ChildProcessSandbox` with RAII Win32 `WinJobSandbox` (`CreateJobObjectW`, `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE`, 1 GiB `JOB_OBJECT_LIMIT_JOB_MEMORY`, `JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION`) and `CREATE_NO_WINDOW` (`0x08000000`).
+  - Wired `simplify_path_for_sidecar`, `format_file_url_from_path`, and `ChildProcessSandbox` (`configure_command` and `attach`) into `office_sidecar.rs` and `pandoc_sidecar.rs`, and updated `spawn_sandboxed_worker` in `lpdf-jobs/src/queue.rs` to resolve `lpdf-worker.exe` and configure command flags on Windows.
+- Gate: pass (`cargo test -p lpdf-fs-safety` 7 tests pass; `cargo test -p lpdf-jobs` 13 tests pass; `cargo xtask protocol-lint` clean; `cargo check --workspace` clean; `pnpm check` 0 errors/warnings; RPM package generated at `target/release/bundle/rpm/LocalPDF Studio-0.1.0-1.x86_64.rpm` [37.45 MiB]; GUI live smoke test clean `EXIT_CODE=124`).
+- Tests added/run: `test_simplify_path_and_format_file_url`, `test_child_process_sandbox_creation`, 7 tests in `lpdf-fs-safety`, 13 tests in `lpdf-jobs`.
+- Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+- Protocol compliance (phase end only): F1 (atomic output with flush & retry), F3 (crash isolation via Job Object), F20 (external tool bridge containment), F21 (sidecar watchdog & process cleanup).
+- Risks / follow-ups: Ready to execute Phase W2 (Mica/Acrylic vibrancy & cold-start reveal).
+- Commit / tag: `feat(windows-w1): implement NTFS retry atomic_write, verbatim path sanitizer, and Win32 Job Object sandbox`

@@ -9,3 +9,11 @@ license.workspace = true
 [dependencies]
 lpdf-core-types = { path = "../lpdf-core-types" }
 toml = "0.8.19"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+dunce = "1.0.5"
+windows-sys = { version = "0.61.2", features = [
+    "Win32_Foundation",
+    "Win32_Storage_FileSystem",
+    "Win32_System_JobObjects",
+] }

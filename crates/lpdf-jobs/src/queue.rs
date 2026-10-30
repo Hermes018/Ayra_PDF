@@ -993,15 +993,20 @@ impl JobManager {
         let payload = serde_json::to_string(request)
             .map_err(|e| LpdfError::InvalidInput(format!("Failed to serialize JobRequest: {e}")))?;
 
+        #[cfg(target_os = "windows")]
+        let worker_filename = "lpdf-worker.exe";
+        #[cfg(not(target_os = "windows"))]
+        let worker_filename = "lpdf-worker";
+
         let worker_bin = if let Ok(current_exe) = std::env::current_exe() {
-            let sibling = current_exe.with_file_name("lpdf-worker");
+            let sibling = current_exe.with_file_name(worker_filename);
             if sibling.exists() {
                 sibling
             } else {
-                std::path::PathBuf::from("lpdf-worker")
+                std::path::PathBuf::from(worker_filename)
             }
         } else {
-            std::path::PathBuf::from("lpdf-worker")
+            std::path::PathBuf::from(worker_filename)
         };
 
         #[cfg(target_os = "linux")]
@@ -1012,6 +1017,8 @@ impl JobManager {
         };
         #[cfg(not(target_os = "linux"))]
         let mut cmd = std::process::Command::new(&worker_bin);
+
+        lpdf_fs_safety::ChildProcessSandbox::configure_command(&mut cmd);
 
         cmd.stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
