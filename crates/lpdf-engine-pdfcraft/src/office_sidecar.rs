@@ -159,7 +159,8 @@ pub fn convert_office_to_pdf(
     }
 
     // Canonicalize input path (shell-injection prevention DO-21)
-    let canonical_input = input_path.canonicalize().map_err(LpdfError::Io)?;
+    let canonical_raw = input_path.canonicalize().map_err(LpdfError::Io)?;
+    let canonical_input = lpdf_fs_safety::simplify_path_for_sidecar(&canonical_raw);
 
     // Resolve sidecar binary (Failsafe F22)
     let binary_path = resolve_office_binary(custom_binary)?;
@@ -170,7 +171,7 @@ pub fn convert_office_to_pdf(
     // Profile isolation: ensure dedicated isolated user installation so runs never collide
     let temp_profile = std::env::temp_dir().join(format!("lpdf_soffice_prof_{}", unique_id));
     std::fs::create_dir_all(&temp_profile).map_err(LpdfError::Io)?;
-    let profile_url = format!("file://{}", temp_profile.display());
+    let profile_url = lpdf_fs_safety::format_file_url_from_path(&temp_profile);
 
     // Temp output dir for conversion results
     let temp_out_dir = std::env::temp_dir().join(format!("lpdf_soffice_out_{}", unique_id));
@@ -196,9 +197,16 @@ pub fn convert_office_to_pdf(
     cmd.stdout(std::process::Stdio::piped());
     cmd.stderr(std::process::Stdio::piped());
 
+    // Configure sandbox and no-window creation flags (Failsafe F20, F21)
+    lpdf_fs_safety::ChildProcessSandbox::configure_command(&mut cmd);
+    let job_sandbox = lpdf_fs_safety::ChildProcessSandbox::new_sidecar_limit();
+
     // Spawn child process with safety watchdog (Failsafe F21)
     let mut child = match cmd.spawn() {
-        Ok(child) => child,
+        Ok(child) => {
+            job_sandbox.attach(&child);
+            child
+        }
         Err(e) => {
             let _ = std::fs::remove_dir_all(&temp_profile);
             let _ = std::fs::remove_dir_all(&temp_out_dir);
@@ -349,7 +357,8 @@ pub fn convert_pdf_to_office(
     }
 
     // Canonicalize input path (shell-injection prevention DO-21)
-    let canonical_input = input_path.canonicalize().map_err(LpdfError::Io)?;
+    let canonical_raw = input_path.canonicalize().map_err(LpdfError::Io)?;
+    let canonical_input = lpdf_fs_safety::simplify_path_for_sidecar(&canonical_raw);
 
     // Validate that input file is a valid PDF
     let pdf_bytes = std::fs::read(&canonical_input).map_err(LpdfError::Io)?;
@@ -368,7 +377,7 @@ pub fn convert_pdf_to_office(
     // Profile isolation: ensure dedicated isolated user installation so runs never collide
     let temp_profile = std::env::temp_dir().join(format!("lpdf_soffice_prof_{}", unique_id));
     std::fs::create_dir_all(&temp_profile).map_err(LpdfError::Io)?;
-    let profile_url = format!("file://{}", temp_profile.display());
+    let profile_url = lpdf_fs_safety::format_file_url_from_path(&temp_profile);
 
     // Temp output dir for conversion results
     let temp_out_dir = std::env::temp_dir().join(format!("lpdf_soffice_out_{}", unique_id));
@@ -395,9 +404,16 @@ pub fn convert_pdf_to_office(
     cmd.stdout(std::process::Stdio::piped());
     cmd.stderr(std::process::Stdio::piped());
 
+    // Configure sandbox and no-window creation flags (Failsafe F20, F21)
+    lpdf_fs_safety::ChildProcessSandbox::configure_command(&mut cmd);
+    let job_sandbox = lpdf_fs_safety::ChildProcessSandbox::new_sidecar_limit();
+
     // Spawn child process with safety watchdog (Failsafe F21)
     let mut child = match cmd.spawn() {
-        Ok(child) => child,
+        Ok(child) => {
+            job_sandbox.attach(&child);
+            child
+        }
         Err(e) => {
             let _ = std::fs::remove_dir_all(&temp_profile);
             let _ = std::fs::remove_dir_all(&temp_out_dir);

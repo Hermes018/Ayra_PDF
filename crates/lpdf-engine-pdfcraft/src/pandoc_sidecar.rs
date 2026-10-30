@@ -136,8 +136,15 @@ fn execute_pandoc(binary: &Path, args: &[std::ffi::OsString]) -> Result<()> {
     cmd.stdout(std::process::Stdio::piped());
     cmd.stderr(std::process::Stdio::piped());
 
+    // Configure sandbox and no-window creation flags (Failsafe F20, F21)
+    lpdf_fs_safety::ChildProcessSandbox::configure_command(&mut cmd);
+    let job_sandbox = lpdf_fs_safety::ChildProcessSandbox::new_sidecar_limit();
+
     let mut child = match cmd.spawn() {
-        Ok(child) => child,
+        Ok(child) => {
+            job_sandbox.attach(&child);
+            child
+        }
         Err(e) => {
             return Err(LpdfError::ExternalDependencyError(format!(
                 "Failed to spawn Pandoc sidecar binary '{}': {}",
@@ -221,7 +228,8 @@ where
         )));
     }
 
-    let canonical_input = input_path.canonicalize().map_err(LpdfError::Io)?;
+    let canonical_raw = input_path.canonicalize().map_err(LpdfError::Io)?;
+    let canonical_input = lpdf_fs_safety::simplify_path_for_sidecar(&canonical_raw);
     let binary_path = resolve_pandoc_binary(custom_binary)?;
 
     let unique_id = format!("{}_{}", std::process::id(), lpdf_fs_safety::uuid_simple());
@@ -313,7 +321,8 @@ where
         )));
     }
 
-    let canonical_input = input_path.canonicalize().map_err(LpdfError::Io)?;
+    let canonical_raw = input_path.canonicalize().map_err(LpdfError::Io)?;
+    let canonical_input = lpdf_fs_safety::simplify_path_for_sidecar(&canonical_raw);
     let header_bytes = std::fs::read(&canonical_input).map_err(LpdfError::Io)?;
     if header_bytes.is_empty() || !header_bytes.starts_with(b"%PDF-") {
         return Err(LpdfError::InvalidInput(
@@ -403,7 +412,8 @@ pub fn convert_markdown_to_doc(
         )));
     }
 
-    let canonical_input = input_path.canonicalize().map_err(LpdfError::Io)?;
+    let canonical_raw = input_path.canonicalize().map_err(LpdfError::Io)?;
+    let canonical_input = lpdf_fs_safety::simplify_path_for_sidecar(&canonical_raw);
     let binary_path = resolve_pandoc_binary(custom_binary)?;
 
     let file_stem = canonical_input
@@ -486,7 +496,8 @@ pub fn convert_doc_to_markdown(
         )));
     }
 
-    let canonical_input = input_path.canonicalize().map_err(LpdfError::Io)?;
+    let canonical_raw = input_path.canonicalize().map_err(LpdfError::Io)?;
+    let canonical_input = lpdf_fs_safety::simplify_path_for_sidecar(&canonical_raw);
     let binary_path = resolve_pandoc_binary(custom_binary)?;
 
     let file_stem = canonical_input
@@ -774,7 +785,8 @@ where
         )));
     }
 
-    let canonical_input = input_dir.canonicalize().map_err(LpdfError::Io)?;
+    let canonical_raw = input_dir.canonicalize().map_err(LpdfError::Io)?;
+    let canonical_input = lpdf_fs_safety::simplify_path_for_sidecar(&canonical_raw);
     std::fs::create_dir_all(output_dir).map_err(LpdfError::Io)?;
 
     let assets_out_dir = output_dir.join("assets");
