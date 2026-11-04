@@ -39,7 +39,13 @@
   }
 </script>
 
-<div class="favorites-bar glass-panel" role="toolbar" aria-label="Pinned Tool Presets">
+<div
+  class="favorites-bar glass-panel"
+  role="toolbar"
+  tabindex={0}
+  aria-label="Pinned Tool Presets"
+  onpointerdown={(e) => e.stopPropagation()}
+>
   <span class="fav-title">Pins</span>
   <div class="fav-items">
     {#each favoritePresets as preset (preset.id)}
@@ -81,7 +87,8 @@
     position: absolute;
     bottom: 16px;
     left: 16px;
-    z-index: 95;
+    z-index: 150;
+    pointer-events: auto;
     display: flex;
     align-items: center;
     gap: 6px;

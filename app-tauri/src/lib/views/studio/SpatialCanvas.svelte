@@ -6,6 +6,7 @@
   import { tools } from '$lib/core/toolEngine.svelte';
   import { commands } from '$lib/core/commandEngine.svelte';
   import { theme } from '$lib/core/themeContract.svelte';
+  import { ink } from '$lib/core/inkEngine.svelte';
   import defaultPresets from '$lib/core/defaultPresets.json';
   import DockableToolbar from '$lib/components/studio/DockableToolbar.svelte';
   import PropertyPill from '$lib/components/studio/PropertyPill.svelte';
@@ -210,17 +211,59 @@
     }
   }
 
+  function getWorldPoint(clientX: number, clientY: number): Pt {
+    if (!canvasContainer) return { x: clientX, y: clientY };
+    const rect = canvasContainer.getBoundingClientRect();
+    const screenX = clientX - rect.left;
+    const screenY = clientY - rect.top;
+    const inv = viewport.worldToScreen(viewId).invert();
+    return inv ? inv.apply({ x: screenX, y: screenY }) : { x: screenX, y: screenY };
+  }
+
   function handlePointerDown(e: PointerEvent) {
     if (!canvasContainer) return;
+
+    // Failsafe: Never intercept clicks on UI overlays
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('.spatial-hud, .dockable-toolbar, .property-pill, .favorites-bar, .modal-backdrop, .radial-menu, button, select, input')) {
+      return;
+    }
 
     const isPanAction = e.button === 1 || commands.spaceSpringActive || tools.activeTool === 'pan';
 
     if (isPanAction) {
       isPanning = true;
       panStart = { x: e.clientX, y: e.clientY };
-      canvasContainer.setPointerCapture(e.pointerId);
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      } catch {}
       return;
     }
+
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+
+    const worldPt = getWorldPoint(e.clientX, e.clientY);
+    const pressure = e.pointerType === 'pen' ? (e.pressure || 0.5) : 0.5;
+
+    if (tools.activeToolId === 'laser') {
+      ink.addLaserPoint(worldPt.x, worldPt.y);
+      return;
+    }
+
+    if (tools.activeToolId === 'eraser.whole') {
+      ink.eraseWhole(worldPt, 18);
+      return;
+    }
+
+    if (tools.activeToolId === 'eraser.partial') {
+      ink.erasePartial(worldPt, 12);
+      return;
+    }
+
+    // Drawing / Inking
+    ink.startStroke(worldPt.x, worldPt.y, pressure, tools.currentToolId);
 
     const rect = canvasContainer.getBoundingClientRect();
     commands.dispatch({
@@ -228,7 +271,7 @@
       phase: 'down',
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
-      pressure: e.pressure || 0.5,
+      pressure,
       tiltX: e.tiltX || 0,
       tiltY: e.tiltY || 0,
       twist: e.twist || 0,
@@ -249,14 +292,31 @@
     }
 
     if (!canvasContainer) return;
-    const rect = canvasContainer.getBoundingClientRect();
 
+    // Process all hardware coalesced 120Hz/240Hz samples
+    const events = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [e];
+    for (const ev of events) {
+      const worldPt = getWorldPoint(ev.clientX, ev.clientY);
+      const pressure = ev.pointerType === 'pen' ? (ev.pressure || 0.5) : 0.5;
+
+      if (tools.activeToolId === 'laser') {
+        ink.addLaserPoint(worldPt.x, worldPt.y);
+      } else if (tools.activeToolId === 'eraser.whole') {
+        if (ev.buttons > 0) ink.eraseWhole(worldPt, 18);
+      } else if (tools.activeToolId === 'eraser.partial') {
+        if (ev.buttons > 0) ink.erasePartial(worldPt, 12);
+      } else if (ink.isDrawing) {
+        ink.addPoint(worldPt.x, worldPt.y, pressure);
+      }
+    }
+
+    const rect = canvasContainer.getBoundingClientRect();
     commands.dispatch({
       kind: 'pointer',
       phase: e.buttons > 0 ? 'move' : 'hover',
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
-      pressure: e.pressure || 0.5,
+      pressure: e.pointerType === 'pen' ? (e.pressure || 0.5) : 0.5,
       tiltX: e.tiltX || 0,
       tiltY: e.tiltY || 0,
       twist: e.twist || 0,
@@ -270,15 +330,33 @@
   function handlePointerUp(e: PointerEvent) {
     if (isPanning) {
       isPanning = false;
-      if (canvasContainer && canvasContainer.hasPointerCapture(e.pointerId)) {
-        canvasContainer.releasePointerCapture(e.pointerId);
-      }
+      try {
+        if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
+          (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+        }
+      } catch {}
       return;
     }
 
+    if (ink.isDrawing) {
+      const committed = ink.endStroke();
+      if (committed) {
+        commands.dispatch({
+          kind: 'execute',
+          command: 'ink.commit',
+          args: { id: committed.id, tool: committed.tool, pointCount: committed.points.length }
+        });
+      }
+    }
+
+    try {
+      if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      }
+    } catch {}
+
     if (!canvasContainer) return;
     const rect = canvasContainer.getBoundingClientRect();
-
     commands.dispatch({
       kind: 'pointer',
       phase: 'up',
@@ -294,23 +372,38 @@
       tMs: performance.now()
     });
   }
+
+  function handlePointerCancel(e: PointerEvent) {
+    if (isPanning) {
+      isPanning = false;
+    }
+    if (ink.isDrawing) {
+      ink.cancelStroke();
+    }
+    try {
+      if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      }
+    } catch {}
+  }
 </script>
 
 <div
   class="spatial-viewport"
   bind:this={canvasContainer}
   onwheel={handleWheel}
-  onpointerdown={handlePointerDown}
-  onpointermove={handlePointerMove}
-  onpointerup={handlePointerUp}
-  onpointercancel={handlePointerUp}
-  oncontextmenu={handleContextMenu}
   role="region"
   aria-label="Drawboard Spatial Studio Canvas"
   tabindex="-1"
 >
   <!-- HUD / Spatial Controls Pill -->
-  <div class="spatial-hud glass-panel">
+  <div
+    class="spatial-hud glass-panel"
+    role="toolbar"
+    tabindex={0}
+    aria-label="Spatial Canvas HUD"
+    onpointerdown={(e) => e.stopPropagation()}
+  >
     <div class="hud-mode-toggle">
       <button
         type="button"
@@ -398,8 +491,8 @@
     </div>
   </div>
 
-  <!-- Hardware-Accelerated World Transform Layer -->
-  <div class="world" style:transform={worldTransform}>
+  <!-- LAYER A: #pdf-layer (Hardware-accelerated PDF.js raster surface) -->
+  <div id="pdf-layer" class="pdf-layer world" style:transform={worldTransform}>
     {#each viewport.pages as page, index}
       <div
         class="spatial-page"
@@ -408,35 +501,72 @@
         style:width="{page.widthPt * (96 / 72)}px"
         style:height="{page.heightPt * (96 / 72)}px"
       >
-        <!-- Page Header / Number Badge -->
         <div class="page-badge">
           Page {index + 1} ({Math.round(page.widthPt)} × {Math.round(page.heightPt)} pt)
         </div>
 
-        <!-- Render Layer (Live PDF.js Raster Surface) -->
         <div class="page-render-surface">
           <canvas
             class="page-pdf-canvas"
             bind:this={pageCanvases[index]}
           ></canvas>
         </div>
-
-        <!-- Mode A: Non-Destructive Vector Annotation Overlay -->
-        <canvas
-          class="page-overlay-canvas"
-          width="{page.widthPt * (96 / 72)}"
-          height="{page.heightPt * (96 / 72)}"
-        ></canvas>
-
-        <!-- Mode B / Live Ink: Desynchronized Wet Canvas for Zero-Latency Stylus Strokes -->
-        <canvas
-          class="page-wet-canvas"
-          width="{page.widthPt * (96 / 72)}"
-          height="{page.heightPt * (96 / 72)}"
-        ></canvas>
       </div>
     {/each}
   </div>
+
+  <!-- LAYER B: #vector-layer (Rendered completed ink strokes via SVG paths) -->
+  <svg id="vector-layer" class="vector-layer" role="presentation">
+    <g style:transform={worldTransform}>
+      {#each ink.completedStrokes as stroke (stroke.id)}
+        <path
+          d={ink.getSvgPath(stroke)}
+          fill={stroke.color}
+          opacity={stroke.opacity}
+          style={stroke.isHighlighter || stroke.tool === 'highlighter' ? 'mix-blend-mode: multiply;' : ''}
+        />
+      {/each}
+    </g>
+  </svg>
+
+  <!-- LAYER C: #wet-layer (Active stroke and laser pointer decay for zero-latency feedback) -->
+  <svg
+    id="wet-layer"
+    class="wet-layer"
+    role="presentation"
+    class:cursor-pan={tools.activeToolId === 'pan'}
+    class:cursor-pen={tools.activeToolId.startsWith('pen') || tools.activeToolId === 'highlighter'}
+    class:cursor-eraser={tools.activeToolId.startsWith('eraser')}
+    class:cursor-laser={tools.activeToolId === 'laser'}
+    onpointerdown={handlePointerDown}
+    onpointermove={handlePointerMove}
+    onpointerup={handlePointerUp}
+    onpointercancel={handlePointerCancel}
+    oncontextmenu={handleContextMenu}
+  >
+    <g style:transform={worldTransform}>
+      {#if ink.currentStroke}
+        <path
+          d={ink.getSvgPath(ink.currentStroke)}
+          fill={ink.currentStroke.color}
+          opacity={ink.currentStroke.opacity}
+          style={ink.currentStroke.isHighlighter || ink.currentStroke.tool === 'highlighter' ? 'mix-blend-mode: multiply;' : ''}
+        />
+      {/if}
+      {#if ink.laserPoints.length > 1}
+        <path
+          d={ink.getLaserSvgPath()}
+          fill="var(--laser-glow)"
+          opacity="0.85"
+        />
+        <path
+          d={ink.getLaserCoreSvgPath()}
+          fill="var(--laser-core)"
+          opacity="1.0"
+        />
+      {/if}
+    </g>
+  </svg>
 
   <!-- Dockable Markup Toolbar (Top, Left, Right, Floating) -->
   <DockableToolbar
@@ -487,13 +617,59 @@
     outline: none;
   }
 
-  .world {
+  .pdf-layer {
     position: absolute;
     top: 0;
     left: 0;
+    width: 100%;
+    height: 100%;
     transform-origin: 0 0;
     will-change: transform;
     pointer-events: none;
+    z-index: 1;
+  }
+
+  .vector-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 5;
+  }
+
+  .wet-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
+    touch-action: none;
+    overflow: visible;
+    z-index: 10;
+  }
+
+  .vector-layer g,
+  .wet-layer g {
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+
+  .cursor-pan {
+    cursor: grab;
+  }
+  .cursor-pan:active {
+    cursor: grabbing;
+  }
+  .cursor-pen {
+    cursor: crosshair;
+  }
+  .cursor-eraser {
+    cursor: cell;
+  }
+  .cursor-laser {
+    cursor: crosshair;
   }
 
   .spatial-page {
@@ -525,18 +701,12 @@
     background: var(--laser-core);
   }
 
-  .page-pdf-canvas,
-  .page-overlay-canvas,
-  .page-wet-canvas {
+  .page-pdf-canvas {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
-  }
-
-  .page-wet-canvas {
-    z-index: 10;
   }
 
   /* Frosted Glass HUD Controls */
@@ -545,7 +715,7 @@
     top: 16px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 100;
+    z-index: 160;
     display: flex;
     align-items: center;
     gap: 8px;

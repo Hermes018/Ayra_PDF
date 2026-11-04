@@ -54,7 +54,13 @@
   }
 </script>
 
-<div class="property-pill glass-panel" role="toolbar" aria-label="Tool Property Pill">
+<div
+  class="property-pill glass-panel"
+  role="toolbar"
+  tabindex={0}
+  aria-label="Tool Property Pill"
+  onpointerdown={(e) => e.stopPropagation()}
+>
   <!-- Active Tool Badge -->
   <div class="pill-section tool-badge-section">
     <span class="tool-label" data-testid="active-tool-label">{tools.activeToolLabel}</span>
@@ -179,7 +185,8 @@
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 110;
+    z-index: 150;
+    pointer-events: auto;
     display: flex;
     align-items: center;
     gap: 8px;

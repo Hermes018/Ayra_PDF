@@ -1222,3 +1222,33 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
   - Wired `appState.currentFile` + `pdf.min.js` into `SpatialCanvas.svelte` and mounted `<PdfViewer />` in `EditView.svelte`, `OptimizeView.svelte`, and `SecurityView.svelte`.
   - Unified `appState.themePreference` with `themeContract.mode`, restored all granular `ToolId`s in `toolEngine.svelte.ts` without hardcoded hex colors, and centralized keyboard handling in `commandEngine.svelte.ts`.
 - **Verification**: `cargo xtask studio-audit --strict` (0 findings), `cargo xtask feature-map-check` (119 features verified), `cargo xtask protocol-lint` passed, `cargo test -p lpdf-control-bus` passed.
+
+
+### [2026-11-04] Phase D3 — Precision Vector Ink, Laser Pointer Decay, Smart Shapes, & Boolean Eraser
+- **Action**: Executed Phase D3 of Drawboard Studio Master Plan: unblocked UI click interception bug, implemented centralized Svelte 5 ink engine with variable-width pressure spline interpolation, laser pointer decay, 350ms dwell smart shape recognition, and whole/partial boolean eraser.
+- **Deliverables**:
+  - **UI Layering & Click Interception Fix**: Isolated pointer propagation on `DockableToolbar.svelte` (`.toolbar-tools`), `SpatialCanvas.svelte` (`.spatial-hud`), `FavoritesBar.svelte`, and `PropertyPill.svelte` (`z-index: 150-160`, `pointer-events: auto`). Resolved pointer capture swallowing bug on the infinite canvas.
+  - **Core Ink Engine (`app-tauri/src/lib/core/inkEngine.svelte.ts`)**:
+    - Centralized Svelte 5 controller managing `currentStroke`, `completedStrokes`, and `laserPoints`.
+    - Variable-width Catmull-Rom spline outline generation (`generateSvgPathFromPoints()`) mapped to stylus pressure and stroke width presets.
+    - `mix-blend-mode: multiply` rendering flag for highlighter strokes.
+    - Laser pointer decay engine with 1800ms timestamp pruning via `requestAnimationFrame` and neon glow/core path shaders.
+    - Smart Shape Recognizer: 350ms dwell classifier identifying Line, Rectangle, Triangle, and Circle primitives and replacing noisy freehand strokes with geometric vertices.
+    - Boolean Eraser: Implemented `eraseWhole` (bounding segment intersection) and `erasePartial` (stroke bisection breaking a stroke into multiple surviving strokes).
+  - **Dual-Canvas Spatial Canvas Integration (`app-tauri/src/lib/views/studio/SpatialCanvas.svelte`)**:
+    - Dual/triple visual layering: `#pdf-layer` (rendered PDF pages), `#vector-layer` (completed vector strokes via SVG `<path>`), and `#wet-layer` (active stroke + laser trail for 0-latency interaction).
+    - 120Hz/240Hz coalesced pointer event capture using `e.getCoalescedEvents()`, stylus pressure fallback (0.5 for mouse/touch), and coordinate mapping via `viewport.worldToScreen().invert().apply()`.
+  - **Reactivity & Unit Tests (`app-tauri/src/lib/core/studioReactivity.test.ts`)**:
+    - Added comprehensive unit tests for Catmull-Rom SVG path generation, stroke lifecycle, 1800ms laser decay, smart shape recognition (line, rectangle), `eraseWhole`, and `erasePartial` bisection (total 20 tests in suite, 88 total tests across all suites).
+  - **Feature Checklist Sync (`docs/DRAWBOARD_FEATURE_CHECKLIST.md`)**:
+    - Updated features 1.1 (Pen), 1.2 (Highlighter), 1.3 (Eraser), 1.4 (Pressure ink), 1.13 (Laser), and 1.14 (Smart shapes) to `DONE` (`36 DONE`, `24 IN PROGRESS`, `53 NOT STARTED`, `6 DEFERRED`).
+- **Verification**:
+  - `tools/sb.sh pnpm --dir app-tauri check`: passed (0 errors, 0 warnings).
+  - `tools/sb.sh pnpm --dir app-tauri vitest run`: 88 passed across 11 test files.
+  - `cargo xtask studio-audit --strict`: 0 findings.
+  - `cargo xtask feature-map-check`: 119 features audited and verified.
+  - `cargo xtask protocol-lint`: passed.
+  - `SB_RELEASE=1 tools/sb.sh pnpm --dir app-tauri tauri build --bundles rpm`: release RPM built (`LocalPDF Studio-0.1.0-1.x86_64.rpm`, 37.51 MiB).
+  - Wayland live smoke test: `RUST_BACKTRACE=1 timeout 5s ./target/release/localpdf-studio` (stayed alive, timed out cleanly with `EXIT_CODE=124`).
+- **Pre-commit checklist**: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+- **Gate**: pass.

@@ -144,7 +144,13 @@
     <StudioIcon name="grip" size={14} />
   </div>
 
-  <div class="toolbar-tools">
+  <div
+    class="toolbar-tools"
+    role="toolbar"
+    tabindex={0}
+    aria-label="Drawing Tools"
+    onpointerdown={(e) => e.stopPropagation()}
+  >
     <!-- Pan / Hand -->
     <button
       type="button"
@@ -267,7 +273,8 @@
 <style>
   .dockable-toolbar {
     position: absolute;
-    z-index: 120;
+    z-index: 150;
+    pointer-events: auto;
     display: flex;
     background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur));

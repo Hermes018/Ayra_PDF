@@ -23,9 +23,9 @@
 
 | Status | Count | Description |
 |---|---:|---|
-| **`DONE` (`[x]`)** | **30** | End-to-end implemented in Rust + Svelte UI and verified by tests. |
-| **`IN PROGRESS` (`[ ]`)** | **28** | UI state/shell or backend port exists (Phases D1–D2.1), awaiting full canvas/IPC wiring. |
-| **`NOT STARTED` (`[ ]`)** | **55** | Scheduled across Phases D3, D4, D5, and D6 in `DRAWBOARD_STUDIO_MASTER_PLAN.md`. |
+| **`DONE` (`[x]`)** | **36** | End-to-end implemented in Rust + Svelte UI and verified by tests. |
+| **`IN PROGRESS` (`[ ]`)** | **24** | UI state/shell or backend port exists (Phases D1–D2.2), awaiting full canvas/IPC wiring. |
+| **`NOT STARTED` (`[ ]`)** | **53** | Scheduled across Phases D4, D5, and D6 in `DRAWBOARD_STUDIO_MASTER_PLAN.md`. |
 | **`DEFERRED` (`[ ]`)** | **6** | Cloud/multiplayer features prohibited by strict offline air-gap rule (`ADR-005`). |
 | **Total** | **119** | Across 9 functional domains (108 core spec + 11 LocalPDF native extensions). |
 
@@ -33,10 +33,10 @@
 
 ## 1. Core Drawing, Inking & Freehand Tools (17 Features)
 
-- [ ] **1.1** `[P0]` `[Phase D2/D3]` `IN PROGRESS` **Pen tool** — Smooth freehand ink drawing for handwriting, sketching, and markup. *(UI preset & tool state in `toolEngine.svelte.ts`; wet `<canvas>` in `SpatialCanvas.svelte` & `lpdf-vector-ink` scheduled in D3).*
-- [ ] **1.2** `[P0]` `[Phase D2/D3]` `IN PROGRESS` **Highlighter tool** — Semi-transparent freehand highlighting over text or drawings. *(Blend mode `multiply` & preset state in `toolEngine.svelte.ts`; canvas stroke rendering in D3).*
-- [ ] **1.3** `[P0]` `[Phase D2/D3]` `IN PROGRESS` **Eraser tool** — Erase whole strokes or partial segments of ink/annotations. *(`eraser.partial` & `eraser.whole` in `toolEngine.svelte.ts`; capsule spatial-hash intersection in D3).*
-- [ ] **1.4** `[P0]` `[Phase D3]` `NOT STARTED` **Pressure-sensitive inking** — Variable stroke width/opacity based on stylus pressure (`PointerEvent.pressure` + `getCoalescedEvents()`).
+- [x] **1.1** `[P0]` `[Phase D3]` `DONE` **Pen tool** — Smooth freehand ink drawing for handwriting, sketching, and markup (`app-tauri/src/lib/core/inkEngine.svelte.ts` & `SpatialCanvas.svelte`).
+- [x] **1.2** `[P0]` `[Phase D3]` `DONE` **Highlighter tool** — Semi-transparent freehand highlighting over text or drawings with `mix-blend-mode: multiply` (`app-tauri/src/lib/core/inkEngine.svelte.ts` & `SpatialCanvas.svelte`).
+- [x] **1.3** `[P0]` `[Phase D3]` `DONE` **Eraser tool** — Erase whole strokes or partial segments of ink/annotations (`eraseWhole` and `erasePartial` bisection in `app-tauri/src/lib/core/inkEngine.svelte.ts`).
+- [x] **1.4** `[P0]` `[Phase D3]` `DONE` **Pressure-sensitive inking** — Variable stroke width based on stylus pressure via Catmull-Rom spline outline ribbon (`generateSvgPathFromPoints` in `app-tauri/src/lib/core/inkEngine.svelte.ts`).
 - [ ] **1.5** `[P1]` `[Phase D3]` `NOT STARTED` **Tilt / stylus-aware rendering** — Natural pen/brush behavior when hardware supports stylus tilt (`tiltX`, `tiltY`).
 - [ ] **1.6** `[P1]` `[Phase D3]` `NOT STARTED` **Palm rejection / touch vs. pen mode** — Separate finger pan/zoom (`pointerType === 'touch'`) from stylus drawing (`pointerType === 'pen'`).
 - [ ] **1.7** `[P0]` `[Phase D2]` `IN PROGRESS` **Stroke thickness / size presets** — Quick-access stroke widths (in mm/pt) + custom slider in `PropertyPill.svelte` *(working in-memory; needs `prefs_save` disk persistence)*.
@@ -45,8 +45,8 @@
 - [ ] **1.10** `[P1]` `[Phase D2]` `IN PROGRESS` **Multiple saved pens / favorite tool presets** — Multiple pens with different colors/widths on the toolbar *(`pen.a`, `pen.b`, and `favorites` array in `toolEngine.svelte.ts`; `FavoritesBar.svelte` component not yet created)*.
 - [ ] **1.11** `[P1]` `[Phase D3]` `NOT STARTED` **Stroke smoothing / stabilization** — Configurable smoothing for jitter-free handwriting and line work (One-Euro filter + Ramer-Douglas-Peucker in `lpdf-vector-ink`).
 - [ ] **1.12** `[P2]` `[Phase D3]` `NOT STARTED` **Dashed / dotted / custom stroke styles** — Line pattern options for freehand and geometric strokes (`DashPattern` in `toolEngine.svelte.ts`, rendering in D3).
-- [ ] **1.13** `[P2]` `[Phase D2/D3]` `IN PROGRESS` **Laser pointer tool** — Temporary presentation/attention stroke that fades out (`1200ms` exponential decay) without modifying the document *(Tool ID `laser` & shortcut `L` registered; decaying trail rendering in D3)*.
-- [ ] **1.14** `[P1]` `[Phase D3]` `NOT STARTED` **Smart shape recognition (hold-to-snap)** — Hold at the end of a hand-drawn stroke (`320ms` dwell) to convert into clean lines, rectangles, circles, triangles, arrows, or polygons (Kåsa circle fit + PCA polygon fit).
+- [x] **1.13** `[P2]` `[Phase D3]` `DONE` **Laser pointer tool** — Temporary presentation/attention stroke with 1800ms rAF decay (`addLaserPoint`, `updateLaser` in `app-tauri/src/lib/core/inkEngine.svelte.ts`).
+- [x] **1.14** `[P1]` `[Phase D3]` `DONE` **Smart shape recognition (hold-to-snap)** — 350ms dwell classifier snapping raw ink to Line, Rectangle, Triangle, or Circle (`recognizeShape` in `app-tauri/src/lib/core/inkEngine.svelte.ts`).
 - [ ] **1.15** `[P1]` `[Phase D3]` `NOT STARTED` **Line tool** — Straight line segment tool with optional angle snapping (`15°` increments).
 - [ ] **1.16** `[P1]` `[Phase D3]` `NOT STARTED` **Arrow tool** — Single- or double-headed arrow annotations.
 - [ ] **1.17** `[P1]` `[Phase D3]` `NOT STARTED` **Polyline / polygon / cloud / rectangle / ellipse shapes** — Core geometric and revision-cloud markup tools (`shape.rect`, `shape.ellipse`, `shape.cloud`, `shape.polygon`, `shape.polyline` — note: must un-collapse `normalizeToolId` in `toolEngine.svelte.ts`).

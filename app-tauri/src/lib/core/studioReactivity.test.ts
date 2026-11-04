@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { tools } from './toolEngine.svelte';
 import { commands } from './commandEngine.svelte';
+import { ink, generateSvgPathFromPoints, type Point } from './inkEngine.svelte';
 import { resolveDock } from '$lib/components/studio/DockableToolbar.svelte';
 
 describe('ToolStateEngine Reactivity & Preset Scoping', () => {
@@ -161,5 +162,127 @@ describe('Toolbar resolveDock Math & Clamping', () => {
     expect(clampY(0)).toBe(8);
     expect(clampY(250)).toBe(250);
     expect(clampY(1000)).toBe(492);
+  });
+});
+
+describe('Phase D3 — InkEngine, Spline Math, Laser Pointer, & Smart Shapes', () => {
+  it('generates a valid variable-width SVG path using Catmull-Rom spline envelope', () => {
+    const pts: Point[] = [
+      { x: 10, y: 10, p: 0.2 },
+      { x: 30, y: 15, p: 0.8 },
+      { x: 60, y: 40, p: 0.5 },
+      { x: 90, y: 60, p: 0.3 }
+    ];
+    const path = generateSvgPathFromPoints(pts);
+    expect(path).toBeTruthy();
+    expect(path.startsWith('M ')).toBe(true);
+    expect(path.includes(' C ')).toBe(true);
+    expect(path.includes(' A ')).toBe(true);
+    expect(path.endsWith(' Z')).toBe(true);
+  });
+
+  it('manages stroke lifecycle: startStroke -> addPoint -> endStroke', () => {
+    ink.completedStrokes = [];
+    ink.startStroke(50, 50, 0.4, 'pen.a');
+    expect(ink.isDrawing).toBe(true);
+    expect(ink.currentStroke).not.toBeNull();
+    expect(ink.currentStroke?.points.length).toBe(1);
+
+    ink.addPoint(60, 65, 0.6);
+    ink.addPoint(75, 80, 0.7);
+    expect(ink.currentStroke?.points.length).toBe(3);
+
+    const committed = ink.endStroke();
+    expect(committed).not.toBeNull();
+    expect(ink.isDrawing).toBe(false);
+    expect(ink.completedStrokes.length).toBe(1);
+    expect(ink.completedStrokes[0].id).toBe(committed?.id);
+  });
+
+  it('prunes expired points in laser pointer trail with 1800ms decay', () => {
+    ink.laserPoints = [];
+    const now = Date.now();
+    ink.laserPoints.push({ x: 10, y: 10, p: 1.0, t: now - 2000 }); // expired
+    ink.laserPoints.push({ x: 20, y: 20, p: 1.0, t: now - 500 });  // active
+    ink.laserPoints.push({ x: 30, y: 30, p: 1.0, t: now });        // active
+
+    ink.updateLaser();
+    expect(ink.laserPoints.length).toBe(2);
+    expect(ink.laserPoints[0].x).toBe(20);
+    expect(ink.laserPoints[1].x).toBe(30);
+  });
+
+  it('smart shapes: recognizes a straight line during dwell', () => {
+    ink.startStroke(0, 0, 0.5, 'pen.a');
+    for (let x = 10; x <= 100; x += 10) {
+      // Add slight jitter along y
+      ink.addPoint(x, (x % 20 === 0 ? 0.5 : -0.5), 0.5);
+    }
+    const recognized = ink.recognizeShape();
+    expect(recognized).toBe(true);
+    expect(ink.currentStroke?.points.length).toBe(2);
+    expect(ink.currentStroke?.points[0].x).toBe(0);
+    expect(ink.currentStroke?.points[1].x).toBe(100);
+    ink.endStroke();
+  });
+
+  it('smart shapes: recognizes a rectangle during dwell', () => {
+    ink.startStroke(10, 10, 0.5, 'pen.a');
+    // Draw top edge
+    ink.addPoint(50, 10, 0.5);
+    ink.addPoint(100, 10, 0.5);
+    // Draw right edge
+    ink.addPoint(100, 40, 0.5);
+    ink.addPoint(100, 80, 0.5);
+    // Draw bottom edge
+    ink.addPoint(50, 80, 0.5);
+    ink.addPoint(10, 80, 0.5);
+    // Draw left edge back to start
+    ink.addPoint(10, 40, 0.5);
+    ink.addPoint(10, 12, 0.5);
+
+    const recognized = ink.recognizeShape();
+    expect(recognized).toBe(true);
+    expect(ink.currentStroke?.points.length).toBe(5); // 4 corners + closed point
+    ink.endStroke();
+  });
+
+  it('boolean eraser: eraseWhole removes intersecting stroke', () => {
+    ink.completedStrokes = [];
+    ink.startStroke(100, 100, 0.5, 'pen.a');
+    ink.addPoint(150, 100, 0.5);
+    ink.addPoint(200, 100, 0.5);
+    ink.endStroke();
+    expect(ink.completedStrokes.length).toBe(1);
+
+    // Eraser misses
+    const hitMiss = ink.eraseWhole({ x: 50, y: 50, p: 1 }, 10);
+    expect(hitMiss).toBe(false);
+    expect(ink.completedStrokes.length).toBe(1);
+
+    // Eraser hits segment at (150, 100)
+    const hitSuccess = ink.eraseWhole({ x: 150, y: 105, p: 1 }, 10);
+    expect(hitSuccess).toBe(true);
+    expect(ink.completedStrokes.length).toBe(0);
+  });
+
+  it('boolean eraser: erasePartial splits a single stroke into two', () => {
+    ink.completedStrokes = [];
+    ink.startStroke(0, 0, 0.5, 'pen.a');
+    ink.addPoint(20, 0, 0.5);
+    ink.addPoint(40, 0, 0.5);
+    ink.addPoint(60, 0, 0.5);
+    ink.addPoint(80, 0, 0.5);
+    ink.addPoint(100, 0, 0.5);
+    ink.endStroke();
+    expect(ink.completedStrokes.length).toBe(1);
+
+    // Bisect stroke around (40, 0) with radius 15 (covering point 40,0)
+    const bisected = ink.erasePartial({ x: 40, y: 0, p: 1 }, 12);
+    expect(bisected).toBe(true);
+    // The stroke should be split into 2 remaining segments: [0, 20] and [60, 80, 100]
+    expect(ink.completedStrokes.length).toBe(2);
+    expect(ink.completedStrokes[0].points.length).toBe(2);
+    expect(ink.completedStrokes[1].points.length).toBe(3);
   });
 });
