@@ -1,0 +1,16 @@
+{
+  "V": "tool.select.marquee",
+  "H": "tool.pan",
+  "P": "tool.pen.a",
+  "Shift+P": "tool.pen.b",
+  "I": "tool.highlighter",
+  "E": "tool.eraser.partial",
+  "Shift+E": "tool.eraser.whole",
+  "L": "tool.laser",
+  "M": "tool.measure.length",
+  "Ctrl+Z": "history.undo",
+  "Ctrl+Shift+Z": "history.redo",
+  "Ctrl+Y": "history.redo",
+  "/": "radial.open",
+  "Space": "tool.springPan"
+}

@@ -5,6 +5,10 @@
   import { commands } from '$lib/core/commandEngine.svelte';
   import { theme } from '$lib/core/themeContract.svelte';
   import defaultPresets from '$lib/core/defaultPresets.json';
+  import DockableToolbar from '$lib/components/studio/DockableToolbar.svelte';
+  import PropertyPill from '$lib/components/studio/PropertyPill.svelte';
+  import RadialMenu from '$lib/components/studio/RadialMenu.svelte';
+  import ShortcutSettings from '$lib/components/studio/ShortcutSettings.svelte';
 
   let { viewId = 'main-canvas' } = $props<{ viewId?: string }>();
 
@@ -13,6 +17,16 @@
   let panStart: Pt = { x: 0, y: 0 };
   let spaceHeld = $state(false);
   let editMode = $state<'markup' | 'structural'>('markup');
+
+  // Radial Menu & Shortcuts modal state
+  let radialVisible = $state(false);
+  let radialPos = $state<Pt>({ x: 300, y: 300 });
+  let shortcutsVisible = $state(false);
+
+  function openRadialAt(x: number, y: number) {
+    radialPos = { x, y };
+    radialVisible = true;
+  }
 
   // Active view state
   let currentView = $derived(viewport.views[viewId] ?? {
@@ -66,15 +80,27 @@
       }
     };
 
+    commands.onRadialToggle = () => {
+      if (typeof window !== 'undefined') {
+        openRadialAt(window.innerWidth / 2, window.innerHeight / 2);
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
     return () => {
+      commands.onRadialToggle = null;
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       viewport.closeView(viewId);
     };
   });
+
+  function handleContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    openRadialAt(e.clientX, e.clientY);
+  }
 
   function handleWheel(e: WheelEvent) {
     e.preventDefault();
@@ -191,6 +217,7 @@
   onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}
   onpointercancel={handlePointerUp}
+  oncontextmenu={handleContextMenu}
   role="region"
   aria-label="Drawboard Spatial Studio Canvas"
   tabindex="-1"
@@ -315,6 +342,31 @@
       </div>
     {/each}
   </div>
+
+  <!-- Dockable Markup Toolbar (Top, Left, Right, Floating) -->
+  <DockableToolbar
+    onOpenRadial={() => {
+      if (typeof window !== 'undefined') openRadialAt(window.innerWidth / 2, window.innerHeight / 2);
+    }}
+    onOpenShortcuts={() => {
+      shortcutsVisible = true;
+    }}
+  />
+
+  <!-- Active Tool Reactive Property Pill -->
+  <PropertyPill />
+
+  <!-- 8-Sector Radial Menu (Right-click / Pen Barrel / UI Trigger / '/') -->
+  <RadialMenu
+    bind:visible={radialVisible}
+    x={radialPos.x}
+    y={radialPos.y}
+  />
+
+  <!-- Custom Keyboard Shortcuts Settings Modal -->
+  <ShortcutSettings
+    bind:visible={shortcutsVisible}
+  />
 </div>
 
 <style>

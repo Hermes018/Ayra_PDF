@@ -1159,3 +1159,22 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - Protocol compliance (phase end only): F1 (atomic settings), F11 (UI data-loss guard / copy-on-write undo/redo), F16 (supply chain / MIT dual license).
 - Risks / follow-ups: Ready to execute Phase D2 (Dockable glass toolbar, property pill, favorites bar, 8-wedge radial menu, custom shortcuts).
 - Commit / tag: `feat(studio): implement Phase D1 global Svelte 5 controllers and spatial canvas shell`
+
+
+## [2026-11-04 17:08] Phase D2 — Dockable Toolbar, 8-Wedge Radial Menu, Property Pill, & Shortcuts Engine — DONE
+- Changes:
+  - Created `app-tauri/src/lib/core/radialGeometry.ts`: `radialHit` ($r_0=36$, $r_1=112$, $r_2=176$, 8 sectors with flyout item partitioning), `clampCenter` to keep menu within viewport bounds, `sectorAngles`, and SVG path `describeArc`.
+  - Created `app-tauri/src/lib/core/radialLayout.json`: Data-driven 8 sectors (Pan, Select, Pen A, Pen B, Highlighter, Eraser, Review, Suite) and nested flyouts.
+  - Created `app-tauri/src/lib/core/defaultShortcuts.json`: Default keyboard shortcuts mapping V, H, P, Shift+P, I, E, Shift+E, L, M, Ctrl+Z, Ctrl+Shift+Z, /, Space.
+  - Updated `app-tauri/src/lib/core/commandEngine.svelte.ts`: Integrated default shortcuts, added interactive chord capture `captureNextChord()` / `cancelCaptureChord()`, shortcut resetting, and `onRadialToggle` dispatch callback.
+  - Implemented `app-tauri/src/lib/components/studio/DockableToolbar.svelte`: Frosted-glass toolbar with drag handle, magnetic docking to `top`, `left`, `right`, or free-floating position, tool preset activation, and triggers for Radial Menu and Custom Shortcuts.
+  - Implemented `app-tauri/src/lib/components/studio/PropertyPill.svelte`: Floating reactive property pill showing tool stroke swatches (driven by theme tokens `--accent`, `--danger`, etc.), thickness presets, opacity levels, and hatch pattern picker without hardcoded color literals.
+  - Implemented `app-tauri/src/lib/components/studio/RadialMenu.svelte`: Interactive SVG marking menu with 8 sectors, outer flyout rings, center cancel zone, keyboard shortcuts (1-8, Escape), clamped within window viewport.
+  - Implemented `app-tauri/src/lib/components/studio/ShortcutSettings.svelte`: Custom keyboard shortcuts modal allowing interactive chord remapping, conflict detection, and reset to defaults.
+  - Integrated `DockableToolbar`, `PropertyPill`, `RadialMenu`, and `ShortcutSettings` into `SpatialCanvas.svelte`, wiring right-click context menu, middle-click, toolbar button, and `/` shortcut.
+- Gate: pass (`tools/sb.sh pnpm --dir app-tauri check` 0 errors, 0 warnings; vitest 68 tests across 10 files pass including 6 tests in `radialGeometry.test.ts`; `cargo xtask protocol-lint` clean; `cargo check --workspace` clean; release RPM generated at `target/release/bundle/rpm/LocalPDF Studio-0.1.0-1.x86_64.rpm` [37.46 MiB]; Linux GUI smoke test verified clean with `EXIT_CODE=124`).
+- Tests added/run: 6 unit tests in `app-tauri/src/lib/core/radialGeometry.test.ts` (cancel zone, outside zone, 8 sector centres, flyout item partitioning, clampCenter bounds, describeArc SVG path syntax).
+- Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+- Protocol compliance (phase end only): F11 (UI data-loss guard / undo-redo), F16 (supply chain / MIT dual license).
+- Risks / follow-ups: Ready to execute Phase D3 (Variable-Width Pressure Ink, Highlighter, Laser Pointer, Smart Shape Recognition, & Boolean Partial Eraser).
+- Commit / tag: `feat(studio): implement Phase D2 radial menu, dockable toolbar, property pill, and shortcut engine`

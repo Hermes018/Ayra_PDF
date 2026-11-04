@@ -1,6 +1,7 @@
 // app-tauri/src/lib/core/commandEngine.svelte.ts
 import type { ControlMessage } from '$lib/bindings/ControlMessage';
 import type { SceneNode } from '$lib/bindings/SceneNode';
+import defaultShortcuts from './defaultShortcuts.json';
 
 export interface DocSnapshot {
   readonly rev: number;
@@ -43,7 +44,7 @@ export class CommandBusAndShortcutEngine {
   #past = $state.raw<ReadonlyArray<{ doc: DocSnapshot; label: string; key?: string }>>([]);
   #future = $state.raw<ReadonlyArray<{ doc: DocSnapshot; label: string }>>([]);
   historyLimit = $state(HISTORY_LIMIT_DEFAULT);
-  shortcuts = $state<Record<Chord, string>>({});
+  shortcuts = $state<Record<Chord, string>>({ ...(defaultShortcuts as Record<Chord, string>) });
   lastError = $state<string | null>(null);
   readonly canUndo = $derived(this.#past.length > 0);
   readonly canRedo = $derived(this.#future.length > 0);
@@ -51,6 +52,8 @@ export class CommandBusAndShortcutEngine {
   #handlers = new Map<string, CommandHandler>();
   #pointerSink: PointerSink = null;
   #renderSink: RenderSink = null;
+  #chordCaptureResolver: ((chord: Chord) => void) | null = null;
+  onRadialToggle: (() => void) | null = null;
   readonly journal: ControlMessage[] = []; // headless replay/verification trace (cleared per session)
 
   register(id: string, h: CommandHandler): void {
@@ -93,6 +96,10 @@ export class CommandBusAndShortcutEngine {
   #execute(command: string, args: unknown): boolean {
     if (command === 'history.undo') return this.undo();
     if (command === 'history.redo') return this.redo();
+    if (command === 'radial.open') {
+      this.onRadialToggle?.();
+      return true;
+    }
     const h = this.#handlers.get(command);
     if (!h) {
       this.lastError = `unknown_command:${command}`;
@@ -144,9 +151,32 @@ export class CommandBusAndShortcutEngine {
     this.shortcuts = rest;
   }
 
+  resetShortcuts(): void {
+    this.shortcuts = { ...(defaultShortcuts as Record<Chord, string>) };
+  }
+
+  captureNextChord(): Promise<Chord> {
+    return new Promise((resolve) => {
+      this.#chordCaptureResolver = resolve;
+    });
+  }
+
+  cancelCaptureChord(): void {
+    this.#chordCaptureResolver = null;
+  }
+
   /** Single global keyboard entry point (protocol-lint forbids keydown listeners elsewhere). */
   attachKeyboard(target: Window): () => void {
     const on = (e: KeyboardEvent): void => {
+      if (this.#chordCaptureResolver) {
+        e.preventDefault();
+        e.stopPropagation();
+        const chord = canonicalChord(e);
+        const resolver = this.#chordCaptureResolver;
+        this.#chordCaptureResolver = null;
+        resolver(chord);
+        return;
+      }
       const el = e.target as HTMLElement | null;
       if (el && (el.isContentEditable || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
       if (this.dispatch({ kind: 'ui.key', chord: canonicalChord(e), phase: 'down' })) e.preventDefault();
@@ -157,3 +187,4 @@ export class CommandBusAndShortcutEngine {
 }
 
 export const commands = new CommandBusAndShortcutEngine();
+

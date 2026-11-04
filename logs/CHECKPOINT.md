@@ -1,11 +1,11 @@
 # CHECKPOINT (OVERWRITE this file; single source of "where am I")
 - Date: 2026-11-04
-- Phase / sub-phase: Phase D1 COMPLETE — Drawboard Global Controllers & Hardware-Accelerated Spatial Canvas Shell
-- Status: ADR-012 formally accepted; Phase D1 implemented; 4 centralized Svelte 5 Rune engines (`themeContract`, `toolEngine`, `viewportEngine`, `commandEngine`) operational; hardware-accelerated spatial canvas shell mounted in main navigation; `pnpm check` clean (0 errors, 0 warnings); vitest (8 tests) green; release RPM generated (37.45 MiB); live smoke test verified clean with EXIT_CODE=124.
+- Phase / sub-phase: Phase D2 COMPLETE — Dockable Toolbar, 8-Wedge Radial Menu, Property Pill, & Shortcuts Engine
+- Status: Phase D2 implemented; `DockableToolbar.svelte` (snappable to Top/Left/Right/Float), `PropertyPill.svelte` (theme swatches, stroke width, opacity, hatch picker), `RadialMenu.svelte` (8 sectors + nested flyout arcs, marking menu, key shortcuts 1-8), and `ShortcutSettings.svelte` modal operational and mounted in `SpatialCanvas.svelte`; `radialGeometry.ts` math validated; `pnpm check` clean (0 errors, 0 warnings); vitest (68 tests across 10 files) all green; release RPM generated (37.46 MiB); live smoke test clean with EXIT_CODE=124.
 - PAUSED TRACK: Windows Track (Phase 13 / Phases W2–W4) formally PAUSED at "Phase W1 Complete" (commit `ee1d552`, pushed to origin/main). Resume state: clean tree at ee1d552; resume point = Phase W2 (Mica/Acrylic/Opaque vibrancy + cold-start reveal) per docs/WINDOWS_MASTER_PLAN.md §Phase W2.
 - Last green tag: v0.1.0-rc5
-- In progress: Ready to execute Phase D2 (Dockable Glass Toolbar, Property Pill, Favorites Bar, 8-Wedge Radial Menu, & Custom Shortcuts Engine)
-- Open risks: (1) Pre-phase audit for storytold/* reference crates for D2-D6 (2) Memory virtualization for large multi-page spatial documents.
-- Next 3 actions: 1) Execute Phase D2 (Floating/Dockable Toolbar, Property Pill, Favorites Bar, 8-Wedge Radial Menu, Custom Shortcuts) 2) Execute Phase D3 (Pressure-sensitive ink pipeline & partial eraser) 3) Execute Phase D4 (True structural PDF content editing & procedural hatching)
+- In progress: Ready to execute Phase D3 (Variable-Width Pressure Ink, Highlighter, Laser Pointer, Smart Shape Recognition, & Boolean Partial Eraser)
+- Open risks: (1) Pre-phase audit for storytold/* reference crates for D3-D6 (2) Wet-canvas low latency rendering during rapid stylus strokes.
+- Next 3 actions: 1) Execute Phase D3 (Variable-width pressure ink pipeline, smart shapes, partial eraser) 2) Execute Phase D4 (True inline PDF text/object editing & procedural hatching) 3) Execute Phase D5 (OSNAP CAD vector snapping & calibrated measurements)
 - Active ADRs: 001-012, 004 (Local LLM / Candle), 005 (Native Feature Expansion), 006 (Reconstruction Reality Check), 008 (SvelteKit SPA), 009 (Vendored PDF.js), 011 (Windows Platform — track PAUSED), 012 (Drawboard + ArtCraft Spatial Studio — ACCEPTED)
 - Pinned pdfcraft commit: 75360d1d7db06fed974f48c914d4c04132757187
