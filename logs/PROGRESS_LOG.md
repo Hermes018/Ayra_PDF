@@ -1126,3 +1126,15 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - Protocol compliance (phase end only): F1 (atomic output with flush & retry), F3 (crash isolation via Job Object), F20 (external tool bridge containment), F21 (sidecar watchdog & process cleanup).
 - Risks / follow-ups: Ready to execute Phase W2 (Mica/Acrylic vibrancy & cold-start reveal).
 - Commit / tag: `feat(windows-w1): implement NTFS retry atomic_write, verbatim path sanitizer, and Win32 Job Object sandbox`
+
+
+## [2026-11-04 16:21] Windows Track PAUSED at Phase W1 — Phase 14.0 Drawboard + ArtCraft Spatial Studio Plan & ADR-012 — DONE (planning)
+- Changes:
+  - Windows Track (Phase 13 / Phases W2–W4) formally PAUSED at `Phase W1 Complete` (commit `ee1d552`). Clean rollback/resume state preserved: tree clean at ee1d552 on origin/main; resume at docs/WINDOWS_MASTER_PLAN.md §Phase W2.
+  - Active phase set to Phase 14.0 — Drawboard-Class Spatial PDF Editor & ArtCraft Engine Integration Plan.
+  - Authored `docs/adr/ADR-012-drawboard-artcraft-spatial-studio.md` (Decision 1 crate federation under MIT/Apache-2.0 with licence-audit gate; Decision 2 universal control bus + 4 Rune engines + anti-hardcoding law; Decision 3 dual-mode markup + structural PDF editing).
+  - Authored `docs/DRAWBOARD_STUDIO_MASTER_PLAN.md` (9 sections; Phases D1–D6 runbooks with backup, file specs, gates, rollback, log/commit steps).
+- Gate: pass (planning-only; zero `.rs`, `.ts`, `.svelte`, `.css`, `.json` files modified).
+- Pre-commit checklist: 1 YES (docs-only) 2 N/A (no code) 3 YES 4 N/A (deps proposed, vetting scheduled in D1 pre-phase) 5 YES 6 N/A 7 N/A 8 YES 9 YES (scope change captured as PROPOSED ADR pending approval) 10 YES 11 YES (no registry change yet)
+- Risks / follow-ups: storytold/* licence + API verification is a hard D1 entry gate; DWG deferred (no permissive reader); 07_FEATURE_MAP + PLAN_LOG amendment requires user approval before D1.
+- Commit / tag: `docs(architecture): pause Windows track at W1 and author Drawboard + ArtCraft spatial PDF editor master plan (ADR-012)`
