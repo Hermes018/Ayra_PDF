@@ -1178,3 +1178,27 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - Protocol compliance (phase end only): F11 (UI data-loss guard / undo-redo), F16 (supply chain / MIT dual license).
 - Risks / follow-ups: Ready to execute Phase D3 (Variable-Width Pressure Ink, Highlighter, Laser Pointer, Smart Shape Recognition, & Boolean Partial Eraser).
 - Commit / tag: `feat(studio): implement Phase D2 radial menu, dockable toolbar, property pill, and shortcut engine`
+
+
+## [2026-11-04 18:05] Phase D2.1 — Deterministic State Reactivity, Pointer-Captured Drag Mechanics, SVG Icon Registry, & UI Audit Logging — DONE
+- Changes:
+  - Initialized `logs/UI_AUDIT_LOG.md` recording root causes and fixes for UI-BUG-001 (tool state reactivity), UI-BUG-002 (janky toolbar drag physics), UI-BUG-003 (radial menu movement jank), and UI-BUG-004 (placeholder Unicode emojis).
+  - Standardized `app-tauri/src/lib/core/toolEngine.svelte.ts` with Svelte 5 `$state`:
+    - `activeToolId = $state<ToolId>('pan')`, `presets = $state<Record<string, ToolPreset>>({...})`.
+    - Reactive derived states: `activePreset`, `activeToolLabel`, `supportsStrokeProperties`, `supportsEraserMode`.
+    - Deterministic mutators: `selectTool(id)` (auto-initializing default fallback if unmapped) and `updateActivePreset(patch)`.
+  - Updated `app-tauri/src/lib/core/commandEngine.svelte.ts` with `StudioControlMessage` routing `tool.select` and `style.apply` directly to `toolEngine`.
+  - Created `app-tauri/src/lib/components/studio/StudioIcon.svelte` with 21 deterministic vector SVG icons (`pan`, `select`, `pen.a`, `pen.b`, `highlighter`, `eraser`, `eraser.partial`, `eraser.whole`, `laser`, `text.review`, `shape`, `measure`, `radial`, `shortcuts`, `undo`, `redo`, `grip`, `close`, `reset`, `zoom.in`, `zoom.out`).
+  - Rewrote `app-tauri/src/lib/components/studio/DockableToolbar.svelte` with pointer capture (`setPointerCapture`), `grabOffset`, parent-relative clamped coordinate math, zero-layout-thrashing `translate3d`, magnetic `resolveDock`, and `<StudioIcon>` buttons.
+  - Rewrote `app-tauri/src/lib/components/studio/PropertyPill.svelte` with `data-testid="active-tool-label"`, direct reactive binding to `tools.activeToolLabel`, `tools.supportsStrokeProperties`, and segmented toggle for `tools.supportsEraserMode`.
+  - Rewrote `app-tauri/src/lib/components/studio/RadialMenu.svelte`: removed CSS transitions on `.wedge-path` and `.flyout-path` for 120Hz deterministic tracking, replaced all emojis with vector `<StudioIcon>` geometry.
+  - Updated `radialLayout.json` with icon identifier names instead of Unicode emojis.
+  - Updated `ShortcutSettings.svelte` and `SpatialCanvas.svelte` replacing all emojis with `<StudioIcon>` and removing raw color literals.
+  - Authored comprehensive workspace directory tree in `docs/DIRECTORY_TREE.md`.
+  - Created unit test suite in `app-tauri/src/lib/core/studioReactivity.test.ts` covering tool state transitions, preset isolation, command bus dispatch, `resolveDock`, and viewport clamping.
+- Gate: pass (`tools/sb.sh pnpm --dir app-tauri check` 0 errors, 0 warnings; vitest 81 tests across 11 files pass including all 13 tests in `studioReactivity.test.ts`; `cargo xtask protocol-lint` clean; emoji grep check count = 0; release RPM generated at `target/release/bundle/rpm/LocalPDF Studio-0.1.0-1.x86_64.rpm` [37.46 MiB]; Linux GUI smoke test verified clean with `EXIT_CODE=124`).
+- Tests added/run: 13 unit tests in `app-tauri/src/lib/core/studioReactivity.test.ts` (tool selection, label derivation, eraser mode toggle, preset isolation on patch, command bus message routing, resolveDock threshold math, viewport coordinate clamping).
+- Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+- Protocol compliance (phase end only): F11 (UI data-loss guard / undo-redo), F16 (supply chain / MIT dual license), Rule 02:16 (Svelte 5 runes & pointer events), Rule 02:13 (theming & reduced motion).
+- Risks / follow-ups: Ready to execute Phase D3 (Variable-Width Pressure Ink, Highlighter, Laser Pointer, Smart Shape Recognition, & Boolean Partial Eraser).
+- Commit / tag: `fix(studio): deterministic tool state reactivity, pointer-captured drag math, SVG icon registry, and UI audit log (Phase D2.1)`

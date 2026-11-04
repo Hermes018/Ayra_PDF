@@ -1,5 +1,6 @@
 <script lang="ts">
   import { commands, type Chord } from '$lib/core/commandEngine.svelte';
+  import StudioIcon from './StudioIcon.svelte';
 
   let {
     visible = $bindable(false),
@@ -76,7 +77,7 @@
     >
       <div class="modal-header">
         <div class="header-title">
-          <span class="header-icon">⌨️</span>
+          <StudioIcon name="shortcuts" size={18} />
           <h2>Custom Shortcuts</h2>
         </div>
         <button
@@ -85,7 +86,7 @@
           onclick={handleClose}
           aria-label="Close settings"
         >
-          ✕
+          <StudioIcon name="close" size={14} />
         </button>
       </div>
 

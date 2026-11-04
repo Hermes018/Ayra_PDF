@@ -9,6 +9,7 @@
   import PropertyPill from '$lib/components/studio/PropertyPill.svelte';
   import RadialMenu from '$lib/components/studio/RadialMenu.svelte';
   import ShortcutSettings from '$lib/components/studio/ShortcutSettings.svelte';
+  import StudioIcon from '$lib/components/studio/StudioIcon.svelte';
 
   let { viewId = 'main-canvas' } = $props<{ viewId?: string }>();
 
@@ -54,7 +55,7 @@
     });
 
     // Initialize tool presets if empty
-    if (tools.presets.length === 0) {
+    if (Object.keys(tools.presets).length === 0) {
       tools.load(defaultPresets as any, ['preset.pen.a', 'preset.highlighter', 'preset.eraser.partial']);
     }
 
@@ -232,7 +233,8 @@
         onclick={() => { editMode = 'markup'; }}
         title="Markup Mode (Fast 60-120fps Annotations & Measurements)"
       >
-        ✏️ Markup
+        <StudioIcon name="pen.a" size={13} />
+        <span>Markup</span>
       </button>
       <button
         type="button"
@@ -241,7 +243,8 @@
         onclick={() => { editMode = 'structural'; }}
         title="Structural PDF Edit Mode (True Text, Font & Object Manipulation)"
       >
-        📝 Structural Edit
+        <StudioIcon name="text.review" size={13} />
+        <span>Structural Edit</span>
       </button>
     </div>
 
@@ -253,8 +256,9 @@
         class="hud-icon-btn"
         onclick={() => viewport.zoomAt(viewId, 0.8, { x: 300, y: 300 })}
         title="Zoom Out"
+        aria-label="Zoom Out"
       >
-        −
+        <StudioIcon name="zoom.out" size={14} />
       </button>
       <span class="zoom-readout">{Math.round(currentView.zoom * 100)}%</span>
       <button
@@ -262,16 +266,18 @@
         class="hud-icon-btn"
         onclick={() => viewport.zoomAt(viewId, 1.25, { x: 300, y: 300 })}
         title="Zoom In"
+        aria-label="Zoom In"
       >
-        +
+        <StudioIcon name="zoom.in" size={14} />
       </button>
       <button
         type="button"
         class="hud-icon-btn"
         onclick={() => viewport.upsertView({ ...currentView, zoom: 1.0, panX: 40, panY: 40 })}
         title="Reset 100%"
+        aria-label="Reset Zoom"
       >
-        ⟲
+        <StudioIcon name="reset" size={14} />
       </button>
     </div>
 
@@ -279,7 +285,7 @@
 
     <div class="hud-tool-indicator">
       <span class="hud-tool-label">Tool:</span>
-      <span class="hud-tool-name">{tools.active?.label ?? tools.activeTool}</span>
+      <span class="hud-tool-name">{tools.activeToolLabel}</span>
     </div>
 
     <div class="hud-undo-redo">
@@ -289,8 +295,9 @@
         disabled={!commands.canUndo}
         onclick={() => commands.undo()}
         title="Undo ({commands.undoLabel ?? 'None'})"
+        aria-label="Undo"
       >
-        ↺
+        <StudioIcon name="undo" size={14} />
       </button>
       <button
         type="button"
@@ -298,8 +305,9 @@
         disabled={!commands.canRedo}
         onclick={() => commands.redo()}
         title="Redo"
+        aria-label="Redo"
       >
-        ↻
+        <StudioIcon name="redo" size={14} />
       </button>
     </div>
   </div>
@@ -399,7 +407,7 @@
 
   .spatial-page {
     position: absolute;
-    background-color: #ffffff;
+    background-color: var(--laser-core);
     box-shadow: 0 10px 30px var(--canvas-page-shadow);
     border-radius: 4px;
     overflow: hidden;
@@ -423,14 +431,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #ffffff;
+    background: var(--laser-core);
   }
 
   .page-grid-watermark {
     opacity: 0.15;
     text-align: center;
     font-weight: 500;
-    color: #1d1d1f;
+    color: var(--glass-text);
   }
 
   .page-overlay-canvas,
@@ -469,12 +477,15 @@
 
   .hud-mode-toggle {
     display: flex;
-    background: rgba(0, 0, 0, 0.05);
+    background: var(--canvas-selection);
     border-radius: 9999px;
     padding: 2px;
   }
 
   .hud-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     border: none;
     background: transparent;
     color: var(--glass-text);
@@ -488,7 +499,7 @@
 
   .hud-btn.active {
     background: var(--accent);
-    color: #ffffff;
+    color: var(--laser-core);
   }
 
   .hud-divider {
@@ -528,7 +539,7 @@
   }
 
   .hud-icon-btn:hover:not(:disabled) {
-    background: rgba(0, 0, 0, 0.08);
+    background: var(--canvas-selection);
   }
 
   .hud-icon-btn:disabled {

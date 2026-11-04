@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { tools, type ToolId } from '$lib/core/toolEngine.svelte';
+  import StudioIcon, { type StudioIconName } from './StudioIcon.svelte';
   import {
     RADIAL,
     radialHit,
@@ -36,12 +36,12 @@
     y = 200,
     visible = $bindable(false),
     onClose
-  } = $props<{
+  }: {
     x: number;
     y: number;
     visible: boolean;
     onClose?: () => void;
-  }>();
+  } = $props();
 
   let activeSector = $state<number | null>(null);
   let activeFlyout = $state<number | null>(null);
@@ -88,36 +88,18 @@
     if (hit.zone === 'wedge') {
       const wedge = WEDGES[hit.sector];
       if (wedge) {
-        if (wedge.presetId) {
-          tools.select(wedge.presetId);
-        } else {
-          activateTool(wedge.tool as ToolId);
-        }
+        tools.selectTool(wedge.tool as ToolId);
       }
       closeMenu();
     } else if (hit.zone === 'flyout') {
       const wedge = WEDGES[hit.sector];
       const item = wedge?.flyout[hit.item];
       if (item) {
-        if (item.id.startsWith('preset.')) {
-          tools.select(item.id);
-        } else {
-          activateTool(item.tool as ToolId);
-        }
+        tools.selectTool(item.tool as ToolId);
       }
       closeMenu();
     } else if (hit.zone === 'cancel') {
       closeMenu();
-    }
-  }
-
-  function activateTool(toolId: ToolId) {
-    const preset = tools.presets.find(p => p.tool === toolId);
-    if (preset) {
-      tools.select(preset.id);
-    } else {
-      const found = tools.presets.find(p => p.tool.startsWith(toolId.split('.')[0] || ''));
-      if (found) tools.select(found.id);
     }
   }
 
@@ -133,8 +115,7 @@
       const sector = num - 1;
       const wedge = WEDGES[sector];
       if (wedge) {
-        if (wedge.presetId) tools.select(wedge.presetId);
-        else activateTool(wedge.tool as ToolId);
+        tools.selectTool(wedge.tool as ToolId);
       }
       closeMenu();
     }
@@ -175,14 +156,9 @@
           role="menuitem"
           aria-label="Cancel"
         />
-        <text
-          x={CX}
-          y={CY + 5}
-          text-anchor="middle"
-          class="center-hub-icon"
-        >
-          ✕
-        </text>
+        <g transform="translate({CX - 8}, {CY - 8})" class="center-hub-icon-g">
+          <StudioIcon name="close" size={16} />
+        </g>
 
         <!-- 8 Primary Wedges -->
         {#each WEDGES as wedge (wedge.sector)}
@@ -193,7 +169,7 @@
           {@const iconX = CX + iconR * Math.cos(rad)}
           {@const iconY = CY + iconR * Math.sin(rad)}
           {@const isHovered = activeSector === wedge.sector}
-          {@const isCurrentTool = tools.activeTool === wedge.tool || tools.active?.id === wedge.presetId}
+          {@const isCurrentTool = tools.activeToolId === wedge.tool || (wedge.presetId && tools.activePreset?.id === wedge.presetId)}
 
           <g class="wedge-group" class:hovered={isHovered} class:active-tool={isCurrentTool}>
             <path
@@ -202,19 +178,14 @@
               role="menuitem"
               aria-label={wedge.label}
             />
-            <!-- Wedge Icon -->
-            <text
-              x={iconX}
-              y={iconY - 4}
-              text-anchor="middle"
-              class="wedge-icon"
-            >
-              {wedge.icon}
-            </text>
+            <!-- Wedge Icon (Vector SVG) -->
+            <g transform="translate({iconX - 9}, {iconY - 14})" class="wedge-icon-g">
+              <StudioIcon name={wedge.icon as StudioIconName} size={18} />
+            </g>
             <!-- Wedge Label -->
             <text
               x={iconX}
-              y={iconY + 12}
+              y={iconY + 14}
               text-anchor="middle"
               class="wedge-label"
             >
@@ -249,17 +220,12 @@
                 role="menuitem"
                 aria-label={item.label}
               />
+              <g transform="translate({fx - 7}, {fy - 12})" class="flyout-icon-g">
+                <StudioIcon name={item.icon as StudioIconName} size={14} />
+              </g>
               <text
                 x={fx}
-                y={fy - 2}
-                text-anchor="middle"
-                class="flyout-icon"
-              >
-                {item.icon}
-              </text>
-              <text
-                x={fx}
-                y={fy + 11}
+                y={fy + 12}
                 text-anchor="middle"
                 class="flyout-label"
               >
@@ -299,30 +265,27 @@
     stroke: var(--glass-border);
     stroke-width: 1.5;
     cursor: pointer;
-    transition: fill var(--motion-duration) ease;
   }
 
   .center-hub:hover {
     fill: var(--danger);
   }
 
-  .center-hub-icon {
-    fill: var(--glass-text);
-    font-size: 14px;
-    font-weight: bold;
+  .center-hub-icon-g {
     pointer-events: none;
+    color: var(--glass-text);
   }
 
   .wedge-group {
     cursor: pointer;
-    transition: transform var(--motion-duration) ease;
   }
 
+  /* Zero CSS transitions for 120Hz deterministic tracking */
   .wedge-path {
     fill: var(--glass-bg);
     stroke: var(--glass-border);
     stroke-width: 1.2;
-    transition: fill var(--motion-duration) ease, stroke var(--motion-duration) ease;
+    transition: none;
   }
 
   .wedge-group.hovered .wedge-path {
@@ -335,9 +298,13 @@
     stroke-width: 2;
   }
 
-  .wedge-icon {
-    font-size: 16px;
+  .wedge-icon-g {
     pointer-events: none;
+    color: var(--glass-text);
+  }
+
+  .wedge-group.hovered .wedge-icon-g {
+    color: var(--laser-core);
   }
 
   .wedge-label {
@@ -360,7 +327,7 @@
     fill: var(--glass-bg);
     stroke: var(--glass-border);
     stroke-width: 1;
-    transition: fill var(--motion-duration) ease;
+    transition: none;
   }
 
   .flyout-group.hovered .flyout-path {
@@ -368,9 +335,13 @@
     stroke: var(--laser-core);
   }
 
-  .flyout-icon {
-    font-size: 13px;
+  .flyout-icon-g {
     pointer-events: none;
+    color: var(--glass-text);
+  }
+
+  .flyout-group.hovered .flyout-icon-g {
+    color: var(--laser-core);
   }
 
   .flyout-label {

@@ -4,9 +4,7 @@
   import { theme, type TokenName } from '$lib/core/themeContract.svelte';
   import type { HatchPatternId } from '$lib/bindings/HatchPatternId';
 
-  let activePreset = $derived(tools.active);
-
-  // Swatch tokens mapped to the theme contract
+  // Swatch tokens mapped strictly to the theme contract (zero hex literals)
   const SWATCH_TOKENS: { token: TokenName; label: string }[] = [
     { token: '--glass-text', label: 'Primary' },
     { token: '--accent', label: 'Blue' },
@@ -29,24 +27,24 @@
   ];
 
   function updateStroke(patch: Partial<StrokeStyle>) {
-    if (!activePreset) return;
-    const updated = { ...activePreset.stroke, ...patch };
-    tools.patch(activePreset.id, { stroke: updated });
+    if (!tools.activePreset) return;
+    const updated = { ...tools.activePreset.stroke, ...patch };
+    tools.updateActivePreset({ stroke: updated });
     commands.dispatch({
       kind: 'execute',
       command: 'style.apply',
-      args: { presetId: activePreset.id, stroke: updated }
+      args: { presetId: tools.activePreset.id, stroke: updated }
     });
   }
 
   function updateFill(patch: Partial<FillStyle>) {
-    if (!activePreset) return;
-    const updated = { ...activePreset.fill, ...patch };
-    tools.patch(activePreset.id, { fill: updated });
+    if (!tools.activePreset) return;
+    const updated = { ...tools.activePreset.fill, ...patch };
+    tools.updateActivePreset({ fill: updated });
     commands.dispatch({
       kind: 'execute',
       command: 'style.apply',
-      args: { presetId: activePreset.id, fill: updated }
+      args: { presetId: tools.activePreset.id, fill: updated }
     });
   }
 
@@ -56,13 +54,13 @@
   }
 </script>
 
-{#if activePreset}
-  <div class="property-pill glass-panel" role="toolbar" aria-label="Tool Property Pill">
-    <!-- Active Tool Badge -->
-    <div class="pill-section tool-badge-section">
-      <span class="tool-label">{activePreset.label}</span>
-    </div>
+<div class="property-pill glass-panel" role="toolbar" aria-label="Tool Property Pill">
+  <!-- Active Tool Badge -->
+  <div class="pill-section tool-badge-section">
+    <span class="tool-label" data-testid="active-tool-label">{tools.activeToolLabel}</span>
+  </div>
 
+  {#if tools.supportsStrokeProperties && tools.activePreset}
     <div class="pill-divider"></div>
 
     <!-- Color Swatches (Theme Contract Driven) -->
@@ -71,7 +69,7 @@
         <button
           type="button"
           class="swatch-btn"
-          class:active={activePreset.stroke.colorToken === swatch.token}
+          class:active={tools.activePreset.stroke.colorToken === swatch.token}
           style:background="var({swatch.token})"
           onclick={() => selectColorToken(swatch.token)}
           title="{swatch.label} Color"
@@ -88,12 +86,16 @@
         <button
           type="button"
           class="width-btn"
-          class:active={Math.abs(activePreset.stroke.widthPt - w) < 0.1}
+          class:active={Math.abs(tools.activePreset.stroke.widthPt - w) < 0.1}
           onclick={() => updateStroke({ widthPt: w })}
           title="{w} pt stroke"
           aria-label="{w} pt stroke"
         >
-          <span class="width-dot" style:width="{Math.min(18, Math.max(3, w * 1.5))}px" style:height="{Math.min(18, Math.max(3, w * 1.5))}px"></span>
+          <span
+            class="width-dot"
+            style:width="{Math.min(18, Math.max(3, w * 1.5))}px"
+            style:height="{Math.min(18, Math.max(3, w * 1.5))}px"
+          ></span>
         </button>
       {/each}
     </div>
@@ -106,7 +108,7 @@
         <button
           type="button"
           class="opacity-btn"
-          class:active={Math.abs(activePreset.stroke.opacity - op) < 0.05}
+          class:active={Math.abs(tools.activePreset.stroke.opacity - op) < 0.05}
           onclick={() => updateStroke({ opacity: op })}
           title="{Math.round(op * 100)}% Opacity"
           aria-label="{Math.round(op * 100)}% Opacity"
@@ -117,12 +119,12 @@
     </div>
 
     <!-- Optional Hatch Selector for Shapes/Hatch Tool -->
-    {#if activePreset.tool.startsWith('shape') || activePreset.tool.startsWith('hatch')}
+    {#if tools.activeToolId === 'shape' || tools.activeToolId.startsWith('shape') || tools.activeToolId.startsWith('hatch')}
       <div class="pill-divider"></div>
       <div class="pill-section hatch-section" aria-label="Hatch Pattern">
         <select
           class="hatch-select"
-          value={activePreset.fill.hatch}
+          value={tools.activePreset.fill.hatch}
           onchange={(e) => updateFill({ hatch: (e.target as HTMLSelectElement).value as HatchPatternId, kind: 'hatch' })}
           aria-label="Select Hatch Pattern"
         >
@@ -133,8 +135,43 @@
         </select>
       </div>
     {/if}
-  </div>
-{/if}
+  {:else if tools.supportsEraserMode}
+    <div class="pill-divider"></div>
+    <div class="pill-section eraser-mode-section" aria-label="Eraser Mode Toggle">
+      <button
+        type="button"
+        class="toggle-btn"
+        class:active={tools.activeToolId === 'eraser.partial'}
+        onclick={() => tools.selectTool('eraser.partial')}
+      >
+        Partial
+      </button>
+      <button
+        type="button"
+        class="toggle-btn"
+        class:active={tools.activeToolId === 'eraser.whole'}
+        onclick={() => tools.selectTool('eraser.whole')}
+      >
+        Whole
+      </button>
+    </div>
+  {:else if tools.activeToolId === 'pan'}
+    <div class="pill-divider"></div>
+    <div class="pill-section status-hint-section">
+      <span class="status-hint">Drag canvas or hold Space to pan</span>
+    </div>
+  {:else if tools.activeToolId === 'select'}
+    <div class="pill-divider"></div>
+    <div class="pill-section status-hint-section">
+      <span class="status-hint">Drag marquee or click to select annotations</span>
+    </div>
+  {:else if tools.activeToolId === 'laser'}
+    <div class="pill-divider"></div>
+    <div class="pill-section status-hint-section">
+      <span class="status-hint">Temporary laser beam pointer</span>
+    </div>
+  {/if}
+</div>
 
 <style>
   .property-pill {
@@ -170,6 +207,12 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     opacity: 0.8;
+  }
+
+  .status-hint {
+    font-size: 11px;
+    opacity: 0.7;
+    white-space: nowrap;
   }
 
   .pill-divider {
@@ -249,6 +292,29 @@
   }
 
   .opacity-btn.active {
+    background: var(--accent);
+    color: var(--laser-core);
+    font-weight: 600;
+  }
+
+  /* Eraser Toggle Buttons */
+  .toggle-btn {
+    border: none;
+    background: transparent;
+    color: var(--glass-text);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.1s ease;
+  }
+
+  .toggle-btn:hover {
+    background: var(--canvas-selection);
+  }
+
+  .toggle-btn.active {
     background: var(--accent);
     color: var(--laser-core);
     font-weight: 600;

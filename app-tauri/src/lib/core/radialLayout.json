@@ -3,7 +3,7 @@
     "sector": 0,
     "id": "pan",
     "label": "Pan",
-    "icon": "✋",
+    "icon": "pan",
     "tool": "pan",
     "presetId": "preset.pan",
     "flyout": []
@@ -12,95 +12,95 @@
     "sector": 1,
     "id": "select",
     "label": "Select",
-    "icon": "↖️",
+    "icon": "select",
     "tool": "select.marquee",
     "presetId": null,
     "flyout": [
-      { "id": "select.marquee", "label": "Marquee", "tool": "select.marquee", "icon": "⬚" },
-      { "id": "select.text", "label": "Text", "tool": "select.text", "icon": "I" },
-      { "id": "select.lasso", "label": "Lasso", "tool": "select.lasso", "icon": "➰" },
-      { "id": "select.object", "label": "Object", "tool": "select.object", "icon": "📦" },
-      { "id": "laser", "label": "Laser", "tool": "laser", "icon": "🔦" }
+      { "id": "select.marquee", "label": "Marquee", "tool": "select.marquee", "icon": "select" },
+      { "id": "select.text", "label": "Text", "tool": "select.text", "icon": "text.review" },
+      { "id": "select.lasso", "label": "Lasso", "tool": "select.lasso", "icon": "select" },
+      { "id": "select.object", "label": "Object", "tool": "select.object", "icon": "shape" },
+      { "id": "laser", "label": "Laser", "tool": "laser", "icon": "laser" }
     ]
   },
   {
     "sector": 2,
     "id": "pen.a",
     "label": "Pen A",
-    "icon": "🖊️",
+    "icon": "pen.a",
     "tool": "pen.a",
     "presetId": "preset.pen.a",
     "flyout": [
-      { "id": "preset.pen.a", "label": "Fine Black", "tool": "pen.a", "icon": "🖊️" },
-      { "id": "preset.pen.b", "label": "Medium Red", "tool": "pen.b", "icon": "🖍️" }
+      { "id": "preset.pen.a", "label": "Fine Black", "tool": "pen.a", "icon": "pen.a" },
+      { "id": "preset.pen.b", "label": "Medium Red", "tool": "pen.b", "icon": "pen.b" }
     ]
   },
   {
     "sector": 3,
     "id": "pen.b",
     "label": "Pen B",
-    "icon": "🖍️",
+    "icon": "pen.b",
     "tool": "pen.b",
     "presetId": "preset.pen.b",
     "flyout": [
-      { "id": "preset.pen.b", "label": "Medium Red", "tool": "pen.b", "icon": "🖍️" },
-      { "id": "preset.pen.a", "label": "Fine Black", "tool": "pen.a", "icon": "🖊️" }
+      { "id": "preset.pen.b", "label": "Medium Red", "tool": "pen.b", "icon": "pen.b" },
+      { "id": "preset.pen.a", "label": "Fine Black", "tool": "pen.a", "icon": "pen.a" }
     ]
   },
   {
     "sector": 4,
     "id": "highlighter",
     "label": "Highlighter",
-    "icon": "🖍",
+    "icon": "highlighter",
     "tool": "highlighter",
     "presetId": "preset.highlighter",
     "flyout": [
-      { "id": "preset.highlighter", "label": "Yellow Chisel", "tool": "highlighter", "icon": "🖍" }
+      { "id": "preset.highlighter", "label": "Yellow Chisel", "tool": "highlighter", "icon": "highlighter" }
     ]
   },
   {
     "sector": 5,
     "id": "eraser",
     "label": "Eraser",
-    "icon": "🧹",
+    "icon": "eraser",
     "tool": "eraser.partial",
     "presetId": "preset.eraser.partial",
     "flyout": [
-      { "id": "eraser.partial", "label": "Partial", "tool": "eraser.partial", "icon": "✂️" },
-      { "id": "eraser.whole", "label": "Whole", "tool": "eraser.whole", "icon": "🗑️" }
+      { "id": "eraser.partial", "label": "Partial", "tool": "eraser.partial", "icon": "eraser.partial" },
+      { "id": "eraser.whole", "label": "Whole", "tool": "eraser.whole", "icon": "eraser.whole" }
     ]
   },
   {
     "sector": 6,
     "id": "review",
     "label": "Review",
-    "icon": "📝",
+    "icon": "text.review",
     "tool": "review.textEdit",
     "presetId": null,
     "flyout": [
-      { "id": "review.textEdit", "label": "Edit Text", "tool": "review.textEdit", "icon": "✏️" },
-      { "id": "review.highlight", "label": "Highlight", "tool": "review.highlight", "icon": "🟨" },
-      { "id": "review.underline", "label": "Underline", "tool": "review.underline", "icon": "̲" },
-      { "id": "review.squiggly", "label": "Squiggle", "tool": "review.squiggly", "icon": "〰️" },
-      { "id": "review.strikeout", "label": "Strikeout", "tool": "review.strikeout", "icon": "S̶" },
-      { "id": "review.redact", "label": "Redact", "tool": "review.redact", "icon": "⬛" }
+      { "id": "review.textEdit", "label": "Edit Text", "tool": "review.textEdit", "icon": "text.review" },
+      { "id": "review.highlight", "label": "Highlight", "tool": "review.highlight", "icon": "highlighter" },
+      { "id": "review.underline", "label": "Underline", "tool": "review.underline", "icon": "text.review" },
+      { "id": "review.squiggly", "label": "Squiggle", "tool": "review.squiggly", "icon": "text.review" },
+      { "id": "review.strikeout", "label": "Strikeout", "tool": "review.strikeout", "icon": "text.review" },
+      { "id": "review.redact", "label": "Redact", "tool": "review.redact", "icon": "text.review" }
     ]
   },
   {
     "sector": 7,
     "id": "suite",
     "label": "Suite",
-    "icon": "📐",
+    "icon": "shape",
     "tool": "shape.rect",
     "presetId": null,
     "flyout": [
-      { "id": "shape.line", "label": "Line", "tool": "shape.line", "icon": "╱" },
-      { "id": "shape.rect", "label": "Rectangle", "tool": "shape.rect", "icon": "▭" },
-      { "id": "shape.ellipse", "label": "Ellipse", "tool": "shape.ellipse", "icon": "◯" },
-      { "id": "hatch.pick", "label": "Hatch", "tool": "hatch.pick", "icon": "▨" },
-      { "id": "measure.length", "label": "Measure", "tool": "measure.length", "icon": "📏" },
-      { "id": "measure.rectArea", "label": "Area", "tool": "measure.rectArea", "icon": "📐" },
-      { "id": "insert.note", "label": "Note", "tool": "insert.note", "icon": "💬" }
+      { "id": "shape.line", "label": "Line", "tool": "shape.line", "icon": "shape" },
+      { "id": "shape.rect", "label": "Rectangle", "tool": "shape.rect", "icon": "shape" },
+      { "id": "shape.ellipse", "label": "Ellipse", "tool": "shape.ellipse", "icon": "shape" },
+      { "id": "hatch.pick", "label": "Hatch", "tool": "hatch.pick", "icon": "shape" },
+      { "id": "measure.length", "label": "Measure", "tool": "measure.length", "icon": "measure" },
+      { "id": "measure.rectArea", "label": "Area", "tool": "measure.rectArea", "icon": "measure" },
+      { "id": "insert.note", "label": "Note", "tool": "insert.note", "icon": "text.review" }
     ]
   }
 ]

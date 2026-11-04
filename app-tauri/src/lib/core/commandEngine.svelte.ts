@@ -2,6 +2,7 @@
 import type { ControlMessage } from '$lib/bindings/ControlMessage';
 import type { SceneNode } from '$lib/bindings/SceneNode';
 import defaultShortcuts from './defaultShortcuts.json';
+import { tools, type ToolPreset } from './toolEngine.svelte';
 
 export interface DocSnapshot {
   readonly rev: number;
@@ -39,6 +40,11 @@ export function withPage(doc: DocSnapshot, page: number, edit: (m: Map<string, S
 export type PointerSink = ((m: Extract<ControlMessage, { kind: 'pointer' }>) => void) | null;
 export type RenderSink = ((m: Extract<ControlMessage, { kind: 'render_page' }>) => void) | null;
 
+export type StudioControlMessage =
+  | ControlMessage
+  | { kind: 'tool.select'; toolId?: string; id?: string }
+  | { kind: 'style.apply'; patch?: Partial<ToolPreset>; [key: string]: unknown };
+
 export class CommandBusAndShortcutEngine {
   doc = $state.raw<DocSnapshot>(Object.freeze({ rev: 0, pages: Object.freeze([]) }));
   #past = $state.raw<ReadonlyArray<{ doc: DocSnapshot; label: string; key?: string }>>([]);
@@ -74,8 +80,19 @@ export class CommandBusAndShortcutEngine {
     this.#future = [];
   }
 
-  dispatch(msg: ControlMessage): boolean {
-    this.journal.push(msg);
+  dispatch(msg: StudioControlMessage): boolean {
+    this.journal.push(msg as ControlMessage);
+    if (msg.kind === 'tool.select') {
+      const tid = msg.toolId ?? msg.id;
+      if (tid) tools.selectTool(tid);
+      return true;
+    }
+    if (msg.kind === 'style.apply') {
+      const patch = msg.patch ?? (msg as Partial<ToolPreset>);
+      tools.updateActivePreset(patch);
+      return true;
+    }
+
     switch (msg.kind) {
       case 'execute':
         return this.#execute(msg.command, msg.args);
@@ -91,6 +108,7 @@ export class CommandBusAndShortcutEngine {
         this.#renderSink?.(msg);
         return this.#renderSink !== null;
     }
+    return false;
   }
 
   #execute(command: string, args: unknown): boolean {
@@ -98,6 +116,23 @@ export class CommandBusAndShortcutEngine {
     if (command === 'history.redo') return this.redo();
     if (command === 'radial.open') {
       this.onRadialToggle?.();
+      return true;
+    }
+    if (command === 'tool.select') {
+      const tid = typeof args === 'string'
+        ? args
+        : ((args as { toolId?: string; id?: string })?.toolId ?? (args as { id?: string })?.id);
+      if (tid) tools.selectTool(tid);
+      return true;
+    }
+    if (command.startsWith('tool.')) {
+      const tid = command.replace(/^tool\./, '');
+      tools.selectTool(tid);
+      return true;
+    }
+    if (command === 'style.apply') {
+      const patch = (args as { patch?: Partial<ToolPreset> })?.patch ?? (args as Partial<ToolPreset>);
+      tools.updateActivePreset(patch);
       return true;
     }
     const h = this.#handlers.get(command);
