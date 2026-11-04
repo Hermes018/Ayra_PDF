@@ -1,6 +1,6 @@
 # ADR-012 — Drawboard-Class Spatial Studio & ArtCraft Engine Federation
 
-- **Status:** PROPOSED (2026-11-04). Binding once the user approves; implementation (Phases D1–D6) is blocked until then (protocol DON'T #13: scope outside `07_FEATURE_MAP.md` needs PLAN_LOG + ADR + approval).
+- **Status:** ACCEPTED (2026-11-04). Formally approved by user for Phases D1–D6 execution; implementation active.
 - **Supersedes:** none. **Pauses:** ADR-011 execution track (Windows W2–W4) at W1 (`ee1d552`).
 - **Related:** ADR-002 (memory tiers), ADR-003 (Svelte 5 runes UI), ADR-004 (local LLM / Candle), ADR-005 (native feature expansion), ADR-009 (vendored PDF.js).
 - **Companion blueprint:** `docs/DRAWBOARD_STUDIO_MASTER_PLAN.md`.

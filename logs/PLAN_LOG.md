@@ -108,3 +108,16 @@ Entry format:
 - Failsafes affected: None directly, improves CI.
 - Verification steps: Workflows are correctly formatted.
 - Revision (date, what changed, why): N/A.
+
+
+## [2026-11-04] Plan for Phase 14 / Drawboard Studio & ADR-012 Acceptance
+- Goal / acceptance: Formally accept ADR-012 (Drawboard-Class Spatial Studio & ArtCraft Engine Federation) and begin Phase D1 execution. Implement Svelte 5 global controllers (`themeContract`, `toolEngine`, `viewportEngine`, `commandEngine`) and the hardware-accelerated spatial canvas shell.
+- Approach + alternatives considered:
+  - Pause Windows Track (Phase 13 / W2-W4) cleanly at commit `ee1d552`.
+  - Accept ADR-012 (MIT/Apache-2.0 only, centralized Runes, dual-mode markup & structural PDF editing).
+  - Implement 4 centralized global engines in `app-tauri/src/lib/core/`.
+  - Mount spatial canvas shell into main view layout with pan/zoom gestures, hardware acceleration, and layer separation.
+- Files/crates touched: `docs/adr/ADR-012-drawboard-artcraft-spatial-studio.md`, `logs/PLAN_LOG.md`, `app-tauri/src/lib/core/*`, `app-tauri/src/routes/+page.svelte`, `logs/CHECKPOINT.md`.
+- Failsafes affected: F1 (atomic output), F11 (UI data-loss guard), F16 (supply chain / MIT license only).
+- Verification steps: `tools/sb.sh pnpm --dir app-tauri check`, Linux RPM package build, Linux smoke test `EXIT_CODE=124`.
+- Revision (date, what changed, why): N/A.
