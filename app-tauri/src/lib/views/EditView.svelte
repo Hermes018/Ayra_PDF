@@ -1,6 +1,7 @@
 <script lang="ts">
     import { appState } from '$lib/state.svelte';
     import { IpcClient } from '$lib/ipc';
+    import PdfViewer from '$lib/components/PdfViewer.svelte';
     import type { JobRequest } from '$lib/bindings/JobRequest';
     import type { WatermarkSettings } from '$lib/bindings/WatermarkSettings';
     import type { AnnotationDef } from '$lib/bindings/AnnotationDef';
@@ -209,10 +210,7 @@
         
         <div class="viewer-main">
             {#if currentPath}
-                <div class="canvas-placeholder">
-                    <p>PDF Viewer & Interactive Canvas</p>
-                    <small>Annotations and drawings will be interactive here in a future update.</small>
-                </div>
+                <PdfViewer filePath={currentPath} />
             {:else}
                 <div class="empty-state">
                     <p>No file selected.</p>
@@ -366,7 +364,7 @@
         overflow: hidden;
     }
 
-    .canvas-placeholder, .empty-state {
+    .empty-state {
         color: var(--text-muted);
         text-align: center;
         padding: 2rem;

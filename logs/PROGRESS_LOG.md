@@ -1202,3 +1202,23 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - Protocol compliance (phase end only): F11 (UI data-loss guard / undo-redo), F16 (supply chain / MIT dual license), Rule 02:16 (Svelte 5 runes & pointer events), Rule 02:13 (theming & reduced motion).
 - Risks / follow-ups: Ready to execute Phase D3 (Variable-Width Pressure Ink, Highlighter, Laser Pointer, Smart Shape Recognition, & Boolean Partial Eraser).
 - Commit / tag: `fix(studio): deterministic tool state reactivity, pointer-captured drag math, SVG icon registry, and UI audit log (Phase D2.1)`
+
+
+### [2026-11-04] Full Spec Checklist Integration, Workflow Cross-Check & Opus 5.5 Compliance Audit
+- **Action**: Analyzed `/home/ayra/Downloads/pdf_drawing_annotation_app_spec.md` and audited the entire repository against `docs/DRAWBOARD_STUDIO_MASTER_PLAN.md` (Opus 5.5 Plan) and `docs/adr/ADR-012-drawboard-artcraft-spatial-studio.md`.
+- **Deliverables**:
+  - Created `docs/DRAWBOARD_FEATURE_CHECKLIST.md`: 119 features across 9 categories mapped with priority (`P0`–`P3`), phase (`Phase 4–12` / `Phase D1–D6`), status (`30 DONE`, `28 IN PROGRESS`, `55 NOT STARTED`, `6 DEFERRED`), and concrete source file verification.
+  - Created `docs/ARCHITECTURE_AND_COMPLIANCE_AUDIT.md`: Detailed audit of Phases D1/D2/D2.1, global feature vs. placeholder usage (`SpatialCanvas.svelte`, `EditView.svelte`, `OptimizeView.svelte`, `SecurityView.svelte`), split-brain theme state (`appState.themePreference` vs. `themeContract.mode`), and Opus 5.5 structural drift (`lpdf-control-bus`, `commands/studio.rs`, narrowed `ToolId`s, local `keydown` listeners).
+  - Upgraded `xtask/src/main.rs` with `cargo xtask feature-map-check` and `cargo xtask studio-audit`.
+  - Synced `docs/DIRECTORY_TREE.md` and `protocol/ENGINE_NOTES.md`.
+
+
+### [2026-11-04] Phase D2.2 Remediation — Full Opus 5.5 Compliance & Placeholder Elimination
+- **Action**: Resolved all structural and placeholder findings from `docs/ARCHITECTURE_AND_COMPLIANCE_AUDIT.md`.
+- **Deliverables**:
+  - Created `crates/lpdf-control-bus` (`src/lib.rs`, `tests/replay.rs`) implementing `ControlMessage`, `PointerSample`, `BusError`, `Executor`, and deterministic `replay()`.
+  - Created `app-tauri/src-tauri/src/commands/studio.rs` (`prefs_load`, `prefs_save`, `control_validate`) and `app-tauri/src-tauri/capabilities/studio-split.json`.
+  - Created `app-tauri/src/lib/components/studio/FavoritesBar.svelte` and upgraded `app-tauri/src/lib/views/studio/SplitLayout.svelte` (mounted in `+page.svelte`).
+  - Wired `appState.currentFile` + `pdf.min.js` into `SpatialCanvas.svelte` and mounted `<PdfViewer />` in `EditView.svelte`, `OptimizeView.svelte`, and `SecurityView.svelte`.
+  - Unified `appState.themePreference` with `themeContract.mode`, restored all granular `ToolId`s in `toolEngine.svelte.ts` without hardcoded hex colors, and centralized keyboard handling in `commandEngine.svelte.ts`.
+- **Verification**: `cargo xtask studio-audit --strict` (0 findings), `cargo xtask feature-map-check` (119 features verified), `cargo xtask protocol-lint` passed, `cargo test -p lpdf-control-bus` passed.

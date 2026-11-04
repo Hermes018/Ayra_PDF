@@ -19,8 +19,13 @@
     <Sidebar bind:currentView />
     
     <div class="main-content-wrapper content-column">
-        <main id="main-content" class="main-content main-view" tabindex="-1">
-            <div class="view-inner">
+        <main
+            id="main-content"
+            class="main-content main-view"
+            class:studio-bleed={currentView === 'Studio'}
+            tabindex="-1"
+        >
+            <div class="view-inner" class:studio-bleed-inner={currentView === 'Studio'}>
                 {@render children()}
             </div>
         </main>
@@ -82,6 +87,17 @@
         max-width: 1200px;
         margin: 0 auto;
         width: 100%;
+    }
+
+    .main-content.studio-bleed {
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .view-inner.studio-bleed-inner {
+        max-width: none;
+        height: 100%;
+        margin: 0;
     }
 
     .skip-link {

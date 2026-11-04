@@ -121,3 +121,10 @@ Entry format:
 - Failsafes affected: F1 (atomic output), F11 (UI data-loss guard), F16 (supply chain / MIT license only).
 - Verification steps: `tools/sb.sh pnpm --dir app-tauri check`, Linux RPM package build, Linux smoke test `EXIT_CODE=124`.
 - Revision (date, what changed, why): N/A.
+
+
+### [2026-11-04] Phase D2.2 Remediation Plan (Executed & Closed)
+1. **Control Bus & Studio IPC**: Scaffold `crates/lpdf-control-bus` + `app-tauri/src-tauri/src/commands/studio.rs` (`prefs_load`, `prefs_save`, `control_validate`).
+2. **Global Features vs. Placeholders**: Wire `appState.currentFile` and `pdf.min.js` into `SpatialCanvas.svelte`; replace `.placeholder-preview` / `.canvas-placeholder` in `EditView`, `OptimizeView`, and `SecurityView` with `<PdfViewer />`.
+3. **Theme & Anti-Hardcoding**: Sync `appState.themePreference` with `themeContract.mode`; restore all granular `ToolId`s in `toolEngine.svelte.ts` using `theme.token(...)`; centralize keyboard listeners in `commandEngine.svelte.ts`.
+4. **Studio Components**: Create `FavoritesBar.svelte`, add interactive split divider drag to `SplitLayout.svelte`, and mount in `+page.svelte`.

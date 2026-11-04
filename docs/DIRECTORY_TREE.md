@@ -50,6 +50,7 @@ localpdf-studio-protocol/
 │   │       │
 │   │       ├── components/studio/              # Drawboard-Class Spatial Studio UI
 │   │       │   ├── DockableToolbar.svelte      # Frosted glass toolbar (snappable/floating)
+│   │       │   ├── FavoritesBar.svelte         # Pinned favorite tool presets pill
 │   │       │   ├── PropertyPill.svelte         # Floating reactive tool property pill
 │   │       │   ├── RadialMenu.svelte           # 8-wedge marking menu with nested flyouts
 │   │       │   ├── ShortcutSettings.svelte     # Custom keybinding configuration modal
@@ -61,16 +62,20 @@ localpdf-studio-protocol/
 │   │
 │   └── src-tauri/                              # Tauri Rust Backend
 │       ├── capabilities/                       # Tauri v2 security capabilities
-│       │   └── default.json                    # Scoped local-only filesystem capabilities
+│       │   ├── default.json                    # Scoped local-only filesystem capabilities
+│       │   └── studio-split.json               # Multi-window / split-view local capabilities
 │       ├── src/
-│       │   ├── commands.rs                     # Tauri IPC command dispatchers
-│       │   ├── lib.rs                          # Tauri application setup & builder
+│       │   ├── commands/                       # Tauri IPC modular command handlers
+│       │   │   ├── mod.rs                      # Commands module index
+│       │   │   └── studio.rs                   # Atomic prefs_save/prefs_load & control_validate
+│       │   ├── lib.rs                          # Tauri application setup, state & IPC commands
 │       │   └── main.rs                         # Application entrypoint
 │       └── tauri.conf.json                     # Tauri bundle & window configuration
 │
 ├── crates/                                     # Pure Rust Workspace Crates
 │   ├── lpdf-ai-worker/                         # Sandboxed local ML inference worker
 │   ├── lpdf-cli/                               # Headless command-line utility
+│   ├── lpdf-control-bus/                       # Deterministic ControlMessage & replay engine
 │   ├── lpdf-core-types/                        # Canonical PDF domain models & errors
 │   ├── lpdf-engine-fallback/                   # lopdf fallback parser & repair engine
 │   ├── lpdf-engine-pdfcraft/                   # Primary pdfcraft engine adapter
@@ -92,7 +97,9 @@ localpdf-studio-protocol/
 │   │   ├── ADR-011-windows-platform-architecture.md
 │   │   └── ADR-012-drawboard-artcraft-spatial-studio.md
 │   ├── APPLE_HIG_GLASS_SPEC.md                 # Frosted glass & depth design system
+│   ├── ARCHITECTURE_AND_COMPLIANCE_AUDIT.md    # Codebase vs. Opus 5.5 & placeholder audit
 │   ├── DIRECTORY_TREE.md                       # Comprehensive directory index (this file)
+│   ├── DRAWBOARD_FEATURE_CHECKLIST.md          # 109-feature engineering checklist & tracker
 │   ├── DRAWBOARD_STUDIO_MASTER_PLAN.md         # Drawboard-class spatial editor roadmap
 │   ├── FEDORA_INSTALL.md                       # Linux RPM installation guide
 │   ├── QA_VETTING_CHECKLIST.md                 # Release testing checklist

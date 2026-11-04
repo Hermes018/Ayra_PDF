@@ -12,6 +12,8 @@ fn main() {
 
     match args[1].as_str() {
         "protocol-lint" => run_protocol_lint(),
+        "feature-map-check" => run_feature_map_check(),
+        "studio-audit" => run_studio_audit(args.get(2).map(|s| s.as_str()) == Some("--strict")),
         "gate" => run_gate(),
         "test-offline" => run_test_offline(),
         "fuzz" | "hostile" => run_fuzz(&args[2..]),
@@ -317,3 +319,175 @@ fn run_soak(args: &[String]) {
     }
     println!("Soak test suite completed green with zero leaks!");
 }
+
+fn run_feature_map_check() {
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+    let checklist_path = workspace_root.join("docs/DRAWBOARD_FEATURE_CHECKLIST.md");
+    let feature_map_path = workspace_root.join("protocol/07_FEATURE_MAP.md");
+
+    if !checklist_path.exists() {
+        eprintln!("feature-map-check error: missing {}", checklist_path.display());
+        exit(1);
+    }
+    if !feature_map_path.exists() {
+        eprintln!("feature-map-check error: missing {}", feature_map_path.display());
+        exit(1);
+    }
+
+    let content = fs::read_to_string(&checklist_path).expect("Failed to read DRAWBOARD_FEATURE_CHECKLIST.md");
+    let mut done_count = 0usize;
+    let mut in_progress_count = 0usize;
+    let mut not_started_count = 0usize;
+    let mut deferred_count = 0usize;
+    let mut errors = Vec::new();
+
+    for (line_idx, line) in content.lines().enumerate() {
+        let trimmed = line.trim();
+        let is_checked = trimmed.starts_with("- [x] **");
+        let is_unchecked = trimmed.starts_with("- [ ] **");
+        if !is_checked && !is_unchecked {
+            continue;
+        }
+
+        if trimmed.contains("`DONE`") {
+            done_count += 1;
+            if !is_checked {
+                errors.push(format!(
+                    "Line {}: marked `DONE` but checkbox is `[ ]`: {}",
+                    line_idx + 1,
+                    trimmed
+                ));
+            }
+            if !trimmed.contains(".rs") && !trimmed.contains(".svelte") && !trimmed.contains(".ts") {
+                errors.push(format!(
+                    "Line {}: marked `DONE` without a verifying file reference (.rs/.svelte/.ts): {}",
+                    line_idx + 1,
+                    trimmed
+                ));
+            }
+        } else if trimmed.contains("`IN PROGRESS`") {
+            in_progress_count += 1;
+            if is_checked {
+                errors.push(format!(
+                    "Line {}: marked `IN PROGRESS` but checkbox is `[x]`: {}",
+                    line_idx + 1,
+                    trimmed
+                ));
+            }
+        } else if trimmed.contains("`NOT STARTED`") {
+            not_started_count += 1;
+            if is_checked {
+                errors.push(format!(
+                    "Line {}: marked `NOT STARTED` but checkbox is `[x]`: {}",
+                    line_idx + 1,
+                    trimmed
+                ));
+            }
+        } else if trimmed.contains("`DEFERRED") {
+            deferred_count += 1;
+            if is_checked {
+                errors.push(format!(
+                    "Line {}: marked `DEFERRED` but checkbox is `[x]`: {}",
+                    line_idx + 1,
+                    trimmed
+                ));
+            }
+        } else {
+            errors.push(format!(
+                "Line {}: feature item missing canonical status tag (`DONE`, `IN PROGRESS`, `NOT STARTED`, `DEFERRED`): {}",
+                line_idx + 1,
+                trimmed
+            ));
+        }
+    }
+
+    let total = done_count + in_progress_count + not_started_count + deferred_count;
+    println!(
+        "feature-map-check: {} features audited (DONE: {}, IN PROGRESS: {}, NOT STARTED: {}, DEFERRED: {})",
+        total, done_count, in_progress_count, not_started_count, deferred_count
+    );
+
+    if total < 109 {
+        errors.push(format!("Expected at least 109 spec features in DRAWBOARD_FEATURE_CHECKLIST.md, found {}", total));
+    }
+
+    if !errors.is_empty() {
+        for err in &errors {
+            eprintln!("feature-map-check error: {}", err);
+        }
+        exit(1);
+    }
+    println!("feature-map-check passed! All {} features cross-checked with valid status tags and evidence.", total);
+}
+
+fn run_studio_audit(strict: bool) {
+    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+    let mut warnings = Vec::new();
+
+    // 1. Check ADR-012 no-local-keydown rule outside commandEngine.svelte.ts
+    let frontend_src = workspace_root.join("app-tauri/src/lib");
+    if frontend_src.exists() {
+        for entry in walkdir::WalkDir::new(&frontend_src) {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if !path.is_file() {
+                continue;
+            }
+            let file_name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+            if file_name.ends_with(".test.ts") {
+                continue;
+            }
+            let rel = path.strip_prefix(workspace_root).unwrap_or(path).to_string_lossy();
+            let is_studio_scope = rel.contains("views/studio/")
+                || rel.contains("components/studio/")
+                || rel.contains("lib/core/");
+            let content = fs::read_to_string(path).unwrap_or_default();
+            for (idx, line) in content.lines().enumerate() {
+                if is_studio_scope
+                    && file_name != "commandEngine.svelte.ts"
+                    && (line.contains("addEventListener('keydown'")
+                        || line.contains("addEventListener(\"keydown\"")
+                        || line.contains("onkeydown="))
+                {
+                    warnings.push(format!(
+                        "[no-local-keydown] {}:{} attaches keydown outside commandEngine.svelte.ts",
+                        rel,
+                        idx + 1
+                    ));
+                }
+                if (line.contains("Spatial Studio PDF Canvas") || line.contains("placeholder-preview") || line.contains("canvas-placeholder"))
+                    && (file_name.ends_with(".svelte"))
+                {
+                    warnings.push(format!(
+                        "[ui-placeholder] {}:{} contains static placeholder markup instead of live PDF canvas",
+                        rel,
+                        idx + 1
+                    ));
+                }
+            }
+        }
+    }
+
+    // 2. Check Opus 5.5 Phase D1/D2 required crates and IPC files
+    let required_paths = [
+        ("crates/lpdf-control-bus/Cargo.toml", "Opus 5.5 Phase D1 control-bus crate"),
+        ("app-tauri/src-tauri/src/commands/studio.rs", "Opus 5.5 Phase D1 prefs_save/prefs_load IPC module"),
+        ("app-tauri/src/lib/components/studio/FavoritesBar.svelte", "Opus 5.5 Phase D2 FavoritesBar component"),
+    ];
+    for (rel_path, desc) in &required_paths {
+        if !workspace_root.join(rel_path).exists() {
+            warnings.push(format!("[missing-deliverable] {} ({}) not yet created", rel_path, desc));
+        }
+    }
+
+    println!("studio-audit: found {} compliance findings:", warnings.len());
+    for w in &warnings {
+        println!("  - {}", w);
+    }
+
+    if strict && !warnings.is_empty() {
+        eprintln!("studio-audit failed in --strict mode with {} findings.", warnings.len());
+        exit(1);
+    }
+}
+

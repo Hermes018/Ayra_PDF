@@ -1,5 +1,6 @@
 import type { ThemePreference } from './bindings/ThemePreference';
 import { IpcClient } from './ipc';
+import { theme, type ThemeMode } from './core/themeContract.svelte';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -202,8 +203,13 @@ class AppState {
         }
 
         this.effectiveTheme = resolved;
+        theme.mode = this.themePreference.toLowerCase() as ThemeMode;
 
         const docEl = document.documentElement;
+        const table = theme.tokens;
+        for (const key of Object.keys(table) as Array<keyof typeof table>) {
+            docEl.style.setProperty(key, table[key]);
+        }
         docEl.setAttribute('data-theme', resolved);
         docEl.style.colorScheme = resolved;
         if (resolved === 'dark') {

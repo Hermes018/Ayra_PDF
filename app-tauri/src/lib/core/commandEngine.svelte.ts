@@ -60,6 +60,8 @@ export class CommandBusAndShortcutEngine {
   #renderSink: RenderSink = null;
   #chordCaptureResolver: ((chord: Chord) => void) | null = null;
   onRadialToggle: (() => void) | null = null;
+  onRadialKey: ((key: string) => boolean) | null = null;
+  spaceSpringActive = $state(false);
   readonly journal: ControlMessage[] = []; // headless replay/verification trace (cleared per session)
 
   register(id: string, h: CommandHandler): void {
@@ -214,10 +216,30 @@ export class CommandBusAndShortcutEngine {
       }
       const el = e.target as HTMLElement | null;
       if (el && (el.isContentEditable || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
+      if (this.onRadialKey?.(e.key)) {
+        e.preventDefault();
+        return;
+      }
+      if (e.code === 'Space' && !this.spaceSpringActive) {
+        this.spaceSpringActive = true;
+        tools.springLoad('preset.pan');
+        e.preventDefault();
+        return;
+      }
       if (this.dispatch({ kind: 'ui.key', chord: canonicalChord(e), phase: 'down' })) e.preventDefault();
     };
+    const off = (e: KeyboardEvent): void => {
+      if (e.code === 'Space' && this.spaceSpringActive) {
+        this.spaceSpringActive = false;
+        tools.springLoad(null);
+      }
+    };
     target.addEventListener('keydown', on);
-    return () => target.removeEventListener('keydown', on);
+    target.addEventListener('keyup', off);
+    return () => {
+      target.removeEventListener('keydown', on);
+      target.removeEventListener('keyup', off);
+    };
   }
 }
 

@@ -2,8 +2,9 @@
 
 ## Source
 - **Repository**: `storytold/pdfcraft`
-- **Pinned Commit SHA**: `dc4b3eee84f73bad8564906c141bdda9caad0fd6`
-- **Facade Crate**: `pdfcraft-engine`
+- **Pinned Commit SHA**: `75360d1d7db06fed974f48c914d4c04132757187` (upgraded from `dc4b3eee84f73bad8564906c141bdda9caad0fd6`)
+- **Facade Crate**: `pdfcraft-engine` (`v0.15.0`)
+- **ArtCraft Sibling Ecosystem Status (`ADR-012`)**: Only `vendor/pdfcraft` is currently vendored in `.gitmodules`. Sibling `storytold/*` repositories (`cadcraft`, `designcraft`, `figcraft`, `materialcraft`, `texturecraft`, `craft-anything`) are not vendored; their domain responsibilities are mapped to local workspace crates (`lpdf-control-bus`, `lpdf-vector-ink`, `lpdf-cad-measure`, `lpdf-layout-edit`).
 
 ## Verified Public APIs
 The primary point of interaction is the `Session` and `Document` structs in `pdfcraft-engine`:

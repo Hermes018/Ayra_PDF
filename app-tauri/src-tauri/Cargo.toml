@@ -30,6 +30,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 directories = "5.0"
 lpdf-core-types = { path = "../../crates/lpdf-core-types" }
+lpdf-control-bus = { path = "../../crates/lpdf-control-bus" }
 lpdf-fs-safety = { path = "../../crates/lpdf-fs-safety" }
 lpdf-hw = { path = "../../crates/lpdf-hw" }
 lpdf-jobs = { path = "../../crates/lpdf-jobs" }

@@ -1,6 +1,7 @@
 <script lang="ts">
     import { appState } from '$lib/state.svelte';
     import { IpcClient } from '$lib/ipc';
+    import PdfViewer from '$lib/components/PdfViewer.svelte';
     import type { JobRequest } from '$lib/bindings/JobRequest';
     import type { Permissions } from '$lib/bindings/Permissions';
 
@@ -207,9 +208,7 @@
         
         <div class="viewer-main">
             {#if currentPath}
-                <div class="placeholder-preview">
-                    <p>Security preview & properties will be displayed here in a future update.</p>
-                </div>
+                <PdfViewer filePath={currentPath} />
             {:else}
                 <div class="empty-state">
                     <p>No file selected.</p>
@@ -374,7 +373,7 @@
         overflow: hidden;
     }
 
-    .placeholder-preview, .empty-state {
+    .empty-state {
         color: var(--text-muted);
         text-align: center;
         padding: 2rem;

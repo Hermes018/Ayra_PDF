@@ -1,0 +1,13 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "studio-split",
+  "description": "Local-only multi-window and split-view capabilities for Drawboard Spatial Studio",
+  "windows": ["main", "studio-*"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-create",
+    "core:window:allow-close",
+    "core:window:allow-set-focus",
+    "core:webview:allow-create-webview-window"
+  ]
+}

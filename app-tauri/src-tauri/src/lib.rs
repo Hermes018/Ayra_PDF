@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+pub mod commands;
+
 use directories::ProjectDirs;
 use lpdf_core_types::{AiModelInfo, AppSettings};
 use lpdf_engine_port::PdfEngine;
@@ -690,7 +692,10 @@ pub fn run() {
             extract_text,
             pick_files_dialog,
             pick_folder_dialog,
-            save_file_dialog
+            save_file_dialog,
+            commands::studio::prefs_load,
+            commands::studio::prefs_save,
+            commands::studio::control_validate
         ])
         .setup(|app| {
             // Forward job events to the Tauri frontend as structured events

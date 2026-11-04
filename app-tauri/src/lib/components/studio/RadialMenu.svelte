@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tools, type ToolId } from '$lib/core/toolEngine.svelte';
+  import { commands } from '$lib/core/commandEngine.svelte';
   import StudioIcon, { type StudioIconName } from './StudioIcon.svelte';
   import {
     RADIAL,
@@ -103,26 +104,33 @@
     }
   }
 
-  function handleKeyDown(e: KeyboardEvent) {
-    if (!visible) return;
-    if (e.key === 'Escape') {
-      closeMenu();
+  $effect(() => {
+    if (!visible) {
+      if (commands.onRadialKey) commands.onRadialKey = null;
       return;
     }
-    // Number keys 1-8 select sectors
-    const num = parseInt(e.key, 10);
-    if (num >= 1 && num <= 8) {
-      const sector = num - 1;
-      const wedge = WEDGES[sector];
-      if (wedge) {
-        tools.selectTool(wedge.tool as ToolId);
+    commands.onRadialKey = (key: string): boolean => {
+      if (key === 'Escape') {
+        closeMenu();
+        return true;
       }
-      closeMenu();
-    }
-  }
+      const num = parseInt(key, 10);
+      if (num >= 1 && num <= 8) {
+        const sector = num - 1;
+        const wedge = WEDGES[sector];
+        if (wedge) {
+          tools.selectTool(wedge.tool as ToolId);
+        }
+        closeMenu();
+        return true;
+      }
+      return false;
+    };
+    return () => {
+      commands.onRadialKey = null;
+    };
+  });
 </script>
-
-<svelte:window onkeydown={handleKeyDown} />
 
 {#if visible}
   <div

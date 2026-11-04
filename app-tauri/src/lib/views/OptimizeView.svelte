@@ -1,6 +1,7 @@
 <script lang="ts">
     import { appState } from '$lib/state.svelte';
     import { IpcClient, pickFilesDialog } from '$lib/ipc';
+    import PdfViewer from '$lib/components/PdfViewer.svelte';
     import type { JobRequest } from '$lib/bindings/JobRequest';
     import type { OptimizeProfile } from '$lib/bindings/OptimizeProfile';
 
@@ -146,9 +147,7 @@
         
         <div class="viewer-main">
             {#if currentPath}
-                <div class="placeholder-preview">
-                    <p>Compression preview & sizes will be displayed here in a future update.</p>
-                </div>
+                <PdfViewer filePath={currentPath} />
             {:else}
                 <div class="empty-state">
                     <p>No file selected.</p>
@@ -333,10 +332,5 @@
         color: var(--text-tertiary);
         text-align: center;
         font-style: italic;
-    }
-    
-    .placeholder-preview {
-        color: var(--text-secondary);
-        text-align: center;
     }
 </style>

@@ -1,10 +1,16 @@
 // app-tauri/src/lib/core/toolEngine.svelte.ts
 import type { HatchPatternId } from '$lib/bindings/HatchPatternId';
 import defaultPresetsData from './defaultPresets.json';
+import { theme } from './themeContract.svelte';
 
 export type ToolId =
   | 'pan'
   | 'select'
+  | 'select.marquee'
+  | 'select.lasso'
+  | 'select.text'
+  | 'select.object'
+  | 'pen'
   | 'pen.a'
   | 'pen.b'
   | 'highlighter'
@@ -12,12 +18,51 @@ export type ToolId =
   | 'eraser.whole'
   | 'laser'
   | 'text.review'
+  | 'review.textEdit'
+  | 'review.highlight'
+  | 'review.underline'
+  | 'review.squiggly'
+  | 'review.strikeout'
+  | 'review.redact'
   | 'shape'
-  | 'measure';
+  | 'shape.line'
+  | 'shape.arrow'
+  | 'shape.polyline'
+  | 'shape.polygon'
+  | 'shape.rect'
+  | 'shape.ellipse'
+  | 'shape.cloud'
+  | 'hatch.region'
+  | 'hatch.pick'
+  | 'measure'
+  | 'measure.calibrate'
+  | 'measure.length'
+  | 'measure.polylength'
+  | 'measure.perimeter'
+  | 'measure.rectArea'
+  | 'measure.polyArea'
+  | 'measure.protractor'
+  | 'measure.ruler'
+  | 'measure.count'
+  | 'callout.single'
+  | 'callout.multi'
+  | 'insert.textBox'
+  | 'insert.note'
+  | 'insert.audio'
+  | 'insert.stamp'
+  | 'insert.signature'
+  | 'insert.image'
+  | 'insert.latex'
+  | 'snapshot';
 
 export const TOOL_LABELS: Record<ToolId, string> = {
   'pan': 'Pan Canvas',
   'select': 'Select Object',
+  'select.marquee': 'Marquee Select',
+  'select.lasso': 'Lasso Select',
+  'select.text': 'Select Text',
+  'select.object': 'Select Object',
+  'pen': 'Pen',
   'pen.a': 'Pen A',
   'pen.b': 'Pen B',
   'highlighter': 'Highlighter',
@@ -25,8 +70,42 @@ export const TOOL_LABELS: Record<ToolId, string> = {
   'eraser.whole': 'Whole Eraser',
   'laser': 'Laser Pointer',
   'text.review': 'Text Review',
+  'review.textEdit': 'Inline Text Edit',
+  'review.highlight': 'Highlight Text',
+  'review.underline': 'Underline Text',
+  'review.squiggly': 'Squiggly Text',
+  'review.strikeout': 'Strikeout Text',
+  'review.redact': 'Redact Region',
   'shape': 'Shape Tool',
-  'measure': 'Measurement Suite'
+  'shape.line': 'Line Tool',
+  'shape.arrow': 'Arrow Tool',
+  'shape.polyline': 'Polyline Tool',
+  'shape.polygon': 'Polygon Tool',
+  'shape.rect': 'Rectangle Tool',
+  'shape.ellipse': 'Ellipse Tool',
+  'shape.cloud': 'Revision Cloud',
+  'hatch.region': 'Hatch Region',
+  'hatch.pick': 'Pick-Point Hatch',
+  'measure': 'Measurement Suite',
+  'measure.calibrate': 'Calibrate Scale',
+  'measure.length': 'Measure Length',
+  'measure.polylength': 'Measure Polylength',
+  'measure.perimeter': 'Measure Perimeter',
+  'measure.rectArea': 'Measure Rect Area',
+  'measure.polyArea': 'Measure Poly Area',
+  'measure.protractor': 'Protractor Angle',
+  'measure.ruler': 'Digital Ruler',
+  'measure.count': 'Count Takeoff',
+  'callout.single': 'Callout Box',
+  'callout.multi': 'Multileader Callout',
+  'insert.textBox': 'Free Text Box',
+  'insert.note': 'Sticky Note',
+  'insert.audio': 'Voice Audio Note',
+  'insert.stamp': 'Stamp Markup',
+  'insert.signature': 'Signature Pad',
+  'insert.image': 'Insert Image',
+  'insert.latex': 'LaTeX Math Block',
+  'snapshot': 'Snapshot Region'
 };
 
 /** Cubic Bézier pressure curve through (0,0),(x1,y1),(x2,y2),(1,1) — texturecraft-style stamp curve. */
@@ -92,40 +171,42 @@ export function evalPressure(c: PressureCurve, p: number): number {
 }
 
 function normalizeToolId(raw: string): ToolId {
-  if (raw === 'preset.pan' || raw === 'pan') return 'pan';
-  if (raw === 'preset.pen.a' || raw === 'pen.a') return 'pen.a';
-  if (raw === 'preset.pen.b' || raw === 'pen.b') return 'pen.b';
-  if (raw === 'preset.highlighter' || raw === 'highlighter') return 'highlighter';
-  if (raw === 'preset.eraser.partial' || raw === 'eraser.partial') return 'eraser.partial';
-  if (raw === 'preset.eraser.whole' || raw === 'eraser.whole' || raw === 'eraser') return 'eraser.whole';
-  if (raw === 'laser') return 'laser';
-  if (raw.startsWith('select')) return 'select';
-  if (raw.startsWith('review') || raw === 'text.review') return 'text.review';
-  if (raw.startsWith('shape')) return 'shape';
-  if (raw.startsWith('measure')) return 'measure';
-  return (raw in TOOL_LABELS ? raw : 'pan') as ToolId;
+  if (raw === 'preset.pan') return 'pan';
+  if (raw === 'preset.pen.a') return 'pen.a';
+  if (raw === 'preset.pen.b') return 'pen.b';
+  if (raw === 'preset.highlighter') return 'highlighter';
+  if (raw === 'preset.eraser.partial') return 'eraser.partial';
+  if (raw === 'preset.eraser.whole' || raw === 'eraser') return 'eraser.whole';
+  if (raw in TOOL_LABELS) return raw as ToolId;
+  return 'pan';
 }
 
 function createFallbackPreset(id: ToolId): ToolPreset {
-  const isHighlighter = id === 'highlighter';
+  const isHighlighter = id === 'highlighter' || id === 'review.highlight';
+  const strokeToken = isHighlighter
+    ? '--snap-indicator-intersection'
+    : (id === 'pen.b' || id.startsWith('measure') ? '--danger' : '--glass-text');
+  const resolvedStrokeColor = theme.token(strokeToken);
+  const resolvedBaseText = theme.token('--glass-text');
+
   return {
     id: `preset.${id}`,
     tool: id,
     label: TOOL_LABELS[id] ?? id,
     stroke: {
-      colorToken: isHighlighter ? '--snap-indicator-intersection' : (id === 'pen.b' ? '--danger' : '--glass-text'),
-      colorHex: isHighlighter ? '#ffd60a' : (id === 'pen.b' ? '#ff3b30' : '#1d1d1f'),
+      colorToken: strokeToken,
+      colorHex: resolvedStrokeColor,
       widthPt: isHighlighter ? 12 : (id === 'pen.b' ? 1.5 : 0.75),
       opacity: isHighlighter ? 0.4 : 1.0,
       dash: [],
       lineCap: isHighlighter ? 'square' : 'round',
       startEnd: 'none',
-      endEnd: 'none',
+      endEnd: id === 'shape.arrow' ? 'open' : 'none',
     },
     fill: {
-      kind: 'none',
-      colorHex: '#1d1d1f',
-      opacity: 0,
+      kind: id.startsWith('hatch') ? 'hatch' : 'none',
+      colorHex: resolvedBaseText,
+      opacity: id.startsWith('hatch') ? 0.25 : 0,
       hatch: 'solid',
       hatchScale: 1,
       hatchAngleDeg: 0,
@@ -137,18 +218,18 @@ function createFallbackPreset(id: ToolId): ToolPreset {
       italic: false,
       leading: 1.2,
       trackingEm: 0,
-      colorHex: '#1d1d1f',
+      colorHex: resolvedBaseText,
     },
     pressure: { x1: 0.25, y1: 0.1, x2: 0.25, y2: 1 },
     tiltShading: id === 'pen.a' ? 0.1 : 0.2,
-    smartShapes: id === 'pen.a' || id === 'pen.b',
+    smartShapes: id === 'pen.a' || id === 'pen.b' || id === 'pen',
   };
 }
 
 function buildInitialPresets(): Record<string, ToolPreset> {
   const record: Record<string, ToolPreset> = {};
   for (const p of defaultPresetsData as unknown as ToolPreset[]) {
-    const tid = normalizeToolId(p.tool);
+    const tid = normalizeToolId(p.id.startsWith('preset.') ? p.id : p.tool);
     const item: ToolPreset = {
       ...p,
       tool: tid,
@@ -157,12 +238,7 @@ function buildInitialPresets(): Record<string, ToolPreset> {
     record[p.id] = item;
     record[tid] = item;
   }
-  // Ensure all tool IDs have a preset mapping
-  const allTools: ToolId[] = [
-    'pan', 'select', 'pen.a', 'pen.b', 'highlighter',
-    'eraser.partial', 'eraser.whole', 'laser', 'text.review', 'shape', 'measure'
-  ];
-  for (const t of allTools) {
+  for (const t of Object.keys(TOOL_LABELS) as ToolId[]) {
     if (!record[t]) {
       const fb = createFallbackPreset(t);
       record[t] = fb;
@@ -182,13 +258,19 @@ export class ToolStateEngine {
   readonly activePreset = $derived<ToolPreset | null>(this.presets[this.currentToolId] ?? null);
   readonly activeToolLabel = $derived<string>(TOOL_LABELS[this.currentToolId] ?? this.currentToolId);
   readonly supportsStrokeProperties = $derived<boolean>(
-    ['pen.a', 'pen.b', 'highlighter', 'shape', 'text.review'].includes(this.currentToolId)
+    this.currentToolId.startsWith('pen') ||
+    this.currentToolId === 'highlighter' ||
+    this.currentToolId.startsWith('shape') ||
+    this.currentToolId.startsWith('hatch') ||
+    this.currentToolId.startsWith('review') ||
+    this.currentToolId === 'text.review' ||
+    this.currentToolId.startsWith('callout') ||
+    this.currentToolId.startsWith('measure')
   );
   readonly supportsEraserMode = $derived<boolean>(
     this.currentToolId === 'eraser.partial' || this.currentToolId === 'eraser.whole'
   );
 
-  // Backward compatibility getters
   readonly active = $derived<ToolPreset | null>(this.activePreset);
   readonly activeTool = $derived<ToolId>(this.currentToolId);
 
@@ -211,7 +293,6 @@ export class ToolStateEngine {
     }
   }
 
-  // Preset ID-based compatibility methods
   select(presetIdOrTool: string): boolean {
     this.selectTool(presetIdOrTool);
     return true;
@@ -237,9 +318,9 @@ export class ToolStateEngine {
   }
 
   load(presetsList: readonly ToolPreset[], favorites: readonly string[]): void {
-    const record: Record<string, ToolPreset> = {};
+    const record: Record<string, ToolPreset> = { ...buildInitialPresets() };
     for (const p of presetsList) {
-      const tid = normalizeToolId(p.tool);
+      const tid = normalizeToolId(p.id.startsWith('preset.') ? p.id : p.tool);
       const item: ToolPreset = { ...p, tool: tid };
       record[p.id] = item;
       record[tid] = item;

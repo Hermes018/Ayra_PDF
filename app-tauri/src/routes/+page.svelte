@@ -15,7 +15,7 @@
     import PipelinesView from '$lib/views/PipelinesView.svelte';
     import SettingsView from '$lib/views/SettingsView.svelte';
     import AiSummarizeView from '$lib/views/AiSummarizeView.svelte';
-    import SpatialCanvas from '$lib/views/studio/SpatialCanvas.svelte';
+    import SplitLayout from '$lib/views/studio/SplitLayout.svelte';
     import { theme } from '$lib/core/themeContract.svelte';
     import { commands } from '$lib/core/commandEngine.svelte';
 
@@ -62,7 +62,7 @@
 
 <MainLayout bind:currentView>
     {#if currentView === 'Studio'}
-        <SpatialCanvas />
+        <SplitLayout />
     {:else if currentView === 'Organize'}
         <OrganizeView />
     {:else if currentView === 'Optimize'}

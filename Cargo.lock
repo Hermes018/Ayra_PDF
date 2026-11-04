@@ -93,6 +93,7 @@ name = "app-tauri"
 version = "0.1.0"
 dependencies = [
  "directories",
+ "lpdf-control-bus",
  "lpdf-core-types",
  "lpdf-engine-pdfcraft",
  "lpdf-engine-port",
@@ -3382,6 +3383,16 @@ dependencies = [
  "lpdf-jobs",
  "serde_json",
  "uuid",
+]
+
+[[package]]
+name = "lpdf-control-bus"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "ts-rs 12.0.1",
 ]
 
 [[package]]

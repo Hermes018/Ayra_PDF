@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
-  import { viewport, ZOOM_MIN, ZOOM_MAX, type Pt } from '$lib/core/viewportEngine.svelte';
-  import { tools, type ToolId } from '$lib/core/toolEngine.svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
+  import { invoke } from '@tauri-apps/api/core';
+  import { appState } from '$lib/state.svelte';
+  import { viewport, type Pt } from '$lib/core/viewportEngine.svelte';
+  import { tools } from '$lib/core/toolEngine.svelte';
   import { commands } from '$lib/core/commandEngine.svelte';
   import { theme } from '$lib/core/themeContract.svelte';
   import defaultPresets from '$lib/core/defaultPresets.json';
@@ -9,6 +11,7 @@
   import PropertyPill from '$lib/components/studio/PropertyPill.svelte';
   import RadialMenu from '$lib/components/studio/RadialMenu.svelte';
   import ShortcutSettings from '$lib/components/studio/ShortcutSettings.svelte';
+  import FavoritesBar from '$lib/components/studio/FavoritesBar.svelte';
   import StudioIcon from '$lib/components/studio/StudioIcon.svelte';
 
   let { viewId = 'main-canvas' } = $props<{ viewId?: string }>();
@@ -16,13 +19,17 @@
   let canvasContainer: HTMLDivElement | null = $state(null);
   let isPanning = $state(false);
   let panStart: Pt = { x: 0, y: 0 };
-  let spaceHeld = $state(false);
   let editMode = $state<'markup' | 'structural'>('markup');
 
   // Radial Menu & Shortcuts modal state
   let radialVisible = $state(false);
   let radialPos = $state<Pt>({ x: 300, y: 300 });
   let shortcutsVisible = $state(false);
+
+  // PDF rendering state
+  let pageCanvases: Record<number, HTMLCanvasElement | null> = $state({});
+  let currentPdfDoc: any = null;
+  let loadedFilePath = $state<string | null>(null);
 
   function openRadialAt(x: number, y: number) {
     radialPos = { x, y };
@@ -43,8 +50,103 @@
     viewport.worldToScreen(viewId).toDOMMatrix().toString()
   );
 
+  async function loadPdfIntoCanvas(path: string) {
+    if (!path || typeof window === 'undefined') return;
+    try {
+      const pdfjs = (window as any)['pdfjs-dist/build/pdf'] || (window as any).pdfjsLib;
+      if (!pdfjs) return;
+      pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+
+      const bytes: number[] = await invoke('read_file_bytes', { path });
+      const uint8Array = new Uint8Array(bytes);
+
+      if (currentPdfDoc) {
+        await currentPdfDoc.destroy();
+      }
+      const loadingTask = pdfjs.getDocument({ data: uint8Array });
+      const pdf = await loadingTask.promise;
+      currentPdfDoc = pdf;
+      loadedFilePath = path;
+
+      const pageSizes: Array<{ widthPt: number; heightPt: number }> = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const vp = page.getViewport({ scale: 1.0 });
+        pageSizes.push({ widthPt: vp.width, heightPt: vp.height });
+      }
+      viewport.layoutPages(pageSizes);
+      await tick();
+
+      // Render pages at 96/72 CSS pixel scale * devicePixelRatio
+      const baseScale = (96 / 72) * (window.devicePixelRatio || 1);
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const canvasEl = pageCanvases[i - 1];
+        if (!canvasEl) continue;
+        const vp = page.getViewport({ scale: baseScale });
+        canvasEl.width = vp.width;
+        canvasEl.height = vp.height;
+        const ctx = canvasEl.getContext('2d');
+        if (ctx) {
+          await page.render({ canvasContext: ctx, viewport: vp }).promise;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to render PDF in SpatialCanvas:', err);
+    }
+  }
+
+  $effect(() => {
+    const file = appState.currentFile;
+    if (file && file !== loadedFilePath) {
+      loadPdfIntoCanvas(file);
+    }
+  });
+
+  async function loadStudioPrefs() {
+    try {
+      const prefs = await invoke<{
+        dockEdge: string;
+        floatX: number;
+        floatY: number;
+        shortcuts: Record<string, string>;
+        favorites: string[];
+        historyLimit: number;
+      }>('prefs_load');
+      if (prefs) {
+        if (prefs.shortcuts && Object.keys(prefs.shortcuts).length > 0) {
+          commands.shortcuts = { ...commands.shortcuts, ...prefs.shortcuts };
+        }
+        if (Array.isArray(prefs.favorites) && prefs.favorites.length > 0) {
+          tools.favorites = [...prefs.favorites];
+        }
+        if (typeof prefs.historyLimit === 'number' && prefs.historyLimit > 0) {
+          commands.historyLimit = prefs.historyLimit;
+        }
+      }
+    } catch {
+      // Safe fallback in browser/unit-test environments without Tauri IPC
+    }
+  }
+
+  async function persistStudioPrefs() {
+    try {
+      await invoke('prefs_save', {
+        prefs: {
+          dockEdge: 'left',
+          floatX: 16,
+          floatY: 80,
+          shortcuts: commands.shortcuts,
+          favorites: tools.favorites,
+          historyLimit: commands.historyLimit
+        }
+      });
+    } catch {
+      // Safe fallback in browser/unit-test environments
+    }
+  }
+
   onMount(() => {
-    // Register view
     viewport.upsertView({
       id: viewId,
       zoom: 1.0,
@@ -54,32 +156,16 @@
       dpr: window.devicePixelRatio || 1
     });
 
-    // Initialize tool presets if empty
     if (Object.keys(tools.presets).length === 0) {
       tools.load(defaultPresets as any, ['preset.pen.a', 'preset.highlighter', 'preset.eraser.partial']);
     }
 
-    // Default sample page if no pages loaded yet
     if (viewport.pages.length === 0) {
       viewport.layoutPages([
-        { widthPt: 595.28, heightPt: 841.89 }, // A4 page 1
-        { widthPt: 595.28, heightPt: 841.89 }  // A4 page 2
+        { widthPt: 595.28, heightPt: 841.89 },
+        { widthPt: 595.28, heightPt: 841.89 }
       ]);
     }
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !spaceHeld && !(e.target as HTMLElement)?.matches('input, textarea')) {
-        spaceHeld = true;
-        tools.springLoad('preset.pan');
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        spaceHeld = false;
-        tools.springLoad(null);
-      }
-    };
 
     commands.onRadialToggle = () => {
       if (typeof window !== 'undefined') {
@@ -87,15 +173,18 @@
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    loadStudioPrefs();
 
     return () => {
       commands.onRadialToggle = null;
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
       viewport.closeView(viewId);
     };
+  });
+
+  onDestroy(() => {
+    if (currentPdfDoc) {
+      currentPdfDoc.destroy();
+    }
   });
 
   function handleContextMenu(e: MouseEvent) {
@@ -114,11 +203,9 @@
     };
 
     if (e.ctrlKey || e.metaKey) {
-      // Zoom
       const factor = e.deltaY < 0 ? 1.15 : 0.85;
       viewport.zoomAt(viewId, factor, anchor);
     } else {
-      // Pan
       viewport.panBy(viewId, -e.deltaX, -e.deltaY);
     }
   }
@@ -126,7 +213,7 @@
   function handlePointerDown(e: PointerEvent) {
     if (!canvasContainer) return;
 
-    const isPanAction = e.button === 1 || spaceHeld || tools.activeTool === 'pan';
+    const isPanAction = e.button === 1 || commands.spaceSpringActive || tools.activeTool === 'pan';
 
     if (isPanAction) {
       isPanning = true;
@@ -135,7 +222,6 @@
       return;
     }
 
-    // Dispatch pointer to control bus
     const rect = canvasContainer.getBoundingClientRect();
     commands.dispatch({
       kind: 'pointer',
@@ -327,11 +413,12 @@
           Page {index + 1} ({Math.round(page.widthPt)} × {Math.round(page.heightPt)} pt)
         </div>
 
-        <!-- Render Layer (PDF Raster Tile Surface) -->
+        <!-- Render Layer (Live PDF.js Raster Surface) -->
         <div class="page-render-surface">
-          <div class="page-grid-watermark">
-            <span class="grid-subtext">Spatial Studio PDF Canvas • Page {index + 1}</span>
-          </div>
+          <canvas
+            class="page-pdf-canvas"
+            bind:this={pageCanvases[index]}
+          ></canvas>
         </div>
 
         <!-- Mode A: Non-Destructive Vector Annotation Overlay -->
@@ -361,6 +448,9 @@
     }}
   />
 
+  <!-- Pinned Favorites Bar -->
+  <FavoritesBar onPersistPrefs={persistStudioPrefs} />
+
   <!-- Active Tool Reactive Property Pill -->
   <PropertyPill />
 
@@ -374,6 +464,7 @@
   <!-- Custom Keyboard Shortcuts Settings Modal -->
   <ShortcutSettings
     bind:visible={shortcutsVisible}
+    onClose={persistStudioPrefs}
   />
 </div>
 
@@ -382,7 +473,7 @@
     position: relative;
     width: 100%;
     height: 100%;
-    min-height: calc(100vh - 120px);
+    min-height: calc(100vh - 28px);
     overflow: hidden;
     background-color: var(--canvas-bg);
     background-image: 
@@ -434,13 +525,7 @@
     background: var(--laser-core);
   }
 
-  .page-grid-watermark {
-    opacity: 0.15;
-    text-align: center;
-    font-weight: 500;
-    color: var(--glass-text);
-  }
-
+  .page-pdf-canvas,
   .page-overlay-canvas,
   .page-wet-canvas {
     position: absolute;
