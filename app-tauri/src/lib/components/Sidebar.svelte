@@ -6,6 +6,7 @@
     }>();
 
     const menuItems = [
+        { id: 'Studio', label: 'Drawboard Studio', icon: '📐' },
         { id: 'Convert', label: 'Convert', icon: '🔄' },
         { id: 'Organize', label: 'Organize', icon: '🗂️' },
         { id: 'Optimize', label: 'Optimize', icon: '⚡' },

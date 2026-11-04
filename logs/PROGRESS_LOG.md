@@ -1138,3 +1138,24 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - Pre-commit checklist: 1 YES (docs-only) 2 N/A (no code) 3 YES 4 N/A (deps proposed, vetting scheduled in D1 pre-phase) 5 YES 6 N/A 7 N/A 8 YES 9 YES (scope change captured as PROPOSED ADR pending approval) 10 YES 11 YES (no registry change yet)
 - Risks / follow-ups: storytold/* licence + API verification is a hard D1 entry gate; DWG deferred (no permissive reader); 07_FEATURE_MAP + PLAN_LOG amendment requires user approval before D1.
 - Commit / tag: `docs(architecture): pause Windows track at W1 and author Drawboard + ArtCraft spatial PDF editor master plan (ADR-012)`
+
+
+## [2026-11-04 16:50] Phase D1 — Drawboard Global Controllers & Spatial Canvas Shell — DONE
+- Changes:
+  - Formally accepted ADR-012 (`docs/adr/ADR-012-drawboard-artcraft-spatial-studio.md`) and documented in `logs/PLAN_LOG.md`.
+  - Implemented 4 centralized Svelte 5 Rune controllers in `app-tauri/src/lib/core/`:
+    - `themeContract.svelte.ts`: 100% CSS variable cascade (`--glass-*`, `--canvas-*`, `--snap-indicator-*`) with OS theme sync and programmatic token lookup.
+    - `toolEngine.svelte.ts`: Reactive state machine for tools, pressure curves (`evalPressure`), tool presets, spring-loaded mode, and favorites.
+    - `viewportEngine.svelte.ts`: Pure `Affine` transform math (matrix multiply, invert to 1e-9 precision, 0/90/180/270 rotations), screen <-> PDF pt coordinate transforms, calibration engine, zoomAt anchor-fixed scaling, and multi-page layout.
+    - `commandEngine.svelte.ts`: Transactional copy-on-write $O(1)$ Undo/Redo stack with snapshot trees, canonical chord parsing, and typed control bus dispatch.
+  - Added default tool presets in `app-tauri/src/lib/core/defaultPresets.json`.
+  - Added ts-rs type bindings in `app-tauri/src/lib/bindings/`: `ControlMessage.ts`, `SceneNode.ts`, `HatchPatternId.ts`.
+  - Implemented hardware-accelerated spatial canvas shell in `app-tauri/src/lib/views/studio/SpatialCanvas.svelte` with pan/zoom gestures, frosted-glass HUD pill, page render surfaces, and dual-mode overlay layer groundwork.
+  - Implemented multi-window split view layout shell in `app-tauri/src/lib/views/studio/SplitLayout.svelte`.
+  - Wired `Studio` (Drawboard Studio) into `app-tauri/src/lib/components/Sidebar.svelte` and mounted in `app-tauri/src/routes/+page.svelte` with automatic lifecycle attach for theme cascade and global keyboard listener.
+- Gate: pass (`tools/sb.sh pnpm --dir app-tauri check` 0 errors, 0 warnings; `vitest run src/lib/core/core.test.ts` 8 tests pass; `cargo check --workspace` clean; `cargo xtask protocol-lint` clean; release RPM generated at `target/release/bundle/rpm/LocalPDF Studio-0.1.0-1.x86_64.rpm` [37.45 MiB]; Linux GUI smoke test verified clean with `EXIT_CODE=124`).
+- Tests added/run: 8 unit tests in `app-tauri/src/lib/core/core.test.ts` (Affine invert round-trip 1e-9, rotation angles, calibrate guards, zoomAt anchor preservation, pressure curve monotonicity, canonicalChord, copy-on-write undo/redo, theme token cascade).
+- Pre-commit checklist: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+- Protocol compliance (phase end only): F1 (atomic settings), F11 (UI data-loss guard / copy-on-write undo/redo), F16 (supply chain / MIT dual license).
+- Risks / follow-ups: Ready to execute Phase D2 (Dockable glass toolbar, property pill, favorites bar, 8-wedge radial menu, custom shortcuts).
+- Commit / tag: `feat(studio): implement Phase D1 global Svelte 5 controllers and spatial canvas shell`

@@ -1,0 +1,177 @@
+[
+  {
+    "id": "preset.pan",
+    "tool": "pan",
+    "label": "Pan Canvas",
+    "stroke": {
+      "colorToken": null,
+      "colorHex": "#000000",
+      "widthPt": 1,
+      "opacity": 1,
+      "dash": [],
+      "lineCap": "round",
+      "startEnd": "none",
+      "endEnd": "none"
+    },
+    "fill": {
+      "kind": "none",
+      "colorHex": "#000000",
+      "opacity": 0,
+      "hatch": "solid",
+      "hatchScale": 1,
+      "hatchAngleDeg": 0
+    },
+    "font": {
+      "family": "Inter",
+      "sizePt": 12,
+      "weight": 400,
+      "italic": false,
+      "leading": 1.2,
+      "trackingEm": 0,
+      "colorHex": "#000000"
+    },
+    "pressure": { "x1": 0.25, "y1": 0.1, "x2": 0.25, "y2": 1 },
+    "tiltShading": 0,
+    "smartShapes": false
+  },
+  {
+    "id": "preset.pen.a",
+    "tool": "pen.a",
+    "label": "Fine Black Pen",
+    "stroke": {
+      "colorToken": null,
+      "colorHex": "#000000",
+      "widthPt": 0.75,
+      "opacity": 1,
+      "dash": [],
+      "lineCap": "round",
+      "startEnd": "none",
+      "endEnd": "none"
+    },
+    "fill": {
+      "kind": "none",
+      "colorHex": "#000000",
+      "opacity": 0,
+      "hatch": "solid",
+      "hatchScale": 1,
+      "hatchAngleDeg": 0
+    },
+    "font": {
+      "family": "Inter",
+      "sizePt": 12,
+      "weight": 400,
+      "italic": false,
+      "leading": 1.2,
+      "trackingEm": 0,
+      "colorHex": "#000000"
+    },
+    "pressure": { "x1": 0.25, "y1": 0.1, "x2": 0.25, "y2": 1 },
+    "tiltShading": 0.1,
+    "smartShapes": true
+  },
+  {
+    "id": "preset.pen.b",
+    "tool": "pen.b",
+    "label": "Medium Red Pen",
+    "stroke": {
+      "colorToken": null,
+      "colorHex": "#ff3b30",
+      "widthPt": 1.5,
+      "opacity": 1,
+      "dash": [],
+      "lineCap": "round",
+      "startEnd": "none",
+      "endEnd": "none"
+    },
+    "fill": {
+      "kind": "none",
+      "colorHex": "#ff3b30",
+      "opacity": 0,
+      "hatch": "solid",
+      "hatchScale": 1,
+      "hatchAngleDeg": 0
+    },
+    "font": {
+      "family": "Inter",
+      "sizePt": 12,
+      "weight": 400,
+      "italic": false,
+      "leading": 1.2,
+      "trackingEm": 0,
+      "colorHex": "#ff3b30"
+    },
+    "pressure": { "x1": 0.25, "y1": 0.1, "x2": 0.25, "y2": 1 },
+    "tiltShading": 0.2,
+    "smartShapes": true
+  },
+  {
+    "id": "preset.highlighter",
+    "tool": "highlighter",
+    "label": "Yellow Highlighter",
+    "stroke": {
+      "colorToken": null,
+      "colorHex": "#ffd60a",
+      "widthPt": 12,
+      "opacity": 0.4,
+      "dash": [],
+      "lineCap": "square",
+      "startEnd": "none",
+      "endEnd": "none"
+    },
+    "fill": {
+      "kind": "none",
+      "colorHex": "#ffd60a",
+      "opacity": 0,
+      "hatch": "solid",
+      "hatchScale": 1,
+      "hatchAngleDeg": 0
+    },
+    "font": {
+      "family": "Inter",
+      "sizePt": 12,
+      "weight": 400,
+      "italic": false,
+      "leading": 1.2,
+      "trackingEm": 0,
+      "colorHex": "#ffd60a"
+    },
+    "pressure": { "x1": 0, "y1": 0, "x2": 1, "y2": 1 },
+    "tiltShading": 0,
+    "smartShapes": false
+  },
+  {
+    "id": "preset.eraser.partial",
+    "tool": "eraser.partial",
+    "label": "Partial Eraser",
+    "stroke": {
+      "colorToken": null,
+      "colorHex": "#000000",
+      "widthPt": 8,
+      "opacity": 1,
+      "dash": [],
+      "lineCap": "round",
+      "startEnd": "none",
+      "endEnd": "none"
+    },
+    "fill": {
+      "kind": "none",
+      "colorHex": "#000000",
+      "opacity": 0,
+      "hatch": "solid",
+      "hatchScale": 1,
+      "hatchAngleDeg": 0
+    },
+    "font": {
+      "family": "Inter",
+      "sizePt": 12,
+      "weight": 400,
+      "italic": false,
+      "leading": 1.2,
+      "trackingEm": 0,
+      "colorHex": "#000000"
+    },
+    "pressure": { "x1": 0, "y1": 0, "x2": 1, "y2": 1 },
+    "tiltShading": 0,
+    "smartShapes": false
+  }
+]

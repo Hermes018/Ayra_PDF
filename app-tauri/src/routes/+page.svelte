@@ -15,14 +15,21 @@
     import PipelinesView from '$lib/views/PipelinesView.svelte';
     import SettingsView from '$lib/views/SettingsView.svelte';
     import AiSummarizeView from '$lib/views/AiSummarizeView.svelte';
+    import SpatialCanvas from '$lib/views/studio/SpatialCanvas.svelte';
+    import { theme } from '$lib/core/themeContract.svelte';
+    import { commands } from '$lib/core/commandEngine.svelte';
 
     // Svelte 5 reactive state for view routing
-    let currentView = $state('Organize');
+    let currentView = $state('Studio');
 
     let unlistenOpenFiles: UnlistenFn | undefined;
+    let detachTheme: (() => void) | undefined;
+    let detachKeyboard: (() => void) | undefined;
 
     onMount(() => {
         appState.initTheme();
+        detachTheme = theme.attach(document.documentElement);
+        detachKeyboard = commands.attachKeyboard(window);
         getStartupFiles().then((files) => {
             if (files && files.length > 0) {
                 appState.addFiles(files);
@@ -44,11 +51,19 @@
         if (unlistenOpenFiles) {
             unlistenOpenFiles();
         }
+        if (detachTheme) {
+            detachTheme();
+        }
+        if (detachKeyboard) {
+            detachKeyboard();
+        }
     });
 </script>
 
 <MainLayout bind:currentView>
-    {#if currentView === 'Organize'}
+    {#if currentView === 'Studio'}
+        <SpatialCanvas />
+    {:else if currentView === 'Organize'}
         <OrganizeView />
     {:else if currentView === 'Optimize'}
         <OptimizeView />

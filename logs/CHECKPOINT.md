@@ -1,11 +1,11 @@
 # CHECKPOINT (OVERWRITE this file; single source of "where am I")
 - Date: 2026-11-04
-- Phase / sub-phase: Phase 14.0 — Drawboard-Class Spatial PDF Editor & ArtCraft Engine Integration Plan (PLANNING ONLY)
-- Status: ADR-012 + docs/DRAWBOARD_STUDIO_MASTER_PLAN.md authored; zero `.rs/.ts/.svelte/.css/.json` edits. Awaiting user approval of ADR-012 scope (DON'T #13) before Phase D1.
-- PAUSED TRACK: Windows Track (Phase 13 / Phases W2–W4) formally PAUSED at "Phase W1 Complete" (commit `ee1d552`, pushed to origin/main). Resume state: clean tree at ee1d552; resume point = Phase W2 (Mica/Acrylic/Opaque vibrancy + cold-start reveal) per docs/WINDOWS_MASTER_PLAN.md §Phase W2. Resume command: `git checkout main && git pull --recurse-submodules` then open WINDOWS_MASTER_PLAN.md at Phase W2.
-- Last green tag: v0.1.0-rc5 (last green commit: ee1d552)
-- In progress: Phase 14.0 planning deliverable (docs only)
-- Open risks: (1) storytold/* ArtCraft crate licences + APIs NOT yet verified from source — D1 pre-phase licence/API audit is a hard gate (DO #2, #11). (2) DWG import has no known MIT/Apache Rust reader; DXF native only, DWG deferred (no GPL linking). (3) Feature-map scope: D1–D6 tools must be added to protocol/07_FEATURE_MAP.md + PLAN_LOG with user approval before implementation. (4) Memory on large rasterized render passes (ADR-002); >1000-page virtualization.
-- Next 3 actions: 1) User approves ADR-012 + 07_FEATURE_MAP amendment 2) D1 pre-phase: vendor + licence-audit storytold crates, record in ENGINE_NOTES.md 3) Execute Phase D1 (global controllers, control bus, spatial canvas shell)
-- Active ADRs: 001-012, 004 (Local LLM / Candle), 005 (Native Feature Expansion), 006 (Reconstruction Reality Check), 008 (SvelteKit SPA), 009 (Vendored PDF.js), 011 (Windows Platform — track PAUSED), 012 (Drawboard + ArtCraft Spatial Studio — PROPOSED)
+- Phase / sub-phase: Phase D1 COMPLETE — Drawboard Global Controllers & Hardware-Accelerated Spatial Canvas Shell
+- Status: ADR-012 formally accepted; Phase D1 implemented; 4 centralized Svelte 5 Rune engines (`themeContract`, `toolEngine`, `viewportEngine`, `commandEngine`) operational; hardware-accelerated spatial canvas shell mounted in main navigation; `pnpm check` clean (0 errors, 0 warnings); vitest (8 tests) green; release RPM generated (37.45 MiB); live smoke test verified clean with EXIT_CODE=124.
+- PAUSED TRACK: Windows Track (Phase 13 / Phases W2–W4) formally PAUSED at "Phase W1 Complete" (commit `ee1d552`, pushed to origin/main). Resume state: clean tree at ee1d552; resume point = Phase W2 (Mica/Acrylic/Opaque vibrancy + cold-start reveal) per docs/WINDOWS_MASTER_PLAN.md §Phase W2.
+- Last green tag: v0.1.0-rc5
+- In progress: Ready to execute Phase D2 (Dockable Glass Toolbar, Property Pill, Favorites Bar, 8-Wedge Radial Menu, & Custom Shortcuts Engine)
+- Open risks: (1) Pre-phase audit for storytold/* reference crates for D2-D6 (2) Memory virtualization for large multi-page spatial documents.
+- Next 3 actions: 1) Execute Phase D2 (Floating/Dockable Toolbar, Property Pill, Favorites Bar, 8-Wedge Radial Menu, Custom Shortcuts) 2) Execute Phase D3 (Pressure-sensitive ink pipeline & partial eraser) 3) Execute Phase D4 (True structural PDF content editing & procedural hatching)
+- Active ADRs: 001-012, 004 (Local LLM / Candle), 005 (Native Feature Expansion), 006 (Reconstruction Reality Check), 008 (SvelteKit SPA), 009 (Vendored PDF.js), 011 (Windows Platform — track PAUSED), 012 (Drawboard + ArtCraft Spatial Studio — ACCEPTED)
 - Pinned pdfcraft commit: 75360d1d7db06fed974f48c914d4c04132757187
