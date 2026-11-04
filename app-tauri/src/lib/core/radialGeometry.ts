@@ -7,18 +7,42 @@ export type RadialHit =
   | { zone: 'flyout'; sector: number; item: number }
   | { zone: 'outside' };
 
+/**
+ * Maps screen coordinates relative to a center point to one of the 8 radial sectors.
+ * Top is 0, TopRight is 1, Right is 2, BottomRight is 3,
+ * Bottom is 4, BottomLeft is 5, Left is 6, TopLeft is 7.
+ */
+export function getSector(
+  centerX: number,
+  centerY: number,
+  clientX: number,
+  clientY: number
+): number {
+  const dx = clientX - centerX;
+  const dy = clientY - centerY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  let angle = Math.atan2(dy, dx) + Math.PI / 2; // Shift so Top is 0
+  if (angle < 0) angle += 2 * Math.PI;
+  return Math.floor((angle + Math.PI / 8) / (Math.PI / 4)) % RADIAL.sectors;
+}
+
 export function radialHit(dx: number, dy: number, flyoutCounts: readonly number[]): RadialHit {
-  const rho = Math.hypot(dx, dy);
-  if (rho < RADIAL.r0) return { zone: 'cancel' };
-  if (rho >= RADIAL.r2) return { zone: 'outside' };
-  const deg = (Math.atan2(dy, dx) * 180) / Math.PI; // screen y-down: -90 = up
-  const norm = (((deg + 90 + 22.5) % 360) + 360) % 360;
-  const sector = Math.floor(norm / 45) % RADIAL.sectors;
-  if (rho < RADIAL.r1) return { zone: 'wedge', sector };
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  if (distance < RADIAL.r0) return { zone: 'cancel' };
+  if (distance >= RADIAL.r2) return { zone: 'outside' };
+  let angle = Math.atan2(dy, dx) + Math.PI / 2; // Shift so Top is 0
+  if (angle < 0) angle += 2 * Math.PI;
+  const sector = Math.floor((angle + Math.PI / 8) / (Math.PI / 4)) % RADIAL.sectors;
+  if (distance < RADIAL.r1) return { zone: 'wedge', sector };
   const n = flyoutCounts[sector] ?? 0;
   if (n === 0) return { zone: 'wedge', sector };
-  const within = norm - sector * 45; // 0..45 across the wedge arc
-  return { zone: 'flyout', sector, item: Math.min(n - 1, Math.floor((within / 45) * n)) };
+  const norm = (angle + Math.PI / 8) % (2 * Math.PI);
+  const within = norm - sector * (Math.PI / 4);
+  return {
+    zone: 'flyout',
+    sector,
+    item: Math.min(n - 1, Math.max(0, Math.floor((within / (Math.PI / 4)) * n)))
+  };
 }
 
 export function clampCenter(x: number, y: number, w: number, h: number): { x: number; y: number } {

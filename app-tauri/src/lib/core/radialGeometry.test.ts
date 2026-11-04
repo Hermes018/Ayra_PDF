@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { RADIAL, radialHit, clampCenter, sectorAngles, describeArc, type RadialHit } from './radialGeometry';
+import {
+  RADIAL,
+  radialHit,
+  getSector,
+  clampCenter,
+  sectorAngles,
+  describeArc,
+  type RadialHit
+} from './radialGeometry';
 
 describe('Radial Menu Geometry', () => {
   const flyoutCounts = [0, 5, 2, 2, 1, 2, 6, 7];
@@ -66,5 +74,35 @@ describe('Radial Menu Geometry', () => {
     expect(arc).toContain('A 112 112');
     expect(arc).toContain('A 36 36');
     expect(arc).toContain('Z');
+  });
+
+  it('asserts Math.atan2 polar math correctly maps screen coordinates to the 8 sectors (Top=0, TopRight=1, Right=2, etc.)', () => {
+    const cx = 300;
+    const cy = 300;
+    const r = 70; // mid-wedge distance
+
+    // Top: dx = 0, dy = -r -> Sector 0
+    expect(getSector(cx, cy, cx, cy - r)).toBe(0);
+
+    // TopRight: dx = r*sqrt(2)/2, dy = -r*sqrt(2)/2 -> Sector 1
+    expect(getSector(cx, cy, cx + r * 0.7071, cy - r * 0.7071)).toBe(1);
+
+    // Right: dx = r, dy = 0 -> Sector 2
+    expect(getSector(cx, cy, cx + r, cy)).toBe(2);
+
+    // BottomRight: dx = r*sqrt(2)/2, dy = r*sqrt(2)/2 -> Sector 3
+    expect(getSector(cx, cy, cx + r * 0.7071, cy + r * 0.7071)).toBe(3);
+
+    // Bottom: dx = 0, dy = r -> Sector 4
+    expect(getSector(cx, cy, cx, cy + r)).toBe(4);
+
+    // BottomLeft: dx = -r*sqrt(2)/2, dy = r*sqrt(2)/2 -> Sector 5
+    expect(getSector(cx, cy, cx - r * 0.7071, cy + r * 0.7071)).toBe(5);
+
+    // Left: dx = -r, dy = 0 -> Sector 6
+    expect(getSector(cx, cy, cx - r, cy)).toBe(6);
+
+    // TopLeft: dx = -r*sqrt(2)/2, dy = -r*sqrt(2)/2 -> Sector 7
+    expect(getSector(cx, cy, cx - r * 0.7071, cy - r * 0.7071)).toBe(7);
   });
 });

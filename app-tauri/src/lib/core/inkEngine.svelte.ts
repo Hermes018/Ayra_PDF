@@ -38,7 +38,7 @@ function distToSegment(
 }
 
 /** Ramer-Douglas-Peucker polyline simplification */
-function rdp(points: Point[], epsilon: number): Point[] {
+export function rdp(points: Point[], epsilon: number): Point[] {
   if (points.length < 3) return points;
   let dmax = 0;
   let index = 0;
@@ -256,110 +256,89 @@ export class InkEngine {
 
   /**
    * Smart Shape Recognition (350ms dwell):
-   * Classifies current stroke points as Line, Rectangle, Triangle, or Circle.
+   * Uses Ramer-Douglas-Peucker (RDP) vertex simplification to classify
+   * the stroke as a Line, Polygon (Triangle, Rectangle, Hexagon), or Ellipse/Circle.
    */
-  recognizeShape(): boolean {
-    if (!this.currentStroke || this.currentStroke.points.length < 5) return false;
-    const pts = this.currentStroke.points;
+  recognizeShape(targetStroke?: ActiveStroke | null): boolean {
+    const stroke = targetStroke ?? this.currentStroke;
+    if (!stroke || stroke.points.length < 2) return false;
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const p of pts) {
+    for (const p of stroke.points) {
       if (p.x < minX) minX = p.x;
       if (p.y < minY) minY = p.y;
       if (p.x > maxX) maxX = p.x;
       if (p.y > maxY) maxY = p.y;
     }
 
-    const width = maxX - minX;
-    const height = maxY - minY;
-    const diag = Math.hypot(width, height);
-    if (diag < 10) return false;
+    const strokeBoundingBox = {
+      minX,
+      minY,
+      maxX,
+      maxY,
+      width: maxX - minX,
+      height: maxY - minY,
+    };
 
-    const first = pts[0];
-    const last = pts[pts.length - 1];
-    const dStartEnd = Math.hypot(last.x - first.x, last.y - first.y);
+    const maxDim = Math.max(strokeBoundingBox.width, strokeBoundingBox.height);
+    if (maxDim < 5) return false;
 
-    // Calculate total path length
-    let pathLen = 0;
-    for (let i = 1; i < pts.length; i++) {
-      pathLen += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
-    }
+    // RDP simplification with epsilon based on stroke bounding box width
+    const epsilon = Math.max(2, (strokeBoundingBox.width > 0 ? strokeBoundingBox.width : strokeBoundingBox.height) * 0.05);
+    const simplified = rdp(stroke.points, epsilon);
 
-    // 1. Straight Line check: max orthogonal deviation < 7% of length
-    let maxDev = 0;
-    for (const p of pts) {
-      const dev = distToSegment(p, first, last);
-      if (dev > maxDev) maxDev = dev;
-    }
-
-    if (dStartEnd > 15 && maxDev / dStartEnd < 0.08) {
-      this.currentStroke.points = [
-        { x: first.x, y: first.y, p: first.p, t: first.t },
-        { x: last.x, y: last.y, p: last.p, t: last.t },
+    // 1. Line: RDP returns exactly 2 points
+    if (simplified.length === 2) {
+      const p0 = stroke.points[0];
+      const p1 = stroke.points[stroke.points.length - 1];
+      stroke.points = [
+        { x: p0.x, y: p0.y, p: p0.p, t: p0.t },
+        { x: p1.x, y: p1.y, p: p1.p, t: p1.t },
       ];
       return true;
     }
 
-    // 2. Closed shapes
-    const isClosed = dStartEnd < 0.22 * pathLen;
-    if (isClosed) {
-      // Circle check
-      const cx = (minX + maxX) / 2;
-      const cy = (minY + maxY) / 2;
-      const targetR = (width + height) / 4;
-      let radialVar = 0;
-      for (const p of pts) {
-        const r = Math.hypot(p.x - cx, p.y - cy);
-        radialVar += Math.pow(r - targetR, 2);
-      }
-      const radialStd = Math.sqrt(radialVar / pts.length);
-      const aspect = Math.abs(width - height) / Math.max(width, height);
+    const first = stroke.points[0];
+    const last = stroke.points[stroke.points.length - 1];
+    const dStartEnd = Math.hypot(last.x - first.x, last.y - first.y);
+    const isClosed = dStartEnd <= maxDim * 0.35;
 
-      if (radialStd / targetR < 0.16 && aspect < 0.25) {
-        // Snap to circle
-        const circlePts: Point[] = [];
-        const numSteps = 32;
-        for (let i = 0; i <= numSteps; i++) {
-          const theta = (i / numSteps) * Math.PI * 2;
-          circlePts.push({
-            x: cx + Math.cos(theta) * targetR,
-            y: cy + Math.sin(theta) * targetR,
-            p: 0.5,
-          });
-        }
-        this.currentStroke.points = circlePts;
-        return true;
+    // 2. Polygon (Triangle, Rectangle, Hexagon): 3 to 8 points and closed loop
+    if (isClosed && simplified.length >= 3 && simplified.length <= 8) {
+      const poly: Point[] = simplified.map((pt) => ({
+        x: pt.x,
+        y: pt.y,
+        p: 0.5,
+        t: pt.t,
+      }));
+      // Close the polygon
+      if (poly.length >= 4 && Math.hypot(poly[0].x - poly[poly.length - 1].x, poly[0].y - poly[poly.length - 1].y) <= maxDim * 0.35) {
+        poly[poly.length - 1] = { x: poly[0].x, y: poly[0].y, p: 0.5 };
+      } else {
+        poly.push({ x: poly[0].x, y: poly[0].y, p: 0.5 });
       }
+      stroke.points = poly;
+      return true;
+    }
 
-      // Polygon classification via RDP
-      const simplified = rdp(pts, Math.max(4, 0.04 * diag));
-      let verts = [...simplified];
-      if (verts.length > 2 && Math.hypot(verts[0].x - verts[verts.length - 1].x, verts[0].y - verts[verts.length - 1].y) < 0.2 * pathLen) {
-        verts.pop();
+    // 3. Ellipse / Circle: RDP returns > 8 points (a smooth curve) and closed loop
+    if (isClosed && simplified.length > 8) {
+      const cx = strokeBoundingBox.minX + strokeBoundingBox.width / 2;
+      const cy = strokeBoundingBox.minY + strokeBoundingBox.height / 2;
+      const rx = strokeBoundingBox.width / 2;
+      const ry = strokeBoundingBox.height / 2;
+      const ellipsePts: Point[] = [];
+      const numSteps = 36;
+      for (let i = 0; i <= numSteps; i++) {
+        const theta = (i / numSteps) * Math.PI * 2;
+        ellipsePts.push({
+          x: cx + Math.cos(theta) * rx,
+          y: cy + Math.sin(theta) * ry,
+          p: 0.5,
+        });
       }
-
-      // 3. Triangle
-      if (verts.length === 3) {
-        this.currentStroke.points = [
-          { x: verts[0].x, y: verts[0].y, p: 0.5 },
-          { x: verts[1].x, y: verts[1].y, p: 0.5 },
-          { x: verts[2].x, y: verts[2].y, p: 0.5 },
-          { x: verts[0].x, y: verts[0].y, p: 0.5 },
-        ];
-        return true;
-      }
-
-      // 4. Rectangle
-      if (verts.length === 4) {
-        this.currentStroke.points = [
-          { x: minX, y: minY, p: 0.5 },
-          { x: maxX, y: minY, p: 0.5 },
-          { x: maxX, y: maxY, p: 0.5 },
-          { x: minX, y: maxY, p: 0.5 },
-          { x: minX, y: minY, p: 0.5 },
-        ];
-        return true;
-      }
+      stroke.points = ellipsePts;
+      return true;
     }
 
     return false;

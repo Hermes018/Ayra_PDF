@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { tools } from './toolEngine.svelte';
 import { commands } from './commandEngine.svelte';
-import { ink, generateSvgPathFromPoints, type Point } from './inkEngine.svelte';
+import { ink, generateSvgPathFromPoints, rdp, type Point } from './inkEngine.svelte';
 import { resolveDock } from '$lib/components/studio/DockableToolbar.svelte';
 
 describe('ToolStateEngine Reactivity & Preset Scoping', () => {
@@ -245,6 +245,50 @@ describe('Phase D3 — InkEngine, Spline Math, Laser Pointer, & Smart Shapes', (
     expect(recognized).toBe(true);
     expect(ink.currentStroke?.points.length).toBe(5); // 4 corners + closed point
     ink.endStroke();
+  });
+
+  it('smart shapes: recognizes a triangle during dwell', () => {
+    ink.startStroke(10, 80, 0.5, 'pen.a');
+    ink.addPoint(30, 45, 0.5);
+    ink.addPoint(50, 10, 0.5); // Apex
+    ink.addPoint(70, 45, 0.5);
+    ink.addPoint(90, 80, 0.5); // Right base
+    ink.addPoint(50, 80, 0.5);
+    ink.addPoint(12, 78, 0.5); // Back to start
+
+    const recognized = ink.recognizeShape();
+    expect(recognized).toBe(true);
+    expect(ink.currentStroke?.points.length).toBe(4); // 3 vertices + closed point
+    ink.endStroke();
+  });
+
+  it('smart shapes: recognizes an ellipse/circle during dwell', () => {
+    ink.startStroke(150, 100, 0.5, 'pen.a');
+    // Draw 36 points of a circle with radius 50 centered at (100, 100)
+    for (let i = 1; i <= 36; i++) {
+      const th = (i / 36) * Math.PI * 2;
+      ink.addPoint(100 + Math.cos(th) * 50, 100 + Math.sin(th) * 50, 0.5);
+    }
+
+    const recognized = ink.recognizeShape();
+    expect(recognized).toBe(true);
+    // Snaps to perfect 37-point ellipse path (0 to 36 inclusive)
+    expect(ink.currentStroke?.points.length).toBe(37);
+    ink.endStroke();
+  });
+
+  it('smart shapes: Ramer-Douglas-Peucker simplifies noisy polylines into core vertices', () => {
+    const noisyLine: Point[] = [
+      { x: 0, y: 0, p: 0.5 },
+      { x: 25, y: 0.5, p: 0.5 },
+      { x: 50, y: -0.4, p: 0.5 },
+      { x: 75, y: 0.3, p: 0.5 },
+      { x: 100, y: 0, p: 0.5 },
+    ];
+    const simplified = rdp(noisyLine, 2);
+    expect(simplified.length).toBe(2);
+    expect(simplified[0].x).toBe(0);
+    expect(simplified[1].x).toBe(100);
   });
 
   it('boolean eraser: eraseWhole removes intersecting stroke', () => {

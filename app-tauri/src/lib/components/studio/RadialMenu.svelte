@@ -48,10 +48,12 @@
   let activeFlyout = $state<number | null>(null);
   let menuContainer: HTMLDivElement | null = $state(null);
 
-  // Clamped center
-  let center = $derived.by(() => {
-    if (typeof window === 'undefined') return { x, y };
-    return clampCenter(x, y, window.innerWidth, window.innerHeight);
+  // Capture exact viewport coordinates when summoned
+  let menuCenter = $derived.by(() => {
+    if (typeof window !== 'undefined') {
+      return clampCenter(x, y, window.innerWidth, window.innerHeight);
+    }
+    return { x, y };
   });
 
   const SVG_SIZE = RADIAL.r2 * 2 + 16;
@@ -66,8 +68,9 @@
   }
 
   function handlePointerMove(e: PointerEvent) {
-    const dx = e.clientX - center.x;
-    const dy = e.clientY - center.y;
+    if (!visible) return;
+    const dx = e.clientX - menuCenter.x;
+    const dy = e.clientY - menuCenter.y;
     const hit: RadialHit = radialHit(dx, dy, flyoutCounts);
 
     if (hit.zone === 'wedge') {
@@ -82,8 +85,9 @@
   }
 
   function handlePointerUp(e: PointerEvent) {
-    const dx = e.clientX - center.x;
-    const dy = e.clientY - center.y;
+    if (!visible) return;
+    const dx = e.clientX - menuCenter.x;
+    const dy = e.clientY - menuCenter.y;
     const hit: RadialHit = radialHit(dx, dy, flyoutCounts);
 
     if (hit.zone === 'wedge') {
@@ -132,18 +136,21 @@
   });
 </script>
 
+<svelte:window
+  onpointermove={handlePointerMove}
+  onpointerup={handlePointerUp}
+/>
+
 {#if visible}
   <div
     class="radial-backdrop"
     bind:this={menuContainer}
-    onpointermove={handlePointerMove}
-    onpointerup={handlePointerUp}
     role="presentation"
   >
     <div
       class="radial-menu"
-      style:left="{center.x - CX}px"
-      style:top="{center.y - CY}px"
+      style:left="{menuCenter.x - CX}px"
+      style:top="{menuCenter.y - CY}px"
       style:width="{SVG_SIZE}px"
       style:height="{SVG_SIZE}px"
       role="menu"
@@ -273,10 +280,12 @@
     stroke: var(--glass-border);
     stroke-width: 1.5;
     cursor: pointer;
+    transition: none !important;
   }
 
   .center-hub:hover {
     fill: var(--danger);
+    transition: none !important;
   }
 
   .center-hub-icon-g {
@@ -293,17 +302,19 @@
     fill: var(--glass-bg);
     stroke: var(--glass-border);
     stroke-width: 1.2;
-    transition: none;
+    transition: none !important;
   }
 
   .wedge-group.hovered .wedge-path {
     fill: var(--accent);
     stroke: var(--focus-ring);
+    transition: none !important;
   }
 
   .wedge-group.active-tool .wedge-path {
     stroke: var(--accent);
     stroke-width: 2;
+    transition: none !important;
   }
 
   .wedge-icon-g {
@@ -335,12 +346,13 @@
     fill: var(--glass-bg);
     stroke: var(--glass-border);
     stroke-width: 1;
-    transition: none;
+    transition: none !important;
   }
 
   .flyout-group.hovered .flyout-path {
     fill: var(--focus-ring);
     stroke: var(--laser-core);
+    transition: none !important;
   }
 
   .flyout-icon-g {

@@ -1252,3 +1252,33 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
   - Wayland live smoke test: `RUST_BACKTRACE=1 timeout 5s ./target/release/localpdf-studio` (stayed alive, timed out cleanly with `EXIT_CODE=124`).
 - **Pre-commit checklist**: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 - **Gate**: pass.
+
+
+### [2026-11-04] Phase D3.1 — Deterministic Radial Menu Polar Math & RDP Smart Shape Expansion
+- **Action**: Implemented Phase D3.1: replaced relative DOM hover tracking with absolute screen coordinate polar math in Radial Menu, bound window pointer listeners without CSS hover transitions, and implemented Ramer-Douglas-Peucker (RDP) algorithm for smart shape expansion (Line, Triangle, Rectangle, Hexagon, Ellipse/Circle).
+- **Deliverables**:
+  - **Radial Menu Absolute Polar Geometry (`radialGeometry.ts`)**:
+    - Created `getSector(centerX, centerY, clientX, clientY)` implementing deterministic `Math.atan2(dy, dx) + Math.PI/2` shifted to Top=0 and mapped across all 8 sectors (`(angle + Math.PI/8) / (Math.PI/4) % 8`).
+    - Unified `radialHit` with `getSector` sector calculation and exact distance threshold checks (`r0: 36px`, `r1: 112px`, `r2: 176px`).
+  - **Deterministic 120Hz Radial Menu (`RadialMenu.svelte`)**:
+    - Replaced relative DOM event handling with `<svelte:window onpointermove onpointerup>` bound to absolute `menuCenter = clampCenter(...)`.
+    - Removed all CSS transitions (`transition: none !important`) across `.wedge-path`, `.flyout-path`, and `.center-hub` for instantaneous 120Hz sector highlighting.
+  - **RDP Smart Shape Expansion (`inkEngine.svelte.ts`)**:
+    - Implemented and exported `rdp(points: Point[], epsilon: number): Point[]` reducing freehand jitter into core vertices.
+    - Rewrote `recognizeShape(targetStroke)`:
+      - Line: Snaps to straight 2-point line when RDP returns 2 points.
+      - Polygon: Snaps to simplified polygon vertices when RDP returns 3–8 points in a closed loop (Triangle 4 pts, Rectangle 5 pts, Hexagon 7 pts).
+      - Ellipse/Circle: Snaps to a 37-point geometric ellipse when RDP returns >8 points in a closed loop.
+  - **Unit & Reactivity Testing**:
+    - Added unit test suite in `radialGeometry.test.ts` testing `getSector` across all 8 cardinal/diagonal directions (Top=0, TopRight=1, Right=2, BottomRight=3, Bottom=4, BottomLeft=5, Left=6, TopLeft=7).
+    - Added tests in `studioReactivity.test.ts` for triangle recognition, ellipse/circle recognition, and RDP jitter reduction (suite total 92 tests passed across 11 test files).
+- **Verification**:
+  - `tools/sb.sh pnpm --dir app-tauri check`: passed (0 errors, 0 warnings).
+  - `tools/sb.sh pnpm --dir app-tauri vitest run`: 92 passed across 11 test files.
+  - `cargo xtask studio-audit --strict`: 0 findings.
+  - `cargo xtask feature-map-check`: 119 features audited and verified.
+  - `cargo xtask protocol-lint`: passed.
+  - `SB_RELEASE=1 tools/sb.sh pnpm --dir app-tauri tauri build --bundles rpm`: release RPM built (`LocalPDF Studio-0.1.0-1.x86_64.rpm`, 37.51 MiB).
+  - Wayland live smoke test: `RUST_BACKTRACE=1 timeout 5s ./target/release/localpdf-studio` (stayed alive, timed out cleanly with `EXIT_CODE=124`).
+- **Pre-commit checklist**: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+- **Gate**: pass.
