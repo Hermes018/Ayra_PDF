@@ -1,6 +1,13 @@
 // app-tauri/src/lib/core/inkEngine.svelte.ts
 // Centralized Svelte 5 controller for vector inking, laser pointer decay, smart shapes & boolean eraser.
-import { tools, type ToolId, type ToolPreset } from './toolEngine.svelte';
+import {
+  tools,
+  type ToolId,
+  type ToolPreset,
+  type LineStyleId,
+  type LineEnding,
+  type HatchPatternExtendedId,
+} from './toolEngine.svelte';
 import { theme } from './themeContract.svelte';
 
 export interface Point {
@@ -21,6 +28,22 @@ export interface ActiveStroke {
   widthPt: number;
   opacity: number;
   isHighlighter?: boolean;
+  pageIndex?: number;
+  bbox?: [number, number, number, number];
+  fillColor?: string;
+  fillOpacity?: number;
+  hatchPattern?: HatchPatternExtendedId;
+  hatchScale?: number;
+  lineStyle?: LineStyleId;
+  startEnding?: LineEnding;
+  endEnding?: LineEnding;
+  text?: string;
+  fontSize?: number;
+  groupId?: string;
+  rotationDeg?: number;
+  snapshotDataUrl?: string;
+  flipH?: boolean;
+  flipV?: boolean;
 }
 
 /** Distance from point p to line segment ab */

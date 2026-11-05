@@ -695,7 +695,10 @@ pub fn run() {
             save_file_dialog,
             commands::studio::prefs_load,
             commands::studio::prefs_save,
-            commands::studio::control_validate
+            commands::studio::control_validate,
+            commands::studio::studio_save_annotations,
+            commands::studio::studio_load_annotations,
+            commands::studio::studio_edit_pdf_text_block
         ])
         .setup(|app| {
             // Forward job events to the Tauri frontend as structured events

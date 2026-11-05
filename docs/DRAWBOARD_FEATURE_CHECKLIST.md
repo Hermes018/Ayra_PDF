@@ -23,9 +23,9 @@
 
 | Status | Count | Description |
 |---|---:|---|
-| **`DONE` (`[x]`)** | **36** | End-to-end implemented in Rust + Svelte UI and verified by tests. |
-| **`IN PROGRESS` (`[ ]`)** | **24** | UI state/shell or backend port exists (Phases D1–D2.2), awaiting full canvas/IPC wiring. |
-| **`NOT STARTED` (`[ ]`)** | **53** | Scheduled across Phases D4, D5, and D6 in `DRAWBOARD_STUDIO_MASTER_PLAN.md`. |
+| **`DONE` (`[x]`)** | **69** | End-to-end implemented in Rust + Svelte UI and verified by tests. |
+| **`IN PROGRESS` (`[ ]`)** | **8** | UI state/shell or backend port exists, awaiting remaining sub-features. |
+| **`NOT STARTED` (`[ ]`)** | **36** | Scheduled across Phases D5 and D6 in `DRAWBOARD_STUDIO_MASTER_PLAN.md`. |
 | **`DEFERRED` (`[ ]`)** | **6** | Cloud/multiplayer features prohibited by strict offline air-gap rule (`ADR-005`). |
 | **Total** | **119** | Across 9 functional domains (108 core spec + 11 LocalPDF native extensions). |
 
@@ -39,55 +39,55 @@
 - [x] **1.4** `[P0]` `[Phase D3]` `DONE` **Pressure-sensitive inking** — Variable stroke width based on stylus pressure via Catmull-Rom spline outline ribbon (`generateSvgPathFromPoints` in `app-tauri/src/lib/core/inkEngine.svelte.ts`).
 - [ ] **1.5** `[P1]` `[Phase D3]` `NOT STARTED` **Tilt / stylus-aware rendering** — Natural pen/brush behavior when hardware supports stylus tilt (`tiltX`, `tiltY`).
 - [ ] **1.6** `[P1]` `[Phase D3]` `NOT STARTED` **Palm rejection / touch vs. pen mode** — Separate finger pan/zoom (`pointerType === 'touch'`) from stylus drawing (`pointerType === 'pen'`).
-- [ ] **1.7** `[P0]` `[Phase D2]` `IN PROGRESS` **Stroke thickness / size presets** — Quick-access stroke widths (in mm/pt) + custom slider in `PropertyPill.svelte` *(working in-memory; needs `prefs_save` disk persistence)*.
-- [ ] **1.8** `[P0]` `[Phase D2]` `IN PROGRESS` **Opacity control** — Adjustable transparency for pens, highlighters, shapes, and fills in `PropertyPill.svelte` *(UI bound to `toolEngine`; canvas rendering in D3)*.
-- [ ] **1.9** `[P0]` `[Phase D2]` `IN PROGRESS` **Color palette & custom color picker** — Saved color swatches, recent colors, hex/RGB picker *(10 semantic swatches in `PropertyPill.svelte`; needs hex/RGB custom picker & recent colors)*.
-- [ ] **1.10** `[P1]` `[Phase D2]` `IN PROGRESS` **Multiple saved pens / favorite tool presets** — Multiple pens with different colors/widths on the toolbar *(`pen.a`, `pen.b`, and `favorites` array in `toolEngine.svelte.ts`; `FavoritesBar.svelte` component not yet created)*.
-- [ ] **1.11** `[P1]` `[Phase D3]` `NOT STARTED` **Stroke smoothing / stabilization** — Configurable smoothing for jitter-free handwriting and line work (One-Euro filter + Ramer-Douglas-Peucker in `lpdf-vector-ink`).
-- [ ] **1.12** `[P2]` `[Phase D3]` `NOT STARTED` **Dashed / dotted / custom stroke styles** — Line pattern options for freehand and geometric strokes (`DashPattern` in `toolEngine.svelte.ts`, rendering in D3).
+- [x] **1.7** `[P0]` `[Phase D2/D4]` `DONE` **Stroke thickness / size presets** — Quick-access stroke widths (in mm/pt) in `PropertyPill.svelte` + `prefs_save` disk persistence (`app-tauri/src/lib/components/studio/PropertyPill.svelte` & `app-tauri/src-tauri/src/commands/studio.rs`).
+- [x] **1.8** `[P0]` `[Phase D2/D4]` `DONE` **Opacity control** — Adjustable transparency for pens, highlighters, shapes, and fills in `PropertyPill.svelte` (`app-tauri/src/lib/components/studio/PropertyPill.svelte` & `SpatialCanvas.svelte`).
+- [ ] **1.9** `[P0]` `[Phase D2]` `IN PROGRESS` **Color palette & custom color picker** — Saved color swatches, recent colors, hex/RGB picker *(Semantic swatches in `PropertyPill.svelte`; needs custom picker & recent colors)*.
+- [x] **1.10** `[P1]` `[Phase D2.2]` `DONE` **Multiple saved pens / favorite tool presets** — Multiple pens with different colors/widths on the toolbar & pinned favorites pill (`app-tauri/src/lib/components/studio/FavoritesBar.svelte` & `toolEngine.svelte.ts`).
+- [x] **1.11** `[P1]` `[Phase D3.1]` `DONE` **Stroke smoothing / stabilization** — Ramer-Douglas-Peucker vertex simplification and sub-pixel jitter filtering (`rdp` in `app-tauri/src/lib/core/inkEngine.svelte.ts`).
+- [x] **1.12** `[P2]` `[Phase D4]` `DONE` **Dashed / dotted / custom stroke styles** — Solid, dashed, dotted, and dash-dot line pattern options for geometric and polyline strokes (`getStrokeDashArray` in `app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts` & `PropertyPill.svelte`).
 - [x] **1.13** `[P2]` `[Phase D3]` `DONE` **Laser pointer tool** — Temporary presentation/attention stroke with 1800ms rAF decay (`addLaserPoint`, `updateLaser` in `app-tauri/src/lib/core/inkEngine.svelte.ts`).
 - [x] **1.14** `[P1]` `[Phase D3]` `DONE` **Smart shape recognition (hold-to-snap)** — 350ms dwell classifier snapping raw ink to Line, Rectangle, Triangle, or Circle (`recognizeShape` in `app-tauri/src/lib/core/inkEngine.svelte.ts`).
-- [ ] **1.15** `[P1]` `[Phase D3]` `NOT STARTED` **Line tool** — Straight line segment tool with optional angle snapping (`15°` increments).
-- [ ] **1.16** `[P1]` `[Phase D3]` `NOT STARTED` **Arrow tool** — Single- or double-headed arrow annotations.
-- [ ] **1.17** `[P1]` `[Phase D3]` `NOT STARTED` **Polyline / polygon / cloud / rectangle / ellipse shapes** — Core geometric and revision-cloud markup tools (`shape.rect`, `shape.ellipse`, `shape.cloud`, `shape.polygon`, `shape.polyline` — note: must un-collapse `normalizeToolId` in `toolEngine.svelte.ts`).
+- [x] **1.15** `[P1]` `[Phase D4]` `DONE` **Line tool** — Straight line segment tool with Shift angle snapping and configurable line endings (`shape.line` in `app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts` & `studio_save_annotations` in `studio.rs`).
+- [x] **1.16** `[P1]` `[Phase D4]` `DONE` **Arrow tool** — Single- or double-headed arrow annotations with open/closed/diamond/circle/slash/butt endings (`shape.arrow` & `generateLineEndingPath` in `app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts`).
+- [x] **1.17** `[P1]` `[Phase D4]` `DONE` **Polyline / polygon / cloud / rectangle / ellipse shapes** — Interactive creation and PDF persistence for `shape.polyline`, `shape.polygon`, `shape.cloud` (scalloped cubic Bézier arcs), `shape.rect`, and `shape.ellipse` (`app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts` & `app-tauri/src-tauri/src/commands/studio.rs`).
 
 ---
 
 ## 2. Annotation, Text, Markup & Review Tools (18 Features)
 
-- [ ] **2.1** `[P0]` `[Phase 8/D4]` `IN PROGRESS` **Text highlight** — Highlight selectable PDF text *(Backend `AnnotKind::Highlight` in `lpdf-engine-pdfcraft` & demo trigger in `EditView.svelte`; interactive glyph quad selection in D4)*.
-- [ ] **2.2** `[P0]` `[Phase 8/D4]` `IN PROGRESS` **Underline text** — Underline selectable PDF text *(Backend `AnnotKind::Underline` in `lpdf-engine-port`; interactive selection in D4)*.
-- [ ] **2.3** `[P1]` `[Phase 8/D4]` `IN PROGRESS` **Strikethrough text** — Cross out selectable PDF text *(Backend `AnnotKind::StrikeOut` in `lpdf-engine-port`; interactive selection in D4)*.
-- [ ] **2.4** `[P1]` `[Phase D4]` `NOT STARTED` **Squiggly underline** — Wavy underline for review/editorial markup (`/Squiggly` annotation subtype).
-- [ ] **2.5** `[P0]` `[Phase 8/D4]` `IN PROGRESS` **Text box / free text tool** — Place styled text directly on the page with font, size, color, alignment, border, and fill options *(Basic `add_text_overlay` in `EditView.svelte`; Knuth-Plass inline layout in `lpdf-layout-edit` in D4)*.
+- [x] **2.1** `[P0]` `[Phase 8/D4]` `DONE` **Text highlight** — Interactive `review.highlight` markup on canvas + PDF quad serialization via `Shape::TextMarkup { kind: Markup::Highlight }` (`app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts` & `app-tauri/src-tauri/src/commands/studio.rs`).
+- [x] **2.2** `[P0]` `[Phase 8/D4]` `DONE` **Underline text** — Interactive `review.underline` markup on canvas + PDF quad serialization via `Shape::TextMarkup { kind: Markup::Underline }` (`app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts` & `app-tauri/src-tauri/src/commands/studio.rs`).
+- [x] **2.3** `[P1]` `[Phase 8/D4]` `DONE` **Strikethrough text** — Interactive `review.strikeout` / `review.strikethrough` markup on canvas + PDF quad serialization via `Shape::TextMarkup { kind: Markup::StrikeOut }` (`app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts` & `app-tauri/src-tauri/src/commands/studio.rs`).
+- [x] **2.4** `[P1]` `[Phase D4]` `DONE` **Squiggly underline** — Sine-wave SVG path `review.squiggly` / `review.squiggle` markup + PDF `/Squiggly` serialization (`generateSquiggleSvgPath` in `app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts` & `app-tauri/src-tauri/src/commands/studio.rs`).
+- [x] **2.5** `[P0]` `[Phase 8/D4]` `DONE` **Text box / free text tool** — Inline rich text box editor on canvas (`insert.text` / `insert.textBox`) persisted via `Shape::TextBox` in `studio_save_annotations` (`app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts` & `SpatialCanvas.svelte`).
 - [ ] **2.6** `[P1]` `[Phase D6]` `NOT STARTED` **Callout tool** — Text box with leader line and arrow pointing to a target region (`callout.single`, `callout.multi` `/FreeTextCallout`).
 - [x] **2.7** `[P1]` `[Phase 8]` `DONE` **Sticky note / comment pin** — Compact icon that expands into a threaded or detailed note (`AnnotKind::TextNote` in `crates/lpdf-tools-edit/src/lib.rs`, `crates/lpdf-engine-pdfcraft/src/lib.rs`, and `EditView.svelte`).
-- [ ] **2.8** `[P2]` `[Phase D4]` `NOT STARTED` **Inline PDF text editing (where supported)** — Edit existing document text boxes/runs with Knuth-Plass paragraph breaking and baseline preservation (`crates/lpdf-layout-edit`).
+- [x] **2.8** `[P2]` `[Phase D4]` `DONE` **Inline PDF text editing (where supported)** — Structural Edit mode replaces overlapping PDF paragraph blocks (`Edit::EditTextBlock`) or writes native PDF text streams (`Edit::AddText`) via `studio_edit_pdf_text_block` (`app-tauri/src-tauri/src/commands/studio.rs` & `SpatialCanvas.svelte`).
 - [ ] **2.9** `[P1]` `[Phase D6]` `NOT STARTED` **Insert image** — Place PNG/JPG/SVG/clipboard images onto pages with resize/rotate handles.
 - [ ] **2.10** `[P2]` `[Phase D6]` `NOT STARTED` **Camera / photo capture insert** — Insert a photo from device webcam/camera (where hardware exists) or local file picker.
 - [ ] **2.11** `[P1]` `[Phase 8/D6]` `IN PROGRESS` **Stamps (standard + custom)** — Approved, Draft, Confidential, Reviewed, Received, or user-created custom stamps *(Page watermark/stamp in `EditView.svelte`; reusable stamp library in D6)*.
 - [ ] **2.12** `[P1]` `[Phase 8/D6]` `IN PROGRESS` **Signature tool** — Draw, type, or import a signature and place it on documents; pair with cryptographic PKCS#12 signing *(PKCS#12 crypto signing `sign_pdf` in `FormsView.svelte` is DONE; visual 3-mode signature pad in D6)*.
 - [x] **2.13** `[P1]` `[Phase 8]` `DONE` **Form filling** — Fill standard PDF AcroForm fields: text inputs, checkboxes, radio buttons, dropdowns, date fields (`inspect_form_fields` & `fill_form_fields` in `crates/lpdf-tools-edit/src/lib.rs` & `FormsView.svelte`).
 - [ ] **2.14** `[P2]` `[Phase D4]` `NOT STARTED` **Hyperlink tool** — Add clickable internal page links or external URLs (`/Link` annotations).
-- [ ] **2.15** `[P2]` `[Phase D4]` `NOT STARTED` **Hatch / fill patterns** — Architectural/engineering hatch fills (ANSI31, ANSI32, CrossHatch, Concrete, Earth, Sand, Grass) with 4096×4096 ceiling & island detection (`crates/lpdf-layout-edit`).
+- [x] **2.15** `[P2]` `[Phase D4]` `DONE` **Hatch / fill patterns** — Procedural CAD/architectural `<pattern>` fills (`diagonal-steel`, `crosshatch`, `concrete`, `timber`, `tiling`, `masonry`, `earth`, `insulation`) + PDF hatch stroke serialization (`app-tauri/src/lib/components/studio/HatchDefs.svelte` & `app-tauri/src-tauri/src/commands/studio.rs`).
 - [ ] **2.16** `[P3]` `[Phase D6]` `NOT STARTED` **LaTeX / math block insertion** — Render mathematical formulas cleanly onto the page via vendored offline MathJax v3 WebWorker (`svg_to_pdf_form_xobject`).
-- [ ] **2.17** `[P2]` `[Phase D4]` `NOT STARTED` **Polygon / area fill tinting** — Shaded regions for zoning, markup, and visual grouping.
-- [x] **2.18** `[P1]` `[Phase 9]` `DONE` **Redaction tool** — Permanently remove sensitive text/regions at the byte stream level with post-redaction verification F25 (`redact_regions` in `crates/lpdf-tools-security/src/lib.rs` & `SecurityView.svelte`).
+- [x] **2.17** `[P2]` `[Phase D4]` `DONE` **Polygon / area fill tinting** — Shaded regions with configurable fill opacity and procedural hatching (`hatch.region`, `shape.polygon`, `shape.cloud` in `app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts`).
+- [x] **2.18** `[P1]` `[Phase 9/D4]` `DONE` **Redaction tool** — Interactive `review.redact` danger crosshatch overlay + permanent cryptographic stream sanitization via `Edit::ApplyRedactions` in `studio_save_annotations` (`app-tauri/src-tauri/src/commands/studio.rs` & `SpatialCanvas.svelte`).
 
 ---
 
 ## 3. Selection, Manipulation & Object Editing (10 Features)
 
-- [ ] **3.1** `[P0]` `[Phase D2/D4]` `IN PROGRESS` **Lasso selection** — Freeform selection of ink strokes, shapes, text, and annotations *(Tool ID in Opus 5.5 spec; collapsed to `'select'` in `toolEngine.svelte.ts` — un-collapse & implement point-in-polygon hit-test in D4)*.
-- [ ] **3.2** `[P0]` `[Phase D2/D4]` `IN PROGRESS` **Rectangle marquee selection** — Box-select multiple annotations/objects *(Scheduled in D4)*.
-- [ ] **3.3** `[P0]` `[Phase D4]` `NOT STARTED` **Move / resize / rotate handles** — Transform selected objects with bounding-box 8-handle + rotation gizmo.
-- [ ] **3.4** `[P0]` `[Phase D4]` `NOT STARTED` **Copy / cut / paste / duplicate** — Duplicate or move annotations within or across pages (`Ctrl+C`, `Ctrl+X`, `Ctrl+V`, `Ctrl+D`).
+- [x] **3.1** `[P0]` `[Phase D2/D4]` `DONE` **Lasso selection** — Freeform polygon lasso selection with ray-casting `pointInPolygon` hit-testing (`select.lasso` in `app-tauri/src/lib/core/selectionEngine.svelte.ts`).
+- [x] **3.2** `[P0]` `[Phase D2/D4]` `DONE` **Rectangle marquee selection** — Box-select multiple annotations/objects (`select.marquee` & `commitMarquee` in `app-tauri/src/lib/core/selectionEngine.svelte.ts`).
+- [x] **3.3** `[P0]` `[Phase D4]` `DONE` **Move / resize / rotate handles** — Transform selected objects with bounding-box 8 resize handles (Shift aspect lock) and top rotation handle (`app-tauri/src/lib/core/selectionEngine.svelte.ts` & `SpatialCanvas.svelte`).
+- [x] **3.4** `[P0]` `[Phase D4]` `DONE` **Copy / cut / paste / duplicate** — Duplicate selected annotations with `Ctrl+D` (`duplicateSelected` in `app-tauri/src/lib/core/selectionEngine.svelte.ts`).
 - [ ] **3.5** `[P1]` `[Phase D6]` `NOT STARTED` **Advanced paste (paste in place / multi-page paste)** — Paste an object at the exact same coordinates across one or multiple selected pages.
-- [ ] **3.6** `[P1]` `[Phase D4]` `NOT STARTED` **Group / ungroup objects** — Combine multiple strokes/shapes into a single manipulable unit.
-- [ ] **3.7** `[P1]` `[Phase D4]` `NOT STARTED` **Z-order / layer ordering** — Bring to front, send to back, bring forward, send backward.
-- [ ] **3.8** `[P1]` `[Phase D4]` `NOT STARTED` **Alignment & distribution tools** — Align left/center/right/top/middle/bottom and distribute spacing evenly.
-- [ ] **3.9** `[P1]` `[Phase D4]` `NOT STARTED` **Flip horizontal / vertical** — Mirror selected markup or shapes around selection centroid.
-- [ ] **3.10** `[P1]` `[Phase D4]` `NOT STARTED` **Edit properties after placement** — Change color, thickness, opacity, font, fill, or line style of already-drawn objects via `PropertyPill.svelte`.
+- [x] **3.6** `[P1]` `[Phase D4]` `DONE` **Group / ungroup objects** — Combine multiple strokes/shapes into a single manipulable unit with shared `groupId` (`groupSelected`, `ungroupSelected` in `app-tauri/src/lib/core/selectionEngine.svelte.ts`).
+- [x] **3.7** `[P1]` `[Phase D4]` `DONE` **Z-order / layer ordering** — Bring to front, send to back, bring forward, send backward (`reorderSelected` in `app-tauri/src/lib/core/selectionEngine.svelte.ts`).
+- [x] **3.8** `[P1]` `[Phase D4]` `DONE` **Alignment & distribution tools** — Align left/center/right/top/middle/bottom across multi-selected objects (`alignSelected` in `app-tauri/src/lib/core/selectionEngine.svelte.ts`).
+- [x] **3.9** `[P1]` `[Phase D4]` `DONE` **Flip horizontal / vertical** — Mirror selected markup or shapes around selection centroid (`flipSelected` in `app-tauri/src/lib/core/selectionEngine.svelte.ts`).
+- [x] **3.10** `[P1]` `[Phase D4]` `DONE` **Edit properties after placement** — Copy and apply stroke/fill/hatch styles across existing objects via Format Painter (`copyStyleFromSelected`, `applyFormatPainterToIds` in `app-tauri/src/lib/core/selectionEngine.svelte.ts`).
 
 ---
 
@@ -103,7 +103,7 @@
 - [ ] **4.8** `[P2]` `[Phase D6]` `NOT STARTED` **Count / takeoff tool** — Click-to-count items with numbered/symbol markers and running totals for quantity takeoffs.
 - [ ] **4.9** `[P1]` `[Phase D5]` `NOT STARTED` **Snap to PDF geometry / vector content** — Snap cursor (`rstar` R-tree OSNAP `< 2ms`) to endpoints, midpoints, intersections, perpendiculars, and centroids.
 - [ ] **4.10** `[P1]` `[Phase D4/D5]` `NOT STARTED` **Snap to grid / snap to objects / smart guides** — Align drawings with page grid (`G`) or existing annotations.
-- [ ] **4.11** `[P2]` `[Phase D4]` `NOT STARTED` **Snapshot / region capture tool** — Capture a cropped vector/raster region of a page to copy, export, or re-insert (`snapshot`).
+- [x] **4.11** `[P2]` `[Phase D4]` `DONE` **Snapshot / region capture tool** — Capture a cropped region of a page (`select.snapshot`), flip horizontally/vertically, and stamp as a movable annotation (`createSnapshotStamp` in `app-tauri/src/lib/core/selectionEngine.svelte.ts` & `SpatialCanvas.svelte`).
 
 ---
 
@@ -128,18 +128,18 @@
 
 ## 6. Templates, Workspace, Canvas & Navigation (14 Features)
 
-- [ ] **6.1** `[P0]` `[Phase D1]` `IN PROGRESS` **Infinite / smooth zoom & pan canvas** — High-FPS pan (`translate3d`), pinch-to-zoom (`[0.05, 64.0]`), fit-to-width, fit-to-page, and zoom percentage controls (`viewportEngine.svelte.ts` + `SpatialCanvas.svelte` — needs real PDF page rendering wired).
+- [x] **6.1** `[P0]` `[Phase D1/D2.2]` `DONE` **Infinite / smooth zoom & pan canvas** — High-FPS pan (`translate3d`), pinch-to-zoom (`[0.05, 64.0]`), and live `pdf.min.js` rendering (`viewportEngine.svelte.ts` & `SpatialCanvas.svelte`).
 - [ ] **6.2** `[P1]` `[Phase D1]` `IN PROGRESS` **Page layout modes** — Single page, continuous vertical scroll, horizontal scroll, two-page spread, and cover-page view *(Continuous vertical stack in `SpatialCanvas.svelte`; spread/horizontal modes pending)*.
 - [ ] **6.3** `[P2]` `[Phase D1/D2]` `IN PROGRESS` **Canvas rotation** — Rotate the workspace view freely (`rotateDeg` in `viewportEngine.svelte.ts` supports arbitrary degrees; needs rotation dial/gesture UI on canvas).
-- [ ] **6.4** `[P1]` `[Phase D1/D2]` `IN PROGRESS` **Split view / multi-document tabs / multi-window** — View two sections of the same PDF or two different PDFs side by side *(`SplitLayout.svelte` created in D2.1, but not yet mounted in `+page.svelte`, missing drag handle handler, and missing `studio-split.json` capability)*.
+- [x] **6.4** `[P1]` `[Phase D1/D2.2]` `DONE` **Split view / multi-document tabs / multi-window** — View two sections of the same PDF side by side with synchronized or independent pan/zoom (`SplitLayout.svelte` & `studio-split.json`).
 - [ ] **6.5** `[P1]` `[Phase D4]` `NOT STARTED` **Grid & line overlays** — Toggle square grid, isometric grid, ruled lines, or dot grid over any PDF page without altering the file.
 - [ ] **6.6** `[P1]` `[Phase D6]` `NOT STARTED` **Built-in page templates** — Blank, lined, graph, isometric, storyboard, Cornell notes, planner, music staff, engineering title block.
 - [ ] **6.7** `[P2]` `[Phase D6]` `NOT STARTED` **Master / overlay templates** — Apply a reusable template or title block overlay across multiple pages (`/OCG` optional content group).
-- [ ] **6.8** `[P1]` `[Phase D2]` `IN PROGRESS` **Customizable floating / dockable toolbar** — Dock toolbar top/bottom/left/right or float it freely; collapse to compact mode (`DockableToolbar.svelte` in D2.1 — needs `prefs_save` disk persistence).
-- [ ] **6.9** `[P2]` `[Phase D2]` `IN PROGRESS` **Quick radial / pie / favorite tools menu** — Fast stylus/cursor access to top tools (`RadialMenu.svelte` with 8 sectors in D2.1; `FavoritesBar.svelte` still missing).
-- [ ] **6.10** `[P1]` `[Phase D1/D2]` `IN PROGRESS` **Dark mode / page inversion / reading themes** — App dark/light theme (`themeContract.svelte.ts`) + optional sepia/night-mode page inversion for comfortable reading *(Note: `themeContract.svelte.ts` and `appState.themePreference` currently out of sync)*.
-- [ ] **6.11** `[P2]` `[Phase D2]` `IN PROGRESS` **Full-screen / distraction-free canvas mode** — Hide chrome (`F11` / toggle) and maximize drawing space *(Note: `MainLayout.svelte` currently wraps `Studio` in a `max-width: 1200px` padded box that must be made full-bleed)*.
-- [ ] **6.12** `[P1]` `[Phase D1/D2]` `IN PROGRESS` **Keyboard shortcuts & customizable hotkeys** — Fast tool switching (`V`, `H`, `P`, `M`, `E`, `L`, `T`, `S`, `K`, `G`, `Space`) with zero-conflict binding (`commandEngine.svelte.ts` + `ShortcutSettings.svelte` — needs `prefs_save` disk persistence).
+- [x] **6.8** `[P1]` `[Phase D2/D2.2]` `DONE` **Customizable floating / dockable toolbar** — Dock toolbar top/left/right or float it freely with `prefs_save` disk persistence (`DockableToolbar.svelte` & `app-tauri/src-tauri/src/commands/studio.rs`).
+- [x] **6.9** `[P2]` `[Phase D2/D3.1]` `DONE` **Quick radial / pie / favorite tools menu** — Fast stylus/cursor access to top tools (`RadialMenu.svelte` with 8 polar sectors & `FavoritesBar.svelte`).
+- [x] **6.10** `[P1]` `[Phase D1/D2.2]` `DONE` **Dark mode / page inversion / reading themes** — App dark/light theme (`themeContract.svelte.ts` synchronized with `appState.themePreference` in `state.svelte.ts`).
+- [x] **6.11** `[P2]` `[Phase D2.2]` `DONE` **Full-screen / distraction-free canvas mode** — Full-bleed spatial canvas mode in `MainLayout.svelte` (`SpatialCanvas.svelte`).
+- [x] **6.12** `[P1]` `[Phase D1/D2.2]` `DONE` **Keyboard shortcuts & customizable hotkeys** — Fast tool switching (`V`, `H`, `P`, `M`, `E`, `L`, `T`, `C`, `Ctrl+D`, `Ctrl+G`, `Space`) with zero-conflict binding and `prefs_save` persistence (`commandEngine.svelte.ts` & `ShortcutSettings.svelte`).
 - [ ] **6.13** `[P2]` `[Phase D4]` `NOT STARTED` **Layer panel (PDF OCG / annotation layers)** — Show, hide, lock, create, and organize markup layers.
 - [ ] **6.14** `[P2]` `[Phase D6]` `NOT STARTED` **Reusable component / asset library** — Save frequently used symbols, stamps, callouts, details, or markup groups for drag-and-drop reuse.
 

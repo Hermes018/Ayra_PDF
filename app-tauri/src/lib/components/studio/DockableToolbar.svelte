@@ -244,6 +244,32 @@
       <StudioIcon name="laser" size={16} />
     </button>
 
+    <!-- Shapes & Hatch Suite -->
+    <button
+      type="button"
+      class="tool-btn"
+      class:active={tools.activeToolId.startsWith('shape') || tools.activeToolId.startsWith('hatch')}
+      aria-pressed={tools.activeToolId.startsWith('shape') || tools.activeToolId.startsWith('hatch')}
+      onclick={() => tools.selectTool('shape.rect')}
+      title="Shapes & Hatch Suite (Rectangle / Cloud / Polyline)"
+      aria-label="Shapes Tool"
+    >
+      <StudioIcon name="shape" size={16} />
+    </button>
+
+    <!-- Text Box & Review Markup -->
+    <button
+      type="button"
+      class="tool-btn"
+      class:active={tools.activeToolId.startsWith('review') || tools.activeToolId.startsWith('insert.text') || tools.activeToolId === 'text.review'}
+      aria-pressed={tools.activeToolId.startsWith('review') || tools.activeToolId.startsWith('insert.text') || tools.activeToolId === 'text.review'}
+      onclick={() => tools.selectTool('insert.textBox')}
+      title="Text Box & Review Markup (T)"
+      aria-label="Text and Review Tool"
+    >
+      <StudioIcon name="text.review" size={16} />
+    </button>
+
     <div class="toolbar-separator"></div>
 
     <!-- Radial Menu Summon Trigger -->

@@ -17,8 +17,8 @@
     "presetId": null,
     "flyout": [
       { "id": "select.marquee", "label": "Marquee", "tool": "select.marquee", "icon": "select" },
-      { "id": "select.text", "label": "Text", "tool": "select.text", "icon": "text.review" },
       { "id": "select.lasso", "label": "Lasso", "tool": "select.lasso", "icon": "select" },
+      { "id": "select.snapshot", "label": "Snapshot", "tool": "select.snapshot", "icon": "shape" },
       { "id": "select.object", "label": "Object", "tool": "select.object", "icon": "shape" },
       { "id": "laser", "label": "Laser", "tool": "laser", "icon": "laser" }
     ]
@@ -95,12 +95,12 @@
     "presetId": null,
     "flyout": [
       { "id": "shape.line", "label": "Line", "tool": "shape.line", "icon": "shape" },
+      { "id": "shape.arrow", "label": "Arrow", "tool": "shape.arrow", "icon": "shape" },
+      { "id": "shape.polyline", "label": "Polyline", "tool": "shape.polyline", "icon": "shape" },
       { "id": "shape.rect", "label": "Rectangle", "tool": "shape.rect", "icon": "shape" },
       { "id": "shape.ellipse", "label": "Ellipse", "tool": "shape.ellipse", "icon": "shape" },
-      { "id": "hatch.pick", "label": "Hatch", "tool": "hatch.pick", "icon": "shape" },
-      { "id": "measure.length", "label": "Measure", "tool": "measure.length", "icon": "measure" },
-      { "id": "measure.rectArea", "label": "Area", "tool": "measure.rectArea", "icon": "measure" },
-      { "id": "insert.note", "label": "Note", "tool": "insert.note", "icon": "text.review" }
+      { "id": "shape.cloud", "label": "Cloud", "tool": "shape.cloud", "icon": "shape" },
+      { "id": "hatch.region", "label": "Hatch", "tool": "hatch.region", "icon": "shape" }
     ]
   }
 ]

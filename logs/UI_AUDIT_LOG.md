@@ -104,3 +104,17 @@ This log records user acceptance testing (UAT) defects, root cause diagnoses, an
 6. **Linux GUI Smoke Test:**
    - Command: `RUST_BACKTRACE=1 timeout 5s ./target/release/localpdf-studio 2>&1 ; echo "EXIT_CODE=$?"`
    - Output: `EXIT_CODE=124` (clean Wayland/GTK startup and graceful shutdown under timeout).
+
+
+---
+
+## [2026-11-05] Phase D4 Verification — Shapes, Procedural Hatching, Selection Action Bar & Structural PDF Text Edit
+
+1. **New Studio Engines & Components (`Phase D4`)**:
+   - `app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts`: Interactive creation for `shape.line`, `shape.arrow`, `shape.polyline` (multi-click + double-click/Enter commit), `shape.rect`, `shape.ellipse`, `shape.polygon`, `shape.cloud` (scalloped cubic Bézier arcs), `review.highlight`, `review.underline`, `review.squiggly`, `review.strikeout`, `review.redact`, and `insert.textBox`.
+   - `app-tauri/src/lib/components/studio/HatchDefs.svelte`: Theme-token-driven `<pattern>` defs (`diagonal-steel`, `crosshatch`, `concrete`, `timber`, `tiling`, `masonry`, `earth`, `insulation`, `redact-danger`) with zero hardcoded hex colors.
+   - `app-tauri/src/lib/core/selectionEngine.svelte.ts`: Marquee (`select.marquee`), freeform polygon lasso (`select.lasso`), `Shift+Click` multi-select, 8 resize handles + top rotation gizmo, `groupSelected()`, `ungroupSelected()`, `alignSelected()`, `flipSelected()`, `reorderSelected()`, `duplicateSelected()`, Format Painter, and `select.snapshot` stamp tool.
+   - `app-tauri/src-tauri/src/commands/studio.rs`: `studio_save_annotations`, `studio_load_annotations`, and `studio_edit_pdf_text_block` backed by `pdfcraft_engine` and `lpdf_fs_safety::atomic_write` + verify-after-write.
+2. **Audit & Test Gates**:
+   - `app-tauri/src/lib/core/shapeAndSelection.test.ts`: 6 unit tests covering horizontal/vertical flip reflection, 6-edge alignment, group/ungroup transitions, revision cloud / polyline / squiggle / line-ending SVG path generation, point-in-polygon lasso hit testing, z-order, duplicate, format painter, and snapshot stamps.
+   - Zero raw hex literals and zero local `keydown` listeners across all studio files (`cargo xtask studio-audit --strict` passed with 0 findings).

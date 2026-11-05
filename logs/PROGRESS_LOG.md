@@ -1282,3 +1282,24 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
   - Wayland live smoke test: `RUST_BACKTRACE=1 timeout 5s ./target/release/localpdf-studio` (stayed alive, timed out cleanly with `EXIT_CODE=124`).
 - **Pre-commit checklist**: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 - **Gate**: pass.
+
+
+### [2026-11-05] Phase D4 — Structural PDF Text/Object Editing, Annotation Save/Flatten Persistence, Shapes, Polylines, Procedural Hatching, Multi-Select, Align, Flip, Group & Snapshot
+- **Action**: Executed Phase D4 of the Drawboard Studio Master Plan (`ADR-012`), implementing end-to-end Rust `pdfcraft` annotation & structural text persistence, geometric shape & revision cloud engines, procedural CAD hatching, and multi-select manipulation (group, align, flip, z-order, format painter, and snapshot stamp).
+- **Deliverables**:
+  - **Rust Backend (`app-tauri/src-tauri/src/commands/studio.rs` & `lib.rs`)**:
+    - `studio_save_annotations`: Serializes ink, lines, arrows, polylines, rectangles, ellipses, polygons, revision clouds (`Shape::Polygon { cloud: true }`), procedural hatch strokes, text boxes (`Shape::TextBox`), review markups (`Highlight`, `Underline`, `Squiggly`, `StrikeOut`), and redactions (`Shape::Redact` + `Edit::ApplyRedactions`) via `pdfcraft_engine::Session` and `lpdf_fs_safety::atomic_write` + verify-after-write. Supports both editable round-trip mode (`.studio.json` sidecar + embedded PDF attachment) and permanent stream flattening (`Edit::Flatten`).
+    - `studio_load_annotations`: Restores persisted structured vector annotations on PDF reload.
+    - `studio_edit_pdf_text_block`: Rewrites overlapping PDF paragraph blocks (`Edit::EditTextBlock`) or places native PDF page text streams (`Edit::AddText`) with atomic write and verification.
+  - **Shapes, Polylines, Clouds, Text Review & Procedural Hatch Engine (`shapeAndHatchEngine.svelte.ts`, `HatchDefs.svelte`, `PropertyPill.svelte`)**:
+    - Interactive creation of `shape.line`, `shape.arrow`, `shape.polyline` (multi-click + double-click/Enter commit), `shape.rect`, `shape.ellipse`, `shape.polygon`, and `shape.cloud` (scalloped cubic Bézier arcs).
+    - Configurable line styles (`solid`, `dashed`, `dotted`, `dash-dot`), line endings (`none`, `open-arrow`, `closed-arrow`, `circle`, `diamond`, `slash`, `butt`), and procedural `<pattern>` hatching (`diagonal-steel`, `crosshatch`, `concrete`, `timber`, `tiling`, `masonry`, `earth`, `insulation`).
+    - Interactive text review markups (`review.highlight`, `review.underline`, `review.squiggly`, `review.strikeout`, `review.redact` + Commit Redactions button) and inline rich text / Structural Edit mode overlay.
+  - **Selection, Multi-Select, Group, Align, Flip, Z-Order & Snapshot (`selectionEngine.svelte.ts`, `SpatialCanvas.svelte`)**:
+    - Marquee (`select.marquee`), freeform polygon lasso (`select.lasso` with ray-casting `pointInPolygon`), and `Shift+Click` multi-select with 8 resize handles and top rotation gizmo.
+    - Undoable `groupSelected()`, `ungroupSelected()`, `alignSelected('left'|'center'|'right'|'top'|'middle'|'bottom')`, `flipSelected('horizontal'|'vertical')`, `reorderSelected('front'|'back'|'forward'|'backward')`, `duplicateSelected()` (`Ctrl+D`), Format Painter, and `select.snapshot` region capture & stamp.
+  - **Tests & Checklist (`shapeAndSelection.test.ts`, `DRAWBOARD_FEATURE_CHECKLIST.md`)**:
+    - Added 6 comprehensive unit test suites in `shapeAndSelection.test.ts` and 2 Rust unit tests in `commands::studio::tests`.
+    - Updated `docs/DRAWBOARD_FEATURE_CHECKLIST.md` (`69 DONE`, `8 IN PROGRESS`, `36 NOT STARTED`, `6 DEFERRED`).
+- **Pre-commit checklist**: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
+- **Gate**: pass.

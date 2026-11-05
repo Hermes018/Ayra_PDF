@@ -3,6 +3,14 @@ import type { HatchPatternId } from '$lib/bindings/HatchPatternId';
 import defaultPresetsData from './defaultPresets.json';
 import { theme } from './themeContract.svelte';
 
+export type HatchPatternExtendedId =
+  | HatchPatternId
+  | 'none'
+  | 'diagonal-steel'
+  | 'crosshatch';
+
+export type LineStyleId = 'solid' | 'dashed' | 'dotted' | 'dash-dot';
+
 export type ToolId =
   | 'pan'
   | 'select'
@@ -10,6 +18,7 @@ export type ToolId =
   | 'select.lasso'
   | 'select.text'
   | 'select.object'
+  | 'select.snapshot'
   | 'pen'
   | 'pen.a'
   | 'pen.b'
@@ -22,7 +31,9 @@ export type ToolId =
   | 'review.highlight'
   | 'review.underline'
   | 'review.squiggly'
+  | 'review.squiggle'
   | 'review.strikeout'
+  | 'review.strikethrough'
   | 'review.redact'
   | 'shape'
   | 'shape.line'
@@ -46,6 +57,7 @@ export type ToolId =
   | 'measure.count'
   | 'callout.single'
   | 'callout.multi'
+  | 'insert.text'
   | 'insert.textBox'
   | 'insert.note'
   | 'insert.audio'
@@ -62,6 +74,7 @@ export const TOOL_LABELS: Record<ToolId, string> = {
   'select.lasso': 'Lasso Select',
   'select.text': 'Select Text',
   'select.object': 'Select Object',
+  'select.snapshot': 'Snapshot Region',
   'pen': 'Pen',
   'pen.a': 'Pen A',
   'pen.b': 'Pen B',
@@ -74,7 +87,9 @@ export const TOOL_LABELS: Record<ToolId, string> = {
   'review.highlight': 'Highlight Text',
   'review.underline': 'Underline Text',
   'review.squiggly': 'Squiggly Text',
+  'review.squiggle': 'Squiggle Text',
   'review.strikeout': 'Strikeout Text',
+  'review.strikethrough': 'Strikethrough Text',
   'review.redact': 'Redact Region',
   'shape': 'Shape Tool',
   'shape.line': 'Line Tool',
@@ -98,6 +113,7 @@ export const TOOL_LABELS: Record<ToolId, string> = {
   'measure.count': 'Count Takeoff',
   'callout.single': 'Callout Box',
   'callout.multi': 'Multileader Callout',
+  'insert.text': 'Rich Text Box',
   'insert.textBox': 'Free Text Box',
   'insert.note': 'Sticky Note',
   'insert.audio': 'Voice Audio Note',
@@ -117,18 +133,29 @@ export interface StrokeStyle {
   widthPt: number;
   opacity: number;
   dash: readonly number[];
+  lineStyle?: LineStyleId;
   lineCap: 'butt' | 'round' | 'square';
   startEnd: LineEnding;
   endEnd: LineEnding;
 }
 
-export type LineEnding = 'none' | 'open' | 'closed' | 'circle' | 'square' | 'diamond' | 'slash' | 'butt';
+export type LineEnding =
+  | 'none'
+  | 'open'
+  | 'open-arrow'
+  | 'closed'
+  | 'closed-arrow'
+  | 'circle'
+  | 'square'
+  | 'diamond'
+  | 'slash'
+  | 'butt';
 
 export interface FillStyle {
   kind: 'none' | 'solid' | 'hatch';
   colorHex: string;
   opacity: number;
-  hatch: HatchPatternId;
+  hatch: HatchPatternExtendedId;
   hatchScale: number;
   hatchAngleDeg: number;
 }
@@ -264,6 +291,7 @@ export class ToolStateEngine {
     this.currentToolId.startsWith('hatch') ||
     this.currentToolId.startsWith('review') ||
     this.currentToolId === 'text.review' ||
+    this.currentToolId.startsWith('insert.text') ||
     this.currentToolId.startsWith('callout') ||
     this.currentToolId.startsWith('measure')
   );

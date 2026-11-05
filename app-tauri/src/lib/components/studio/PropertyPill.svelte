@@ -1,8 +1,14 @@
 <script lang="ts">
-  import { tools, type StrokeStyle, type FillStyle } from '$lib/core/toolEngine.svelte';
+  import {
+    tools,
+    type StrokeStyle,
+    type FillStyle,
+    type LineStyleId,
+    type LineEnding,
+    type HatchPatternExtendedId,
+  } from '$lib/core/toolEngine.svelte';
   import { commands } from '$lib/core/commandEngine.svelte';
   import { theme, type TokenName } from '$lib/core/themeContract.svelte';
-  import type { HatchPatternId } from '$lib/bindings/HatchPatternId';
 
   // Swatch tokens mapped strictly to the theme contract (zero hex literals)
   const SWATCH_TOKENS: { token: TokenName; label: string }[] = [
@@ -18,13 +24,59 @@
   const WIDTH_PRESETS = [0.75, 1.5, 3.0, 6.0, 12.0];
   const OPACITY_PRESETS = [0.2, 0.4, 0.7, 1.0];
 
-  const HATCH_PATTERNS: { id: HatchPatternId; label: string }[] = [
+  const LINE_STYLES: { id: LineStyleId; label: string }[] = [
+    { id: 'solid', label: 'Solid' },
+    { id: 'dashed', label: 'Dashed' },
+    { id: 'dotted', label: 'Dotted' },
+    { id: 'dash-dot', label: 'Dash-Dot' },
+  ];
+
+  const LINE_ENDINGS: { id: LineEnding; label: string }[] = [
+    { id: 'none', label: 'None' },
+    { id: 'open-arrow', label: 'Open Arrow' },
+    { id: 'closed-arrow', label: 'Closed Arrow' },
+    { id: 'circle', label: 'Circle' },
+    { id: 'diamond', label: 'Diamond' },
+    { id: 'slash', label: 'Slash' },
+    { id: 'butt', label: 'Butt' },
+  ];
+
+  const HATCH_PATTERNS: { id: HatchPatternExtendedId; label: string }[] = [
+    { id: 'none', label: 'No Hatch' },
+    { id: 'solid', label: 'Solid Fill' },
+    { id: 'diagonal-steel', label: 'Diagonal Steel' },
+    { id: 'crosshatch', label: 'Crosshatch' },
     { id: 'concrete', label: 'Concrete' },
-    { id: 'steel', label: 'Steel' },
+    { id: 'timber', label: 'Timber' },
     { id: 'tiling', label: 'Tiling' },
     { id: 'masonry', label: 'Masonry' },
-    { id: 'timber', label: 'Timber' },
+    { id: 'earth', label: 'Earth' },
+    { id: 'insulation', label: 'Insulation' },
   ];
+
+  const HATCH_SCALES = [0.5, 1.0, 1.5, 2.0];
+
+  let showLineStyleControls = $derived(
+    tools.currentToolId === 'shape' ||
+      tools.currentToolId.startsWith('shape.') ||
+      tools.currentToolId.startsWith('callout')
+  );
+
+  let showLineEndingControls = $derived(
+    tools.currentToolId === 'shape.line' ||
+      tools.currentToolId === 'shape.arrow' ||
+      tools.currentToolId === 'shape.polyline' ||
+      tools.currentToolId.startsWith('callout')
+  );
+
+  let showHatchControls = $derived(
+    tools.currentToolId === 'shape' ||
+      tools.currentToolId === 'shape.rect' ||
+      tools.currentToolId === 'shape.ellipse' ||
+      tools.currentToolId === 'shape.polygon' ||
+      tools.currentToolId === 'shape.cloud' ||
+      tools.currentToolId.startsWith('hatch')
+  );
 
   function updateStroke(patch: Partial<StrokeStyle>) {
     if (!tools.activePreset) return;
@@ -33,7 +85,7 @@
     commands.dispatch({
       kind: 'execute',
       command: 'style.apply',
-      args: { presetId: tools.activePreset.id, stroke: updated }
+      args: { presetId: tools.activePreset.id, stroke: updated },
     });
   }
 
@@ -44,7 +96,7 @@
     commands.dispatch({
       kind: 'execute',
       command: 'style.apply',
-      args: { presetId: tools.activePreset.id, fill: updated }
+      args: { presetId: tools.activePreset.id, fill: updated },
     });
   }
 
@@ -124,19 +176,85 @@
       {/each}
     </div>
 
-    <!-- Optional Hatch Selector for Shapes/Hatch Tool -->
-    {#if tools.activeToolId === 'shape' || tools.activeToolId.startsWith('shape') || tools.activeToolId.startsWith('hatch')}
+    <!-- Line Style Selector for Shapes & Polylines -->
+    {#if showLineStyleControls}
+      <div class="pill-divider"></div>
+      <div class="pill-section line-style-section" aria-label="Line Style">
+        <select
+          class="hatch-select"
+          value={tools.activePreset.stroke.lineStyle ?? 'solid'}
+          onchange={(e) =>
+            updateStroke({ lineStyle: (e.target as HTMLSelectElement).value as LineStyleId })}
+          aria-label="Select Line Style"
+        >
+          {#each LINE_STYLES as ls}
+            <option value={ls.id}>{ls.label}</option>
+          {/each}
+        </select>
+      </div>
+    {/if}
+
+    <!-- Line Endings Selector for Lines, Arrows & Polylines -->
+    {#if showLineEndingControls}
+      <div class="pill-divider"></div>
+      <div class="pill-section line-ending-section" aria-label="Line Endings">
+        <select
+          class="hatch-select"
+          value={tools.activePreset.stroke.startEnd}
+          onchange={(e) =>
+            updateStroke({ startEnd: (e.target as HTMLSelectElement).value as LineEnding })}
+          aria-label="Select Start Line Ending"
+          title="Start Ending"
+        >
+          {#each LINE_ENDINGS as le}
+            <option value={le.id}>Start: {le.label}</option>
+          {/each}
+        </select>
+        <select
+          class="hatch-select"
+          value={tools.activePreset.stroke.endEnd}
+          onchange={(e) =>
+            updateStroke({ endEnd: (e.target as HTMLSelectElement).value as LineEnding })}
+          aria-label="Select End Line Ending"
+          title="End Ending"
+        >
+          {#each LINE_ENDINGS as le}
+            <option value={le.id}>End: {le.label}</option>
+          {/each}
+        </select>
+      </div>
+    {/if}
+
+    <!-- Procedural Hatch Pattern & Scale Selector for Closed Shapes / Hatch Tool -->
+    {#if showHatchControls}
       <div class="pill-divider"></div>
       <div class="pill-section hatch-section" aria-label="Hatch Pattern">
         <select
           class="hatch-select"
           value={tools.activePreset.fill.hatch}
-          onchange={(e) => updateFill({ hatch: (e.target as HTMLSelectElement).value as HatchPatternId, kind: 'hatch' })}
+          onchange={(e) => {
+            const val = (e.target as HTMLSelectElement).value as HatchPatternExtendedId;
+            updateFill({
+              hatch: val,
+              kind: val === 'none' ? 'none' : val === 'solid' ? 'solid' : 'hatch',
+            });
+          }}
           aria-label="Select Hatch Pattern"
         >
-          <option value="solid">Solid Fill</option>
           {#each HATCH_PATTERNS as pat}
             <option value={pat.id}>{pat.label}</option>
+          {/each}
+        </select>
+        <select
+          class="hatch-select"
+          value={tools.activePreset.fill.hatchScale}
+          onchange={(e) =>
+            updateFill({ hatchScale: parseFloat((e.target as HTMLSelectElement).value) || 1.0 })}
+          aria-label="Select Hatch Scale"
+          title="Hatch Scale"
+        >
+          {#each HATCH_SCALES as sc}
+            <option value={sc}>{sc}x</option>
           {/each}
         </select>
       </div>
@@ -166,10 +284,33 @@
     <div class="pill-section status-hint-section">
       <span class="status-hint">Drag canvas or hold Space to pan</span>
     </div>
-  {:else if tools.activeToolId === 'select'}
+  {:else if tools.activeToolId.startsWith('select')}
     <div class="pill-divider"></div>
-    <div class="pill-section status-hint-section">
-      <span class="status-hint">Drag marquee or click to select annotations</span>
+    <div class="pill-section eraser-mode-section" aria-label="Selection Mode Toggle">
+      <button
+        type="button"
+        class="toggle-btn"
+        class:active={tools.activeToolId === 'select' || tools.activeToolId === 'select.marquee'}
+        onclick={() => tools.selectTool('select.marquee')}
+      >
+        Marquee
+      </button>
+      <button
+        type="button"
+        class="toggle-btn"
+        class:active={tools.activeToolId === 'select.lasso'}
+        onclick={() => tools.selectTool('select.lasso')}
+      >
+        Lasso
+      </button>
+      <button
+        type="button"
+        class="toggle-btn"
+        class:active={tools.activeToolId === 'select.snapshot'}
+        onclick={() => tools.selectTool('select.snapshot')}
+      >
+        Snapshot
+      </button>
     </div>
   {:else if tools.activeToolId === 'laser'}
     <div class="pill-divider"></div>
@@ -198,7 +339,6 @@
     box-shadow: var(--glass-shadow);
     border-radius: 9999px;
     color: var(--glass-text);
-    pointer-events: auto;
     font-size: 12px;
   }
 

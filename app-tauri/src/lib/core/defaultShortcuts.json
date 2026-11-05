@@ -8,9 +8,18 @@
   "Shift+E": "tool.eraser.whole",
   "L": "tool.laser",
   "M": "tool.measure.length",
+  "T": "tool.insert.textBox",
+  "C": "tool.shape.cloud",
   "Ctrl+Z": "history.undo",
   "Ctrl+Shift+Z": "history.redo",
   "Ctrl+Y": "history.redo",
+  "Ctrl+D": "selection.duplicate",
+  "Ctrl+G": "selection.group",
+  "Ctrl+Shift+G": "selection.ungroup",
+  "Delete": "selection.delete",
+  "Backspace": "selection.delete",
+  "Enter": "studio.confirm",
+  "Escape": "studio.cancel",
   "/": "radial.open",
   "Space": "tool.springPan"
 }

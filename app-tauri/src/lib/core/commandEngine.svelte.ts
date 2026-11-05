@@ -13,6 +13,8 @@ export interface CommandResult {
   next: DocSnapshot;
   label: string;
   coalesceKey?: string;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 export type CommandHandler = (doc: DocSnapshot, args: unknown) => CommandResult | { error: string };
@@ -47,8 +49,8 @@ export type StudioControlMessage =
 
 export class CommandBusAndShortcutEngine {
   doc = $state.raw<DocSnapshot>(Object.freeze({ rev: 0, pages: Object.freeze([]) }));
-  #past = $state.raw<ReadonlyArray<{ doc: DocSnapshot; label: string; key?: string }>>([]);
-  #future = $state.raw<ReadonlyArray<{ doc: DocSnapshot; label: string }>>([]);
+  #past = $state.raw<ReadonlyArray<{ doc: DocSnapshot; label: string; key?: string; onUndo?: () => void; onRedo?: () => void }>>([]);
+  #future = $state.raw<ReadonlyArray<{ doc: DocSnapshot; label: string; onUndo?: () => void; onRedo?: () => void }>>([]);
   historyLimit = $state(HISTORY_LIMIT_DEFAULT);
   shortcuts = $state<Record<Chord, string>>({ ...(defaultShortcuts as Record<Chord, string>) });
   lastError = $state<string | null>(null);
@@ -151,7 +153,7 @@ export class CommandBusAndShortcutEngine {
     const top = this.#past.at(-1);
     const past = r.coalesceKey && top?.key === r.coalesceKey
       ? this.#past
-      : [...this.#past, { doc: this.doc, label: r.label, key: r.coalesceKey }];
+      : [...this.#past, { doc: this.doc, label: r.label, key: r.coalesceKey, onUndo: r.onUndo, onRedo: r.onRedo }];
     this.#past = past.length > this.historyLimit ? past.slice(past.length - this.historyLimit) : past;
     this.#future = [];
     this.doc = r.next;
@@ -162,7 +164,8 @@ export class CommandBusAndShortcutEngine {
   undo(): boolean {
     const top = this.#past.at(-1);
     if (!top) return false;
-    this.#future = [...this.#future, { doc: this.doc, label: top.label }];
+    top.onUndo?.();
+    this.#future = [...this.#future, { doc: this.doc, label: top.label, onUndo: top.onUndo, onRedo: top.onRedo }];
     this.#past = this.#past.slice(0, -1);
     this.doc = top.doc;
     return true;
@@ -171,7 +174,8 @@ export class CommandBusAndShortcutEngine {
   redo(): boolean {
     const top = this.#future.at(-1);
     if (!top) return false;
-    this.#past = [...this.#past, { doc: this.doc, label: top.label }];
+    top.onRedo?.();
+    this.#past = [...this.#past, { doc: this.doc, label: top.label, onUndo: top.onUndo, onRedo: top.onRedo }];
     this.#future = this.#future.slice(0, -1);
     this.doc = top.doc;
     return true;
