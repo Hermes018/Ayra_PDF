@@ -99,6 +99,7 @@ master/
 │   │   │   │   │   ├── DockableToolbar.svelte            # Main tool rail with grouped tool drawers, shortcuts, favourites
 │   │   │   │   │   ├── FavoritesBar.svelte               # Pinned favourite tools/presets
 │   │   │   │   │   ├── HatchDefs.svelte                  # SVG pattern definitions for CAD hatching fills
+│   │   │   │   │   ├── labs.svelte.ts                    # Labs gate: the one place that decides if Labs tools (math text, shape-to-character) are visible/selectable; honest copy
 │   │   │   │   │   ├── MeasureOverlay.svelte             # Draws measurement lines, labels, ruler/protractor
 │   │   │   │   │   ├── PropertyPill.svelte               # Floating style panel for the active tool (colour, width, line style)
 │   │   │   │   │   ├── RadialMenu.svelte                 # Circular quick-tool menu
@@ -150,6 +151,7 @@ master/
 │   │   │   │   │   ├── BatchQueueView.test.ts            # Tests: batch queue view
 │   │   │   │   │   ├── ConvertFromPdfView.test.ts        # Tests: convert-from view
 │   │   │   │   │   ├── ConvertToPdfView.test.ts          # Tests: convert-to view
+│   │   │   │   │   ├── LabsGating.test.ts                # Tests: Labs off by default, all Labs entry points hidden, honest labels derived from the classifier
 │   │   │   │   │   ├── OrganizeView.test.ts              # Tests: organize view
 │   │   │   │   │   ├── PipelinesView.test.ts             # Tests: pipelines view
 │   │   │   │   │   ├── SettingsView.test.ts              # Tests: settings view

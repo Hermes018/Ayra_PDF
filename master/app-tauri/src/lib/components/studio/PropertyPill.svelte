@@ -16,6 +16,7 @@
     type CadUnit,
   } from '$lib/core/measureEngine.svelte';
   import { snapEngine } from '$lib/core/snapEngine.svelte';
+  import { MATH_TEXT_LABS, labsVisible, selectToolIfAllowed, studioToolLabel } from './labs.svelte';
 
   // Swatch tokens mapped strictly to the theme contract (zero hex literals)
   const SWATCH_TOKENS: { token: TokenName; label: string }[] = [
@@ -98,7 +99,7 @@
     { id: 'insert.note', label: 'Sticky Note' },
     { id: 'callout.single', label: 'Callout' },
     { id: 'callout.multi', label: 'Multi-Callout' },
-    { id: 'insert.latex', label: 'LaTeX Math' },
+    { id: 'insert.latex', label: MATH_TEXT_LABS.label },
     { id: 'insert.signature', label: 'Signature' },
     { id: 'insert.audio', label: 'Audio Note' },
     { id: 'insert.stamp', label: 'Stamp' },
@@ -162,7 +163,7 @@
 >
   <!-- Active Tool Badge -->
   <div class="pill-section tool-badge-section">
-    <span class="tool-label" data-testid="active-tool-label">{tools.activeToolLabel}</span>
+    <span class="tool-label" data-testid="active-tool-label">{studioToolLabel(tools.currentToolId, tools.activeToolLabel)}</span>
   </div>
 
   {#if tools.supportsStrokeProperties && tools.activePreset}
@@ -452,11 +453,11 @@
         <select
           class="hatch-select"
           value={tools.currentToolId}
-          onchange={(e) => tools.selectTool((e.target as HTMLSelectElement).value as ToolId)}
+          onchange={(e) => selectToolIfAllowed((e.target as HTMLSelectElement).value)}
           aria-label="Select Insert or Callout Tool"
           title="Insert / Callout Mode"
         >
-          {#each INSERT_TOOLS as it}
+          {#each INSERT_TOOLS.filter((it) => labsVisible(it.id)) as it}
             <option value={it.id}>{it.label}</option>
           {/each}
         </select>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { commands, type Chord } from '$lib/core/commandEngine.svelte';
   import StudioIcon from './StudioIcon.svelte';
+  import { labsVisible } from './labs.svelte';
 
   let {
     visible = $bindable(false),
@@ -14,11 +15,14 @@
   let conflictNotice = $state<string | null>(null);
 
   let shortcutList = $derived(
-    Object.entries(commands.shortcuts).map(([chord, cmd]) => ({
-      chord,
-      command: cmd,
-      label: formatCommandLabel(cmd)
-    }))
+    Object.entries(commands.shortcuts)
+      // A shortcut bound to a Labs tool is not listed while Labs is off.
+      .filter(([, cmd]) => labsVisible(cmd))
+      .map(([chord, cmd]) => ({
+        chord,
+        command: cmd,
+        label: formatCommandLabel(cmd)
+      }))
   );
 
   function formatCommandLabel(cmd: string): string {

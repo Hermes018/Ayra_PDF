@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tools } from '$lib/core/toolEngine.svelte';
   import StudioIcon, { type StudioIconName } from './StudioIcon.svelte';
+  import { labsVisible, selectToolIfAllowed, studioToolLabel } from './labs.svelte';
 
   let { onPersistPrefs }: { onPersistPrefs?: () => void } = $props();
 
@@ -8,6 +9,8 @@
     tools.favorites
       .map((fid) => tools.presets[fid])
       .filter((p): p is NonNullable<typeof p> => Boolean(p))
+      // A Labs tool pinned earlier stays saved but is not shown while Labs is off.
+      .filter((p) => labsVisible(p.tool))
   );
 
   let isCurrentPinned = $derived(
@@ -15,7 +18,7 @@
   );
 
   function selectFavorite(presetId: string, toolId: string) {
-    tools.selectTool(toolId);
+    selectToolIfAllowed(toolId);
   }
 
   function toggleCurrentPin() {
@@ -56,7 +59,7 @@
         class:active
         aria-pressed={active}
         onclick={() => selectFavorite(preset.id, preset.tool)}
-        title="{preset.label} ({preset.stroke.widthPt} pt)"
+        title="{studioToolLabel(preset.tool, preset.label)} ({preset.stroke.widthPt} pt)"
       >
         <StudioIcon name={resolveIcon(preset.tool)} size={14} />
         <span

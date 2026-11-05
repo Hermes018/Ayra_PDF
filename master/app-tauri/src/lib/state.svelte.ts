@@ -12,12 +12,29 @@ export interface ToastItem {
     timeoutMs: number;
 }
 
+export const LABS_STORAGE_KEY = 'localpdf_labs_enabled';
+
+/** Reads a persisted boolean; anything other than a stored `true` (missing, corrupt, wrong type) is `false`. */
+function readStoredBoolean(key: string): boolean {
+    try {
+        const saved = localStorage.getItem(key);
+        return saved !== null && JSON.parse(saved) === true;
+    } catch {
+        return false;
+    }
+}
+
 class AppState {
     activeFiles = $state<string[]>([]);
     themePreference = $state<ThemePreference>('System');
     effectiveTheme = $state<'light' | 'dark'>('dark');
     toasts = $state<ToastItem[]>([]);
     preferNativeText = $state<boolean>(false);
+    /**
+     * Labs (experimental) features: OFF by default. This is the single switch the UI reads;
+     * see components/studio/labs.ts for the list of features it gates.
+     */
+    labsEnabled = $state<boolean>(false);
     sidebarCollapsed = $state<boolean>(false);
 
     toggleSidebar(): void {
@@ -240,6 +257,16 @@ class AppState {
             }
         } catch {
             this.preferNativeText = false;
+        }
+        this.labsEnabled = readStoredBoolean(LABS_STORAGE_KEY);
+    }
+
+    setLabsEnabled(val: boolean) {
+        this.labsEnabled = val === true;
+        try {
+            localStorage.setItem(LABS_STORAGE_KEY, JSON.stringify(this.labsEnabled));
+        } catch {
+            // Failsafe: ignore localStorage write errors (e.g. private mode/quota)
         }
     }
 

@@ -18,6 +18,7 @@
     import SplitLayout from '$lib/views/studio/SplitLayout.svelte';
     import { theme } from '$lib/core/themeContract.svelte';
     import { commands } from '$lib/core/commandEngine.svelte';
+    import { attachLabsGate } from '$lib/components/studio/labs.svelte';
 
     // Svelte 5 reactive state for view routing
     let currentView = $state('Studio');
@@ -25,11 +26,14 @@
     let unlistenOpenFiles: UnlistenFn | undefined;
     let detachTheme: (() => void) | undefined;
     let detachKeyboard: (() => void) | undefined;
+    let detachLabsGate: (() => void) | undefined;
 
     onMount(() => {
         appState.initTheme();
         detachTheme = theme.attach(document.documentElement);
         detachKeyboard = commands.attachKeyboard(window);
+        // Labs (off by default): park Labs shortcuts and drop a Labs tool whenever Labs is off.
+        detachLabsGate = attachLabsGate();
         getStartupFiles().then((files) => {
             if (files && files.length > 0) {
                 appState.addFiles(files);
@@ -56,6 +60,9 @@
         }
         if (detachKeyboard) {
             detachKeyboard();
+        }
+        if (detachLabsGate) {
+            detachLabsGate();
         }
     });
 </script>

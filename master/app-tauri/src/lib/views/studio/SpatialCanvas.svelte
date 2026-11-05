@@ -41,6 +41,7 @@
   import CalibrationModal from '$lib/components/studio/CalibrationModal.svelte';
   import AnnotationLedger from '$lib/components/studio/AnnotationLedger.svelte';
   import { inserts, type PageOverlayTemplate } from '$lib/core/insertEngine.svelte';
+  import { enforceLabsGate, labsVisible, shortcutsForSave, studioToolLabel } from '$lib/components/studio/labs.svelte';
 
   let { viewId = 'main-canvas' } = $props<{ viewId?: string }>();
 
@@ -125,6 +126,7 @@
   }
 
   function isInsertMediaTool(tid: string): boolean {
+    if (!labsVisible(tid)) return false;
     return (
       tid === 'insert.latex' ||
       tid === 'insert.signature' ||
@@ -135,6 +137,7 @@
   }
 
   function handleConfigureInsertTool(tid: string) {
+    if (!labsVisible(tid)) return;
     const pageIdx = Math.max(0, activePageNumber - 1);
     const pg = viewport.pages[pageIdx] ?? { worldX: 32, worldY: 32, widthPt: 595.28, heightPt: 841.89 };
     const centerX = pg.worldX + (pg.widthPt * PT_TO_CSS) / 2;
@@ -735,6 +738,8 @@
         if (typeof prefs.historyLimit === 'number' && prefs.historyLimit > 0) {
           commands.historyLimit = prefs.historyLimit;
         }
+        // Restored shortcuts may target a Labs tool: park them while Labs is off.
+        enforceLabsGate();
       }
     } catch {
       // Safe fallback in browser/unit-test environments without Tauri IPC
@@ -748,7 +753,7 @@
           dockEdge: 'left',
           floatX: 16,
           floatY: 80,
-          shortcuts: commands.shortcuts,
+          shortcuts: shortcutsForSave(),
           favorites: tools.favorites,
           historyLimit: commands.historyLimit,
         },
@@ -999,7 +1004,7 @@
 
     // Phase D6 Insert Suite (LaTeX, Signature, Audio Note Modals + Callout / Stamp / Image Quick Stamp)
     if (
-      activeTool === 'insert.latex' ||
+      (activeTool === 'insert.latex' && labsVisible(activeTool)) ||
       activeTool === 'insert.signature' ||
       activeTool === 'insert.audio'
     ) {
@@ -2306,7 +2311,7 @@
   <!-- Floating Media / Insert Configuration Prompt Pill -->
   {#if isInsertMediaTool(tools.currentToolId)}
     <div class="insert-config-pill glass-panel" data-testid="insert-config-pill">
-      <span>Click canvas to place {tools.activeToolLabel}, or configure options:</span>
+      <span>Click canvas to place {studioToolLabel(tools.currentToolId, tools.activeToolLabel)}, or configure options:</span>
       <button
         type="button"
         class="top-action-btn primary-btn"

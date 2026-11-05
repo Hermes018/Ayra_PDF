@@ -9,6 +9,7 @@
     type SignatureMode,
   } from '$lib/core/insertEngine.svelte';
   import StudioIcon from './StudioIcon.svelte';
+  import { INK_GUESS_ID, INK_GUESS_LABS, LABS_BADGE, MATH_TEXT_LABS, labsVisible } from './labs.svelte';
 
   let {
     activePdfPath = null,
@@ -34,6 +35,8 @@
   let webcamPreviewDataUrl = $state<string | null>(null);
 
   let latexPreview = $derived(compileLatexToVector(inserts.latexDraft));
+  // Library items that insert a Labs tool (e.g. the built-in equation) are hidden while Labs is off.
+  let visibleLibrary = $derived(inserts.markupLibrary.filter((it) => labsVisible(it.tool_id)));
 
   interface LedgerEntry {
     id: string;
@@ -173,7 +176,7 @@
             inserts.loadMarkupLibraryFromBackend();
           }}
         >
-          Vault ({inserts.markupLibrary.length})
+          Vault ({visibleLibrary.length})
         </button>
         <button
           type="button"
@@ -236,21 +239,27 @@
           </select>
         </div>
         <div class="ledger-filter-row">
-          <button
-            type="button"
-            class="ledger-action-btn"
-            onclick={() => {
-              const converted = inserts.convertSelectedInkToText();
-              if (converted) {
-                onNotice?.(`Converted ink to editable text: "${converted.text}"`);
-              } else {
-                onNotice?.('Draw or select a freehand ink stroke first.');
-              }
-            }}
-            title="Convert selected handwritten ink strokes to editable text box (8.10)"
-          >
-            Ink → Text
-          </button>
+          {#if labsVisible(INK_GUESS_ID)}
+            <!-- Labs-only (8.10): see ./labs.ts -->
+            <button
+              type="button"
+              class="ledger-action-btn"
+              data-testid="ledger-ink-guess-btn"
+              aria-label={INK_GUESS_LABS.label}
+              onclick={() => {
+                const converted = inserts.convertSelectedInkToText();
+                if (converted) {
+                  onNotice?.(`${INK_GUESS_LABS.label}: guessed "${converted.text}" from stroke shapes.`);
+                } else {
+                  onNotice?.('Draw or select a freehand ink stroke first.');
+                }
+              }}
+              title={`${INK_GUESS_LABS.label}: ${INK_GUESS_LABS.note}`}
+            >
+              {INK_GUESS_LABS.name}
+              <span class="labs-badge" data-testid="labs-badge">{LABS_BADGE}</span>
+            </button>
+          {/if}
           <button
             type="button"
             class="ledger-action-btn"
@@ -335,7 +344,7 @@
       </div>
 
       <div class="library-list">
-        {#each inserts.markupLibrary as item (item.id)}
+        {#each visibleLibrary as item (item.id)}
           <div class="library-card">
             <div class="lib-meta">
               <span class="lib-title">{item.title}</span>
@@ -430,17 +439,18 @@
   </aside>
 {/if}
 
-<!-- LaTeX Vector Equation Modal (`insert.latex`) -->
-{#if inserts.latexModalOpen}
+<!-- Labs-only (2.16) math text dialog (`insert.latex`); see ./labs.ts -->
+{#if inserts.latexModalOpen && labsVisible('insert.latex')}
   <div
     class="studio-modal-card glass-panel"
     role="dialog"
     tabindex="-1"
-    aria-label="LaTeX Equation Vector Editor"
+    aria-label={MATH_TEXT_LABS.label}
+    data-testid="math-text-dialog"
     onpointerdown={(e) => e.stopPropagation()}
   >
     <div class="modal-head">
-      <span>LaTeX Mathematical Vector Stamp (Offline Engine)</span>
+      <span>{MATH_TEXT_LABS.name} <span class="labs-badge" data-testid="labs-badge">{LABS_BADGE}</span></span>
       <button type="button" class="icon-close-btn" onclick={() => (inserts.latexModalOpen = false)}>
         <StudioIcon name="close" size={12} />
       </button>
@@ -449,8 +459,9 @@
       type="text"
       class="ledger-search"
       bind:value={inserts.latexDraft}
-      aria-label="LaTeX Formula Source"
+      aria-label={MATH_TEXT_LABS.inputLabel}
     />
+    <p class="labs-note" data-testid="math-text-note">{MATH_TEXT_LABS.note}</p>
     <div class="latex-preview-box">
       <svg
         width={latexPreview.widthPt}
@@ -483,7 +494,7 @@
         class="ledger-action-btn primary"
         onclick={() => inserts.stampLatexEquation()}
       >
-        Stamp Vector Equation
+        {MATH_TEXT_LABS.insertAction}
       </button>
     </div>
   </div>
@@ -921,6 +932,27 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+  }
+
+  .labs-badge {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    vertical-align: middle;
+  }
+
+  .labs-note {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.4;
+    opacity: 0.8;
   }
 
   .latex-preview-box,

@@ -8,6 +8,7 @@
     import type { OutputPolicy } from '$lib/bindings/OutputPolicy';
     import type { ThemePreference } from '$lib/bindings/ThemePreference';
     import type { AiModelInfo } from '$lib/bindings/AiModelInfo';
+    import { INK_GUESS_LABS, MATH_TEXT_LABS, isLabsOn, setLabs } from '$lib/components/studio/labs.svelte';
 
     // State via Svelte 5 runes
     let settings = $state<AppSettings>({
@@ -314,6 +315,31 @@
                     <option value="es">Español (es)</option>
                 </select>
             </div>
+        </section>
+
+        <!-- Labs: experimental Studio tools, OFF by default (PROTOTYPE_SCOPE.md). Applies immediately. -->
+        <section class="card" aria-labelledby="labs-title">
+            <h3 id="labs-title">🧪 Labs (Experimental)</h3>
+            <p class="description">Unfinished Studio tools. They stay hidden unless you turn this on, and may change or be removed.</p>
+
+            <div class="checkbox-row">
+                <input
+                    type="checkbox"
+                    id="labs-toggle"
+                    data-testid="labs-toggle"
+                    checked={isLabsOn()}
+                    onchange={(e) => setLabs((e.target as HTMLInputElement).checked)}
+                />
+                <label for="labs-toggle">
+                    <strong>Show Labs tools</strong>
+                    <span class="subtext">Off by default. Saved on this device as soon as you change it.</span>
+                </label>
+            </div>
+
+            <ul class="labs-list" data-testid="labs-feature-list">
+                <li><strong>{MATH_TEXT_LABS.label}</strong> — {MATH_TEXT_LABS.note}</li>
+                <li><strong>{INK_GUESS_LABS.label}</strong> — {INK_GUESS_LABS.note}</li>
+            </ul>
         </section>
 
         <!-- 4. Local AI Model Registry -->
@@ -677,6 +703,14 @@
 
     .subtext {
         font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    .labs-list {
+        margin: 0.75rem 0 0;
+        padding-left: 1.1rem;
+        font-size: 0.8rem;
+        line-height: 1.45;
         color: var(--text-secondary);
     }
 

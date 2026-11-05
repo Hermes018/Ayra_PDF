@@ -1,6 +1,7 @@
 <script module lang="ts">
   import type { ToolId } from '$lib/core/toolEngine.svelte';
   import type { StudioIconName } from './StudioIcon.svelte';
+  import { MATH_TEXT_LABS } from './labs.svelte';
 
   export type DockEdge = 'left' | 'right' | 'top' | 'floating';
 
@@ -106,7 +107,8 @@
         { id: 'insert.stamp', label: 'Engineering Stamp', icon: 'stamp' },
         { id: 'insert.signature', label: 'Signature Suite', icon: 'signature' },
         { id: 'insert.image', label: 'Insert Image', icon: 'image' },
-        { id: 'insert.latex', label: 'LaTeX Math Equation', icon: 'latex' },
+        // Labs-only (2.16): hidden unless Settings → Labs is on; see ./labs.ts.
+        { id: 'insert.latex', label: MATH_TEXT_LABS.name, icon: 'latex' },
         { id: 'insert.audio', label: 'Voice Audio Note', icon: 'audio' }
       ]
     }
@@ -132,6 +134,7 @@
   import { tools } from '$lib/core/toolEngine.svelte';
   import { commands } from '$lib/core/commandEngine.svelte';
   import StudioIcon from './StudioIcon.svelte';
+  import { LABS_BADGE, isLabsTool, labsToolNote, labsVisible, selectToolIfAllowed } from './labs.svelte';
 
   let {
     onToggleRadial,
@@ -176,9 +179,15 @@
     }
   });
 
+  /** Tools the user may see in this drawer (Labs tools only when Labs is on). */
+  function visibleTools(cat: CategoryGroup): ToolItem[] {
+    return cat.tools.filter((t) => labsVisible(t.id));
+  }
+
   function getCategoryActiveTool(cat: CategoryGroup): ToolItem {
+    const shown = visibleTools(cat);
     const activeId = categoryActiveTools[cat.id] || cat.defaultTool;
-    return cat.tools.find((t) => t.id === activeId) ?? cat.tools[0];
+    return shown.find((t) => t.id === activeId) ?? shown[0] ?? cat.tools[0];
   }
 
   function isCategoryActive(cat: CategoryGroup): boolean {
@@ -187,7 +196,7 @@
 
   function handleCategoryClick(cat: CategoryGroup) {
     const activeTool = getCategoryActiveTool(cat);
-    tools.selectTool(activeTool.id);
+    selectToolIfAllowed(activeTool.id);
     if (activeCategoryPopover === cat.id) {
       activeCategoryPopover = null;
     } else {
@@ -196,13 +205,14 @@
   }
 
   function handleSelectToolFromPopover(toolId: ToolId, catId: string) {
-    tools.selectTool(toolId);
+    if (!selectToolIfAllowed(toolId)) return;
     categoryActiveTools[catId] = toolId;
     activeCategoryPopover = null;
   }
 
   function handlePinFavorite(e: MouseEvent, toolId: string) {
     e.stopPropagation();
+    if (!labsVisible(toolId)) return;
     tools.pinFavorite(toolId);
   }
 
@@ -358,12 +368,13 @@
               </button>
             </div>
             <div class="popover-items-list">
-              {#each cat.tools as tool (tool.id)}
+              {#each visibleTools(cat) as tool (tool.id)}
                 <div
                   class="popover-item-row"
                   class:active={tools.currentToolId === tool.id}
                   role="menuitem"
                   tabindex="-1"
+                  title={labsToolNote(tool.id)}
                 >
                   <!-- svelte-ignore a11y_click_events_have_key_events -->
                   <div
@@ -374,6 +385,9 @@
                   >
                     <StudioIcon name={tool.icon} size={15} />
                     <span class="item-label">{tool.label}</span>
+                    {#if isLabsTool(tool.id)}
+                      <span class="labs-badge" data-testid="labs-badge">{LABS_BADGE}</span>
+                    {/if}
                   </div>
                   <div class="item-right">
                     {#if commands.shortcutFor(tool.id)}
@@ -736,6 +750,23 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .labs-badge {
+    flex-shrink: 0;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .popover-item-row.active .labs-badge {
+    border-color: currentColor;
+    color: inherit;
   }
 
   .item-right {
