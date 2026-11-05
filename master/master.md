@@ -311,7 +311,8 @@ master/
 │       └── Cargo.toml                                    # Crate manifest
 ├── docs/                                                 # Cross-platform design specs, plans and audits
 │   ├── adr/                                              # Long-form architecture decision records
-│   │   └── ADR-012-drawboard-artcraft-spatial-studio.md  # Studio editor decision (registered as ADR-014 in logs/DECISIONS_ADR.md)
+│   │   ├── ADR-012-drawboard-artcraft-spatial-studio.md  # Studio editor decision (registered as ADR-014 in logs/DECISIONS_ADR.md)
+│   │   └── ADR-018-upstream-engines.md                   # ADR-018 rev 2 (PROPOSED): consume craft engines as pinned deps behind adapter crates, WASM spike, upstream manifest
 │   ├── audit/                                            # Earlier audit reports
 │   │   ├── debug.md                                      # Debug log for phases 11.7–12.1b
 │   │   └── INVENTORY.md                                  # V1 architecture inventory (Oct 2026 snapshot; partly outdated)
@@ -322,7 +323,8 @@ master/
 │   ├── CRAFT_ECOSYSTEM_SURVEY.md                         # Survey of the 10 storytold *craft repos: licences, deps, unsafe, what to port/adopt (ADR-018 PROPOSED)
 │   ├── DRAWBOARD_FEATURE_CHECKLIST.md                    # 119-item studio feature checklist with status (checked by `cargo xtask feature-map-check`)
 │   ├── DRAWBOARD_STUDIO_MASTER_PLAN.md                   # Plan for the spatial Studio editor (phases D1–D6)
-│   └── STUDIO_UI_UX_OVERHAUL_SPEC.md                     # Studio UI/UX overhaul spec (phases U1–U5)
+│   ├── STUDIO_UI_UX_OVERHAUL_SPEC.md                     # Studio UI/UX overhaul spec (phases U1–U5)
+│   └── UPGRADING.md                                      # DRAFT procedure for bumping a pinned upstream engine (branch → gate → verifier → log)
 ├── fuzz/                                                 # cargo-fuzz workspace (libFuzzer targets)
 │   ├── fuzz_targets/                                     # Fuzz entry points
 │   │   ├── fuzz_engine_switcher.rs                       # Fuzz: engine switcher

@@ -217,3 +217,25 @@ The safest and simplest way to resolve this blocker is to run the system-level p
 - Verbatim (summary of a long structured message, sections 1–6): ADR-018 APPROVED (port algorithms; ERR-007 first; adopt kurbo / vectorcraft-pathops / designcraft-compose only in the phase that needs them, each vetted). ADR-017 stays ACCEPTED; draft an upstream issue in docs/ and don't post it. Fix the UI wording for LaTeX and ink-to-text. The 500297f slip is fine. New scope: Android as a first-class target. Write ADR-019 (PROPOSED: capability matrix, SAF file I/O keeping the fs-safety guarantees, jobs/RAM, tablet-first UI, bundle/OCR models, verify Tauri mobile APIs from source) and stop for approval; report SDK/NDK/emulator disk and RAM needs before installing. Cross-platform rule (cfg modules behind traits, frontend capability module, platforms declared in the checklist and enforced, Android cargo check in the gate). Agent workflow (lead owns main/gates/logs/commits; ≤2 builders in worktrees track/linux and track/android; flock build lock; CARGO_BUILD_JOBS=2; fresh verifier per phase; merge only when verifier passes and gate is green). Order: Linux = ERR-007 → UI wording → next ADR-018 phase; Android = ADR-019 only. Commit and tag locally; do NOT push.
 - Interpretation: as written. "Next ADR-018 phase" = survey §6 phase 2 (ink quality). Builders leave changes uncommitted; the lead commits on the track branch after the verifier passes, then fast-forwards main.
 - Conflicts with protocol? No (ADR-020 records the workflow).
+
+## [2026-11-05] Prompt #16
+- Verbatim: """Change to ADR-018 before continuing: I want to pull future upstream fixes from the craft repos without redoing work. Revise ADR-018 (back to PROPOSED) so that: 1. Engine logic is consumed as pinned dependencies (exact git rev or version, network-pulling features disabled, vetted with cargo-deny), not hand-ported, wherever feasible. 2. Each engine sits behind our own adapter crate/trait so upstream API changes only touch the adapter. 3. For pointer-speed frontend code, evaluate compiling the engine crates to WASM vs keeping TS ports. If any port stays, record its upstream repo + commit in a manifest, and add `cargo xtask upstream-check` that reports upstream changes since that commit. 4. Add an UPGRADING.md procedure: one branch per engine bump → full gate → verifier agent → log. Apply the same thinking to the ADR-017 winprint patch (track its upstream rev in the manifest). ERR-007 can still go first, but implement it against this structure. Stop for my approval of the revised ADR-018."""
+- Interpretation: Stop the in-flight ERR-007 hand-port (done; the builder had made no edits). Write ADR-018 rev 2 (PROPOSED) with per-crate feasibility evidence, plus a draft UPGRADING.md. Implementation (manifest, xtask, adapters, ERR-007) waits for approval. The Android ADR-019 track continues; it stops for approval anyway.
+- Conflicts with protocol? No.
+
+## [2026-11-05 22:30] Prompt #17 — REPLACES earlier instructions
+- Verbatim (long structured message; key points): Target a fully working Linux prototype by Sat 2026-11-07 23:59 Asia/Dhaka, with the ADR-018 engine restructure done now.
+  - **§0 Scope:** Android PAUSED until Sunday (ADR-019 draft only). FEATURE FREEZE; LaTeX and ink-to-text go behind "Labs", off by default.
+  - **§1 ADR-018 → APPROVED with rules:**
+    - ENGINE_REUSE_MATRIX: ADOPT / ADOPT-WASM (<2 ms per call at 120 Hz) / KEEP-PORT / REJECT.
+    - Strangler pattern: characterization goldens → adapter with the current impl → craft impl behind a switch → parity → switch the default.
+    - Order: hatch, geometry/measure, pathops eraser, snapping, reflow.
+    - Hygiene: pinned revs, default-features off, cargo-deny, vendoring, docs/UPSTREAM_MANIFEST.toml, offline `xtask upstream-check` against ~/craft-ref, UPGRADING.md, THIRD_PARTY_NOTICES.md.
+    - Timebox: adapters merged by Fri 18:00; never ship a half swap; ERR-007 must ship fixed.
+  - **§2:** PROTOTYPE_SCOPE.md and 12 golden-path E2E flows via tauri-driver; baseline report first.
+  - **§3:** lead plus ≤3 builders (wt/engines, wt/fixes, wt/release), flock lock, read-only reviewer / adversarial tester (logs/BUGS.md) / provenance auditor, a fresh verifier per merge.
+  - **§4:** packaging rpm + AppImage (+deb), network-isolation run, CHANGELOG, KNOWN_ISSUES.
+  - **§5:** milestones Fri 08:00, Fri 18:00, Sat 14:00, Sat 18:00 rc1, Sat 23:59 tag. Slips mean cuts, never a deadline extension.
+  - **§6:** guardrails; start each task from CHECKPOINT; commit locally, no push.
+- Interpretation: as written. Android builder told to save its draft and stop. ADR-018 rev 3 = the user's rules (binding) plus rev 2 analysis. Lead-only doc commits on main are allowed. Builder work merges only after reviewer + verifier sign-off and a green gate.
+- Conflicts with protocol? Possible ones are flagged: `'wasm-unsafe-eval'` CSP (needs approval, only if ADOPT-WASM wins); vendored craft sources (ADR-018 R3).

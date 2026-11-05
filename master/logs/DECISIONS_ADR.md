@@ -183,3 +183,19 @@ Home grid = exactly ORGANIZE PDF, OPTIMIZE PDF, CONVERT TO PDF, CONVERT FROM PDF
   - At most two builders, in separate worktrees (`track/linux`, `track/android`). Builders never commit or edit logs.
   - Heavy builds go through `master/tools/build-lock.sh` (`flock /tmp/lpdf-build.lock`, `CARGO_BUILD_JOBS=2`). Worktrees share `master/target` because disk is tight. Never `cargo clean`.
   - After each phase, a fresh verifier subagent gets only the spec/ADR, the diff and the gate commands, and runs the gates itself. A phase merges to `main` only when the verifier passes and the gate is green.
+
+## ADR-018 rev 2 [2026-11-05] — back to PROPOSED (supersedes the rev 1 approval above)
+- The user reopened ADR-018 (PROMPT_LOG #16). The new direction is to consume engine logic as pinned upstream dependencies behind adapter crates; to run a WASM-vs-TS spike for pointer-speed code; to keep an upstream manifest with `cargo xtask upstream-check`; and to follow an UPGRADING.md bump procedure.
+- Full text: `docs/adr/ADR-018-upstream-engines.md`. Draft procedure: `docs/UPGRADING.md`.
+- ADR-017's winprint patch becomes a `kind = "patch"` manifest entry under it.
+- **Status:** PROPOSED, awaiting user approval. The rev 1 "port algorithms" approval no longer applies. No ERR-007 code was written under rev 1: the Linux builder was stopped before making any edits.
+
+## ADR-018 rev 3 [2026-11-05 22:30] — APPROVED (PROMPT_LOG #17)
+- The user's binding rules R1–R4 are now the top section of `docs/adr/ADR-018-upstream-engines.md`; rev 2 is retained as supporting analysis.
+- The rev 2 verifier rounds' defects are fixed:
+  - cargo-deny `wrappers` chain (reqwest←tauri, hyper←reqwest/hyper-util)
+  - WASM bytes via binary IPC, so `'wasm-unsafe-eval'` is the only CSP change and needs approval
+  - winprint `requested_by` drift check and craft-winprint-gdi entry
+  - cadcraft-render patch Cargo.toml rewrite
+  - line references
+- Target release: v0.2.0-prototype (Linux), Sat 2026-11-07 23:59 Asia/Dhaka.

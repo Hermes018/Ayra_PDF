@@ -433,3 +433,6 @@ master/app-tauri/src/lib/views/__tests__/StudioEmptyState.test.ts	Tests: Studio 
 master/docs/upstream/	Drafts of issues/PRs for upstream projects (not posted without owner approval)
 master/docs/upstream/winprint-optional-pdfium-build-deps.md	Draft issue: make winprint's PDFium download build-deps optional (ADR-017)
 master/tools/build-lock.sh	Runs a heavy build under the shared flock lock with CARGO_BUILD_JOBS=2 and the shared target dir (ADR-020)
+master/docs/adr/ADR-018-upstream-engines.md	ADR-018 rev 2 (PROPOSED): consume craft engines as pinned deps behind adapter crates, WASM spike, upstream manifest
+master/docs/UPGRADING.md	DRAFT procedure for bumping a pinned upstream engine (branch → gate → verifier → log)
+master/docs/PROTOTYPE_SCOPE.md	v0.2.0-prototype scope: 12 golden-path flows with pass criteria, corpus, triage rules, milestones

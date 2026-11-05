@@ -78,3 +78,6 @@ Rule: 3 distinct failed fixes => status escalated-to-user, stop, ask.
 - Root cause: `studio.rs:529` passes `rect` (bounding box) to `generate_hatch_strokes`, which has no polygon clipping.
 - Fix: OPEN. Port cadcraft `pattern_lines`/`crossings`/`dash` (survey §4.4), pending ADR-018.
 - Status: open
+
+## [2026-11-05] ERR-007 — status update
+- Fix plan changed. The rev 1 plan ("port cadcraft `pattern_lines`") is superseded by ADR-018 rev 2 (PROPOSED): `lpdf-adapter-cad` will depend on `cadcraft-doc` plus a patched `cadcraft-render` (re-export of `pattern_lines`), pinned to the cadcraft rev. It waits for approval. No code was written under the rev 1 plan.
