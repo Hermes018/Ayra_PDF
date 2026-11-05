@@ -207,11 +207,12 @@ fn parse_line_ending(raw: Option<&str>) -> LineEnding {
 }
 
 fn normalize_rect(r: [f64; 4]) -> [f64; 4] {
-    let x0 = r[0].min(r[2]);
-    let y0 = r[1].min(r[3]);
-    let x1 = r[0].max(r[2]).max(x0 + 1.0);
-    let y1 = r[1].max(r[3]).max(y0 + 1.0);
-    [x0, y0, x1, y1]
+    let (x0, y0, x1, y1) = if r[2] > 0.0 && r[3] > 0.0 && (r[2] < r[0] || r[3] < r[1]) {
+        (r[0], r[1], r[0] + r[2], r[1] + r[3])
+    } else {
+        (r[0].min(r[2]), r[1].min(r[3]), r[0].max(r[2]), r[1].max(r[3]))
+    };
+    [x0, y0, x1.max(x0 + 1.0), y1.max(y0 + 1.0)]
 }
 
 fn bbox_from_points_or_rect(points: &[StudioPointDto], fallback: [f64; 4]) -> [f64; 4] {
@@ -835,6 +836,86 @@ pub fn studio_extract_snap_geometry(
         height_pt,
         segments,
     })
+}
+
+/// DTO representing an extracted or editable structural PDF text block.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PdfTextBlockDto {
+    pub id: String,
+    pub page_index: u32,
+    pub bbox_pt: [f64; 4], // [x, y, width, height] in top-left PDF user points
+    pub text: String,
+    pub font_size: f64,
+}
+
+/// Extracts all readable text blocks and their bounding boxes on `page_index`.
+#[tauri::command]
+pub fn studio_extract_text_blocks(
+    input_path: String,
+    page_index: u32,
+) -> Result<Vec<PdfTextBlockDto>, String> {
+    let in_path = PathBuf::from(&input_path);
+    if !in_path.exists() {
+        return Ok(Vec::new());
+    }
+
+    let raw_bytes = fs::read(&in_path)
+        .map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
+    let doc_name = in_path
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .to_string();
+
+    let mut session = Session::new();
+    let doc_id = session
+        .open(
+            doc_name,
+            Some(input_path.clone()),
+            Arc::new(raw_bytes),
+            None,
+        )
+        .map_err(|e| format!("Failed to open PDF in pdfcraft session: {}", e))?;
+
+    let page_total = session
+        .get(doc_id)
+        .map(|d| d.info.pages.len())
+        .unwrap_or(1)
+        .max(1);
+    let page = (page_index as usize).min(page_total.saturating_sub(1));
+
+    let blocks = session
+        .get(doc_id)
+        .map(|d| d.text_blocks(page))
+        .unwrap_or_default();
+
+    let mut result = Vec::new();
+    for (idx, b) in blocks.into_iter().enumerate() {
+        let x0 = b.rect[0].min(b.rect[2]);
+        let y0 = b.rect[1].min(b.rect[3]);
+        let x1 = b.rect[0].max(b.rect[2]);
+        let y1 = b.rect[1].max(b.rect[3]);
+        let w = (x1 - x0).abs().max(1.0);
+        let h = (y1 - y0).abs().max(1.0);
+        let text = if !b.editor_text.is_empty() {
+            b.editor_text
+        } else {
+            b.text
+        };
+        if text.trim().is_empty() {
+            continue;
+        }
+        result.push(PdfTextBlockDto {
+            id: format!("pdf-block-p{}-{}", page_index, idx),
+            page_index,
+            bbox_pt: [x0, y0, w, h],
+            text,
+            font_size: if b.size > 0.0 { b.size } else { 12.0 },
+        });
+    }
+
+    Ok(result)
 }
 
 /// Structural PDF Text Edit IPC: replaces an existing overlapping PDF text block in-place
@@ -1640,6 +1721,45 @@ startxref\n\
         let save_info = res.unwrap();
         assert_eq!(save_info.page_count, 1);
         assert!(output_pdf.exists());
+
+        let _ = fs::remove_dir_all(&tmp_dir);
+    }
+
+    #[test]
+    fn test_studio_extract_and_edit_text_blocks_roundtrip() {
+        let tmp_dir =
+            std::env::temp_dir().join(format!("lpdf_studio_text_rt_{}", std::process::id()));
+        let _ = fs::create_dir_all(&tmp_dir);
+        let input_pdf = tmp_dir.join("input_rt.pdf");
+        let output_pdf = tmp_dir.join("output_rt.pdf");
+        create_sample_pdf(&input_pdf);
+
+        let initial_blocks = studio_extract_text_blocks(
+            input_pdf.to_string_lossy().to_string(),
+            0,
+        );
+        assert!(initial_blocks.is_ok(), "initial extraction failed: {:?}", initial_blocks);
+
+        let edit_res = studio_edit_pdf_text_block(
+            input_pdf.to_string_lossy().to_string(),
+            output_pdf.to_string_lossy().to_string(),
+            0,
+            [70.0, 700.0, 200.0, 40.0],
+            "Architectural Structural Revision A1".to_string(),
+            14.0,
+            [20, 30, 40],
+        );
+        assert!(edit_res.is_ok(), "text block edit failed: {:?}", edit_res);
+
+        let extracted = studio_extract_text_blocks(
+            output_pdf.to_string_lossy().to_string(),
+            0,
+        );
+        assert!(extracted.is_ok(), "extract text blocks failed: {:?}", extracted);
+        let blocks = extracted.unwrap();
+        assert!(!blocks.is_empty(), "extracted blocks should not be empty");
+        let found = blocks.iter().any(|b| b.text.contains("Architectural Structural Revision"));
+        assert!(found, "newly edited text block should be found in extracted blocks");
 
         let _ = fs::remove_dir_all(&tmp_dir);
     }

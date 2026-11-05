@@ -71,6 +71,16 @@ export class CommandBusAndShortcutEngine {
     this.#handlers.set(id, h);
   }
 
+  shortcutFor(cmdOrToolId: string): string | null {
+    for (const [chord, cmd] of Object.entries(this.shortcuts)) {
+      if (cmd === cmdOrToolId) return chord;
+      if (cmd === `tool.${cmdOrToolId}`) return chord;
+      if (cmdOrToolId.startsWith('tool.') && cmd === cmdOrToolId.replace('tool.', '')) return chord;
+      if (cmdOrToolId === 'select' && (cmd === 'tool.select.marquee' || cmd === 'select.marquee')) return chord;
+    }
+    return null;
+  }
+
   setPointerSink(f: PointerSink): void {
     this.#pointerSink = f;
   }

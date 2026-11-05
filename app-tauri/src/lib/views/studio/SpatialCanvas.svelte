@@ -3,7 +3,7 @@
   import { invoke } from '@tauri-apps/api/core';
   import { appState } from '$lib/state.svelte';
   import { viewport, type Pt } from '$lib/core/viewportEngine.svelte';
-  import { tools, type ToolPreset } from '$lib/core/toolEngine.svelte';
+  import { tools, type ToolPreset, type ToolId } from '$lib/core/toolEngine.svelte';
   import { commands } from '$lib/core/commandEngine.svelte';
   import { theme } from '$lib/core/themeContract.svelte';
   import { ink, type ActiveStroke } from '$lib/core/inkEngine.svelte';
@@ -62,6 +62,88 @@
   let pageCanvases: Record<number, HTMLCanvasElement | null> = $state({});
   let currentPdfDoc: any = null;
   let loadedFilePath = $state<string | null>(null);
+
+  // Extracted PDF text blocks for discoverable structural text editing
+  export interface PdfTextBlockDto {
+    id: string;
+    pageIndex: number;
+    bboxPt: [number, number, number, number];
+    text: string;
+    fontSize: number;
+  }
+
+  let pageTextBlocks = $state<PdfTextBlockDto[]>([]);
+  let hoveredBlockId = $state<string | null>(null);
+
+  async function loadPageTextBlocks() {
+    const path = loadedFilePath ?? appState.currentFile;
+    if (!path || editMode !== 'structural') {
+      pageTextBlocks = [];
+      return;
+    }
+    try {
+      const blocks = await invoke<PdfTextBlockDto[]>('studio_extract_text_blocks', {
+        inputPath: path,
+        pageIndex: Math.max(0, activePageNumber - 1),
+      });
+      pageTextBlocks = blocks ?? [];
+    } catch (e) {
+      console.warn('Failed to extract PDF text blocks for structural edit:', e);
+      pageTextBlocks = [];
+    }
+  }
+
+  $effect(() => {
+    if (editMode === 'structural') {
+      void loadPageTextBlocks();
+    } else {
+      pageTextBlocks = [];
+    }
+  });
+
+  function handleEditTextBlock(block: PdfTextBlockDto) {
+    const pageIdx = block.pageIndex;
+    const g = viewport.pages[pageIdx];
+    if (!g) return;
+    const pdfX = block.bboxPt[0];
+    const pdfYTop = block.bboxPt[1] + block.bboxPt[3];
+    const worldPt = pdfPagePtToWorld({ x: pdfX, y: pdfYTop }, pageIdx);
+    const w = block.bboxPt[2] * PT_TO_CSS;
+    const h = block.bboxPt[3] * PT_TO_CSS;
+
+    shapes.openTextBoxEditor(
+      worldPt.x,
+      worldPt.y,
+      pageIdx,
+      true,
+      block.text,
+      block.fontSize,
+      Math.max(w, 120),
+      Math.max(h, 36)
+    );
+  }
+
+  function isInsertMediaTool(tid: string): boolean {
+    return (
+      tid === 'insert.latex' ||
+      tid === 'insert.signature' ||
+      tid === 'insert.audio' ||
+      tid === 'insert.stamp' ||
+      tid === 'insert.image'
+    );
+  }
+
+  function handleConfigureInsertTool(tid: string) {
+    const pageIdx = Math.max(0, activePageNumber - 1);
+    const pg = viewport.pages[pageIdx] ?? { worldX: 32, worldY: 32, widthPt: 595.28, heightPt: 841.89 };
+    const centerX = pg.worldX + (pg.widthPt * PT_TO_CSS) / 2;
+    const centerY = pg.worldY + (pg.heightPt * PT_TO_CSS) / 2;
+    if (tid === 'insert.latex' || tid === 'insert.signature' || tid === 'insert.audio') {
+      inserts.openInsertModalForTool(tid, centerX, centerY, pageIdx);
+    } else {
+      inserts.stampQuickInsert(tid as ToolId, centerX, centerY, pageIdx);
+    }
+  }
 
   const PT_TO_CSS = 96 / 72;
 
@@ -529,6 +611,9 @@
 
       await loadPersistedAnnotations(path);
       await loadSnapGeometryAndScales(path, pdf.numPages);
+      if (editMode === 'structural') {
+        await loadPageTextBlocks();
+      }
     } catch (err) {
       console.error('Failed to render PDF in SpatialCanvas:', err);
     }
@@ -1525,6 +1610,23 @@
     </div>
   {/if}
 
+  {#if editMode === 'structural'}
+    <div class="structural-edit-banner glass-panel" data-testid="structural-edit-banner">
+      <div class="banner-content">
+        <StudioIcon name="text.review" size={16} />
+        <span>Structural PDF Text Edit Mode Active — Click any text block to edit native PDF streams</span>
+      </div>
+      <button
+        type="button"
+        class="top-action-btn primary-btn done-btn"
+        onclick={() => (editMode = 'markup')}
+        data-testid="exit-structural-btn"
+      >
+        Done Editing
+      </button>
+    </div>
+  {/if}
+
   <!-- Contextual Selection Action Bar (Group, Ungroup, Align, Flip, Z-Order, Duplicate, Format Painter) -->
   {#if selection.hasSelection && selection.selectionBounds}
     <div
@@ -1674,6 +1776,33 @@
             </svg>
           {/if}
         </div>
+
+        {#if editMode === 'structural' && index === (activePageNumber - 1)}
+          <div class="text-blocks-overlay" role="presentation">
+            {#each pageTextBlocks as block (block.id)}
+              {@const relX = block.bboxPt[0] * PT_TO_CSS}
+              {@const relY = (page.heightPt - (block.bboxPt[1] + block.bboxPt[3])) * PT_TO_CSS}
+              {@const relW = Math.max(block.bboxPt[2] * PT_TO_CSS, 20)}
+              {@const relH = Math.max(block.bboxPt[3] * PT_TO_CSS, 12)}
+              <!-- svelte-ignore a11y_click_events_have_key_events -->
+              <div
+                class="pdf-text-block-hotspot"
+                class:hovered={hoveredBlockId === block.id}
+                style="left: {relX}px; top: {relY}px; width: {relW}px; height: {relH}px;"
+                role="button"
+                tabindex="0"
+                onclick={() => handleEditTextBlock(block)}
+                ondblclick={() => handleEditTextBlock(block)}
+                onpointerenter={() => (hoveredBlockId = block.id)}
+                onpointerleave={() => (hoveredBlockId = null)}
+                title="Click to edit: {block.text.slice(0, 40)}"
+                aria-label="Edit text: {block.text.slice(0, 40)}"
+              >
+                <span class="hotspot-badge">✎ Click to edit PDF text ({block.fontSize.toFixed(0)}pt)</span>
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
     {/each}
   </div>
@@ -2064,6 +2193,7 @@
   {#if shapes.editingTextBox}
     <div
       class="inline-text-editor glass-panel"
+      data-testid="inline-pdf-text-editor"
       role="dialog"
       tabindex="-1"
       aria-label="Inline Text Editor"
@@ -2120,6 +2250,10 @@
     onOpenShortcuts={() => {
       shortcutsVisible = true;
     }}
+    onToggleStructuralEdit={() => {
+      editMode = editMode === 'structural' ? 'markup' : 'structural';
+    }}
+    isStructuralEdit={editMode === 'structural'}
   />
 
   <!-- Pinned Favorites Bar -->
@@ -2127,6 +2261,20 @@
 
   <!-- Active Tool Reactive Property Pill -->
   <PropertyPill />
+
+  <!-- Floating Media / Insert Configuration Prompt Pill -->
+  {#if isInsertMediaTool(tools.currentToolId)}
+    <div class="insert-config-pill glass-panel" data-testid="insert-config-pill">
+      <span>Click canvas to place {tools.activeToolLabel}, or configure options:</span>
+      <button
+        type="button"
+        class="top-action-btn primary-btn"
+        onclick={() => handleConfigureInsertTool(tools.currentToolId)}
+      >
+        Configure...
+      </button>
+    </div>
+  {/if}
 
   <!-- 8-Sector Radial Menu (Right-click / Pen Barrel / UI Trigger / '/') -->
   <RadialMenu bind:visible={radialVisible} x={radialPos.x} y={radialPos.y} />
@@ -2531,5 +2679,107 @@
   .editor-btns {
     display: flex;
     gap: 6px;
+  }
+
+  .structural-edit-banner {
+    position: absolute;
+    top: 52px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 160;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 16px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--accent);
+    border-radius: 9999px;
+    box-shadow: 0 4px 16px var(--glass-shadow);
+    color: var(--glass-text);
+    font-size: 12px;
+  }
+
+  .banner-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+  }
+
+  .done-btn {
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .text-blocks-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .pdf-text-block-hotspot {
+    position: absolute;
+    pointer-events: auto;
+    border: 1px dashed var(--accent);
+    background: rgba(37, 99, 235, 0.08);
+    border-radius: 2px;
+    cursor: text;
+    transition: background 0.1s ease, border-color 0.1s ease;
+  }
+
+  .pdf-text-block-hotspot:hover,
+  .pdf-text-block-hotspot.hovered {
+    background: rgba(37, 99, 235, 0.2);
+    border: 1.5px solid var(--focus-ring);
+    box-shadow: 0 0 6px rgba(37, 99, 235, 0.3);
+  }
+
+  .hotspot-badge {
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 0;
+    background: var(--accent);
+    color: var(--laser-core);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s ease;
+    box-shadow: 0 2px 6px var(--glass-shadow);
+  }
+
+  .pdf-text-block-hotspot:hover .hotspot-badge,
+  .pdf-text-block-hotspot.hovered .hotspot-badge {
+    opacity: 1;
+  }
+
+  .insert-config-pill {
+    position: absolute;
+    bottom: 76px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 140;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 14px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: 9999px;
+    box-shadow: var(--glass-shadow);
+    color: var(--glass-text);
+    font-size: 12px;
   }
 </style>

@@ -734,6 +734,7 @@ pub fn run() {
             commands::studio::control_validate,
             commands::studio::studio_save_annotations,
             commands::studio::studio_load_annotations,
+            commands::studio::studio_extract_text_blocks,
             commands::studio::studio_edit_pdf_text_block,
             commands::studio::studio_extract_snap_geometry,
             commands::studio::studio_save_page_scales,

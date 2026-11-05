@@ -489,17 +489,26 @@ export class ShapeAndHatchEngine {
   }
 
   /** Open an inline rich text box editor at `(x, y)` in world coordinates */
-  openTextBoxEditor(x: number, y: number, pageIndex = 0, isStructural = false): void {
+  openTextBoxEditor(
+    x: number,
+    y: number,
+    pageIndex = 0,
+    isStructural = false,
+    initialText?: string,
+    initialFontSize?: number,
+    width?: number,
+    height?: number
+  ): void {
     const preset = tools.activePreset;
     const color = preset?.stroke.colorHex || theme.token('--glass-text');
-    const fontSize = preset?.font.sizePt ?? 14;
+    const fontSize = initialFontSize ?? preset?.font.sizePt ?? 14;
     this.editingTextBox = {
       id: `text-${Date.now()}-${++this.#seq}`,
       x,
       y,
-      width: 220,
-      height: 54,
-      text: isStructural ? 'Edited PDF Paragraph' : 'Annotation Text',
+      width: width ?? 220,
+      height: height ?? 54,
+      text: initialText ?? (isStructural ? 'Edited PDF Paragraph' : 'Annotation Text'),
       fontSize,
       color,
       pageIndex,

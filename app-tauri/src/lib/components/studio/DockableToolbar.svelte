@@ -1,5 +1,116 @@
 <script module lang="ts">
+  import type { ToolId } from '$lib/core/toolEngine.svelte';
+  import type { StudioIconName } from './StudioIcon.svelte';
+
   export type DockEdge = 'left' | 'right' | 'top' | 'floating';
+
+  export interface ToolItem {
+    id: ToolId;
+    label: string;
+    icon: StudioIconName;
+  }
+
+  export interface CategoryGroup {
+    id: string;
+    name: string;
+    defaultTool: ToolId;
+    tools: ToolItem[];
+  }
+
+  export const CATEGORIES: CategoryGroup[] = [
+    {
+      id: 'nav',
+      name: 'Pan & Select',
+      defaultTool: 'pan',
+      tools: [
+        { id: 'pan', label: 'Pan Canvas', icon: 'pan' },
+        { id: 'select.marquee', label: 'Marquee Select', icon: 'select' },
+        { id: 'select.lasso', label: 'Freeform Lasso', icon: 'lasso' },
+        { id: 'select.text', label: 'Select Text', icon: 'text.review' },
+        { id: 'select.snapshot', label: 'Area Snapshot Stamp', icon: 'shape' }
+      ]
+    },
+    {
+      id: 'ink',
+      name: 'Inking & Laser',
+      defaultTool: 'pen.a',
+      tools: [
+        { id: 'pen.a', label: 'Technical Pen A', icon: 'pen.a' },
+        { id: 'pen.b', label: 'Felt Pen B', icon: 'pen.b' },
+        { id: 'highlighter', label: 'Highlighter', icon: 'highlighter' },
+        { id: 'laser', label: 'Neon Laser Pointer', icon: 'laser' }
+      ]
+    },
+    {
+      id: 'erase',
+      name: 'Erasers',
+      defaultTool: 'eraser.partial',
+      tools: [
+        { id: 'eraser.whole', label: 'Whole Stroke Eraser', icon: 'eraser.whole' },
+        { id: 'eraser.partial', label: 'Boolean Partial Eraser', icon: 'eraser.partial' }
+      ]
+    },
+    {
+      id: 'shapes',
+      name: 'Shapes & Hatch',
+      defaultTool: 'shape.rect',
+      tools: [
+        { id: 'shape.line', label: 'Line', icon: 'line' },
+        { id: 'shape.arrow', label: 'Arrow', icon: 'arrow' },
+        { id: 'shape.polyline', label: 'Polyline', icon: 'shape' },
+        { id: 'shape.rect', label: 'Rectangle', icon: 'rect' },
+        { id: 'shape.ellipse', label: 'Ellipse / Circle', icon: 'ellipse' },
+        { id: 'shape.polygon', label: 'Polygon', icon: 'shape' },
+        { id: 'shape.cloud', label: 'Revision Cloud', icon: 'cloud' },
+        { id: 'hatch.area', label: 'Procedural Hatch Area', icon: 'hatch' },
+        { id: 'hatch.pick', label: 'Pick-Point Hatch Fill', icon: 'hatch' }
+      ]
+    },
+    {
+      id: 'review',
+      name: 'Text & Review Markup',
+      defaultTool: 'insert.text',
+      tools: [
+        { id: 'insert.text', label: 'Rich Text Box', icon: 'text.review' },
+        { id: 'review.highlight', label: 'Highlight Text', icon: 'highlighter' },
+        { id: 'review.underline', label: 'Underline', icon: 'text.review' },
+        { id: 'review.squiggle', label: 'Squiggly Underline', icon: 'text.review' },
+        { id: 'review.strikethrough', label: 'Strikethrough', icon: 'text.review' },
+        { id: 'review.redact', label: 'Cryptographic Redaction', icon: 'text.review' }
+      ]
+    },
+    {
+      id: 'measure',
+      name: 'CAD Measure & Calibrate',
+      defaultTool: 'measure.length',
+      tools: [
+        { id: 'measure.calibrate', label: 'Calibrate Page Scale', icon: 'measure' },
+        { id: 'measure.length', label: 'Linear Length', icon: 'measure' },
+        { id: 'measure.polylength', label: 'Polylength Chain', icon: 'measure' },
+        { id: 'measure.area_rect', label: 'Rectangle Area', icon: 'rect' },
+        { id: 'measure.area_polygon', label: 'Polygon Area', icon: 'shape' },
+        { id: 'measure.perimeter', label: 'Perimeter', icon: 'measure' },
+        { id: 'measure.protractor', label: '3-Point Protractor', icon: 'protractor' },
+        { id: 'measure.ruler', label: 'Digital Ruler', icon: 'ruler' },
+        { id: 'measure.tape', label: 'Transient Tape Measure', icon: 'tape' }
+      ]
+    },
+    {
+      id: 'insert',
+      name: 'Insert Suite & Media',
+      defaultTool: 'callout.single',
+      tools: [
+        { id: 'callout.single', label: 'Single Callout', icon: 'callout' },
+        { id: 'callout.multi', label: 'Multi-Leader Callout', icon: 'callout' },
+        { id: 'insert.note', label: 'Sticky Note', icon: 'note' },
+        { id: 'insert.stamp', label: 'Engineering Stamp', icon: 'stamp' },
+        { id: 'insert.signature', label: 'Signature Suite', icon: 'signature' },
+        { id: 'insert.image', label: 'Insert Image', icon: 'image' },
+        { id: 'insert.latex', label: 'LaTeX Math Equation', icon: 'latex' },
+        { id: 'insert.audio', label: 'Voice Audio Note', icon: 'audio' }
+      ]
+    }
+  ];
 
   export function resolveDock(
     x: number,
@@ -19,16 +130,21 @@
 
 <script lang="ts">
   import { tools } from '$lib/core/toolEngine.svelte';
+  import { commands } from '$lib/core/commandEngine.svelte';
   import StudioIcon from './StudioIcon.svelte';
 
   let {
     onToggleRadial,
     onOpenRadial,
-    onOpenShortcuts
+    onOpenShortcuts,
+    onToggleStructuralEdit,
+    isStructuralEdit = false
   }: {
     onToggleRadial?: () => void;
     onOpenRadial?: () => void;
     onOpenShortcuts?: () => void;
+    onToggleStructuralEdit?: () => void;
+    isStructuralEdit?: boolean;
   } = $props();
 
   let dockEdge = $state<DockEdge>('right');
@@ -38,6 +154,57 @@
   let isDragging = $state(false);
   let grabOffset = { x: 0, y: 0 };
   let toolbarEl: HTMLElement | null = $state(null);
+
+  let activeCategoryPopover = $state<string | null>(null);
+  let categoryActiveTools = $state<Record<string, ToolId>>({
+    nav: 'pan',
+    ink: 'pen.a',
+    erase: 'eraser.partial',
+    shapes: 'shape.rect',
+    review: 'insert.text',
+    measure: 'measure.length',
+    insert: 'callout.single',
+  });
+
+  $effect(() => {
+    const current = tools.currentToolId;
+    for (const cat of CATEGORIES) {
+      if (cat.tools.some((t) => t.id === current)) {
+        categoryActiveTools[cat.id] = current;
+        break;
+      }
+    }
+  });
+
+  function getCategoryActiveTool(cat: CategoryGroup): ToolItem {
+    const activeId = categoryActiveTools[cat.id] || cat.defaultTool;
+    return cat.tools.find((t) => t.id === activeId) ?? cat.tools[0];
+  }
+
+  function isCategoryActive(cat: CategoryGroup): boolean {
+    return cat.tools.some((t) => t.id === tools.currentToolId);
+  }
+
+  function handleCategoryClick(cat: CategoryGroup) {
+    const activeTool = getCategoryActiveTool(cat);
+    tools.selectTool(activeTool.id);
+    if (activeCategoryPopover === cat.id) {
+      activeCategoryPopover = null;
+    } else {
+      activeCategoryPopover = cat.id;
+    }
+  }
+
+  function handleSelectToolFromPopover(toolId: ToolId, catId: string) {
+    tools.selectTool(toolId);
+    categoryActiveTools[catId] = toolId;
+    activeCategoryPopover = null;
+  }
+
+  function handlePinFavorite(e: MouseEvent, toolId: string) {
+    e.stopPropagation();
+    tools.pinFavorite(toolId);
+  }
 
   function handleGripDown(e: PointerEvent) {
     if (e.button !== 0 || !toolbarEl) return;
@@ -153,139 +320,99 @@
     aria-label="Drawing Tools"
     onpointerdown={(e) => e.stopPropagation()}
   >
-    <!-- Pan / Hand -->
-    <button
-      type="button"
-      class="tool-btn"
-      class:active={tools.activeToolId === 'pan'}
-      aria-pressed={tools.activeToolId === 'pan'}
-      onclick={() => tools.selectTool('pan')}
-      title="Pan Canvas (H / Space)"
-      aria-label="Pan Tool"
-    >
-      <StudioIcon name="pan" size={16} />
-    </button>
+    {#each CATEGORIES as cat (cat.id)}
+      <div class="category-wrapper" class:popover-open={activeCategoryPopover === cat.id}>
+        <button
+          type="button"
+          class="tool-btn category-btn"
+          class:active={isCategoryActive(cat)}
+          aria-pressed={isCategoryActive(cat)}
+          onclick={() => handleCategoryClick(cat)}
+          title="{cat.name} — Click to select, click again to open drawer"
+          aria-label="{cat.name}"
+          data-testid="category-btn-{cat.id}"
+        >
+          <StudioIcon name={getCategoryActiveTool(cat).icon} size={16} />
+          <span class="category-caret">▾</span>
+        </button>
 
-    <!-- Selection / Marquee -->
-    <button
-      type="button"
-      class="tool-btn"
-      class:active={tools.activeToolId === 'select'}
-      aria-pressed={tools.activeToolId === 'select'}
-      onclick={() => tools.selectTool('select')}
-      title="Select Marquee (V)"
-      aria-label="Select Tool"
-    >
-      <StudioIcon name="select" size={16} />
-    </button>
+        {#if activeCategoryPopover === cat.id}
+          <div
+            class="category-popover glass-panel"
+            data-testid="toolbar-category-popover"
+            role="menu"
+            tabindex="-1"
+            aria-label="{cat.name} Tools"
+            onpointerdown={(e) => e.stopPropagation()}
+          >
+            <div class="popover-header">
+              <span class="popover-title">{cat.name}</span>
+              <button
+                type="button"
+                class="popover-close-btn"
+                onclick={() => (activeCategoryPopover = null)}
+                title="Close drawer"
+                aria-label="Close drawer"
+              >
+                <StudioIcon name="close" size={12} />
+              </button>
+            </div>
+            <div class="popover-items-list">
+              {#each cat.tools as tool (tool.id)}
+                <div
+                  class="popover-item-row"
+                  class:active={tools.currentToolId === tool.id}
+                  role="menuitem"
+                  tabindex="-1"
+                >
+                  <!-- svelte-ignore a11y_click_events_have_key_events -->
+                  <div
+                    class="item-left"
+                    role="button"
+                    tabindex="0"
+                    onclick={() => handleSelectToolFromPopover(tool.id, cat.id)}
+                  >
+                    <StudioIcon name={tool.icon} size={15} />
+                    <span class="item-label">{tool.label}</span>
+                  </div>
+                  <div class="item-right">
+                    {#if commands.shortcutFor(tool.id)}
+                      <kbd class="item-kbd">{commands.shortcutFor(tool.id)}</kbd>
+                    {/if}
+                    <button
+                      type="button"
+                      class="pin-btn"
+                      class:pinned={tools.isFavorite(tool.id)}
+                      onclick={(e) => handlePinFavorite(e, tool.id)}
+                      title={tools.isFavorite(tool.id) ? 'Unpin favorite' : 'Pin to favorites bar'}
+                      aria-label={tools.isFavorite(tool.id) ? 'Unpin favorite' : 'Pin to favorites bar'}
+                    >
+                      <StudioIcon name={tools.isFavorite(tool.id) ? 'star.filled' : 'star'} size={13} />
+                    </button>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/each}
 
     <div class="toolbar-separator"></div>
 
-    <!-- Fine Black Pen (Preset A) -->
+    <!-- Structural PDF Text Edit Mode Toggle -->
     <button
       type="button"
-      class="tool-btn"
-      class:active={tools.activeToolId === 'pen.a'}
-      aria-pressed={tools.activeToolId === 'pen.a'}
-      onclick={() => tools.selectTool('pen.a')}
-      title="Fine Pen (P)"
-      aria-label="Fine Black Pen"
-    >
-      <StudioIcon name="pen.a" size={16} />
-    </button>
-
-    <!-- Medium Red Pen (Preset B) -->
-    <button
-      type="button"
-      class="tool-btn"
-      class:active={tools.activeToolId === 'pen.b'}
-      aria-pressed={tools.activeToolId === 'pen.b'}
-      onclick={() => tools.selectTool('pen.b')}
-      title="Red Pen (Shift+P)"
-      aria-label="Medium Red Pen"
-    >
-      <StudioIcon name="pen.b" size={16} />
-    </button>
-
-    <!-- Highlighter -->
-    <button
-      type="button"
-      class="tool-btn"
-      class:active={tools.activeToolId === 'highlighter'}
-      aria-pressed={tools.activeToolId === 'highlighter'}
-      onclick={() => tools.selectTool('highlighter')}
-      title="Highlighter (I)"
-      aria-label="Highlighter Tool"
-    >
-      <StudioIcon name="highlighter" size={16} />
-    </button>
-
-    <!-- Partial Eraser -->
-    <button
-      type="button"
-      class="tool-btn"
-      class:active={tools.supportsEraserMode}
-      aria-pressed={tools.supportsEraserMode}
-      onclick={() => tools.selectTool('eraser.partial')}
-      title="Eraser (E)"
-      aria-label="Eraser Tool"
-    >
-      <StudioIcon name="eraser" size={16} />
-    </button>
-
-    <!-- Laser Pointer -->
-    <button
-      type="button"
-      class="tool-btn"
-      class:active={tools.activeToolId === 'laser'}
-      aria-pressed={tools.activeToolId === 'laser'}
-      onclick={() => tools.selectTool('laser')}
-      title="Laser Pointer (L)"
-      aria-label="Laser Pointer"
-    >
-      <StudioIcon name="laser" size={16} />
-    </button>
-
-    <!-- Shapes & Hatch Suite -->
-    <button
-      type="button"
-      class="tool-btn"
-      class:active={tools.activeToolId.startsWith('shape') || tools.activeToolId.startsWith('hatch')}
-      aria-pressed={tools.activeToolId.startsWith('shape') || tools.activeToolId.startsWith('hatch')}
-      onclick={() => tools.selectTool('shape.rect')}
-      title="Shapes & Hatch Suite (Rectangle / Cloud / Polyline)"
-      aria-label="Shapes Tool"
-    >
-      <StudioIcon name="shape" size={16} />
-    </button>
-
-    <!-- Text Box & Review Markup -->
-    <button
-      type="button"
-      class="tool-btn"
-      class:active={tools.activeToolId.startsWith('review') || tools.activeToolId.startsWith('insert.text') || tools.activeToolId === 'text.review'}
-      aria-pressed={tools.activeToolId.startsWith('review') || tools.activeToolId.startsWith('insert.text') || tools.activeToolId === 'text.review'}
-      onclick={() => tools.selectTool('insert.textBox')}
-      title="Text Box & Review Markup (T)"
-      aria-label="Text and Review Tool"
+      class="tool-btn structural-toggle-btn"
+      class:active={isStructuralEdit}
+      aria-pressed={isStructuralEdit}
+      onclick={() => onToggleStructuralEdit?.()}
+      title={isStructuralEdit ? 'Exit Structural PDF Text Edit' : 'Edit Native PDF Text Blocks (Structural)'}
+      aria-label="Structural PDF Text Edit"
+      data-testid="toolbar-structural-edit-toggle"
     >
       <StudioIcon name="text.review" size={16} />
     </button>
-
-    <!-- CAD Measurement & Calibration Suite -->
-    <button
-      type="button"
-      class="tool-btn"
-      class:active={tools.activeToolId === 'measure' || tools.activeToolId.startsWith('measure.')}
-      aria-pressed={tools.activeToolId === 'measure' || tools.activeToolId.startsWith('measure.')}
-      onclick={() => tools.selectTool('measure.length')}
-      title="CAD Measurement & Calibration Suite (M)"
-      aria-label="CAD Measurement Tool"
-    >
-      <StudioIcon name="measure" size={16} />
-    </button>
-
-    <div class="toolbar-separator"></div>
 
     <!-- Radial Menu Summon Trigger -->
     <button
@@ -460,5 +587,205 @@
 
   .radial-trigger-btn {
     border: 1px dashed var(--glass-border);
+  }
+
+  .structural-toggle-btn {
+    border: 1px solid var(--glass-border);
+  }
+
+  .category-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .category-btn {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    padding-bottom: 2px;
+  }
+
+  .category-caret {
+    font-size: 8px;
+    line-height: 8px;
+    opacity: 0.6;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .category-btn.active .category-caret {
+    opacity: 0.9;
+  }
+
+  .category-popover {
+    position: absolute;
+    z-index: 200;
+    width: 260px;
+    max-height: 380px;
+    display: flex;
+    flex-direction: column;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    box-shadow: var(--glass-shadow);
+    padding: 8px;
+    color: var(--glass-text);
+  }
+
+  .dock-right .category-popover,
+  .dock-floating .category-popover {
+    right: calc(100% + 8px);
+    top: 0;
+  }
+
+  .dock-left .category-popover {
+    left: calc(100% + 8px);
+    top: 0;
+  }
+
+  .dock-top .category-popover {
+    top: calc(100% + 8px);
+    left: 0;
+  }
+
+  .popover-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 6px 8px 6px;
+    border-bottom: 1px solid var(--glass-border);
+    margin-bottom: 6px;
+  }
+
+  .popover-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.8;
+  }
+
+  .popover-close-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--glass-text);
+    opacity: 0.6;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: opacity var(--motion-duration) ease, background var(--motion-duration) ease;
+  }
+
+  .popover-close-btn:hover {
+    opacity: 1;
+    background: var(--canvas-selection);
+  }
+
+  .popover-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .popover-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    color: var(--glass-text);
+    cursor: pointer;
+    font-size: 12px;
+    text-align: left;
+    transition: background var(--motion-duration) ease;
+  }
+
+  .popover-item-row:hover {
+    background: var(--canvas-selection);
+  }
+
+  .popover-item-row.active {
+    background: var(--accent);
+    color: var(--laser-core);
+  }
+
+  .item-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .item-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .item-kbd {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--canvas-selection);
+    border: 1px solid var(--glass-border);
+    color: var(--glass-text);
+    font-family: monospace;
+  }
+
+  .popover-item-row.active .item-kbd {
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--laser-core);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .pin-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--glass-text);
+    opacity: 0.4;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: opacity var(--motion-duration) ease, transform 0.1s ease;
+  }
+
+  .pin-btn:hover {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+
+  .pin-btn.pinned {
+    opacity: 1;
+    color: var(--focus-ring);
+  }
+
+  .popover-item-row.active .pin-btn {
+    color: var(--laser-core);
   }
 </style>

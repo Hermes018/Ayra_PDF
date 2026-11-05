@@ -2,7 +2,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { tools } from './toolEngine.svelte';
 import { commands } from './commandEngine.svelte';
 import { ink, generateSvgPathFromPoints, rdp, type Point } from './inkEngine.svelte';
-import { resolveDock } from '$lib/components/studio/DockableToolbar.svelte';
+import {
+  resolveDock,
+  CATEGORIES,
+  type CategoryGroup,
+  type ToolItem
+} from '$lib/components/studio/DockableToolbar.svelte';
 
 describe('ToolStateEngine Reactivity & Preset Scoping', () => {
   it('selectTool("pen.a") updates activeToolId, activeToolLabel and stroke support', () => {
@@ -328,5 +333,58 @@ describe('Phase D3 — InkEngine, Spline Math, Laser Pointer, & Smart Shapes', (
     expect(ink.completedStrokes.length).toBe(2);
     expect(ink.completedStrokes[0].points.length).toBe(2);
     expect(ink.completedStrokes[1].points.length).toBe(3);
+  });
+
+  describe('Phase U4: Grouped 41-Tool Drawer & Shortcut Engine', () => {
+    it('covers all tool families and at least 41 tools in CATEGORIES', () => {
+      const allTools = CATEGORIES.flatMap((c: CategoryGroup) => c.tools);
+      expect(allTools.length).toBeGreaterThanOrEqual(41);
+      expect(CATEGORIES.map((c: CategoryGroup) => c.id)).toEqual([
+        'nav',
+        'ink',
+        'erase',
+        'shapes',
+        'review',
+        'measure',
+        'insert'
+      ]);
+
+      const toolIds = allTools.map((t: ToolItem) => t.id);
+      expect(toolIds).toContain('pan');
+      expect(toolIds).toContain('select.marquee');
+      expect(toolIds).toContain('select.lasso');
+      expect(toolIds).toContain('pen.a');
+      expect(toolIds).toContain('highlighter');
+      expect(toolIds).toContain('laser');
+      expect(toolIds).toContain('eraser.partial');
+      expect(toolIds).toContain('eraser.whole');
+      expect(toolIds).toContain('shape.polyline');
+      expect(toolIds).toContain('shape.cloud');
+      expect(toolIds).toContain('hatch.area');
+      expect(toolIds).toContain('review.squiggle');
+      expect(toolIds).toContain('review.redact');
+      expect(toolIds).toContain('measure.calibrate');
+      expect(toolIds).toContain('measure.protractor');
+      expect(toolIds).toContain('insert.latex');
+      expect(toolIds).toContain('insert.signature');
+      expect(toolIds).toContain('insert.audio');
+    });
+
+    it('shortcutFor returns registered chords from commandEngine', () => {
+      expect(commands.shortcutFor('pan')).toBe('H');
+      expect(commands.shortcutFor('select')).toBe('V');
+      expect(commands.shortcutFor('pen.a')).toBe('P');
+      expect(commands.shortcutFor('highlighter')).toBe('I');
+      expect(commands.shortcutFor('laser')).toBe('L');
+      expect(commands.shortcutFor('eraser.partial')).toBe('E');
+    });
+
+    it('pinFavorite and isFavorite toggle tool in favorites list', () => {
+      expect(tools.isFavorite('shape.rect')).toBe(false);
+      tools.pinFavorite('shape.rect');
+      expect(tools.isFavorite('shape.rect')).toBe(true);
+      tools.pinFavorite('shape.rect');
+      expect(tools.isFavorite('shape.rect')).toBe(false);
+    });
   });
 });

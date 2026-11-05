@@ -134,21 +134,24 @@ This log records user acceptance testing (UAT) defects, root cause diagnoses, an
 - **Symptom:** The tool rail displays only single tools directly, hiding polylines, arrows, revision clouds, squiggly review, LaTeX equations, signatures, audio notes, and CAD measurement tools.
 - **Root Cause Diagnosis:** `DockableToolbar` lacked secondary flyout disclosure triangles and popover submenu trays for tool families.
 - **Fix Specification:**
-  - Implement 6 grouped tool popovers (Inking, Shapes, Text Review, Measure, Insert Suite, Select).
-  - Enhance `PropertyPill.svelte` to dynamically align adjacent to the active tool rail dock edge.
-- **Status:** OPEN (Addressing in Phase U4)
+  - Implement 7 grouped tool popovers across CATEGORIES housing 43 tools (Pan & Select, Inking & Laser, Erasers, Shapes & Hatch, Text & Review, CAD Measure & Calibrate, Insert Suite & Media).
+  - Popovers render item rows with `<StudioIcon>`, full label, shortcut badge via `commands.shortcutFor`, and favorite pin star toggle.
+  - Zero nested buttons and zero local keydown listeners outside `commandEngine`.
+- **Status:** VERIFIED FIXED (Phase U4 & Independent Fresh-Eye Subagent Audit)
 
 ---
 
 ### UI-BUG-010: Structural PDF Text Editing Lacks Hover Bounding Boxes & Double-Click Inline Activation
 - **Severity:** Medium (Usability defect)
-- **Component(s):** `app-tauri/src/lib/views/studio/SpatialCanvas.svelte`, `app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts`
+- **Component(s):** `app-tauri/src/lib/views/studio/SpatialCanvas.svelte`, `app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts`, `app-tauri/src-tauri/src/commands/studio.rs`
 - **Symptom:** Users cannot easily see which text blocks in flat PDFs can be edited, requiring toggling an ambiguous button and guessing where to click.
 - **Root Cause Diagnosis:** Canvas lacked text paragraph hover bounds rendering and direct double-click text activation in markup mode.
 - **Fix Specification:**
-  - Render hover outlines over detected text blocks in Structural Edit mode.
-  - Enable direct double-click on any text block to launch inline textarea editing.
-- **Status:** OPEN (Addressing in Phase U5)
+  - Extract PDF text blocks natively via `studio_extract_text_blocks` IPC returning `PdfTextBlockDto`.
+  - Render hover outlines and badges (`✎ Click to edit PDF text`) over detected text blocks in Structural Edit mode (`.pdf-text-block-hotspot`).
+  - Render top floating guidance banner (`data-testid="structural-edit-banner"`) with `Done Editing` action.
+  - Enable direct click / double-click on any text block to launch inline textarea editing (`data-testid="inline-pdf-text-editor"`).
+- **Status:** VERIFIED FIXED (Phase U5 & Independent Fresh-Eye Subagent Audit)
 
 
 1. **Automated Vitest Test Suite:**

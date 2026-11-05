@@ -44,6 +44,7 @@ export type ToolId =
   | 'shape.ellipse'
   | 'shape.cloud'
   | 'hatch.region'
+  | 'hatch.area'
   | 'hatch.pick'
   | 'measure'
   | 'measure.calibrate'
@@ -51,9 +52,12 @@ export type ToolId =
   | 'measure.polylength'
   | 'measure.perimeter'
   | 'measure.rectArea'
+  | 'measure.area_rect'
   | 'measure.polyArea'
+  | 'measure.area_polygon'
   | 'measure.protractor'
   | 'measure.ruler'
+  | 'measure.tape'
   | 'measure.count'
   | 'callout.single'
   | 'callout.multi'
@@ -100,6 +104,7 @@ export const TOOL_LABELS: Record<ToolId, string> = {
   'shape.ellipse': 'Ellipse Tool',
   'shape.cloud': 'Revision Cloud',
   'hatch.region': 'Hatch Region',
+  'hatch.area': 'Procedural Hatch Area',
   'hatch.pick': 'Pick-Point Hatch',
   'measure': 'Measurement Suite',
   'measure.calibrate': 'Calibrate Scale',
@@ -107,9 +112,12 @@ export const TOOL_LABELS: Record<ToolId, string> = {
   'measure.polylength': 'Measure Polylength',
   'measure.perimeter': 'Measure Perimeter',
   'measure.rectArea': 'Measure Rect Area',
+  'measure.area_rect': 'Rectangle Area',
   'measure.polyArea': 'Measure Poly Area',
+  'measure.area_polygon': 'Polygon Area',
   'measure.protractor': 'Protractor Angle',
   'measure.ruler': 'Digital Ruler',
+  'measure.tape': 'Transient Tape Measure',
   'measure.count': 'Count Takeoff',
   'callout.single': 'Callout Box',
   'callout.multi': 'Multileader Callout',
@@ -204,6 +212,10 @@ function normalizeToolId(raw: string): ToolId {
   if (raw === 'preset.highlighter') return 'highlighter';
   if (raw === 'preset.eraser.partial') return 'eraser.partial';
   if (raw === 'preset.eraser.whole' || raw === 'eraser') return 'eraser.whole';
+  if (raw === 'hatch.area') return 'hatch.region';
+  if (raw === 'measure.area_rect') return 'measure.rectArea';
+  if (raw === 'measure.area_polygon') return 'measure.polyArea';
+  if (raw === 'measure.tape') return 'measure.tape';
   if (raw in TOOL_LABELS) return raw as ToolId;
   return 'pan';
 }
@@ -343,6 +355,26 @@ export class ToolStateEngine {
     this.favorites = this.favorites.includes(presetId)
       ? this.favorites.filter((f) => f !== presetId)
       : [...this.favorites, presetId];
+  }
+
+  pinFavorite(toolIdOrPresetId: string): void {
+    const tid = normalizeToolId(toolIdOrPresetId);
+    let p = this.presets[tid] ?? this.presets[toolIdOrPresetId];
+    if (!p) {
+      p = createFallbackPreset(tid);
+      this.presets[p.id] = p;
+      this.presets[tid] = p;
+    }
+    this.toggleFavorite(p.id);
+  }
+
+  isFavorite(toolIdOrPresetId: string): boolean {
+    const tid = normalizeToolId(toolIdOrPresetId);
+    const p = this.presets[tid] ?? this.presets[toolIdOrPresetId];
+    if (!p) {
+      return this.favorites.includes(toolIdOrPresetId) || this.favorites.includes(`preset.${toolIdOrPresetId}`);
+    }
+    return this.favorites.includes(p.id) || this.favorites.includes(toolIdOrPresetId);
   }
 
   load(presetsList: readonly ToolPreset[], favorites: readonly string[]): void {
