@@ -1725,7 +1725,15 @@ impl PdfEngine for PdfcraftAdapter {
             input_path,
             output_path,
             None,
-            |intermediate_html, target_pdf| self.do_convert_to_pdf(intermediate_html, target_pdf),
+            |intermediate_docx, target_pdf| {
+                office_sidecar::convert_office_to_pdf(
+                    intermediate_docx,
+                    OfficeInputFormat::Docx,
+                    target_pdf,
+                    None,
+                )
+                .map(|_| ())
+            },
         )
     }
 
@@ -1770,7 +1778,11 @@ impl PdfEngine for PdfcraftAdapter {
             None,
             |in_p, out_p| self.pdf_to_html(in_p, out_p),
             |in_p, out_p| self.extract_all_images(in_p, out_p),
-            |in_p, out_p| self.do_convert_to_pdf(in_p, out_p),
+            // Markdown -> PDF intermediate is DOCX (ERR-005): convert via the LibreOffice sidecar.
+            |in_p, out_p| {
+                office_sidecar::convert_office_to_pdf(in_p, OfficeInputFormat::Docx, out_p, None)
+                    .map(|_| ())
+            },
         )
     }
 

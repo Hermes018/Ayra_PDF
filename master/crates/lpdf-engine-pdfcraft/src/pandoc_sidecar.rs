@@ -205,7 +205,10 @@ fn execute_pandoc(binary: &Path, args: &[std::ffi::OsString]) -> Result<()> {
     Ok(())
 }
 
-/// Converts a Markdown document to PDF via Pandoc and the native rendering engine.
+/// Converts a Markdown document to PDF: Pandoc renders GitHub-flavoured Markdown to an
+/// intermediate DOCX (keeps headings, lists, tables, emphasis), then `pdf_converter` turns
+/// that DOCX into PDF (the adapter uses the sandboxed LibreOffice sidecar). pdfcraft's own
+/// create path only accepts images and plain text, so it cannot render the intermediate (ERR-005).
 pub fn convert_markdown_to_pdf<F>(
     input_path: &Path,
     output_path: &Path,
@@ -236,14 +239,13 @@ where
     let temp_dir = std::env::temp_dir().join(format!("lpdf_pandoc_md2pdf_{}", unique_id));
     std::fs::create_dir_all(&temp_dir).map_err(LpdfError::Io)?;
 
-    let temp_intermediate = temp_dir.join("intermediate.html");
+    let temp_intermediate = temp_dir.join("intermediate.docx");
 
     let args = [
         "-f".into(),
         "gfm".into(),
         "-t".into(),
-        "html5".into(),
-        "--standalone".into(),
+        "docx".into(),
         "-o".into(),
         temp_intermediate.as_os_str().to_os_string(),
         canonical_input.as_os_str().to_os_string(),
@@ -274,7 +276,7 @@ where
         return Ok(target_file);
     }
 
-    // Otherwise render the intermediate HTML to PDF using the native engine
+    // Otherwise convert the intermediate DOCX to PDF (LibreOffice sidecar in the adapter)
     let temp_pdf = temp_dir.join("rendered.pdf");
     let convert_res = pdf_converter(&temp_intermediate, &temp_pdf);
     if let Err(e) = convert_res {
@@ -286,7 +288,7 @@ where
     if pdf_bytes.is_empty() || !pdf_bytes.starts_with(b"%PDF-") {
         let _ = std::fs::remove_dir_all(&temp_dir);
         return Err(LpdfError::ExternalDependencyError(
-            "Rendering Markdown intermediate HTML to PDF produced an invalid PDF".into(),
+            "Converting the Markdown intermediate DOCX to PDF produced an invalid PDF".into(),
         ));
     }
 

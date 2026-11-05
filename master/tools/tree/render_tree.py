@@ -24,7 +24,9 @@ for line in open(os.path.join(SCRATCH, "descriptions.tsv"), encoding="utf-8"):
 tracked = subprocess.run(["git", "-C", ROOT, "ls-files"], capture_output=True, text=True, check=True).stdout.split()
 # generated maps are tracked once written; make sure they are always present in the listing
 tracked = set(tracked) | {"tree.md"} | {f"{f}/{f}.md" for f in FOLDERS}
-tracked = {t for t in tracked if not t.startswith("master/vendor/pdfcraft/")}
+# Third-party trees mapped as ONE entry (their contents are upstream code, described in that entry).
+COLLAPSED = ["master/vendor/pdfcraft/", "master/vendor/patches/winprint/src/"]
+tracked = {t for t in tracked if not any(t.startswith(c) for c in COLLAPSED)}
 
 files = set(tracked)
 dirs = set()
@@ -32,7 +34,11 @@ for f in files:
     parts = f.split("/")
     for i in range(1, len(parts)):
         dirs.add("/".join(parts[:i]) + "/")
+for c in COLLAPSED:
+    if c.rstrip("/") + "/" != "master/vendor/pdfcraft/":
+        dirs.add(c)
 dirs.discard("master/vendor/pdfcraft/")
+dirs = {d for d in dirs if not any(d.startswith(c) and d != c for c in COLLAPSED)}
 
 missing = sorted(p for p in files | dirs if p not in desc)
 stale = sorted(p for p in desc if p not in files | dirs)

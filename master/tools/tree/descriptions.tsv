@@ -421,3 +421,11 @@ master/tools/tree/headers/windows.md	Intro + build steps for windows/windows.md
 master/tools/tree/headers/macos.md	Intro for macos/macos.md
 master/tools/tree/headers/ios.md	Intro for ios/ios.md
 master/tools/tree/headers/android.md	Intro for android/android.md
+master/docs/CRAFT_ECOSYSTEM_SURVEY.md	Survey of the 10 storytold *craft repos: licences, deps, unsafe, what to port/adopt (ADR-018 PROPOSED)
+master/vendor/patches/	Local patches of third-party crates applied via [patch] in master/Cargo.toml
+master/vendor/patches/winprint/	winprint (Windows printing, via pdfcraft → craft-print) without its network build-dependencies (ADR-017)
+master/vendor/patches/winprint/Cargo.toml	Upstream manifest minus build/dev-dependencies; `pdfium` default off
+master/vendor/patches/winprint/LICENSE.md	Upstream BSD-3-Clause licence
+master/vendor/patches/winprint/PATCH_NOTES.md	Exactly what differs from upstream and how to re-sync
+master/vendor/patches/winprint/README.md	Upstream readme
+master/vendor/patches/winprint/src/	Byte-identical copy of upstream winprint.rs @ 5f80b9b src/ (44 files, not listed individually)

@@ -28,3 +28,7 @@ hayro-jbig2 = { path = "vendor/pdfcraft/vendor/hayro-jbig2" }
 lopdf = { path = "vendor/pdfcraft/vendor/lopdf" }
 winit = { path = "vendor/pdfcraft/vendor/winit" }
 egui-wgpu = { path = "vendor/pdfcraft/vendor/egui-wgpu" }
+
+# ADR-017 / ERR-006: winprint (Windows-only, via pdfcraft -> craft-print) without its network build-dependencies.
+[patch."https://github.com/storytold/winprint.rs"]
+winprint = { path = "vendor/patches/winprint" }
