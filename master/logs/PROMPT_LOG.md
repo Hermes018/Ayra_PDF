@@ -239,3 +239,19 @@ The safest and simplest way to resolve this blocker is to run the system-level p
   - **§6:** guardrails; start each task from CHECKPOINT; commit locally, no push.
 - Interpretation: as written. Android builder told to save its draft and stop. ADR-018 rev 3 = the user's rules (binding) plus rev 2 analysis. Lead-only doc commits on main are allowed. Builder work merges only after reviewer + verifier sign-off and a green gate.
 - Conflicts with protocol? Possible ones are flagged: `'wasm-unsafe-eval'` CSP (needs approval, only if ADOPT-WASM wins); vendored craft sources (ADR-018 R3).
+
+## [2026-11-05 22:40] Prompt #18 — efficiency and reliability pass
+- Verbatim (summary of a structured message, 7 sections):
+  1. All subagents on Opus 5.5; high effort for lead, verifier, engines builder and reviewer.
+  2. Context hygiene: tools/run.sh (lock, full log in logs/runs/, short summary); subagent replies ≤200 words in PASS/FAIL · findings · files form; exact paths in briefs; start from CHECKPOINT.
+  3. Hooks in .claude/settings.json (committed):
+     - PreToolUse Bash guard: no cargo clean, git push, reset --hard, or rm -rf outside target/ and logs/runs/; builds only via run.sh.
+     - PostToolUse format.
+     - Stop/SubagentStop write to logs/AGENT_ACTIVITY.md.
+     - Test each hook once.
+  4. CLAUDE.md ≤200 lines.
+  5. Build speed: sccache (local), mold, dev profile line-tables-only and deps debug=0, cargo check while iterating, nextest, shared pnpm store. Measure before/after; roll back anything that breaks the gate.
+  6. Reliability: tools/verify.sh is green; logs/FLAKY.md; checkpoint commit before risky changes; plan first for >3-file changes; test first for P0.
+  7. Report at the next milestone.
+- Interpretation: applied between merges; running builders not interrupted. The guard temporarily allows direct build-lock.sh calls until every builder has been re-briefed to use run.sh. Prettier only formats files that were already prettier-clean at HEAD, so legacy files aren't mass-reformatted across worktrees.
+- Conflicts with protocol? No.

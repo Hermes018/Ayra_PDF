@@ -1476,3 +1476,31 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
   - `docs/upstream/winprint-optional-pdfium-build-deps.md` drafted, not posted.
 - **Gate:** `tools/build-lock.sh cargo xtask gate` GREEN: fmt, clippy, nextest 155/155, deny, audit, protocol-lint; Android check SKIPPED, as designed. Negative test: removing the platform tag from item 1.1 makes `feature-map-check` fail at line 39.
 - **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES (no deps) 5 YES 6 N/A 7 N/A 8 YES 9 YES 10 YES (ADR-020) 11 YES
+
+## [2026-11-05 23:00] Phase R4 — efficiency and reliability infrastructure (PROMPT_LOG #18) — DONE (main)
+- **Changes:**
+  - `tools/run.sh` (lock + logs/runs/<name>.log + short summary) and `tools/verify.sh` (the definition of green).
+  - `.claude/settings.json` hooks: `tools/hooks/claude/{guard,format,activity}.py`.
+  - `CLAUDE.md` (45 lines).
+  - `logs/FLAKY.md`, `logs/AGENT_ACTIVITY.md`.
+  - sccache 0.7.7 (local disk, 6 GB cap) as rustc-wrapper; mold 2.30 linker; `[profile.dev] debug = "line-tables-only"`, deps `debug = 0`.
+  - `master/logs/runs/` git-ignored.
+- **Hook tests:**
+  - **guard.py pipe-test:** 29/29 correct (14 blocked, 15 allowed, including commit-message and heredoc false-positive cases).
+  - **guard live:** `cargo clean -p no-such-crate-xyz` was blocked by the hook.
+  - **format.py pipe + live:** a deliberately mis-formatted Edit to `crates/lpdf-hw/src/lib.rs` was reformatted to be byte-identical to HEAD.
+  - **activity.py:** pipe-test line written; live SubagentStop line (reviewer a32626f6) and live Stop line (lead) appended.
+  - Prettier is not installed yet; format.py skips it.
+- **Build times (inside the lock, CARGO_BUILD_JOBS=2):**
+
+  | Measurement | Before | After |
+  |---|---|---|
+  | Incremental `cargo build -p app-tauri` after touching lpdf-hw | 4.81 s | **3.62 s / 3.08 s** steady state (first post-switch incremental 52.0 s, one-off) |
+  | `cargo check --workspace` after touching lpdf-core-types | 3.47 s | 3.48 s |
+  | Warm full app-tauri build with the new flags | — | 145 s (sccache: 1,150 misses, 12 hits, 583 MiB cached) |
+
+  Linker confirmed mold (`readelf -p .comment`). Disk: 32 GB free; target/debug 47 GB.
+- **pnpm:** all 4 checkouts share `~/.local/share/pnpm/store/v11`; svelte's package.json has the same inode in each (link count 5). Vite cache is per worktree.
+- **Gate:** `tools/verify.sh` GREEN on main: gate (fmt, clippy, nextest, deny, audit, protocol-lint, android SKIPPED), feature-map, studio-audit, svelte-check, vitest, tree-map.
+- **Rollbacks:** none needed.
+- **Subagents:** all run on Opus; high effort for verifier, reviewer and engines (the engines builder was spawned before this rule and keeps its original effort until re-spawned).

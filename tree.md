@@ -26,10 +26,12 @@ Every entry has a one-line description. `master/vendor/pdfcraft` is an upstream 
 
 ```text
 Ayra_PDF/
+├── .claude/     # Claude Code project settings (committed)
 ├── .github/     # GitHub config. Must stay at the repo root: GitHub Actions only reads workflows from here
-├── .gitignore   # Ignores build output (`target/`) and PDFs (test corpus is fetched, never committed)
+├── .gitignore   # Ignores build output (`target/`), PDFs (fetched corpus) and run logs (`master/logs/runs/`)
 ├── .gitmodules  # Registers the pinned pdfcraft engine submodule at master/vendor/pdfcraft
 ├── AGENTS.md    # Boot pointer auto-read by coding agents: layout rule + which protocol files to read first
+├── CLAUDE.md    # Short agent rules for this repo (≤200 lines); names the hooks and links to protocol docs
 ├── tree.md      # This file: map of every file in every folder
 ├── master/      # Shared workspace for ALL platforms: source, tests, protocol, logs, docs. All development happens here
 ├── ubuntu/      # Ubuntu/Debian-specific packaging and docs (.deb). Current dev machine
@@ -38,6 +40,13 @@ Ayra_PDF/
 ├── macos/       # macOS-specific files (phase 13, not started)
 ├── ios/         # iOS-specific files (not in the phase plan yet)
 └── android/     # Android-specific files (phase 14, not started)
+```
+
+## `.claude/`
+
+```text
+.claude/
+└── settings.json  # Project hooks: Bash guard (PreToolUse), auto-format (PostToolUse), activity log (Stop/SubagentStop)
 ```
 
 ## `.github/`
@@ -368,9 +377,13 @@ master/
 ├── logs/                                                 # Project logs (append-only, except CHECKPOINT which is overwritten)
 │   ├── ADR-008-sveltekit-spa.md                          # Detail for the SvelteKit SPA exception (registered as ADR-011 in DECISIONS_ADR)
 │   ├── ADR-009-vendored-pdfjs.md                         # Detail for the vendored pdf.js exception (registered as ADR-012 in DECISIONS_ADR)
+│   ├── AGENT_ACTIVITY.md                                 # One line per agent stop (written by hooks)
+│   ├── BUGS.md                                           # Sprint bug list with P0/P1/P2 triage (lead-owned)
 │   ├── CHECKPOINT.md                                     # Single "where are we now" snapshot: phase, status, next actions
 │   ├── DECISIONS_ADR.md                                  # Decision register (all ADRs, including the ID erratum)
+│   ├── DOGFOOD.md                                        # Owner's hands-on testing notes; lead triages into BUGS.md
 │   ├── ERROR_LOG.md                                      # Errors, root causes and fixes
+│   ├── FLAKY.md                                          # Tests that passed only on rerun, with cause and action
 │   ├── PLAN_LOG.md                                       # Plans written before each phase
 │   ├── PROGRESS_LOG.md                                   # What was done per phase, with verification evidence
 │   ├── PROMPT_LOG.md                                     # User prompts and how they were interpreted
@@ -393,6 +406,10 @@ master/
 │   └── THREAT_MODEL.md                                   # Threat model and mitigations
 ├── tools/                                                # Developer scripts and agent-process docs
 │   ├── hooks/                                            # Git hooks (install: `git config core.hooksPath master/tools/hooks`)
+│   │   ├── claude/                                       # Claude Code hook scripts used by .claude/settings.json
+│   │   │   ├── activity.py                               # Stop/SubagentStop: appends one status line to logs/AGENT_ACTIVITY.md
+│   │   │   ├── format.py                                 # PostToolUse formatter: rustfmt / prettier (prettier-clean files only) on the touched file
+│   │   │   └── guard.py                                  # PreToolUse guard: blocks cargo clean, git push/reset --hard, rm -rf outside target, builds outside run.sh
 │   │   └── pre-commit                                    # Blocks deletions not listed in master/.allowed-deletions
 │   ├── tree/                                             # Generator + data for /tree.md and the per-folder maps
 │   │   ├── headers/                                      # Hand-written intro text placed above each generated map
@@ -411,7 +428,9 @@ master/
 │   ├── build-lock.sh                                     # Runs a heavy build under the shared flock lock with CARGO_BUILD_JOBS=2 and the shared target dir (ADR-020)
 │   ├── CLAUDE_AUDIT_CONTEXT.md                           # Brief for an independent read-only audit
 │   ├── make_audit_bundle.sh                              # Collects evidence into audit_bundle.tar.gz for external review
-│   └── sb.sh                                             # Runs a command under CPU/RAM limits (systemd-run) for low-memory hosts
+│   ├── run.sh                                            # Runs one heavy command under the build lock, full log to logs/runs/, prints a short summary
+│   ├── sb.sh                                             # Runs a command under CPU/RAM limits (systemd-run) for low-memory hosts
+│   └── verify.sh                                         # THE definition of green: Rust gate + frontend + project checks via run.sh
 ├── ux-spec/                                              # UX source of truth per tool column
 │   ├── 01_organize.md                                    # UX: Organize PDF tools
 │   ├── 02_optimize.md                                    # UX: Optimize PDF tools

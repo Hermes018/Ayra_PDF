@@ -13,6 +13,13 @@ authors = ["Test <test@example.com>"]
 rust-version = "1.74"
 license = "MIT"
 
+# Faster dev builds (PROMPT_LOG #18): line tables are enough for backtraces; no debuginfo for deps.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = 0
+
 [profile.release]
 codegen-units = 1
 lto = true
