@@ -148,7 +148,60 @@ fn run_gate() {
         }
     }
 
+    run_android_core_check();
+
     println!("Gate passed green!");
+}
+
+/// Core crates that must keep compiling for Android (ADR-020 / ADR-019).
+const ANDROID_CORE_CRATES: &[&str] = &[
+    "lpdf-core-types",
+    "lpdf-engine-port",
+    "lpdf-fs-safety",
+    "lpdf-hw",
+    "lpdf-control-bus",
+];
+const ANDROID_TARGET: &str = "aarch64-linux-android";
+
+/// Gate step: `cargo check --target aarch64-linux-android` on the core crates, once the Rust
+/// target is installed. Until then it reports itself as skipped (never silently passes).
+fn run_android_core_check() {
+    let installed = Command::new("rustup")
+        .args(["target", "list", "--installed"])
+        .output()
+        .map(|o| {
+            String::from_utf8_lossy(&o.stdout)
+                .lines()
+                .any(|l| l.trim() == ANDROID_TARGET)
+        })
+        .unwrap_or(false);
+    if !installed {
+        println!(
+            "Android core check: SKIPPED ({} target not installed; see ADR-019)",
+            ANDROID_TARGET
+        );
+        return;
+    }
+    let mut cmd = Command::new("cargo");
+    cmd.args(["check", "--target", ANDROID_TARGET]);
+    for c in ANDROID_CORE_CRATES {
+        cmd.args(["-p", c]);
+    }
+    println!(
+        "Running: cargo check --target {} -p {}",
+        ANDROID_TARGET,
+        ANDROID_CORE_CRATES.join(" -p ")
+    );
+    let status = cmd
+        .status()
+        .expect("Failed to execute cargo check for Android");
+    if !status.success() {
+        eprintln!(
+            "Gate failed at step: Android core check ({})",
+            ANDROID_TARGET
+        );
+        exit(1);
+    }
 }
 
 fn run_test_offline() {
@@ -320,6 +373,41 @@ fn run_soak(args: &[String]) {
     println!("Soak test suite completed green with zero leaks!");
 }
 
+/// Allowed values in a checklist item's `[platforms: ...]` tag (ADR-020).
+const PLATFORMS: &[&str] = &["linux", "windows", "macos", "android", "ios", "none"];
+
+/// Parses the `` `[platforms: a, b]` `` tag of a checklist line into its platform names.
+fn parse_platforms(line: &str) -> Result<Vec<String>, String> {
+    let start = line
+        .find("`[platforms:")
+        .ok_or_else(|| "missing `[platforms: ...]` declaration (ADR-020)".to_string())?;
+    let rest = &line[start + "`[platforms:".len()..];
+    let end = rest
+        .find("]`")
+        .ok_or_else(|| "unterminated `[platforms: ...]` tag".to_string())?;
+    let list: Vec<String> = rest[..end]
+        .split(',')
+        .map(|p| p.trim().to_string())
+        .filter(|p| !p.is_empty())
+        .collect();
+    if list.is_empty() {
+        return Err("empty `[platforms: ...]` tag".to_string());
+    }
+    for p in &list {
+        if !PLATFORMS.contains(&p.as_str()) {
+            return Err(format!(
+                "unknown platform `{}` (allowed: {})",
+                p,
+                PLATFORMS.join(", ")
+            ));
+        }
+    }
+    if list.len() > 1 && list.iter().any(|p| p == "none") {
+        return Err("`none` cannot be combined with other platforms".to_string());
+    }
+    Ok(list)
+}
+
 fn run_feature_map_check() {
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
     let checklist_path = workspace_root.join("docs/DRAWBOARD_FEATURE_CHECKLIST.md");
@@ -348,6 +436,7 @@ fn run_feature_map_check() {
     let mut not_started_count = 0usize;
     let mut deferred_count = 0usize;
     let mut errors = Vec::new();
+    let mut platform_counts: Vec<(&str, usize)> = PLATFORMS.iter().map(|p| (*p, 0usize)).collect();
 
     for (line_idx, line) in content.lines().enumerate() {
         let trimmed = line.trim();
@@ -355,6 +444,26 @@ fn run_feature_map_check() {
         let is_unchecked = trimmed.starts_with("- [ ] **");
         if !is_checked && !is_unchecked {
             continue;
+        }
+
+        // ADR-020: every feature declares its target platforms, e.g. `[platforms: linux, windows]`.
+        match parse_platforms(trimmed) {
+            Err(msg) => errors.push(format!("Line {}: {}: {}", line_idx + 1, msg, trimmed)),
+            Ok(list) => {
+                let is_deferred = trimmed.contains("`DEFERRED");
+                if list == ["none"] && !is_deferred {
+                    errors.push(format!(
+                        "Line {}: only DEFERRED items may declare `[platforms: none]`: {}",
+                        line_idx + 1,
+                        trimmed
+                    ));
+                }
+                for p in &list {
+                    if let Some(entry) = platform_counts.iter_mut().find(|(n, _)| n == p) {
+                        entry.1 += 1;
+                    }
+                }
+            }
         }
 
         if trimmed.contains("`DONE`") {
@@ -432,6 +541,16 @@ fn run_feature_map_check() {
     println!(
         "feature-map-check: {} features audited (DONE: {}, PARTIAL: {}, IN PROGRESS: {}, NOT STARTED: {}, DEFERRED: {})",
         total, done_count, partial_count, in_progress_count, not_started_count, deferred_count
+    );
+
+    let summary: Vec<String> = platform_counts
+        .iter()
+        .filter(|(n, _)| *n != "none")
+        .map(|(n, c)| format!("{}: {}", n, c))
+        .collect();
+    println!(
+        "feature-map-check: platform declarations ({})",
+        summary.join(", ")
     );
 
     if total < 109 {

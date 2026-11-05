@@ -346,6 +346,8 @@ master/
 │   ├── audit/                                            # Earlier audit reports
 │   │   ├── debug.md                                      # Debug log for phases 11.7–12.1b
 │   │   └── INVENTORY.md                                  # V1 architecture inventory (Oct 2026 snapshot; partly outdated)
+│   ├── upstream/                                         # Drafts of issues/PRs for upstream projects (not posted without owner approval)
+│   │   └── winprint-optional-pdfium-build-deps.md        # Draft issue: make winprint's PDFium download build-deps optional (ADR-017)
 │   ├── APPLE_HIG_GLASS_SPEC.md                           # "Frosted glass" visual design system spec (all platforms)
 │   ├── ARCHITECTURE_AND_COMPLIANCE_AUDIT.md              # Audit of studio phases D1/D2 against the plan
 │   ├── CRAFT_ECOSYSTEM_SURVEY.md                         # Survey of the 10 storytold *craft repos: licences, deps, unsafe, what to port/adopt (ADR-018 PROPOSED)
@@ -403,6 +405,7 @@ master/
 │   │   └── render_tree.py                                # Regenerates all maps; `--check` fails when a file is unmapped or a map is stale
 │   ├── ANTIGRAVITY_PROMPTS.md                            # Prompts used with the Antigravity agent for phases 11.7–12.1
 │   ├── ANTIGRAVITY_RUNBOOK.md                            # Step runbook for those phases
+│   ├── build-lock.sh                                     # Runs a heavy build under the shared flock lock with CARGO_BUILD_JOBS=2 and the shared target dir (ADR-020)
 │   ├── CLAUDE_AUDIT_CONTEXT.md                           # Brief for an independent read-only audit
 │   ├── make_audit_bundle.sh                              # Collects evidence into audit_bundle.tar.gz for external review
 │   └── sb.sh                                             # Runs a command under CPU/RAM limits (systemd-run) for low-memory hosts

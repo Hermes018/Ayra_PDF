@@ -160,3 +160,26 @@ Home grid = exactly ORGANIZE PDF, OPTIMIZE PDF, CONVERT TO PDF, CONVERT FROM PDF
   - Audit craft-libs `pdf` separately as the real Rust renderer.
   - Phase order in survey §6.
 - **Status:** PROPOSED, awaiting user approval. Nothing adopted.
+
+## ADR-017 / ADR-018 decisions [2026-11-05]
+- **ADR-018 APPROVED by user** (PROMPT_LOG #15), as proposed:
+  - Port algorithms rather than adopt whole crates. The ERR-007 hatch fix comes first.
+  - `kurbo`, `vectorcraft-pathops` and `designcraft-compose` are adopted only in the phase that needs them, each after its own dependency vetting (protocol 08).
+- **ADR-017 stays ACCEPTED** (local winprint patch). An upstream issue asking to make the download build-deps optional is drafted in `docs/upstream/winprint-optional-pdfium-build-deps.md`. It is not posted.
+
+## ADR-019 [reserved] Android as a first-class target — to be written (PROPOSED), then user approval before any Android code.
+
+## ADR-020 [2026-11-05] Cross-platform code rule + multi-agent workflow — APPROVED by user (PROMPT_LOG #15)
+- **Platform code:**
+  - Differences live only in `#[cfg(target_os = …)]` modules behind one trait per concern (fs, jobs, memory, window effects), plus one frontend platform-capability module. No platform checks scattered through components.
+  - Existing scattered `cfg` code (lpdf-fs-safety, lpdf-jobs, app-tauri lib.rs) is refactored behind those traits when a phase touches it.
+- **Feature platforms:**
+  - Every checklist item declares `` `[platforms: …]` `` (linux, windows, macos, android, ios; `none` only for DEFERRED). `cargo xtask feature-map-check` enforces this.
+  - On 2026-11-05 all existing items were tagged `linux, windows` (DEFERRED: `none`).
+- **Gate:** the desktop gate as before, plus `cargo check --target aarch64-linux-android` on the core crates (`ANDROID_CORE_CRATES` in xtask). It runs automatically once the Rust target is installed and prints SKIPPED until then.
+- **Agents:**
+  - The lead owns `main`, the gates, logs and all commits.
+  - Read-only subagents may run in parallel.
+  - At most two builders, in separate worktrees (`track/linux`, `track/android`). Builders never commit or edit logs.
+  - Heavy builds go through `master/tools/build-lock.sh` (`flock /tmp/lpdf-build.lock`, `CARGO_BUILD_JOBS=2`). Worktrees share `master/target` because disk is tight. Never `cargo clean`.
+  - After each phase, a fresh verifier subagent gets only the spec/ADR, the diff and the gate commands, and runs the gates itself. A phase merges to `main` only when the verifier passes and the gate is green.

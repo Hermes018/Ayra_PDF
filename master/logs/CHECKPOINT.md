@@ -1,11 +1,11 @@
 # CHECKPOINT (OVERWRITE this file; single source of "where am I")
 - Date: 2026-11-05 (dev machine 2: Zorin OS 18.1 / Ubuntu 24.04)
-- Phase / sub-phase: Track R (remediation & readiness). R1 DONE (craft survey + first green gate), R2 DONE (UI-BUG-006 + checklist PARTIAL). Next: awaiting user (ADR-018 approval, next phase choice)
+- Phase / sub-phase: Track R done through R3 (main). Parallel tracks started: track/linux (L1 ERR-007 hatch → L2 UI wording → L3 ink quality), track/android (ADR-019 only, then stop for approval)
 - Layout: shared workspace = `master/` (run cargo/pnpm/xtask here). OS packaging in `ubuntu/ fedora/ windows/` (`packaging/tauri.<os>.conf.json` overlays + build scripts); `macos/ ios/ android/` not started. Map: `/tree.md` (regenerate with `master/tools/tree/render_tree.py`).
 - Status: (1) 7-folder layout in place; every tracked file mapped and described; (2) forbid(unsafe) regression fixed (ERR-002, ADR-015); (3) dash-portable mock sidecar tests (ERR-003); (4) DRAWBOARD checklist corrected to 111 DONE / 2 IN PROGRESS (2.16 LaTeX and 8.10 handwriting are placeholders); (5) ADR ID collisions resolved by registry erratum (ADR-013/014); (6) Ubuntu .deb overlay + build script added (unbuilt: needs `sudo apt` webkit2gtk dev packages); (7) CI runs from master/, adds native Ubuntu gate job, release builds rpm+deb+nsis/msi via overlays.
 - Verified on this machine (2026-11-05): cargo fmt --check; clippy -D warnings (whole workspace incl. app-tauri); nextest 154/155 (ERR-005); svelte-check 0/0; vitest 127/127; vite build; protocol-lint / feature-map-check / studio-audit --strict; render_tree --check; app launches via `pnpm tauri dev`. RED: cargo deny + cargo audit (ERR-006). NOT verified: .deb/.rpm bundling, Windows.
 - PAUSED TRACK: None.
-- Last green tag: phase-r2-green (previous: phase-r1-green; release tag v0.1.0-rc4)
+- Last green tag: phase-r3-green (main)
 - In progress: Nothing. Unpushed local commits since origin/main 2fa8927 (user will push). Gate GREEN.
 - Open risks: (a) PdfcraftAdapter::render stub; (b) jobs in-process, sandboxed worker unused (F3); (c) ERR-007 saved hatch ignores polygon; (d) stock-Ubuntu AppArmor userns; (e) lpdf-tools-* unused; (f) RC1 QA never run; (g) winprint patch must be re-synced on craft-print bumps (ADR-017); (h) ADR-018 PROPOSED, awaiting user.
 - Next 3 actions: 1) User: approve/adjust ADR-018 (craft adoption) 2) ERR-007 hatch polygon fix (cadcraft port) 3) Honest UI copy for PARTIAL features (LaTeX, ink-to-text), then ink/selection pro-feature phases per survey §6

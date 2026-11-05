@@ -1466,3 +1466,13 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
   | 9 | No scope creep | YES |
   | 10 | Docs / ADR | YES |
   | 11 | Tool registry | YES |
+
+## [2026-11-05 23:40] Phase R3 — decisions recorded, cross-platform rule tooling, upstream draft — DONE (on main)
+- **Changes:**
+  - Decisions recorded: ADR-018 approved; ADR-017 reaffirmed; ADR-020 (cross-platform rule + agent workflow) approved.
+  - `feature-map-check` enforces `[platforms: …]` on every item; all 119 items tagged (113 linux/windows, 6 none).
+  - The gate gains an Android core `cargo check` step (SKIPPED until the target is installed).
+  - New `tools/build-lock.sh` (flock + CARGO_BUILD_JOBS=2 + shared target dir).
+  - `docs/upstream/winprint-optional-pdfium-build-deps.md` drafted, not posted.
+- **Gate:** `tools/build-lock.sh cargo xtask gate` GREEN: fmt, clippy, nextest 155/155, deny, audit, protocol-lint; Android check SKIPPED, as designed. Negative test: removing the platform tag from item 1.1 makes `feature-map-check` fail at line 39.
+- **Pre-commit checklist:** 1 YES 2 YES 3 YES 4 YES (no deps) 5 YES 6 N/A 7 N/A 8 YES 9 YES 10 YES (ADR-020) 11 YES
