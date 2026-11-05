@@ -51,6 +51,45 @@ describe('Viewport Coordinate Engine', () => {
     expect(v.panX).toBe(-200);
     expect(v.panY).toBe(-150);
   });
+
+  it('pinchZoomAt smoothly scales zoom and preserves anchor', () => {
+    viewport.upsertView({ id: 'pinch-view', zoom: 1.0, panX: 0, panY: 0, linkGroup: null, dpr: 1 });
+    // Pinch zoom in (negative deltaY)
+    viewport.pinchZoomAt(-50, 0, 100, 100, 'pinch-view');
+    const vIn = viewport.views['pinch-view'];
+    expect(vIn.zoom).toBeGreaterThan(1.0);
+
+    // Pinch zoom out (positive deltaY)
+    viewport.pinchZoomAt(100, 0, 100, 100, 'pinch-view');
+    const vOut = viewport.views['pinch-view'];
+    expect(vOut.zoom).toBeLessThan(vIn.zoom);
+  });
+
+  it('panByDelta translates the viewport smoothly', () => {
+    viewport.upsertView({ id: 'pan-view', zoom: 1.0, panX: 100, panY: 50, linkGroup: null, dpr: 1 });
+    viewport.panByDelta(30, 20, 'pan-view');
+    const v = viewport.views['pan-view'];
+    expect(v.panX).toBe(70);
+    expect(v.panY).toBe(30);
+  });
+
+  it('fitToWidth calculates valid zoom and centers horizontally', () => {
+    viewport.upsertView({ id: 'fit-view', zoom: 1.0, panX: 0, panY: 0, linkGroup: null, dpr: 1 });
+    viewport.fitToWidth(1000, 595.28, 'fit-view');
+    const v = viewport.views['fit-view'];
+    expect(v.zoom).toBeGreaterThan(0.5);
+    expect(v.zoom).toBeLessThan(3.0);
+    expect(v.panX).toBeGreaterThanOrEqual(0);
+  });
+
+  it('fitToPage calculates valid zoom and centers both axes', () => {
+    viewport.upsertView({ id: 'fit-page-view', zoom: 1.0, panX: 0, panY: 0, linkGroup: null, dpr: 1 });
+    viewport.fitToPage(1200, 900, 595.28, 841.89, 'fit-page-view');
+    const v = viewport.views['fit-page-view'];
+    expect(v.zoom).toBeGreaterThan(0.3);
+    expect(v.panX).toBeGreaterThanOrEqual(0);
+    expect(v.panY).toBeGreaterThanOrEqual(20);
+  });
 });
 
 describe('Tool Engine & Pressure Curves', () => {

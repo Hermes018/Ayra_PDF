@@ -1,5 +1,6 @@
 <script lang="ts">
     import { faqStore } from '$lib/i18n/faqStore.svelte';
+    import { appState } from '$lib/state.svelte';
 
     let { currentView = $bindable() } = $props<{
         currentView: string;
@@ -22,8 +23,19 @@
 
 <aside class="sidebar glass--sidebar" aria-label="Application Sidebar">
     <div class="logo">
-        <span class="icon" aria-hidden="true">📄</span>
-        <h2>LocalPDF</h2>
+        <div class="logo-title">
+            <span class="icon" aria-hidden="true">📄</span>
+            <h2>LocalPDF</h2>
+        </div>
+        <button
+            type="button"
+            class="sidebar-collapse-btn"
+            onclick={() => appState.toggleSidebar()}
+            aria-label="Collapse Sidebar (Ctrl+B)"
+            title="Collapse Sidebar (Ctrl+B)"
+        >
+            ◀
+        </button>
     </div>
 
     <nav aria-label="Primary Navigation">
@@ -78,19 +90,46 @@
         flex-direction: column;
         height: 100%;
         border-right: 1px solid var(--glass-border-subtle);
-        transition: background-color var(--dur-med, 0.2s) ease, border-color var(--dur-med, 0.2s) ease;
+        transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease, background-color var(--dur-med, 0.2s) ease, border-color var(--dur-med, 0.2s) ease;
         box-sizing: border-box;
     }
 
     .logo {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 0.5rem;
         padding: 1.25rem 1rem;
         font-size: 1.15rem;
         font-weight: 700;
         color: var(--accent-primary);
         letter-spacing: -0.01em;
+    }
+
+    .logo-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .sidebar-collapse-btn {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--text-muted, var(--text-primary));
+        border-radius: var(--radius-sm, 6px);
+        padding: 4px 6px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color var(--dur-fast, 120ms) ease, color var(--dur-fast, 120ms) ease, border-color var(--dur-fast, 120ms) ease;
+    }
+
+    .sidebar-collapse-btn:hover {
+        background: var(--glass-bg-hover);
+        color: var(--accent-primary);
+        border-color: var(--glass-border-subtle);
     }
 
     .logo h2 {

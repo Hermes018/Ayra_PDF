@@ -18,6 +18,11 @@ class AppState {
     effectiveTheme = $state<'light' | 'dark'>('dark');
     toasts = $state<ToastItem[]>([]);
     preferNativeText = $state<boolean>(false);
+    sidebarCollapsed = $state<boolean>(false);
+
+    toggleSidebar(): void {
+        this.sidebarCollapsed = !this.sidebarCollapsed;
+    }
 
     private mediaQueryList: MediaQueryList | null = null;
     private mediaListener: ((e: MediaQueryListEvent) => void) | null = null;

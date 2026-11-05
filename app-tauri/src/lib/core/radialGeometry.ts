@@ -26,23 +26,56 @@ export function getSector(
   return Math.floor((angle + Math.PI / 8) / (Math.PI / 4)) % RADIAL.sectors;
 }
 
-export function radialHit(dx: number, dy: number, flyoutCounts: readonly number[]): RadialHit {
+export function radialHit(
+  dx: number,
+  dy: number,
+  flyoutCounts: readonly number[],
+  lockedWedge: number | null = null
+): RadialHit {
   const distance = Math.sqrt(dx * dx + dy * dy);
   if (distance < RADIAL.r0) return { zone: 'cancel' };
   if (distance >= RADIAL.r2) return { zone: 'outside' };
+
   let angle = Math.atan2(dy, dx) + Math.PI / 2; // Shift so Top is 0
-  if (angle < 0) angle += 2 * Math.PI;
-  const sector = Math.floor((angle + Math.PI / 8) / (Math.PI / 4)) % RADIAL.sectors;
-  if (distance < RADIAL.r1) return { zone: 'wedge', sector };
-  const n = flyoutCounts[sector] ?? 0;
-  if (n === 0) return { zone: 'wedge', sector };
-  const norm = (angle + Math.PI / 8) % (2 * Math.PI);
-  const within = norm - sector * (Math.PI / 4);
-  return {
-    zone: 'flyout',
-    sector,
-    item: Math.min(n - 1, Math.max(0, Math.floor((within / (Math.PI / 4)) * n)))
-  };
+  while (angle < 0) angle += 2 * Math.PI;
+  while (angle >= 2 * Math.PI) angle -= 2 * Math.PI;
+
+  const freeSector = Math.floor((angle + Math.PI / 8) / (Math.PI / 4)) % RADIAL.sectors;
+
+  if (distance < RADIAL.r1) {
+    return { zone: 'wedge', sector: freeSector };
+  }
+
+  // Outer flyout ring (r1 <= distance < r2)
+  const targetSector = lockedWedge !== null ? lockedWedge : freeSector;
+  const n = flyoutCounts[targetSector] ?? 0;
+  if (n === 0) {
+    return { zone: 'wedge', sector: targetSector };
+  }
+
+  // Mid angle for target sector in shifted polar coordinates
+  const midAngle = targetSector * (Math.PI / 4);
+  let deltaAngle = angle - midAngle;
+  while (deltaAngle > Math.PI) deltaAngle -= 2 * Math.PI;
+  while (deltaAngle < -Math.PI) deltaAngle += 2 * Math.PI;
+
+  const halfSpan = Math.PI / 8;
+  if (Math.abs(deltaAngle) <= halfSpan * 1.25) {
+    const t = Math.max(0, Math.min(1, (deltaAngle + halfSpan) / (2 * halfSpan)));
+    const item = Math.min(n - 1, Math.max(0, Math.floor(t * n)));
+    return { zone: 'flyout', sector: targetSector, item };
+  }
+
+  // Outside the active wedge's flyout fan, fall back to freeSector
+  const freeN = flyoutCounts[freeSector] ?? 0;
+  if (freeN === 0) return { zone: 'wedge', sector: freeSector };
+  const freeMidAngle = freeSector * (Math.PI / 4);
+  let freeDelta = angle - freeMidAngle;
+  while (freeDelta > Math.PI) freeDelta -= 2 * Math.PI;
+  while (freeDelta < -Math.PI) freeDelta += 2 * Math.PI;
+  const freeT = Math.max(0, Math.min(1, (freeDelta + halfSpan) / (2 * halfSpan)));
+  const freeItem = Math.min(freeN - 1, Math.max(0, Math.floor(freeT * freeN)));
+  return { zone: 'flyout', sector: freeSector, item: freeItem };
 }
 
 export function clampCenter(x: number, y: number, w: number, h: number): { x: number; y: number } {

@@ -65,9 +65,61 @@
 
   const PT_TO_CSS = 96 / 72;
 
+  let activeTouchPoints = new Map<number, Pt>();
+  let touchInitialDistance = 0;
+  let touchInitialMidpoint: Pt = { x: 0, y: 0 };
+  let touchInitialZoom = 1.0;
+  let wheelBehavior = $state<'auto' | 'zoom' | 'pan'>('auto');
+
+  let activePageNumber = $derived.by(() => {
+    const v = viewport.views[viewId] ?? currentView;
+    const w = canvasContainer ? canvasContainer.clientWidth : 800;
+    const h = canvasContainer ? canvasContainer.clientHeight : 600;
+    const centerX = -v.panX / v.zoom + w / (2 * v.zoom);
+    const centerY = -v.panY / v.zoom + h / (2 * v.zoom);
+    return Math.max(1, findPageForWorldPoint({ x: centerX, y: centerY }) + 1);
+  });
+
+  function toggleRadialAt(x?: number, y?: number) {
+    if (radialVisible) {
+      radialVisible = false;
+    } else {
+      const posX = x ?? (typeof window !== 'undefined' ? window.innerWidth / 2 : 300);
+      const posY = y ?? (typeof window !== 'undefined' ? window.innerHeight / 2 : 300);
+      radialPos = { x: posX, y: posY };
+      radialVisible = true;
+    }
+  }
+
   function openRadialAt(x: number, y: number) {
     radialPos = { x, y };
     radialVisible = true;
+  }
+
+  function handleZoomSelect(e: Event) {
+    const val = (e.target as HTMLSelectElement).value;
+    const w = canvasContainer ? canvasContainer.clientWidth : 800;
+    const h = canvasContainer ? canvasContainer.clientHeight : 600;
+    if (val === 'fit-width') {
+      viewport.fitToWidth(w, 595.28, viewId);
+    } else if (val === 'fit-page') {
+      viewport.fitToPage(w, h, 595.28, 841.89, viewId);
+    } else {
+      const pct = parseFloat(val);
+      if (Number.isFinite(pct) && pct > 0) {
+        viewport.upsertView({ ...currentView, zoom: pct / 100 });
+      }
+    }
+  }
+
+  function handleRotatePage90() {
+    const activeIdx = activePageNumber - 1;
+    const page = viewport.pages[activeIdx];
+    if (page) {
+      const nextRot = ((page.rotation + 90) % 360) as 0 | 90 | 180 | 270;
+      viewport.pages = viewport.pages.map((p, idx) => idx === activeIdx ? { ...p, rotation: nextRot } : p);
+      statusNotice = `Page ${activePageNumber} rotated to ${nextRot}°`;
+    }
   }
 
   let currentView = $derived(
@@ -646,9 +698,7 @@
     });
 
     commands.onRadialToggle = () => {
-      if (typeof window !== 'undefined') {
-        openRadialAt(window.innerWidth / 2, window.innerHeight / 2);
-      }
+      toggleRadialAt();
     };
 
     // Register Phase D4 & D5 global command handlers (zero local keydown listeners)
@@ -705,11 +755,12 @@
 
   function handleContextMenu(e: MouseEvent) {
     e.preventDefault();
-    openRadialAt(e.clientX, e.clientY);
+    toggleRadialAt(e.clientX, e.clientY);
   }
 
   function handleWheel(e: WheelEvent) {
     e.preventDefault();
+    e.stopPropagation();
     if (!canvasContainer) return;
 
     const rect = canvasContainer.getBoundingClientRect();
@@ -719,10 +770,27 @@
     };
 
     if (e.ctrlKey || e.metaKey) {
-      const factor = e.deltaY < 0 ? 1.15 : 0.85;
-      viewport.zoomAt(viewId, factor, anchor);
+      viewport.pinchZoomAt(e.deltaY, e.deltaMode, anchor.x, anchor.y, viewId);
+      return;
+    }
+
+    if (wheelBehavior === 'zoom') {
+      viewport.pinchZoomAt(e.deltaY * 0.65, e.deltaMode, anchor.x, anchor.y, viewId);
+      return;
+    }
+
+    if (wheelBehavior === 'pan') {
+      viewport.panByDelta(e.shiftKey ? e.deltaY : e.deltaX, e.shiftKey ? e.deltaX : e.deltaY, viewId);
+      return;
+    }
+
+    // Default 'auto' mode
+    if (Math.abs(e.deltaX) > 0) {
+      viewport.panByDelta(e.deltaX, e.deltaY, viewId);
+    } else if (e.shiftKey || e.altKey) {
+      viewport.panByDelta(e.shiftKey ? e.deltaY : 0, e.shiftKey ? 0 : e.deltaY, viewId);
     } else {
-      viewport.panBy(viewId, -e.deltaX, -e.deltaY);
+      viewport.pinchZoomAt(e.deltaY * 0.65, e.deltaMode, anchor.x, anchor.y, viewId);
     }
   }
 
@@ -775,10 +843,23 @@
     const target = e.target as HTMLElement | null;
     if (
       target?.closest(
-        '.spatial-hud, .dockable-toolbar, .property-pill, .favorites-bar, .modal-backdrop, .radial-menu, .selection-action-bar, .inline-text-editor, .digital-ruler-widget, button, select, input, textarea'
+        '.studio-top-bar, .spatial-hud, .dockable-toolbar, .property-pill, .favorites-bar, .modal-backdrop, .radial-menu, .selection-action-bar, .inline-text-editor, .digital-ruler-widget, button, select, input, textarea'
       )
     ) {
       return;
+    }
+
+    if (e.pointerType === 'touch') {
+      activeTouchPoints.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (activeTouchPoints.size === 2) {
+        if (ink.isDrawing) ink.cancelStroke();
+        isPanning = false;
+        const pts = Array.from(activeTouchPoints.values());
+        touchInitialDistance = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+        touchInitialMidpoint = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+        touchInitialZoom = currentView.zoom;
+        return;
+      }
     }
 
     const isPanAction = e.button === 1 || commands.spaceSpringActive || tools.activeTool === 'pan';
@@ -944,6 +1025,39 @@
   }
 
   function handlePointerMove(e: PointerEvent) {
+    if (e.pointerType === 'touch' && activeTouchPoints.has(e.pointerId)) {
+      activeTouchPoints.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (activeTouchPoints.size === 2) {
+        const pts = Array.from(activeTouchPoints.values());
+        const currentDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+        const currentMid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+
+        if (touchInitialDistance > 0 && canvasContainer) {
+          const ratio = currentDist / touchInitialDistance;
+          const targetZoom = Math.max(0.1, Math.min(16.0, touchInitialZoom * ratio));
+          const deltaPanX = currentMid.x - touchInitialMidpoint.x;
+          const deltaPanY = currentMid.y - touchInitialMidpoint.y;
+          const rect = canvasContainer.getBoundingClientRect();
+          const screenMidX = currentMid.x - rect.left;
+          const screenMidY = currentMid.y - rect.top;
+          const k = targetZoom / currentView.zoom;
+          const newPanX = screenMidX - (screenMidX - currentView.panX) * k + deltaPanX;
+          const newPanY = screenMidY - (screenMidY - currentView.panY) * k + deltaPanY;
+
+          viewport.upsertView({
+            ...currentView,
+            zoom: targetZoom,
+            panX: newPanX,
+            panY: newPanY,
+          });
+          touchInitialMidpoint = currentMid;
+          touchInitialDistance = currentDist;
+          touchInitialZoom = targetZoom;
+        }
+        return;
+      }
+    }
+
     if (isPanning) {
       const dx = e.clientX - panStart.x;
       const dy = e.clientY - panStart.y;
@@ -1026,6 +1140,13 @@
   }
 
   function handlePointerUp(e: PointerEvent) {
+    if (e.pointerType === 'touch') {
+      activeTouchPoints.delete(e.pointerId);
+      if (activeTouchPoints.size < 2) {
+        touchInitialDistance = 0;
+      }
+    }
+
     if (isPanning) {
       isPanning = false;
       try {
@@ -1130,6 +1251,12 @@
   }
 
   function handlePointerCancel(e: PointerEvent) {
+    if (e.pointerType === 'touch') {
+      activeTouchPoints.delete(e.pointerId);
+      if (activeTouchPoints.size < 2) {
+        touchInitialDistance = 0;
+      }
+    }
     if (isPanning) {
       isPanning = false;
     }
@@ -1161,85 +1288,132 @@
   aria-label="Drawboard Spatial Studio Canvas"
   tabindex="-1"
 >
-  <!-- HUD / Spatial Controls Pill -->
-  <div
-    class="spatial-hud glass-panel"
+  <!-- Studio Top Command Bar (4 Zones) -->
+  <header
+    class="studio-top-bar glass-panel"
     role="toolbar"
     tabindex={0}
-    aria-label="Spatial Canvas HUD"
+    aria-label="Drawboard Studio Top Command Bar"
     onpointerdown={(e) => e.stopPropagation()}
   >
-    <div class="hud-mode-toggle">
+    <!-- Zone 1: Workspace & Mode -->
+    <div class="top-zone zone-workspace">
       <button
         type="button"
-        class="hud-btn"
-        class:active={editMode === 'markup'}
-        onclick={() => {
-          editMode = 'markup';
-        }}
-        title="Markup Mode (Fast 60-120fps Annotations & Measurements)"
+        class="top-icon-btn"
+        onclick={() => appState.toggleSidebar()}
+        title="Toggle Left Sidebar (Ctrl+B)"
+        aria-label="Toggle Left Sidebar"
       >
-        <StudioIcon name="pen.a" size={13} />
-        <span>Markup</span>
+        <span style="font-size: 14px;">☰</span>
       </button>
-      <button
-        type="button"
-        class="hud-btn"
-        class:active={editMode === 'structural'}
-        onclick={() => {
-          editMode = 'structural';
-        }}
-        title="Structural PDF Edit Mode (True Text, Font & Object Manipulation)"
-      >
-        <StudioIcon name="text.review" size={13} />
-        <span>Structural Edit</span>
-      </button>
+
+      <div class="mode-segmented-switch">
+        <button
+          type="button"
+          class="top-btn"
+          class:active={editMode === 'markup'}
+          onclick={() => {
+            editMode = 'markup';
+          }}
+          title="Markup Mode (Fast 60-120fps Annotations & CAD Tools)"
+        >
+          <StudioIcon name="pen.a" size={13} />
+          <span>Markup</span>
+        </button>
+        <button
+          type="button"
+          class="top-btn"
+          class:active={editMode === 'structural'}
+          onclick={() => {
+            editMode = 'structural';
+          }}
+          title="Structural PDF Edit Mode (Direct Text & Font Manipulation)"
+        >
+          <StudioIcon name="text.review" size={13} />
+          <span>Edit PDF Text</span>
+        </button>
+      </div>
+
+      <div class="page-indicator-badge" title="Active Page / Total Pages">
+        Page {activePageNumber} / {Math.max(1, viewport.pages.length)}
+      </div>
     </div>
 
-    <div class="hud-divider"></div>
+    <div class="top-zone-divider"></div>
 
-    <div class="hud-zoom">
+    <!-- Zone 2: Viewport & Zoom -->
+    <div class="top-zone zone-viewport">
       <button
         type="button"
-        class="hud-icon-btn"
+        class="top-icon-btn"
         onclick={() => viewport.zoomAt(viewId, 0.8, { x: 300, y: 300 })}
         title="Zoom Out"
         aria-label="Zoom Out"
       >
         <StudioIcon name="zoom.out" size={14} />
       </button>
-      <span class="zoom-readout">{Math.round(currentView.zoom * 100)}%</span>
+
+      <select
+        class="top-select"
+        value={Math.round(currentView.zoom * 100).toString()}
+        onchange={handleZoomSelect}
+        aria-label="Zoom Level Preset"
+        title="Zoom Preset (50% - 200%, Fit Width, Fit Page)"
+      >
+        <option value="50">50%</option>
+        <option value="75">75%</option>
+        <option value="100">100%</option>
+        <option value="125">125%</option>
+        <option value="150">150%</option>
+        <option value="200">200%</option>
+        <option value="fit-width">Fit Width</option>
+        <option value="fit-page">Fit Page</option>
+      </select>
+
       <button
         type="button"
-        class="hud-icon-btn"
+        class="top-icon-btn"
         onclick={() => viewport.zoomAt(viewId, 1.25, { x: 300, y: 300 })}
         title="Zoom In"
         aria-label="Zoom In"
       >
         <StudioIcon name="zoom.in" size={14} />
       </button>
+
       <button
         type="button"
-        class="hud-icon-btn"
-        onclick={() => viewport.upsertView({ ...currentView, zoom: 1.0, panX: 40, panY: 40 })}
-        title="Reset 100%"
-        aria-label="Reset Zoom"
+        class="top-icon-btn"
+        onclick={handleRotatePage90}
+        title="Rotate Page 90° Clockwise"
+        aria-label="Rotate Page 90° Clockwise"
       >
         <StudioIcon name="reset" size={14} />
       </button>
+
+      <select
+        class="top-select"
+        value={inserts.pageOverlay}
+        onchange={(e) => {
+          inserts.pageOverlay = (e.target as HTMLSelectElement).value as PageOverlayTemplate;
+        }}
+        aria-label="Page Background Overlay Template"
+        title="Non-destructive Page Background Overlay (Engineering Grid, Isometric, Ruled)"
+      >
+        <option value="none">Overlay: None</option>
+        <option value="engineering-grid">Overlay: Eng Grid</option>
+        <option value="isometric-grid">Overlay: Iso Grid</option>
+        <option value="ruled-paper">Overlay: Ruled</option>
+      </select>
     </div>
 
-    <div class="hud-divider"></div>
+    <div class="top-zone-divider"></div>
 
-    <div class="hud-tool-indicator">
-      <span class="hud-tool-label">Tool:</span>
-      <span class="hud-tool-name">{tools.activeToolLabel}</span>
-    </div>
-
-    <div class="hud-undo-redo">
+    <!-- Zone 3: History & Assist -->
+    <div class="top-zone zone-history-assist">
       <button
         type="button"
-        class="hud-icon-btn"
+        class="top-icon-btn"
         disabled={!commands.canUndo}
         onclick={() => commands.undo()}
         title="Undo ({commands.undoLabel ?? 'None'})"
@@ -1249,7 +1423,7 @@
       </button>
       <button
         type="button"
-        class="hud-icon-btn"
+        class="top-icon-btn"
         disabled={!commands.canRedo}
         onclick={() => commands.redo()}
         title="Redo"
@@ -1257,15 +1431,55 @@
       >
         <StudioIcon name="redo" size={14} />
       </button>
-    </div>
 
-    <div class="hud-divider"></div>
-
-    <!-- Persistence & Flatten / Redaction Commit Actions -->
-    <div class="hud-persistence">
       <button
         type="button"
-        class="hud-action-btn"
+        class="top-btn"
+        class:active={snapEngine.enabled}
+        onclick={() => {
+          snapEngine.enabled = !snapEngine.enabled;
+        }}
+        title="CAD Vector Snapping (OSNAP)"
+      >
+        <StudioIcon name="snap" size={13} />
+        <span>Snap: {snapEngine.enabled ? 'ON' : 'OFF'}</span>
+      </button>
+
+      <button
+        type="button"
+        class="top-btn"
+        class:active={measureEngine.ruler.visible}
+        onclick={() => {
+          measureEngine.ruler = {
+            ...measureEngine.ruler,
+            visible: !measureEngine.ruler.visible,
+          };
+        }}
+        title="Digital Drafting Ruler Toggle"
+      >
+        <StudioIcon name="ruler" size={13} />
+        <span>Ruler</span>
+      </button>
+    </div>
+
+    <div class="top-zone-divider"></div>
+
+    <!-- Zone 4: Actions & Persistence -->
+    <div class="top-zone zone-actions">
+      {#if shapes.editingTextBox}
+        <button
+          type="button"
+          class="top-action-btn primary-btn"
+          onclick={commitStructuralTextOrAnnotation}
+          title="Commit Active Text Block Edit"
+        >
+          Commit Text
+        </button>
+      {/if}
+
+      <button
+        type="button"
+        class="top-action-btn"
         onclick={() => saveAnnotationsToPdf(false)}
         title="Save Editable Annotations to PDF (Atomic Write)"
       >
@@ -1273,7 +1487,7 @@
       </button>
       <button
         type="button"
-        class="hud-action-btn"
+        class="top-action-btn"
         onclick={() => saveAnnotationsToPdf(true)}
         title="Flatten Annotations into Permanent Page Streams"
       >
@@ -1282,38 +1496,25 @@
       {#if hasRedactions}
         <button
           type="button"
-          class="hud-action-btn danger-btn"
+          class="top-action-btn danger-btn"
           onclick={() => saveAnnotationsToPdf(true)}
           title="Permanently Sanitize & Strip Underlying Content in Redacted Regions"
         >
           Commit Redactions
         </button>
       {/if}
-      <select
-        class="hud-overlay-select"
-        value={inserts.pageOverlay}
-        onchange={(e) => {
-          inserts.pageOverlay = (e.target as HTMLSelectElement).value as PageOverlayTemplate;
-        }}
-        aria-label="Page Background Overlay Template"
-        title="Non-destructive Page Background Overlay (Engineering Grid, Isometric, Ruled)"
-      >
-        <option value="none">BG: None</option>
-        <option value="engineering-grid">BG: Eng Grid</option>
-        <option value="isometric-grid">BG: Isometric</option>
-        <option value="ruled-paper">BG: Ruled</option>
-      </select>
+
       <button
         type="button"
-        class="hud-action-btn"
+        class="top-action-btn"
         class:primary-btn={inserts.ledgerOpen}
         onclick={() => inserts.toggleLedger()}
-        title="Open Annotation History, Markup Library & Quantity Takeoff CSV Drawer"
+        title="Open Annotation History, Markup Library & Quantity Takeoff Drawer"
       >
-        Ledger & Takeoff
+        Ledger & Vault
       </button>
     </div>
-  </div>
+  </header>
 
   {#if statusNotice}
     <div class="studio-status-banner glass-panel" role="status">
@@ -1896,14 +2097,14 @@
         <div class="editor-btns">
           <button
             type="button"
-            class="hud-action-btn"
+            class="top-action-btn"
             onclick={() => shapes.cancelActiveShape()}
           >
             Cancel
           </button>
           <button
             type="button"
-            class="hud-action-btn primary-btn"
+            class="top-action-btn primary-btn"
             onclick={commitStructuralTextOrAnnotation}
           >
             Commit Text
@@ -1915,9 +2116,7 @@
 
   <!-- Dockable Markup Toolbar (Top, Left, Right, Floating) -->
   <DockableToolbar
-    onOpenRadial={() => {
-      if (typeof window !== 'undefined') openRadialAt(window.innerWidth / 2, window.innerHeight / 2);
-    }}
+    onToggleRadial={toggleRadialAt}
     onOpenShortcuts={() => {
       shortcutsVisible = true;
     }}
@@ -2056,7 +2255,113 @@
     opacity: 0.72;
   }
 
-  .hud-overlay-select {
+  /* 4-Zone Frosted Glass Top Command Bar */
+  .studio-top-bar {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 160;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 9999px;
+    color: var(--glass-text);
+    pointer-events: auto;
+    max-width: calc(100vw - 32px);
+    overflow-x: auto;
+  }
+
+  .top-zone {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .top-zone-divider {
+    width: 1px;
+    height: 18px;
+    background: var(--glass-border);
+    flex-shrink: 0;
+  }
+
+  .mode-segmented-switch {
+    display: flex;
+    background: var(--canvas-selection);
+    border-radius: 9999px;
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .page-indicator-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--glass-text);
+    padding: 2px 8px;
+    background: var(--canvas-selection);
+    border-radius: 9999px;
+    white-space: nowrap;
+    opacity: 0.85;
+  }
+
+  .top-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: none;
+    background: transparent;
+    color: var(--glass-text);
+    padding: 4px 8px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--motion-duration) ease, color var(--motion-duration) ease;
+  }
+
+  .top-btn:hover {
+    background: var(--canvas-selection);
+  }
+
+  .top-btn.active {
+    background: var(--accent);
+    color: var(--laser-core);
+  }
+
+  .top-icon-btn {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--glass-text);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background 0.15s ease;
+  }
+
+  .top-icon-btn:hover:not(:disabled) {
+    background: var(--canvas-selection);
+  }
+
+  .top-icon-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .top-select {
     background: var(--canvas-selection);
     color: var(--glass-text);
     border: 1px solid var(--glass-border);
@@ -2068,126 +2373,7 @@
     outline: none;
   }
 
-  /* Frosted Glass HUD Controls */
-  .spatial-hud {
-    position: absolute;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 160;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    border-radius: 9999px;
-    color: var(--glass-text);
-    pointer-events: auto;
-  }
-
-  .hud-mode-toggle {
-    display: flex;
-    background: var(--canvas-selection);
-    border-radius: 9999px;
-    padding: 2px;
-  }
-
-  .hud-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    border: none;
-    background: transparent;
-    color: var(--glass-text);
-    padding: 4px 10px;
-    border-radius: 9999px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background var(--motion-duration) ease, color var(--motion-duration) ease;
-  }
-
-  .hud-btn.active {
-    background: var(--accent);
-    color: var(--laser-core);
-  }
-
-  .hud-divider {
-    width: 1px;
-    height: 18px;
-    background: var(--glass-border);
-  }
-
-  .hud-zoom {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .zoom-readout {
-    font-size: 12px;
-    font-weight: 600;
-    min-width: 42px;
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .hud-icon-btn {
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    background: transparent;
-    color: var(--glass-text);
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    transition: background 0.15s ease;
-  }
-
-  .hud-icon-btn:hover:not(:disabled) {
-    background: var(--canvas-selection);
-  }
-
-  .hud-icon-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
-
-  .hud-tool-indicator {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-  }
-
-  .hud-tool-label {
-    opacity: 0.6;
-  }
-
-  .hud-tool-name {
-    font-weight: 600;
-  }
-
-  .hud-undo-redo {
-    display: flex;
-    gap: 2px;
-  }
-
-  .hud-persistence {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .hud-action-btn {
+  .top-action-btn {
     border: 1px solid var(--glass-border);
     background: var(--canvas-selection);
     color: var(--glass-text);
@@ -2196,9 +2382,11 @@
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease;
   }
 
-  .hud-action-btn:hover {
+  .top-action-btn:hover {
     background: var(--accent);
     color: var(--laser-core);
   }

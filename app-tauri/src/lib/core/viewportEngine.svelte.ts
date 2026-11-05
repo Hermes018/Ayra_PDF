@@ -114,6 +114,48 @@ export class ViewportCoordinateEngine {
     if (v) this.#apply(v, { panX: v.panX + dx, panY: v.panY + dy });
   }
 
+  /** Continuous exponential trackpad pinch or wheel zoom about screen anchor */
+  pinchZoomAt(deltaY: number, deltaMode: number, screenX: number, screenY: number, viewId = 'main-canvas'): void {
+    let normalizedDeltaY = deltaY;
+    if (deltaMode === 1) normalizedDeltaY *= 16;
+    else if (deltaMode === 2) normalizedDeltaY *= 100;
+    const factor = Math.exp(-normalizedDeltaY * 0.01);
+    this.zoomAt(viewId, factor, { x: screenX, y: screenY });
+  }
+
+  /** Pans the viewport by delta screen pixels (for 2-finger trackpad scroll) */
+  panByDelta(dxScreen: number, dyScreen: number, viewId = 'main-canvas'): void {
+    this.panBy(viewId, -dxScreen, -dyScreen);
+  }
+
+  /** Fit active view to page width */
+  fitToWidth(viewportWidthPx: number, pageWidthPt = 595.28, viewId = 'main-canvas'): void {
+    const v = this.views[viewId];
+    if (!v) return;
+    const targetW = pageWidthPt * PT_TO_CSS;
+    const padding = 64;
+    const availW = Math.max(100, viewportWidthPx - padding);
+    const zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, availW / targetW));
+    const panX = (viewportWidthPx - targetW * zoom) / 2;
+    this.#apply(v, { zoom, panX, panY: 40 });
+  }
+
+  /** Fit active view to full page */
+  fitToPage(viewportWidthPx: number, viewportHeightPx: number, pageWidthPt = 595.28, pageHeightPt = 841.89, viewId = 'main-canvas'): void {
+    const v = this.views[viewId];
+    if (!v) return;
+    const targetW = pageWidthPt * PT_TO_CSS;
+    const targetH = pageHeightPt * PT_TO_CSS;
+    const paddingX = 64;
+    const paddingY = 80;
+    const zoomW = Math.max(100, viewportWidthPx - paddingX) / targetW;
+    const zoomH = Math.max(100, viewportHeightPx - paddingY) / targetH;
+    const zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.min(zoomW, zoomH)));
+    const panX = (viewportWidthPx - targetW * zoom) / 2;
+    const panY = Math.max(20, (viewportHeightPx - targetH * zoom) / 2);
+    this.#apply(v, { zoom, panX, panY });
+  }
+
   /** Layout pages in a vertical flow with a standard pt gap. */
   layoutPages(pageSizes: ReadonlyArray<{ widthPt: number; heightPt: number; rotation?: Rotation }>, gapPt = 16): void {
     let curY = 32;

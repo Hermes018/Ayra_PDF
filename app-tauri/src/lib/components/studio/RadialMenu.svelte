@@ -71,7 +71,7 @@
     if (!visible) return;
     const dx = e.clientX - menuCenter.x;
     const dy = e.clientY - menuCenter.y;
-    const hit: RadialHit = radialHit(dx, dy, flyoutCounts);
+    const hit: RadialHit = radialHit(dx, dy, flyoutCounts, activeSector);
 
     if (hit.zone === 'wedge') {
       activeSector = hit.sector;
@@ -88,7 +88,7 @@
     if (!visible) return;
     const dx = e.clientX - menuCenter.x;
     const dy = e.clientY - menuCenter.y;
-    const hit: RadialHit = radialHit(dx, dy, flyoutCounts);
+    const hit: RadialHit = radialHit(dx, dy, flyoutCounts, activeSector);
 
     if (hit.zone === 'wedge') {
       const wedge = WEDGES[hit.sector];
@@ -146,6 +146,11 @@
     class="radial-backdrop"
     bind:this={menuContainer}
     role="presentation"
+    onpointerdown={(e) => {
+      if (e.target === menuContainer || (e.target as HTMLElement)?.classList.contains('radial-backdrop')) {
+        closeMenu();
+      }
+    }}
   >
     <div
       class="radial-menu"
@@ -163,16 +168,32 @@
         class="radial-svg"
       >
         <!-- Center Cancel / Hub Circle -->
-        <circle
-          cx={CX}
-          cy={CY}
-          r={RADIAL.r0}
-          class="center-hub"
-          role="menuitem"
-          aria-label="Cancel"
-        />
-        <g transform="translate({CX - 8}, {CY - 8})" class="center-hub-icon-g">
-          <StudioIcon name="close" size={16} />
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <g
+          class="center-hub-g"
+          role="button"
+          tabindex={0}
+          aria-label="Close Radial Menu"
+          onclick={closeMenu}
+          style="cursor: pointer;"
+        >
+          <circle
+            cx={CX}
+            cy={CY}
+            r={RADIAL.r0}
+            class="center-hub"
+          />
+          <g transform="translate({CX - 8}, {CY - 14})" class="center-hub-icon-g">
+            <StudioIcon name="close" size={16} />
+          </g>
+          <text
+            x={CX}
+            y={CY + 14}
+            text-anchor="middle"
+            class="center-hub-label"
+          >
+            Close
+          </text>
         </g>
 
         <!-- 8 Primary Wedges -->
@@ -186,12 +207,21 @@
           {@const isHovered = activeSector === wedge.sector}
           {@const isCurrentTool = tools.activeToolId === wedge.tool || (wedge.presetId && tools.activePreset?.id === wedge.presetId)}
 
-          <g class="wedge-group" class:hovered={isHovered} class:active-tool={isCurrentTool}>
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <g
+            class="wedge-group"
+            class:hovered={isHovered}
+            class:active-tool={isCurrentTool}
+            role="menuitem"
+            tabindex={0}
+            aria-label={wedge.label}
+            onpointerenter={() => { activeSector = wedge.sector; activeFlyout = null; }}
+            onclick={() => { tools.selectTool(wedge.tool as ToolId); closeMenu(); }}
+            style="cursor: pointer;"
+          >
             <path
               d={pathD}
               class="wedge-path"
-              role="menuitem"
-              aria-label={wedge.label}
             />
             <!-- Wedge Icon (Vector SVG) -->
             <g transform="translate({iconX - 9}, {iconY - 14})" class="wedge-icon-g">
@@ -228,12 +258,20 @@
             {@const fy = CY + flyoutR * Math.sin(flyoutRad)}
             {@const isFlyoutHovered = activeFlyout === idx}
 
-            <g class="flyout-group" class:hovered={isFlyoutHovered}>
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <g
+              class="flyout-group"
+              class:hovered={isFlyoutHovered}
+              role="menuitem"
+              tabindex={0}
+              aria-label={item.label}
+              onpointerenter={() => { activeFlyout = idx; }}
+              onclick={() => { tools.selectTool(item.tool as ToolId); closeMenu(); }}
+              style="cursor: pointer;"
+            >
               <path
                 d={flyoutPath}
                 class="flyout-path"
-                role="menuitem"
-                aria-label={item.label}
               />
               <g transform="translate({fx - 7}, {fy - 12})" class="flyout-icon-g">
                 <StudioIcon name={item.icon as StudioIconName} size={14} />
@@ -291,6 +329,14 @@
   .center-hub-icon-g {
     pointer-events: none;
     color: var(--glass-text);
+  }
+
+  .center-hub-label {
+    font-size: 10px;
+    font-weight: 600;
+    fill: var(--glass-text);
+    pointer-events: none;
+    user-select: none;
   }
 
   .wedge-group {

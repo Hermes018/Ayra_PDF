@@ -105,4 +105,32 @@ describe('Radial Menu Geometry', () => {
     // TopLeft: dx = -r*sqrt(2)/2, dy = -r*sqrt(2)/2 -> Sector 7
     expect(getSector(cx, cy, cx - r * 0.7071, cy - r * 0.7071)).toBe(7);
   });
+
+  it('eliminates angular drift using lockedWedge in flyout ring', () => {
+    // Sector 1 (midDeg -45) has 5 flyouts.
+    // When moving outward with lockedWedge = 1, slight drift towards sector 0 or 2
+    // still maps to sector 1 flyouts rather than jumping to adjacent sectors.
+    const rFlyout = 140; // in [RADIAL.r1, RADIAL.r2]
+    // A point slightly drifting towards sector 0 (angle ~ -65 deg)
+    const driftAngleRad = -65 * (Math.PI / 180);
+    const dx = rFlyout * Math.cos(driftAngleRad);
+    const dy = rFlyout * Math.sin(driftAngleRad);
+
+    const hitLocked = radialHit(dx, dy, flyoutCounts, 1);
+    expect(hitLocked.zone).toBe('flyout');
+    if (hitLocked.zone === 'flyout') {
+      expect(hitLocked.sector).toBe(1);
+    }
+  });
+
+  it('respects backdrop dismissal zone beyond outer radius', () => {
+    expect(radialHit(180, 0, flyoutCounts).zone).toBe('outside');
+    expect(radialHit(0, -250, flyoutCounts).zone).toBe('outside');
+  });
+
+  it('respects cancel hub zone inside r0 radius', () => {
+    expect(radialHit(0, 0, flyoutCounts).zone).toBe('cancel');
+    expect(radialHit(15, -15, flyoutCounts).zone).toBe('cancel');
+    expect(radialHit(35, 0, flyoutCounts).zone).toBe('cancel');
+  });
 });

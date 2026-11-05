@@ -12,6 +12,8 @@
     | 'text.review'
     | 'shape'
     | 'measure'
+    | 'ruler'
+    | 'snap'
     | 'radial'
     | 'shortcuts'
     | 'undo'
@@ -70,8 +72,11 @@
   {:else if name === 'shape'}
     <rect x="3" y="3" width="11" height="11" rx="2" />
     <circle cx="15" cy="15" r="6" />
-  {:else if name === 'measure'}
+  {:else if name === 'measure' || name === 'ruler'}
     <path d="M2 12h20M6 8v8M10 9v6M14 9v6M18 8v8" />
+  {:else if name === 'snap'}
+    <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+    <circle cx="12" cy="12" r="3" />
   {:else if name === 'radial'}
     <circle cx="12" cy="12" r="9" />
     <circle cx="12" cy="12" r="3" />

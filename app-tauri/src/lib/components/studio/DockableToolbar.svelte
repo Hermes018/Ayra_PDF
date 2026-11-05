@@ -22,14 +22,16 @@
   import StudioIcon from './StudioIcon.svelte';
 
   let {
+    onToggleRadial,
     onOpenRadial,
     onOpenShortcuts
   }: {
+    onToggleRadial?: () => void;
     onOpenRadial?: () => void;
     onOpenShortcuts?: () => void;
   } = $props();
 
-  let dockEdge = $state<DockEdge>('left');
+  let dockEdge = $state<DockEdge>('right');
   let floatPos = $state<{ x: number; y: number }>({ x: 16, y: 80 });
   let dragPos = $state<{ x: number; y: number }>({ x: 16, y: 80 });
   let snapPreview = $state<'left' | 'right' | 'top' | null>(null);
@@ -289,9 +291,12 @@
     <button
       type="button"
       class="tool-btn radial-trigger-btn"
-      onclick={() => onOpenRadial?.()}
-      title="8-Sector Radial Menu (/)"
-      aria-label="Open Radial Menu"
+      onclick={() => {
+        if (onToggleRadial) onToggleRadial();
+        else onOpenRadial?.();
+      }}
+      title="Toggle 8-Sector Radial Menu (/)"
+      aria-label="Toggle Radial Menu"
     >
       <StudioIcon name="radial" size={16} />
     </button>

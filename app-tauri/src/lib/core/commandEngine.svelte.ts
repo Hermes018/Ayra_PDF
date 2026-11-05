@@ -3,6 +3,7 @@ import type { ControlMessage } from '$lib/bindings/ControlMessage';
 import type { SceneNode } from '$lib/bindings/SceneNode';
 import defaultShortcuts from './defaultShortcuts.json';
 import { tools, type ToolPreset } from './toolEngine.svelte';
+import { appState } from '$lib/state.svelte';
 
 export interface DocSnapshot {
   readonly rev: number;
@@ -116,6 +117,10 @@ export class CommandBusAndShortcutEngine {
   }
 
   #execute(command: string, args: unknown): boolean {
+    if (command === 'app.toggleSidebar') {
+      appState.toggleSidebar();
+      return true;
+    }
     if (command === 'history.undo') return this.undo();
     if (command === 'history.redo') return this.redo();
     if (command === 'radial.open') {

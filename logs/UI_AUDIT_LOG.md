@@ -74,7 +74,82 @@ This log records user acceptance testing (UAT) defects, root cause diagnoses, an
 
 ---
 
-## [2026-11-04] Verification Evidence (Phase D2.1 Closure)
+## [2026-11-05] Phase U1–U5 Studio UI/UX Overhaul Defect Registry
+
+### UI-BUG-005: Left Application Sidebar Lacks Collapse Toggle & Constrains Studio Viewport
+- **Severity:** High (UX / Canvas Viewport defect)
+- **Component(s):** `app-tauri/src/lib/components/MainLayout.svelte`, `app-tauri/src/lib/components/Sidebar.svelte`, `app-tauri/src/lib/state.svelte.ts`, `app-tauri/src/lib/core/commandEngine.svelte.ts`
+- **Symptom:** The left application navigation sidebar occupies 210px–240px permanently, severely squeezing horizontal canvas real estate for architectural blueprints and multi-column documents in Drawboard Studio view.
+- **Root Cause Diagnosis:** `AppState` had no `sidebarCollapsed` boolean or toggle method, and `MainLayout.svelte` lacked collapse classes or hotkey binding (`Ctrl+B`).
+- **Fix Specification:**
+  - Add `sidebarCollapsed = $state<boolean>(false)` and `toggleSidebar()` to `AppState`.
+  - Bind `class:sidebar-collapsed={appState.sidebarCollapsed}` in `MainLayout.svelte` with smooth 0.2s cubic-bezier transition to width 0px.
+  - Provide a floating toggle button (`data-testid="sidebar-toggle-btn"`) and header chevron button in `Sidebar.svelte`.
+  - Register `Ctrl+B` -> `app.toggleSidebar` in `commandEngine.svelte.ts`.
+- **Status:** VERIFIED FIXED (Phase U1.2 & U1.3 Verification Gate)
+
+---
+
+### UI-BUG-006: Studio Toolbar Collides on Left Edge & Top HUD Pill Overflows
+- **Severity:** High (Visual Ergonomics & Layout defect)
+- **Component(s):** `app-tauri/src/lib/components/studio/DockableToolbar.svelte`, `app-tauri/src/lib/views/studio/SpatialCanvas.svelte`
+- **Symptom:** `DockableToolbar` defaults to left dock, directly overlapping or conflicting with the app navigation sidebar. Furthermore, the top HUD pill is cramped and overflows, truncating text (e.g. `"BG: Non"`).
+- **Root Cause Diagnosis:** Initial `dockEdge` state defaulted to `'left'` instead of the industry standard right-side tool rail (Drawboard pattern), and the top HUD pill attempted to squeeze 8 disparate controls into an auto-overflowing rounded pill without logical grouping.
+- **Fix Specification:**
+  - Change default `dockEdge` in `DockableToolbar.svelte` from `'left'` to `'right'`.
+  - Replace cramped top pill with a 4-zone `.studio-top-bar` (Workspace & Mode Zone, Viewport & Grid Zone, History & Assist Zone, Document Actions Zone).
+- **Status:** VERIFIED FIXED (Phase U1.3 Verification Gate)
+
+---
+
+### UI-BUG-007: Radial Menu Cannot Be Toggled Off, Lacks Backdrop Dismiss, and Loses Outer Flyout Hit
+- **Severity:** High (Interactive Ergonomics defect)
+- **Component(s):** `app-tauri/src/lib/components/studio/RadialMenu.svelte`, `app-tauri/src/lib/core/radialGeometry.ts`, `app-tauri/src/lib/components/studio/DockableToolbar.svelte`
+- **Symptom:** Radial menu cannot be toggled off once opened via toolbar button, lacks a full-viewport click-outside backdrop dismiss, and moving cursor from an active wedge into the outer flyout ring switches wedges accidentally.
+- **Root Cause Diagnosis:** Toolbar only dispatched `onopenradial`, lacking toggle semantics. `RadialMenu.svelte` had no backdrop overlay, and `radialHit` re-evaluated the wedge sector from the raw polar angle even when cursor was in the outer flyout ring ($r_1 \le r \le r_2$).
+- **Fix Specification:**
+  - Wire `ontoggleradial` in `DockableToolbar.svelte` and `SpatialCanvas.svelte`.
+  - Add full-screen transparent `<div class="radial-backdrop">` and center cancel hub ($r < 36\text{px}$) with `✕ Close` indicator.
+  - Introduce `lockedWedge` parameter in `radialHit(...)` to lock the sector when navigating into flyout arcs.
+- **Status:** VERIFIED FIXED (Phase U3 Verification Gate)
+
+---
+
+### UI-BUG-008: Trackpad Pinch-to-Zoom & Two-Finger Pan Do Not Work Naturally
+- **Severity:** High (Navigation Physics defect)
+- **Component(s):** `app-tauri/src/lib/views/studio/SpatialCanvas.svelte`, `app-tauri/src/lib/core/viewportEngine.svelte.ts`
+- **Symptom:** Modern laptop trackpad pinch gestures (`wheel` with `ctrlKey`) do not zoom smoothly, two-finger scroll panning (`deltaX`/`deltaY`) conflicts with wheel zoom, and touch screen pinch gestures are unhandled.
+- **Root Cause Diagnosis:** Wheel event handler did not distinguish between `ctrlKey` pinch-to-zoom and two-finger delta panning, and lacked continuous exponential zoom math (`pinchZoomAt`) and dual-touch pointer tracking.
+- **Fix Specification:**
+  - Implement `pinchZoomAt`, `panByDelta`, `fitToWidth`, and `fitToPage` in `viewportEngine.svelte.ts`.
+  - Update `handleWheel` in `SpatialCanvas.svelte` to support trackpad pinch, trackpad glide pan, and smooth cursor-centered zoom.
+  - Implement dual-pointer touch tracking for touchscreen pinch-zoom and pan.
+- **Status:** VERIFIED FIXED (Phase U2 Verification Gate)
+
+---
+
+### UI-BUG-009: Only 11 of 41 Tools Visible; Toolbar Missing Grouped Popover Flyouts
+- **Severity:** Medium (Discoverability defect)
+- **Component(s):** `app-tauri/src/lib/components/studio/DockableToolbar.svelte`, `app-tauri/src/lib/components/studio/PropertyPill.svelte`
+- **Symptom:** The tool rail displays only single tools directly, hiding polylines, arrows, revision clouds, squiggly review, LaTeX equations, signatures, audio notes, and CAD measurement tools.
+- **Root Cause Diagnosis:** `DockableToolbar` lacked secondary flyout disclosure triangles and popover submenu trays for tool families.
+- **Fix Specification:**
+  - Implement 6 grouped tool popovers (Inking, Shapes, Text Review, Measure, Insert Suite, Select).
+  - Enhance `PropertyPill.svelte` to dynamically align adjacent to the active tool rail dock edge.
+- **Status:** OPEN (Addressing in Phase U4)
+
+---
+
+### UI-BUG-010: Structural PDF Text Editing Lacks Hover Bounding Boxes & Double-Click Inline Activation
+- **Severity:** Medium (Usability defect)
+- **Component(s):** `app-tauri/src/lib/views/studio/SpatialCanvas.svelte`, `app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts`
+- **Symptom:** Users cannot easily see which text blocks in flat PDFs can be edited, requiring toggling an ambiguous button and guessing where to click.
+- **Root Cause Diagnosis:** Canvas lacked text paragraph hover bounds rendering and direct double-click text activation in markup mode.
+- **Fix Specification:**
+  - Render hover outlines over detected text blocks in Structural Edit mode.
+  - Enable direct double-click on any text block to launch inline textarea editing.
+- **Status:** OPEN (Addressing in Phase U5)
+
 
 1. **Automated Vitest Test Suite:**
    - Test File: `src/lib/core/studioReactivity.test.ts` (13 tests, all passed in 14ms)
@@ -132,3 +207,39 @@ This log records user acceptance testing (UAT) defects, root cause diagnoses, an
    - Verified `insert.latex` (`compileLatexToVector`, `svgPathToPdfOps`), `insert.signature` (`draw`, `type`, `webcam` with `applyGrayscaleThresholdToRgba`), `insert.audio` (`MediaRecorder` + PCM WAV fallback + `studio_attach_audio`), `callout.single`, `callout.multi`, `insert.note`, `insert.stamp`, `insert.image`, and non-destructive Page Background SVG templates (`engineering-grid`, `isometric-grid`, `ruled-paper`) use CSS variables from `themeContract.svelte.ts` with zero raw hex literals and zero `{@html}` usage.
 2. **Annotation Ledger, Quantity Takeoff CSV & Reusable Markup Library (`AnnotationLedger.svelte`, `studio.rs`)**:
    - Verified `studio_export_takeoff_csv` (with RFC 4180 escaping and formula-injection guard), `studio_markup_library`, and multi-page `Paste to Pages...` (`All`, `Even`, `Odd`, `1-5`) pass all Vitest and Rust unit tests (`svelte-check` 0 errors, 0 warnings).
+
+---
+
+## [2026-11-05] Phases U1, U2 & U3 Verification — Overhaul Specification, Collapsible Shell, Top Bar, Physics & Radial Menu
+
+1. **Phase U1 Verification (`UI-BUG-005`, `UI-BUG-006`)**:
+   - `app-tauri/src/lib/state.svelte.ts`: `sidebarCollapsed = $state<boolean>(false)` and `toggleSidebar()` method added and reactive.
+   - `app-tauri/src/lib/components/MainLayout.svelte`: Applied `class:sidebar-collapsed={appState.sidebarCollapsed}`. Added floating toggle button `data-testid="sidebar-toggle-btn"` (`aria-label="Toggle Sidebar (Ctrl+B)"`).
+   - `app-tauri/src/lib/components/Sidebar.svelte`: Chevron collapse button in `.logo` header. CSS smoothly transitions `width`, `min-width`, and `opacity` with `0.2s cubic-bezier(0.16, 1, 0.3, 1)`.
+   - `app-tauri/src/lib/core/commandEngine.svelte.ts` & `defaultShortcuts.json`: Mapped canonical shortcuts `Ctrl+B` and `Meta+B` to `app.toggleSidebar`.
+   - `app-tauri/src/lib/components/studio/DockableToolbar.svelte`: Default `dockEdge` set to `'right'`.
+   - `app-tauri/src/lib/views/studio/SpatialCanvas.svelte`: Replaced cramped pill with 4-zone `.studio-top-bar`:
+     - Zone 1: Sidebar toggle, mode segmented switch (`Markup` vs `Edit PDF Text`), page indicator (`Page X / Y`).
+     - Zone 2: Zoom in/out, zoom presets dropdown (50%–200%, Fit Width, Fit Page), rotate page 90°, and page background overlay selector.
+     - Zone 3: Undo/Redo, CAD OSNAP magnet toggle, and Digital Ruler toggle.
+     - Zone 4: Contextual Commit Text, Save PDF (atomic), Flatten PDF, Commit Redactions, and Ledger & Vault drawer toggle.
+
+2. **Phase U2 Verification (`UI-BUG-008`)**:
+   - `app-tauri/src/lib/core/viewportEngine.svelte.ts`: Added continuous exponential `pinchZoomAt(deltaY, deltaMode, screenX, screenY)`, `panByDelta(dx, dy)`, `fitToWidth(viewportW, pageW)`, and `fitToPage(viewportW, viewportH, pageW, pageH)`.
+   - `app-tauri/src/lib/views/studio/SpatialCanvas.svelte`: `handleWheel` non-passively differentiates `ctrlKey`/`metaKey` trackpad pinch, two-finger horizontal/diagonal glide pan, shift/alt pan, and smooth zoom.
+   - Dual-touch gesture physics: Cancel active stroke on 2 touches (`activeTouchPoints.size === 2`), ratio zoom, and sticky midpoint anchor pan.
+   - `app-tauri/src/lib/core/core.test.ts`: 4 unit tests verifying zoom scaling, pan translation, `fitToWidth`, and `fitToPage`.
+
+3. **Phase U3 Verification (`UI-BUG-007`)**:
+   - `app-tauri/src/lib/components/studio/DockableToolbar.svelte`: Added `onToggleRadial` prop to toggle the radial menu on and off.
+   - `app-tauri/src/lib/components/studio/RadialMenu.svelte`: Full-screen transparent backdrop (`.radial-backdrop`) dismisses menu on click; center cancel hub ($r < 36\text{px}$) with `Close` label and icon closes menu; keyboard shortcuts (`/`, `Escape`, `1-8`) routed via `commandEngine.svelte.ts`.
+   - `app-tauri/src/lib/core/radialGeometry.ts`: `radialHit(dx, dy, flyoutCounts, lockedWedge)` locks sector in outer flyout ring ($r_1 \le r < r_2$) to prevent angular drift.
+   - `app-tauri/src/lib/core/radialGeometry.test.ts`: 3 unit tests verifying drift elimination, backdrop outside hit, and cancel hub hit.
+
+4. **Audit Gates Summary**:
+   - `svelte-check`: 0 errors, 0 warnings.
+   - Vitest: 124 passed across 14 test files.
+   - `cargo xtask feature-map-check`: 119 features audited (113 DONE, 0 IN PROGRESS, 0 NOT STARTED, 6 DEFERRED), passed.
+   - `cargo xtask protocol-lint`: passed.
+   - `cargo xtask studio-audit --strict`: 0 findings (100% theme tokens `var(--...)`, zero local keydown listeners).
+   - Independent Sub-Agent Audit: All findings remediated; **100% PASS**.

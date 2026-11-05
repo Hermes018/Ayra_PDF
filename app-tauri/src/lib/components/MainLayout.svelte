@@ -6,6 +6,7 @@
     import ToastContainer from './ToastContainer.svelte';
     import FaqModal from './FaqModal.svelte';
     import { faqStore } from '$lib/i18n/faqStore.svelte';
+    import { appState } from '$lib/state.svelte';
 
     let { children, currentView = $bindable() } = $props<{
         children: Snippet;
@@ -15,7 +16,20 @@
 
 <a href="#main-content" class="skip-link">Skip to main content</a>
 
-<div class="app-container app-shell">
+<div class="app-container app-shell" class:sidebar-collapsed={appState.sidebarCollapsed}>
+    {#if appState.sidebarCollapsed}
+        <button
+            type="button"
+            class="sidebar-floating-toggle"
+            data-testid="sidebar-toggle-btn"
+            onclick={() => appState.toggleSidebar()}
+            aria-label="Expand Sidebar (Ctrl+B)"
+            title="Expand Sidebar (Ctrl+B)"
+        >
+            <span aria-hidden="true">☰</span>
+        </button>
+    {/if}
+
     <Sidebar bind:currentView />
     
     <div class="main-content-wrapper content-column">
@@ -148,5 +162,44 @@
         border-color: var(--accent-primary);
         color: var(--accent-primary);
         transform: scale(1.1);
+    }
+
+    .sidebar-floating-toggle {
+        position: fixed;
+        top: 0.75rem;
+        left: 0.75rem;
+        width: 34px;
+        height: 34px;
+        border-radius: var(--radius-sm, 8px);
+        background-color: var(--glass-bg-elevated);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid var(--glass-border-specular);
+        color: var(--text-primary);
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--glass-shadow-sm);
+        z-index: 9500;
+        transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+    }
+
+    .sidebar-floating-toggle:hover {
+        background-color: var(--glass-bg-hover);
+        border-color: var(--accent-primary);
+        color: var(--accent-primary);
+        transform: scale(1.05);
+    }
+
+    :global(.app-shell.sidebar-collapsed .sidebar) {
+        width: 0 !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+        border-right: none !important;
+        overflow: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
     }
 </style>

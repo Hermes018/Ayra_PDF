@@ -21,5 +21,7 @@
   "Enter": "studio.confirm",
   "Escape": "studio.cancel",
   "/": "radial.open",
+  "Ctrl+B": "app.toggleSidebar",
+  "Meta+B": "app.toggleSidebar",
   "Space": "tool.springPan"
 }
