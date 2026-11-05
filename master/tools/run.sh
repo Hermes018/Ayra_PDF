@@ -17,9 +17,13 @@ if [ "${free_gb:-0}" -lt "$MIN_FREE_GB" ]; then
   echo "[run] $name: REFUSED — only ${free_gb} GB free on $(df --output=target "$top" | tail -1) (< ${MIN_FREE_GB} GB). Free disk or drop to 2 builders; do not delete caches mid-sprint." >&2
   exit 75
 fi
+# Start sccache OUTSIDE any lock, so its daemon never inherits a lock fd (deadlock 2026-11-06).
+command -v sccache >/dev/null 2>&1 && sccache --start-server >/dev/null 2>&1 || true
 start=$(date +%s)
 { echo "# cmd: $*"; echo "# cwd: $(pwd)"; echo "# started: $(date -Is)"; } > "$log"
-"$here/build-lock.sh" "$@" >> "$log" 2>&1
+( TOP="$top"; export CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-2}" CARGO_TARGET_DIR="$top/master/target"
+  [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+  . "$here/sched.sh"; sched_exec "$name" "$@" ) >> "$log" 2>&1
 rc=$?
 dur=$(( $(date +%s) - start ))
 echo "# exit: $rc (${dur}s)" >> "$log"

@@ -326,6 +326,7 @@ master/
 │   ├── DRAWBOARD_FEATURE_CHECKLIST.md                    # 119-item studio feature checklist with status (checked by `cargo xtask feature-map-check`)
 │   ├── DRAWBOARD_STUDIO_MASTER_PLAN.md                   # Plan for the spatial Studio editor (phases D1–D6)
 │   ├── PROTOTYPE_SCOPE.md                                # v0.2.0-prototype scope: 12 golden-path flows with pass criteria, corpus, triage rules, milestones
+│   ├── RAM_BUDGET.md                                     # Measured RAM per job class, training budget, scheduler + cgroup protection rules
 │   ├── STUDIO_UI_UX_OVERHAUL_SPEC.md                     # Studio UI/UX overhaul spec (phases U1–U5)
 │   └── UPGRADING.md                                      # DRAFT procedure for bumping a pinned upstream engine (branch → gate → verifier → log)
 ├── fuzz/                                                 # cargo-fuzz workspace (libFuzzer targets)
@@ -391,9 +392,14 @@ master/
 │   ├── build-lock.sh                                     # Runs a heavy build under the shared flock lock with CARGO_BUILD_JOBS=2 and the shared target dir (ADR-020)
 │   ├── CLAUDE_AUDIT_CONTEXT.md                           # Brief for an independent read-only audit
 │   ├── make_audit_bundle.sh                              # Collects evidence into audit_bundle.tar.gz for external review
+│   ├── measure-ram.sh                                    # Measures a job's whole-cgroup peak and largest-process RSS into logs/runs/ram-measure.tsv
+│   ├── protect.sh                                        # Wraps each agent job: cgroup MemoryMax/High from live MemAvailable, OOM preference, nice/ionice
+│   ├── ram-budget.env                                    # Measured peak inputs for the scheduler (HEAVY/LIGHT MiB)
 │   ├── restore-context.sh                                # SessionStart hook (compact/resume/startup): prints CHECKPOINT + STATE_AUTO back into context
 │   ├── run.sh                                            # Runs one heavy command under the build lock, full log to logs/runs/, prints a short summary
+│   ├── sample-training.sh                                # Read-only sampler of the training job's total RSS every 30 s
 │   ├── sb.sh                                             # Runs a command under CPU/RAM limits (systemd-run) for low-memory hosts
+│   ├── sched.sh                                          # RAM-aware scheduler: LIGHT/HEAVY admission from live MemAvailable, priority FIFO, slots, logging
 │   ├── snapshot-state.sh                                 # PreCompact hook: writes logs/STATE_AUTO.md (git/process/disk facts) in <1 s; never fails
 │   └── verify.sh                                         # THE definition of green: Rust gate + frontend + project checks via run.sh
 ├── ux-spec/                                              # UX source of truth per tool column

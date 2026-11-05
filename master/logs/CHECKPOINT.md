@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (overwrite; keep < 150 lines; history in CHECKPOINT_HISTORY.md)
-Updated: 2026-11-06 00:45 Asia/Dhaka by the lead. If this disagrees with logs/STATE_AUTO.md (git/process facts), trust STATE_AUTO.md and fix this file.
+Updated: 2026-11-06 05:58 Asia/Dhaka by the lead. If this disagrees with logs/STATE_AUTO.md (git/process facts), trust STATE_AUTO.md and fix this file.
 
 ## Sprint
 - **Goal:** fully working Linux prototype **v0.2.0-prototype**, tag by **Sat 2026-11-07 23:59 Asia/Dhaka**. Scope and 12 E2E flows: `docs/PROTOTYPE_SCOPE.md`. Feature freeze; Labs holds the partial features.
@@ -19,13 +19,13 @@ Updated: 2026-11-06 00:45 Asia/Dhaka by the lead. If this disagrees with logs/ST
 
 | Worktree | Branch | Last commit | Uncommitted | Current task | State / owner |
 |---|---|---|---|---|---|
-| ~/Desktop/Ayra_PDF (main) | main | 16d9913 (logs) on 6c18734 Labs merge | build-lock per-worktree target, run.sh disk guard, sccache 10G, logs, snapshot/restore scripts | lead: verify.sh running, then commit | lead |
-| ~/Desktop/Ayra_PDF-wt/engines | wt/engines | 562e4f9 (needs main merged in) | lpdf-geom crate (legacy hatch adapter), ENGINE_REUSE_MATRIX.md (47 rows), goldens, studio.rs uses adapter | checkpoint 1 DONE; awaiting lead merge (main → worktree, then reviewer + verifier) | idle / engines builder |
-| ~/Desktop/Ayra_PDF-wt/fixes | wt/fixes | 6c18734 = merged into main | none | checkpoint 1 merged (Labs). Next: P0 list | idle / fixes builder |
-| ~/Desktop/Ayra_PDF-wt/release | wt/release | 562e4f9 (needs main merged in) | e2e/ harness (12 flows), corpus fetch.sh + scanned/encrypted | checkpoint 1 DONE (baseline 4 PASS / 7 FAIL / 1 BLOCKED); awaiting review + verify + merge | idle / release builder |
+| ~/Desktop/Ayra_PDF (main) | main | 81ae676 infra (per-worktree targets, disk guard, compaction hooks) | logs only | lead: coordinating merges | lead |
+| ~/Desktop/Ayra_PDF-wt/engines | wt/engines | 81ae676 | checkpoint 1 staged; verifier PASS, reviewer FAIL (matrix completeness) | **RUNNING**: matrix fixes, then checkpoint 2 (ERR-007 cadcraft); reports by 07:30 | engines builder |
+| ~/Desktop/Ayra_PDF-wt/fixes | wt/fixes | 81ae676 | checkpoint 2 in progress | **RUNNING**: P0 BUG-011..020 (order in its brief); reports after the first 4 if past 06:30 | fixes builder |
+| ~/Desktop/Ayra_PDF-wt/release | wt/release | 81ae676 | checkpoint 1 staged; verifier PASS, reviewer FAIL (4 major harness issues) | **RUNNING**: harness fixes, then checkpoint 2 packaging | release builder |
 | ~/Desktop/Ayra_PDF-wt/android | track/android | 644caf3 ADR-019 DRAFT | none | paused | paused |
 
-**Running subagents:** none (all builders idle). A claude-code-guide docs check for hook names is in flight. Background: main `verify.sh` after the target split (rebuilding from scratch into its own target).
+**Running subagents:** fixes builder (P0s), engines builder (review fixes + checkpoint 2), release builder (review fixes). Heavy jobs go through the RAM scheduler (tools/sched.sh, 1 HEAVY slot at ~14 GiB available). Training (Jupyter swin_v2) has absolute priority; sampler logs to logs/runs/training-mem.log.
 
 ## P0 (from logs/BUGS.md) — owner — status
 
@@ -57,17 +57,15 @@ P2s: BUG-001..009, 025..027 (after the release).
 **File ownership for the P0 phase:** fixes = UI components/views plus core/{inkEngine,insertEngine,viewportEngine,measureEngine}.svelte.ts and tauri.conf.json CSP. engines = crates/, src-tauri Rust, HatchDefs, new adapter files; it must not touch those four core TS files until fixes merges.
 
 ## Next 3 actions (in order)
-1. **main:** if verify.sh is GREEN, commit (build-lock split, disk guard, sccache 10G, logs, snapshot/restore hooks). Then merge main into wt/engines and wt/release (stash, fast-forward, pop) and add tree-map entries for their new files.
-2. **Reviews:** spawn reviewer + verifier (Opus, high effort) for engines checkpoint 1 and release checkpoint 1. Merge each on PASS plus a green verify.
-3. **Next briefs:**
-   - fixes builder: P0 bugs BUG-011, 012, 013, 014, 016, 017, 018, 019, 020 (test first, plan file for changes touching >3 files).
-   - engines checkpoint 2: ERR-007 via cadcraft (vendor, patch, manifest, notices, parity) plus BUG-023, 024, 010.
-   - release checkpoint 2: packaging (rpm + AppImage, deb if cheap) once its checkpoint 1 merges.
+1. On engines and release reviewer + verifier PASS: commit on each branch, fast-forward or merge into main (resolve descriptions.tsv / tree.md conflicts by regenerating), tag, log.
+2. Then brief engines checkpoint 2 (ERR-007 via cadcraft + vendoring/manifest/notices + BUG-023/024/010) and release checkpoint 2 (packaging + re-run E2E after P0 merges). Set guard ALLOW_BUILD_LOCK=False once all builders are on run.sh.
+3. Merge fixes P0 batches as they arrive (reviewer + verifier each). Fri 08:00 report: flows, engines, P0/P1, cuts, disk, unpushed commits/tags.
 
 ## Open decisions for the owner
-- None blocking. FYI: the lead approved the CSP `img-src 'self' data: blob:` change (BUG-012) and E2E harness isolation (private D-Bus/XDG), both in DECISIONS_ADR.
+- Owner action needed: run `/compact` once to live-test the PreCompact/SessionStart hooks (both pipe-tested; I can't run /compact). Otherwise none blocking. FYI: the lead approved the CSP `img-src 'self' data: blob:` change (BUG-012) and E2E harness isolation (private D-Bus/XDG), both in DECISIONS_ADR.
 
 ## Approved exceptions and standing rules
+- **RAM (2026-11-06):** training first. Scheduler and cgroup caps per docs/RAM_BUDGET.md. HEAVY peak 5 GiB + 6 GiB reserve; 2nd slot only at ≥ 16 GiB available.
 - **2026-11-06 one-time `rm -rf master/target/debug`** (54 GB stale), an exception to "never cargo clean" (ERR-008).
 - **Disk:** each worktree has its own target dir, never shared. sccache local only, 10 GB cap. run.sh refuses builds below 15 GB free. Delete a worktree's target when the worktree is removed. If tight, drop to 2 builders; never delete caches mid-sprint. Report free disk every milestone (now: ~78 GB free before rebuilds).
 - **Guard transitional:** direct build-lock.sh calls are still allowed until all builders are re-briefed to run.sh; then set ALLOW_BUILD_LOCK=False in tools/hooks/claude/guard.py.

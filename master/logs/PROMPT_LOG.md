@@ -255,3 +255,15 @@ The safest and simplest way to resolve this blocker is to run the system-level p
   7. Report at the next milestone.
 - Interpretation: applied between merges; running builders not interrupted. The guard temporarily allows direct build-lock.sh calls until every builder has been re-briefed to use run.sh. Prettier only formats files that were already prettier-clean at HEAD, so legacy files aren't mass-reformatted across worktrees.
 - Conflicts with protocol? No.
+
+## [2026-11-06 00:20] Prompt #19 — disk
+- Verbatim: """Approved: one-time `rm -rf master/target/debug`; log it in ERROR_LOG/CHECKPOINT as an approved exception to "never cargo clean". Then: Give each worktree its own target dir (inside the worktree, or ~/lpdf-targets/<worktree>), never shared. Cap sccache: SCCACHE_CACHE_SIZE=10G, local disk only. Add a disk guard to tools/run.sh: refuse to start a build if free space is < 15 GB, and report instead. When a worktree's branch is merged and the worktree removed, delete its target dir too. If disk gets tight, drop to 2 builders rather than deleting caches mid-sprint. Log free disk space in each milestone report."""
+- Actions: done (ERR-008, commit 81ae676).
+
+## [2026-11-06 01:10] Prompt #20 — compaction survival, then continue (summary)
+- Living CHECKPOINT and per-worktree checkpoints; PreCompact snapshot-state.sh writes STATE_AUTO.md; SessionStart restore-context.sh; compact instructions in CLAUDE.md; test with /compact. Then merge main into engines/release, start reviewers and verifiers, hand P0s to fixes; next report Fri 08:00.
+- Actions: done. The live /compact test needs the owner (built-in command; pipe tests pass).
+
+## [2026-11-06 05:45] Prompt #21 — RAM-aware parallelism (summary)
+- Training has absolute priority. Measure training and per-class RAM into docs/RAM_BUDGET.md; budget = MemTotal − training peak − 6 GiB; scheduler in run.sh (LIGHT/HEAVY, MemAvailable admission, priority FIFO, 1–2 HEAVY slots, scheduler.log); cgroup MemoryHigh/Max, choom 800, nice/ionice; single re-queue on memory kill; footprint settings; report at the next milestone.
+- Actions: done (sched.sh, protect.sh, measure-ram.sh, sample-training.sh, RAM_BUDGET.md). Deferred: split-debuginfo (avoids a cold rebuild in all worktrees before 08:00). Fixed along the way: sccache held the build lock (fd inheritance).

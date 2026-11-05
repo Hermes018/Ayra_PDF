@@ -20,7 +20,7 @@ if [ "$mode" = all ] || [ "$mode" = --rust ]; then
 fi
 if [ "$mode" = all ] || [ "$mode" = --web ]; then
   step svelte-check pnpm --dir app-tauri check
-  step vitest pnpm --dir app-tauri exec vitest run
+  step vitest pnpm --dir app-tauri exec vitest run --maxWorkers=2
 fi
 step tree-map python3 tools/tree/render_tree.py --check
 git -C "$top" checkout -- master/logs/sbom.cdx.json 2>/dev/null || true   # gate regenerates it
