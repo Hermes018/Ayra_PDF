@@ -2,6 +2,7 @@
   import { onMount, onDestroy, tick } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
   import { appState } from '$lib/state.svelte';
+  import { pickFilesDialog } from '$lib/ipc';
   import { viewport, type Pt } from '$lib/core/viewportEngine.svelte';
   import { tools, type ToolPreset, type ToolId } from '$lib/core/toolEngine.svelte';
   import { commands } from '$lib/core/commandEngine.svelte';
@@ -152,6 +153,20 @@
   let touchInitialMidpoint: Pt = { x: 0, y: 0 };
   let touchInitialZoom = 1.0;
   let wheelBehavior = $state<'auto' | 'zoom' | 'pan'>('auto');
+
+  /** True only when a real PDF is loaded and laid out; drives the empty state and
+   *  disables document-only controls (no phantom "Page 1 / 2" on an empty canvas). */
+  let hasDocument = $derived(viewport.pages.length > 0 && !!(loadedFilePath ?? appState.currentFile));
+  const NEEDS_DOC = 'Open a PDF first';
+
+  async function openPdfFromEmptyState() {
+    try {
+      const picked = await pickFilesDialog(false, ['pdf']);
+      if (picked.length > 0) appState.addFiles(picked);
+    } catch (e) {
+      statusNotice = `Could not open the file picker: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  }
 
   let activePageNumber = $derived.by(() => {
     const v = viewport.views[viewId] ?? currentView;
@@ -761,14 +776,8 @@
       ]);
     }
 
-    if (viewport.pages.length === 0) {
-      viewport.layoutPages([
-        { widthPt: 595.28, heightPt: 841.89 },
-        { widthPt: 595.28, heightPt: 841.89 },
-      ]);
-    }
-
-    // Seed page-border vector snap segments for default layout pages
+    // Seed page-border vector snap segments for any pages already laid out
+    // (no placeholder pages: an empty canvas shows the "Open a PDF" state instead).
     viewport.pages.forEach((pg, idx) => {
       const w = pg.widthPt * PT_TO_CSS;
       const h = pg.heightPt * PT_TO_CSS;
@@ -1373,7 +1382,9 @@
   aria-label="Drawboard Spatial Studio Canvas"
   tabindex="-1"
 >
-  <!-- Studio Top Command Bar (4 Zones) -->
+  <!-- Studio Top Command Bar (4 Zones). The host spans the canvas so the bar can never be
+       wider than the canvas; container queries collapse labels to icons on narrow canvases. -->
+  <div class="studio-top-bar-host">
   <header
     class="studio-top-bar glass-panel"
     role="toolbar"
@@ -1410,19 +1421,22 @@
           type="button"
           class="top-btn"
           class:active={editMode === 'structural'}
+          disabled={!hasDocument}
           onclick={() => {
             editMode = 'structural';
           }}
-          title="Structural PDF Edit Mode (Direct Text & Font Manipulation)"
+          title={hasDocument ? 'Structural PDF Edit Mode (Direct Text & Font Manipulation)' : NEEDS_DOC}
         >
           <StudioIcon name="text.review" size={13} />
-          <span>Edit PDF Text</span>
+          <span>Edit Text</span>
         </button>
       </div>
 
-      <div class="page-indicator-badge" title="Active Page / Total Pages">
-        Page {activePageNumber} / {Math.max(1, viewport.pages.length)}
-      </div>
+      {#if hasDocument}
+        <div class="page-indicator-badge" title="Page {activePageNumber} of {viewport.pages.length}">
+          <span class="collapsible-label">Page</span> {activePageNumber} / {viewport.pages.length}
+        </div>
+      {/if}
     </div>
 
     <div class="top-zone-divider"></div>
@@ -1432,8 +1446,9 @@
       <button
         type="button"
         class="top-icon-btn"
+        disabled={!hasDocument}
         onclick={() => viewport.zoomAt(viewId, 0.8, { x: 300, y: 300 })}
-        title="Zoom Out"
+        title={hasDocument ? 'Zoom Out' : NEEDS_DOC}
         aria-label="Zoom Out"
       >
         <StudioIcon name="zoom.out" size={14} />
@@ -1443,6 +1458,7 @@
         class="top-select"
         value={Math.round(currentView.zoom * 100).toString()}
         onchange={handleZoomSelect}
+        disabled={!hasDocument}
         aria-label="Zoom Level Preset"
         title="Zoom Preset (50% - 200%, Fit Width, Fit Page)"
       >
@@ -1459,8 +1475,9 @@
       <button
         type="button"
         class="top-icon-btn"
+        disabled={!hasDocument}
         onclick={() => viewport.zoomAt(viewId, 1.25, { x: 300, y: 300 })}
-        title="Zoom In"
+        title={hasDocument ? 'Zoom In' : NEEDS_DOC}
         aria-label="Zoom In"
       >
         <StudioIcon name="zoom.in" size={14} />
@@ -1469,8 +1486,9 @@
       <button
         type="button"
         class="top-icon-btn"
+        disabled={!hasDocument}
         onclick={handleRotatePage90}
-        title="Rotate Page 90° Clockwise"
+        title={hasDocument ? 'Rotate Page 90° Clockwise' : NEEDS_DOC}
         aria-label="Rotate Page 90° Clockwise"
       >
         <StudioIcon name="reset" size={14} />
@@ -1482,13 +1500,14 @@
         onchange={(e) => {
           inserts.pageOverlay = (e.target as HTMLSelectElement).value as PageOverlayTemplate;
         }}
+        disabled={!hasDocument}
         aria-label="Page Background Overlay Template"
         title="Non-destructive Page Background Overlay (Engineering Grid, Isometric, Ruled)"
       >
-        <option value="none">Overlay: None</option>
-        <option value="engineering-grid">Overlay: Eng Grid</option>
-        <option value="isometric-grid">Overlay: Iso Grid</option>
-        <option value="ruled-paper">Overlay: Ruled</option>
+        <option value="none">No overlay</option>
+        <option value="engineering-grid">Eng grid</option>
+        <option value="isometric-grid">Iso grid</option>
+        <option value="ruled-paper">Ruled</option>
       </select>
     </div>
 
@@ -1521,29 +1540,35 @@
         type="button"
         class="top-btn"
         class:active={snapEngine.enabled}
+        disabled={!hasDocument}
+        aria-pressed={snapEngine.enabled}
+        aria-label="Snap to drawing geometry"
         onclick={() => {
           snapEngine.enabled = !snapEngine.enabled;
         }}
-        title="CAD Vector Snapping (OSNAP)"
+        title={hasDocument ? `Snap to drawing geometry (OSNAP): ${snapEngine.enabled ? 'on' : 'off'}` : NEEDS_DOC}
       >
         <StudioIcon name="snap" size={13} />
-        <span>Snap: {snapEngine.enabled ? 'ON' : 'OFF'}</span>
+        <span class="collapsible-label">Snap</span>
       </button>
 
       <button
         type="button"
         class="top-btn"
         class:active={measureEngine.ruler.visible}
+        disabled={!hasDocument}
+        aria-pressed={measureEngine.ruler.visible}
+        aria-label="Digital drafting ruler"
         onclick={() => {
           measureEngine.ruler = {
             ...measureEngine.ruler,
             visible: !measureEngine.ruler.visible,
           };
         }}
-        title="Digital Drafting Ruler Toggle"
+        title={hasDocument ? 'Digital drafting ruler' : NEEDS_DOC}
       >
         <StudioIcon name="ruler" size={13} />
-        <span>Ruler</span>
+        <span class="collapsible-label">Ruler</span>
       </button>
     </div>
 
@@ -1565,18 +1590,20 @@
       <button
         type="button"
         class="top-action-btn"
+        disabled={!hasDocument}
         onclick={() => saveAnnotationsToPdf(false)}
-        title="Save Editable Annotations to PDF (Atomic Write)"
+        title={hasDocument ? 'Save markups as editable annotations (writes a new file atomically)' : NEEDS_DOC}
       >
-        Save PDF
+        Save <span class="collapsible-label">PDF</span>
       </button>
       <button
         type="button"
         class="top-action-btn"
+        disabled={!hasDocument}
         onclick={() => saveAnnotationsToPdf(true)}
-        title="Flatten Annotations into Permanent Page Streams"
+        title={hasDocument ? 'Flatten markups permanently into the page content' : NEEDS_DOC}
       >
-        Flatten PDF
+        Flatten <span class="collapsible-label">PDF</span>
       </button>
       {#if hasRedactions}
         <button
@@ -1591,15 +1618,29 @@
 
       <button
         type="button"
-        class="top-action-btn"
+        class="top-action-btn ledger-btn"
         class:primary-btn={inserts.ledgerOpen}
         onclick={() => inserts.toggleLedger()}
-        title="Open Annotation History, Markup Library & Quantity Takeoff Drawer"
+        aria-label="Ledger: markups, library and quantity takeoff"
+        title="Ledger: markup list, reusable library and quantity takeoff"
       >
-        Ledger & Vault
+        <StudioIcon name="note" size={13} />
+        <span class="collapsible-label">Ledger</span>
       </button>
     </div>
   </header>
+  </div>
+
+  {#if !hasDocument}
+    <div class="studio-empty-state glass-panel" data-testid="studio-empty-state">
+      <StudioIcon name="pen.a" size={28} />
+      <h2>Open a PDF to begin</h2>
+      <p>Mark up, measure and edit drawings and documents. Your files never leave this computer.</p>
+      <button type="button" class="top-action-btn primary-btn" onclick={openPdfFromEmptyState}>
+        Open PDF…
+      </button>
+    </div>
+  {/if}
 
   {#if statusNotice}
     <div class="studio-status-banner glass-panel" role="status">
@@ -2404,12 +2445,21 @@
   }
 
   /* 4-Zone Frosted Glass Top Command Bar */
-  .studio-top-bar {
+  .studio-top-bar-host {
     position: absolute;
     top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 12px;
+    right: 12px;
     z-index: 160;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    container-type: inline-size;
+    container-name: studio-top;
+  }
+
+  .studio-top-bar {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -2422,8 +2472,67 @@
     border-radius: 9999px;
     color: var(--glass-text);
     pointer-events: auto;
-    max-width: calc(100vw - 32px);
+    /* Never wider than the canvas (the old 100vw cap ignored the sidebar and clipped both ends). */
+    max-width: 100%;
     overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  /* Narrow canvas: labels give way to icons; names stay in tooltips and aria-labels. */
+  @container studio-top (max-width: 1100px) {
+    .studio-top-bar .collapsible-label {
+      display: none;
+    }
+    .studio-top-bar {
+      gap: 6px;
+      padding: 4px 8px;
+    }
+  }
+
+  .studio-top-bar :is(.top-btn, .top-action-btn, .top-select):disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .ledger-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .studio-empty-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    max-width: 380px;
+    padding: 28px 32px;
+    text-align: center;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 18px;
+    color: var(--glass-text);
+  }
+
+  .studio-empty-state h2 {
+    margin: 4px 0 0;
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .studio-empty-state p {
+    margin: 0 0 6px;
+    font-size: 13px;
+    line-height: 1.45;
+    opacity: 0.75;
   }
 
   .top-zone {

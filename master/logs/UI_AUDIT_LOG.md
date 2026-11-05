@@ -246,3 +246,34 @@ This log records user acceptance testing (UAT) defects, root cause diagnoses, an
    - `cargo xtask protocol-lint`: passed.
    - `cargo xtask studio-audit --strict`: 0 findings (100% theme tokens `var(--...)`, zero local keydown listeners).
    - Independent Sub-Agent Audit: All findings remediated; **100% PASS**.
+
+---
+
+## [2026-11-05] UI-BUG-006 REOPENED → FIXED (Phase R2): top bar clipped at 1200 px; phantom pages on empty canvas
+- **Severity:** High (layout + misleading state)
+- **Component(s):** `app-tauri/src/lib/views/studio/SpatialCanvas.svelte`
+- **Symptom (observed in the running app on Ubuntu, default 1200×800 window):**
+  - The Studio top bar was cut off on both sides: "Markup" on the left, "Ledger & Vault" on the right.
+  - With no PDF open, the canvas showed two blank A4 pages and "Page 1 / 2". Save, Flatten, Rotate, Snap and Ruler were all live with nothing to act on.
+- **Root cause:**
+  1. The bar was capped with `max-width: calc(100vw - 32px)`, but it is centred inside the canvas (window minus the 210 px sidebar). Its natural width (~1085 px) exceeded the 990 px canvas, and the canvas clipped it.
+  2. `onMount` seeded two placeholder pages whenever `viewport.pages` was empty.
+- **Fix:**
+  - The bar sits in a `.studio-top-bar-host` that spans the canvas (`container-type: inline-size`), so it can never be wider than the canvas.
+  - Below 1100 px canvas width, secondary labels (Page, Snap, Ruler, "PDF", Ledger) collapse to icons. Full names stay in `title`/`aria-label`.
+  - Overlay options shortened ("No overlay", "Eng grid", …); "Edit PDF Text" became "Edit Text"; "Ledger & Vault" became an icon plus "Ledger".
+  - Placeholder pages removed. A `hasDocument` state drives a real empty state ("Open a PDF to begin" with one primary action, "Open PDF…", using the existing native picker).
+  - Document-only controls are disabled with the reason "Open a PDF first". The Ledger stays enabled (the library works without a document). Snap and Ruler expose `aria-pressed`.
+  - The container is scoped to the bar host only, because RadialMenu uses `position: fixed`.
+- **Verification:**
+  - WebDriver (tauri-driver + WebKitWebDriver) against the real debug app, webview-only screenshots, DOM metrics:
+
+    | Window | Canvas | Bar | Result |
+    |---|---|---|---|
+    | 1200×800, no file | x 210–1200 | 772 px at x 319–1091 | no overflow, 0 pages, empty state shown, 10 controls disabled |
+    | 1200×800, `standard-form.pdf` | x 210–1200 | 815 px | 5 real pages, badge "1 / 5", only Undo/Redo disabled |
+    | 1600×900 | 1390 px | 1018 px | all labels visible, badge "Page 1 / 5" |
+
+  - New test `src/lib/views/__tests__/StudioEmptyState.test.ts` (3 tests): empty state with no phantom pages; document-only actions disabled with a reason; Ledger enabled.
+  - svelte-check 0/0, vitest 130/130, `studio-audit --strict` 0 findings.
+- **Status:** VERIFIED FIXED (Phase R2)

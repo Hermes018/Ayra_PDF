@@ -1441,3 +1441,28 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
   | 10 | Docs / ADR | YES. ADR-017, ADR-018 proposed |
   | 11 | Tool registry | YES |
 - **Commit note (R1):** because of a staging slip, commit `500297f` (titled ERR-006) also contains the ERR-005 code fix (`lpdf-engine-pdfcraft/src/{lib.rs,pandoc_sidecar.rs}`), `docs/CRAFT_ECOSYSTEM_SURVEY.md` and the tree-script change. It was not split, because the protocol forbids history rewrites without approval. The logs and maps are in the follow-up commit.
+
+## [2026-11-05 23:05] Phase R2 — UI-BUG-006 (top bar fit + real empty state) + checklist PARTIAL status — DONE
+- **Changes:**
+  - UI-BUG-006 fixed (see UI_AUDIT_LOG 2026-11-05 R2): the bar can't exceed the canvas; labels collapse to icons below 1100 px; no placeholder pages; "Open a PDF to begin" empty state; document-only controls disabled with a reason.
+  - `cargo xtask feature-map-check` now understands `PARTIAL`: checkbox `[ ]`, and the line must carry an "Actually:" note. The checklist is now 111 DONE · 2 PARTIAL (2.16 LaTeX, 8.10 handwriting) · 0 IN PROGRESS · 6 DEFERRED.
+- **Gate:**
+  - `CARGO_BUILD_JOBS=2 cargo xtask gate` PASSED GREEN: fmt, clippy, nextest 155/155, deny, audit, protocol-lint.
+  - Frontend, run sequentially: svelte-check 0/0 (347 files), vitest 130/130 (15 files, +3 new), `studio-audit --strict` 0 findings.
+  - WebDriver layout metrics at 1200×800 and 1600×900.
+- **Observed, not changed (outside R2 scope):** UI copy still overclaims for the PARTIAL items. The LaTeX dialog reads "LaTeX Mathematical Vector Stamp (Offline Engine)", and the ink-to-text tooltip says "Convert … to editable text".
+- **Pre-commit checklist:**
+
+  | # | Check | Answer |
+  |---|---|---|
+  | 1 | Gate green | YES |
+  | 2 | Tests run | YES |
+  | 3 | No banned patterns | YES |
+  | 4 | New deps | YES, none added |
+  | 5 | Offline | YES |
+  | 6 | Failsafes | YES, F11 not affected |
+  | 7 | UI matches spec | YES. WebDriver screenshots at 1200 and 1600 px |
+  | 8 | Logs updated | YES |
+  | 9 | No scope creep | YES |
+  | 10 | Docs / ADR | YES |
+  | 11 | Tool registry | YES |

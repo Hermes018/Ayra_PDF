@@ -166,7 +166,7 @@ master/app-tauri/src/lib/views/__tests__/OrganizeView.test.ts	Tests: organize vi
 master/app-tauri/src/lib/views/__tests__/PipelinesView.test.ts	Tests: pipelines view
 master/app-tauri/src/lib/views/__tests__/SettingsView.test.ts	Tests: settings view
 master/app-tauri/src/lib/views/studio/	The spatial Studio editor (default view)
-master/app-tauri/src/lib/views/studio/SpatialCanvas.svelte	Studio canvas: page rendering, all pointer input, layers, top bar (largest file)
+master/app-tauri/src/lib/views/studio/SpatialCanvas.svelte	Studio canvas: page rendering, pointer input, layers, responsive top bar, empty state (largest file)
 master/app-tauri/src/lib/views/studio/SplitLayout.svelte	Side-by-side document panes with draggable divider
 master/app-tauri/src-tauri/	Tauri v2 Rust shell (the desktop binary)
 master/app-tauri/src-tauri/.gitignore	Ignores Tauri generated schemas/build output
@@ -429,3 +429,4 @@ master/vendor/patches/winprint/LICENSE.md	Upstream BSD-3-Clause licence
 master/vendor/patches/winprint/PATCH_NOTES.md	Exactly what differs from upstream and how to re-sync
 master/vendor/patches/winprint/README.md	Upstream readme
 master/vendor/patches/winprint/src/	Byte-identical copy of upstream winprint.rs @ 5f80b9b src/ (44 files, not listed individually)
+master/app-tauri/src/lib/views/__tests__/StudioEmptyState.test.ts	Tests: Studio empty state, no phantom pages, document-only actions disabled (UI-BUG-006)

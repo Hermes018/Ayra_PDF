@@ -344,6 +344,7 @@ fn run_feature_map_check() {
         fs::read_to_string(&checklist_path).expect("Failed to read DRAWBOARD_FEATURE_CHECKLIST.md");
     let mut done_count = 0usize;
     let mut in_progress_count = 0usize;
+    let mut partial_count = 0usize;
     let mut not_started_count = 0usize;
     let mut deferred_count = 0usize;
     let mut errors = Vec::new();
@@ -369,6 +370,24 @@ fn run_feature_map_check() {
             {
                 errors.push(format!(
                     "Line {}: marked `DONE` without a verifying file reference (.rs/.svelte/.ts): {}",
+                    line_idx + 1,
+                    trimmed
+                ));
+            }
+        } else if trimmed.contains("`PARTIAL`") {
+            // Something real ships, but it does not meet the feature as specified. The line must
+            // point at the code and say what the code actually does ("Actually: ...").
+            partial_count += 1;
+            if is_checked {
+                errors.push(format!(
+                    "Line {}: marked `PARTIAL` but checkbox is `[x]`: {}",
+                    line_idx + 1,
+                    trimmed
+                ));
+            }
+            if !trimmed.contains("Actually:") {
+                errors.push(format!(
+                    "Line {}: marked `PARTIAL` without an \"Actually:\" note describing what the code does: {}",
                     line_idx + 1,
                     trimmed
                 ));
@@ -402,17 +421,17 @@ fn run_feature_map_check() {
             }
         } else {
             errors.push(format!(
-                "Line {}: feature item missing canonical status tag (`DONE`, `IN PROGRESS`, `NOT STARTED`, `DEFERRED`): {}",
+                "Line {}: feature item missing canonical status tag (`DONE`, `PARTIAL`, `IN PROGRESS`, `NOT STARTED`, `DEFERRED`): {}",
                 line_idx + 1,
                 trimmed
             ));
         }
     }
 
-    let total = done_count + in_progress_count + not_started_count + deferred_count;
+    let total = done_count + partial_count + in_progress_count + not_started_count + deferred_count;
     println!(
-        "feature-map-check: {} features audited (DONE: {}, IN PROGRESS: {}, NOT STARTED: {}, DEFERRED: {})",
-        total, done_count, in_progress_count, not_started_count, deferred_count
+        "feature-map-check: {} features audited (DONE: {}, PARTIAL: {}, IN PROGRESS: {}, NOT STARTED: {}, DEFERRED: {})",
+        total, done_count, partial_count, in_progress_count, not_started_count, deferred_count
     );
 
     if total < 109 {

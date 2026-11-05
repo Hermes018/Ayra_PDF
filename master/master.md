@@ -152,9 +152,10 @@ master/
 │   │   │   │   │   ├── ConvertToPdfView.test.ts          # Tests: convert-to view
 │   │   │   │   │   ├── OrganizeView.test.ts              # Tests: organize view
 │   │   │   │   │   ├── PipelinesView.test.ts             # Tests: pipelines view
-│   │   │   │   │   └── SettingsView.test.ts              # Tests: settings view
+│   │   │   │   │   ├── SettingsView.test.ts              # Tests: settings view
+│   │   │   │   │   └── StudioEmptyState.test.ts          # Tests: Studio empty state, no phantom pages, document-only actions disabled (UI-BUG-006)
 │   │   │   │   ├── studio/                               # The spatial Studio editor (default view)
-│   │   │   │   │   ├── SpatialCanvas.svelte              # Studio canvas: page rendering, all pointer input, layers, top bar (largest file)
+│   │   │   │   │   ├── SpatialCanvas.svelte              # Studio canvas: page rendering, pointer input, layers, responsive top bar, empty state (largest file)
 │   │   │   │   │   └── SplitLayout.svelte                # Side-by-side document panes with draggable divider
 │   │   │   │   ├── AiSummarizeView.svelte                # PDF Intelligence: summarize / translate (basic mode + optional local model)
 │   │   │   │   ├── BatchQueueView.svelte                 # Batch job queue
