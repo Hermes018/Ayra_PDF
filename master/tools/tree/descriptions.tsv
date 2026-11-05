@@ -1,0 +1,423 @@
+.github/	GitHub config. Must stay at the repo root: GitHub Actions only reads workflows from here
+.github/workflows/	CI pipelines; every job runs from master/ (working-directory: master)
+.github/workflows/ci.yml	Push/PR gate: `cargo xtask gate` on Fedora 44 container, Ubuntu 24.04 and Windows
+.github/workflows/nightly.yml	Nightly corpus fetch, fuzz/hostile/perf/sbom/a11y/soak harness and 8-hour soak
+.github/workflows/release-windows.yml	Tag-triggered release: tests, then rpm (fedora overlay), deb (ubuntu overlay), nsis/msi (windows overlay)
+.gitignore	Ignores build output (`target/`) and PDFs (test corpus is fetched, never committed)
+.gitmodules	Registers the pinned pdfcraft engine submodule at master/vendor/pdfcraft
+AGENTS.md	Boot pointer auto-read by coding agents: layout rule + which protocol files to read first
+tree.md	This file: map of every file in every folder
+master/	Shared workspace for ALL platforms: source, tests, protocol, logs, docs. All development happens here
+master/master.md	Map of master/ with build/dev commands
+master/.allowed-deletions	Paths the pre-commit hook allows to be deleted (all other deletions are blocked)
+master/.cargo/	Cargo configuration for the workspace
+master/.cargo/audit.toml	cargo-audit settings (advisory ignore list)
+master/.cargo/config.toml	Defines the `cargo xtask` alias
+master/Cargo.lock	Pinned versions of every Rust dependency (committed for reproducible builds)
+master/Cargo.toml	Rust workspace manifest: members, release profile, patches pointing at pdfcraft's vendored crates
+master/MASTER_PROMPT.md	Original project boot prompt given to the first coding agent
+master/deny.toml	cargo-deny policy: licence allow-list (no GPL/AGPL), banned crates, advisories
+master/rust-toolchain.toml	Rust toolchain channel (stable) + rustfmt/clippy components
+master/app-tauri/	Desktop app: Svelte 5 frontend (src/) + Tauri v2 Rust shell (src-tauri/)
+master/app-tauri/.gitignore	Ignores node_modules, build output and SvelteKit cache
+master/app-tauri/.vscode/	Editor settings for the frontend
+master/app-tauri/.vscode/extensions.json	Recommended VS Code extensions (Svelte, Tauri, rust-analyzer)
+master/app-tauri/.vscode/settings.json	VS Code workspace settings
+master/app-tauri/README.md	Stock Tauri + SvelteKit template readme
+master/app-tauri/package.json	Frontend dependencies and scripts (dev, build, check, tauri)
+master/app-tauri/pnpm-lock.yaml	Pinned npm dependency versions (pnpm)
+master/app-tauri/svelte.config.js	SvelteKit config: static adapter, SPA fallback (ADR-008 exception)
+master/app-tauri/tsconfig.json	TypeScript compiler settings
+master/app-tauri/vite.config.js	Vite dev server/build config (port 1420, Tauri-friendly settings)
+master/app-tauri/vitest-setup.ts	Vitest setup: jest-dom matchers and Tauri IPC mocks
+master/app-tauri/vitest.config.ts	Vitest config (jsdom environment, test file globs)
+master/app-tauri/static/	Files served as-is by the webview
+master/app-tauri/static/favicon.png	App favicon
+master/app-tauri/static/pdf.min.js	Vendored Mozilla pdf.js, used only to draw page previews (ADR-009 exception)
+master/app-tauri/static/pdf.worker.min.js	pdf.js web worker companion
+master/app-tauri/static/svelte.svg	Template logo asset
+master/app-tauri/static/tauri.svg	Template logo asset
+master/app-tauri/static/vite.svg	Template logo asset
+master/app-tauri/src/	Svelte 5 single-page frontend
+master/app-tauri/src/app.css	Global styles and design tokens (CSS variables, light/dark, glass theme)
+master/app-tauri/src/app.html	HTML shell that SvelteKit renders into
+master/app-tauri/src/vitest.d.ts	Vitest type references
+master/app-tauri/src/locales/	UI translation strings
+master/app-tauri/src/locales/en.json	English UI strings
+master/app-tauri/src/routes/	SvelteKit routes (single page app)
+master/app-tauri/src/routes/+layout.svelte	Root layout: global CSS + toasts
+master/app-tauri/src/routes/+layout.ts	Disables SSR/prerender (pure client SPA for Tauri)
+master/app-tauri/src/routes/+page.svelte	The one page: switches between tool views (default Studio) and handles OS "open with" files
+master/app-tauri/src/lib/	Frontend library code
+master/app-tauri/src/lib/i18n.ts	Translation lookup helper
+master/app-tauri/src/lib/ipc.ts	Typed wrappers around Tauri `invoke` (jobs, settings, dialogs, files)
+master/app-tauri/src/lib/state.svelte.ts	Global app state (current view, open files, theme, sidebar) with runes
+master/app-tauri/src/lib/bindings/	TypeScript types generated from Rust by ts-rs (do not edit by hand)
+master/app-tauri/src/lib/bindings/AiModelInfo.ts	Generated type: imported local AI model info
+master/app-tauri/src/lib/bindings/AiModelManifest.ts	Generated type: AI model manifest (hash, licence)
+master/app-tauri/src/lib/bindings/AiWorkerRequest.ts	Generated type: request sent to the AI worker
+master/app-tauri/src/lib/bindings/AiWorkerResponse.ts	Generated type: AI worker reply
+master/app-tauri/src/lib/bindings/AnnotationDef.ts	Generated type: annotation definition
+master/app-tauri/src/lib/bindings/AnnotationShape.ts	Generated type: annotation shape kinds
+master/app-tauri/src/lib/bindings/AppSettings.ts	Generated type: persisted app settings
+master/app-tauri/src/lib/bindings/ControlMessage.ts	Generated type: control-bus pointer/key sample
+master/app-tauri/src/lib/bindings/ExtractiveSummaryReport.ts	Generated type: basic (no-model) summary result
+master/app-tauri/src/lib/bindings/HardwareTier.ts	Generated type: hardware tier L/M/H
+master/app-tauri/src/lib/bindings/HatchPatternId.ts	Generated type: CAD hatch pattern ids
+master/app-tauri/src/lib/bindings/JobEvent.ts	Generated type: job progress/done/error event
+master/app-tauri/src/lib/bindings/JobPriority.ts	Generated type: job priority
+master/app-tauri/src/lib/bindings/JobRecord.ts	Generated type: job list entry
+master/app-tauri/src/lib/bindings/JobRequest.ts	Generated type: every job kind the backend accepts
+master/app-tauri/src/lib/bindings/JobStatus.ts	Generated type: job state
+master/app-tauri/src/lib/bindings/LlmSummaryOptions.ts	Generated type: local-LLM summary options
+master/app-tauri/src/lib/bindings/LlmSummaryReport.ts	Generated type: local-LLM summary result
+master/app-tauri/src/lib/bindings/MarkdownBatchOptions.ts	Generated type: Markdown batch options
+master/app-tauri/src/lib/bindings/MarkdownBatchReport.ts	Generated type: Markdown batch result
+master/app-tauri/src/lib/bindings/MarkdownBatchTarget.ts	Generated type: Markdown batch target format
+master/app-tauri/src/lib/bindings/MarkdownDocFormat.ts	Generated type: Markdown document formats
+master/app-tauri/src/lib/bindings/OfficeInputFormat.ts	Generated type: Office input formats
+master/app-tauri/src/lib/bindings/OfficeOutputFormat.ts	Generated type: Office output formats
+master/app-tauri/src/lib/bindings/OptimizeProfile.ts	Generated type: compression levels
+master/app-tauri/src/lib/bindings/OutputPolicy.ts	Generated type: output naming/overwrite policy
+master/app-tauri/src/lib/bindings/PdfAConformance.ts	Generated type: PDF/A levels
+master/app-tauri/src/lib/bindings/PdfAPreflightReport.ts	Generated type: PDF/A preflight result
+master/app-tauri/src/lib/bindings/Permissions.ts	Generated type: PDF permission flags
+master/app-tauri/src/lib/bindings/PipelinePreset.ts	Generated type: workflow preset
+master/app-tauri/src/lib/bindings/PipelineStep.ts	Generated type: workflow step
+master/app-tauri/src/lib/bindings/RedactionRegion.ts	Generated type: redaction rectangle
+master/app-tauri/src/lib/bindings/SceneNode.ts	Generated type: studio scene node
+master/app-tauri/src/lib/bindings/SummaryLength.ts	Generated type: summary length
+master/app-tauri/src/lib/bindings/ThemePreference.ts	Generated type: light/dark/system
+master/app-tauri/src/lib/bindings/TranslateOptions.ts	Generated type: translate options
+master/app-tauri/src/lib/bindings/TranslatePdfReport.ts	Generated type: translate result
+master/app-tauri/src/lib/bindings/WatermarkSettings.ts	Generated type: watermark settings
+master/app-tauri/src/lib/components/	Shared UI components
+master/app-tauri/src/lib/components/Dropzone.svelte	File drop/pick area (native OS paths)
+master/app-tauri/src/lib/components/FaqModal.svelte	Help/FAQ dialog, lazy-loads translated FAQ
+master/app-tauri/src/lib/components/For.svelte	Tiny generic keyed list helper component
+master/app-tauri/src/lib/components/GridEditor.svelte	Page-thumbnail grid for organizing pages (reorder, rotate, delete)
+master/app-tauri/src/lib/components/MainLayout.svelte	App frame: sidebar + content + status bar, sidebar collapse
+master/app-tauri/src/lib/components/PdfViewer.svelte	Read-only page preview using pdf.js
+master/app-tauri/src/lib/components/Sidebar.svelte	Left navigation between tool groups
+master/app-tauri/src/lib/components/StatusBar.svelte	Bottom status line (engine, job state)
+master/app-tauri/src/lib/components/ToastContainer.svelte	Toast notifications
+master/app-tauri/src/lib/components/studio/	Components of the spatial "Studio" editor
+master/app-tauri/src/lib/components/studio/AnnotationLedger.svelte	Side drawer: annotation list, takeoff CSV, markup library, LaTeX/signature/audio dialogs
+master/app-tauri/src/lib/components/studio/CalibrationModal.svelte	Set a page's drawing scale for measurements
+master/app-tauri/src/lib/components/studio/DockableToolbar.svelte	Main tool rail with grouped tool drawers, shortcuts, favourites
+master/app-tauri/src/lib/components/studio/FavoritesBar.svelte	Pinned favourite tools/presets
+master/app-tauri/src/lib/components/studio/HatchDefs.svelte	SVG pattern definitions for CAD hatching fills
+master/app-tauri/src/lib/components/studio/MeasureOverlay.svelte	Draws measurement lines, labels, ruler/protractor
+master/app-tauri/src/lib/components/studio/PropertyPill.svelte	Floating style panel for the active tool (colour, width, line style)
+master/app-tauri/src/lib/components/studio/RadialMenu.svelte	Circular quick-tool menu
+master/app-tauri/src/lib/components/studio/ShortcutSettings.svelte	Keyboard shortcut editor
+master/app-tauri/src/lib/components/studio/StudioIcon.svelte	SVG icon registry for studio tools
+master/app-tauri/src/lib/core/	Studio engines: state + logic (no DOM), each unit-tested
+master/app-tauri/src/lib/core/commandEngine.svelte.ts	Central keyboard shortcut/command dispatcher (only place keydown is handled)
+master/app-tauri/src/lib/core/core.test.ts	Tests: viewport zoom/pan/fit and engine basics
+master/app-tauri/src/lib/core/defaultPresets.json	Default pen/highlighter/shape presets
+master/app-tauri/src/lib/core/defaultShortcuts.json	Default keyboard shortcuts
+master/app-tauri/src/lib/core/inkEngine.svelte.ts	Freehand ink strokes, smoothing, shape recognition, laser pointer
+master/app-tauri/src/lib/core/insertAndTakeoff.test.ts	Tests: insert suite and takeoff CSV export
+master/app-tauri/src/lib/core/insertEngine.svelte.ts	Insert tools: images, stamps, signatures, audio, "LaTeX" (Unicode-only), workspace library
+master/app-tauri/src/lib/core/measureEngine.svelte.ts	Length/area/angle/volume measurement and scale maths
+master/app-tauri/src/lib/core/radialGeometry.test.ts	Tests: radial menu hit testing
+master/app-tauri/src/lib/core/radialGeometry.ts	Radial menu geometry (sector/ring hit testing)
+master/app-tauri/src/lib/core/radialLayout.json	Radial menu sectors and flyout tools
+master/app-tauri/src/lib/core/selectionEngine.svelte.ts	Select, marquee/lasso, move/resize/rotate, group, align, flip
+master/app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts	Lines, arrows, polygons, clouds, hatching, review markups
+master/app-tauri/src/lib/core/shapeAndSelection.test.ts	Tests: shapes and selection
+master/app-tauri/src/lib/core/snapAndMeasure.test.ts	Tests: snapping and measurement
+master/app-tauri/src/lib/core/snapEngine.svelte.ts	CAD-style snapping to PDF vector geometry (endpoint, midpoint, intersection)
+master/app-tauri/src/lib/core/studioReactivity.test.ts	Tests: tool/preset reactivity and ink shape recognition
+master/app-tauri/src/lib/core/themeContract.svelte.ts	Theme tokens (light/dark) used by every studio component
+master/app-tauri/src/lib/core/toolEngine.svelte.ts	Active tool, tool presets and favourites
+master/app-tauri/src/lib/core/viewportEngine.svelte.ts	Canvas zoom/pan/fit maths
+master/app-tauri/src/lib/i18n/	Help/FAQ translations
+master/app-tauri/src/lib/i18n/faqStore.svelte.ts	Loads FAQ text for the chosen language
+master/app-tauri/src/lib/i18n/faq/	FAQ content per language
+master/app-tauri/src/lib/i18n/faq/bn.json	FAQ in Bengali
+master/app-tauri/src/lib/i18n/faq/en.json	FAQ in English
+master/app-tauri/src/lib/i18n/faq/fr.json	FAQ in French
+master/app-tauri/src/lib/i18n/faq/ja.json	FAQ in Japanese
+master/app-tauri/src/lib/i18n/faq/ta.json	FAQ in Tamil
+master/app-tauri/src/lib/i18n/faq/zh.json	FAQ in Chinese
+master/app-tauri/src/lib/views/	One view per tool group
+master/app-tauri/src/lib/views/AiSummarizeView.svelte	PDF Intelligence: summarize / translate (basic mode + optional local model)
+master/app-tauri/src/lib/views/BatchQueueView.svelte	Batch job queue
+master/app-tauri/src/lib/views/ConvertFromPdfView.svelte	PDF → images/Word/HTML/text/Office/PDF-A
+master/app-tauri/src/lib/views/ConvertToPdfView.svelte	Images/Office/HTML → PDF
+master/app-tauri/src/lib/views/ConvertView.svelte	Convert hub (switches to/from views)
+master/app-tauri/src/lib/views/EditView.svelte	Watermark, header/footer, page numbers
+master/app-tauri/src/lib/views/FormsView.svelte	Form filling and flattening
+master/app-tauri/src/lib/views/MarkdownView.svelte	Markdown ↔ PDF/DOCX/HTML tools
+master/app-tauri/src/lib/views/OptimizeView.svelte	Compress, repair, OCR
+master/app-tauri/src/lib/views/OrganizeView.svelte	Merge, split, rotate, delete, extract pages
+master/app-tauri/src/lib/views/PipelinesView.svelte	Chained tool workflows (presets)
+master/app-tauri/src/lib/views/SecurityView.svelte	Protect, unlock, redact, sign
+master/app-tauri/src/lib/views/SettingsView.svelte	Settings: theme, tier, output policy, logs, AI models
+master/app-tauri/src/lib/views/__tests__/	View tests (Vitest + Testing Library, mocked IPC)
+master/app-tauri/src/lib/views/__tests__/A11yConformance.test.ts	Tests: accessibility basics across views
+master/app-tauri/src/lib/views/__tests__/AiSummarizeView.test.ts	Tests: AI summarize view
+master/app-tauri/src/lib/views/__tests__/BatchQueueView.test.ts	Tests: batch queue view
+master/app-tauri/src/lib/views/__tests__/ConvertFromPdfView.test.ts	Tests: convert-from view
+master/app-tauri/src/lib/views/__tests__/ConvertToPdfView.test.ts	Tests: convert-to view
+master/app-tauri/src/lib/views/__tests__/OrganizeView.test.ts	Tests: organize view
+master/app-tauri/src/lib/views/__tests__/PipelinesView.test.ts	Tests: pipelines view
+master/app-tauri/src/lib/views/__tests__/SettingsView.test.ts	Tests: settings view
+master/app-tauri/src/lib/views/studio/	The spatial Studio editor (default view)
+master/app-tauri/src/lib/views/studio/SpatialCanvas.svelte	Studio canvas: page rendering, all pointer input, layers, top bar (largest file)
+master/app-tauri/src/lib/views/studio/SplitLayout.svelte	Side-by-side document panes with draggable divider
+master/app-tauri/src-tauri/	Tauri v2 Rust shell (the desktop binary)
+master/app-tauri/src-tauri/.gitignore	Ignores Tauri generated schemas/build output
+master/app-tauri/src-tauri/Cargo.toml	Desktop binary crate manifest (Tauri plugins, workspace crates, Windows-only deps)
+master/app-tauri/src-tauri/build.rs	Tauri build script
+master/app-tauri/src-tauri/tauri.conf.json	SHARED Tauri config (window, CSP, icons, generic bundle). OS overlays in <os>/packaging/ are merged at build
+master/app-tauri/src-tauri/capabilities/	Tauri v2 permission allow-lists per window
+master/app-tauri/src-tauri/capabilities/default.json	Permissions for the main window
+master/app-tauri/src-tauri/capabilities/studio-split.json	Permissions for studio split windows
+master/app-tauri/src-tauri/icons/	App icons used by every bundle (.icns for macOS, .ico for Windows)
+master/app-tauri/src-tauri/icons/128x128.png	App icon 128 px
+master/app-tauri/src-tauri/icons/128x128@2x.png	App icon 256 px (HiDPI)
+master/app-tauri/src-tauri/icons/32x32.png	App icon 32 px
+master/app-tauri/src-tauri/icons/icon.icns	macOS icon set
+master/app-tauri/src-tauri/icons/icon.ico	Windows icon
+master/app-tauri/src-tauri/icons/icon.png	Base app icon
+master/app-tauri/src-tauri/src/	Desktop shell source
+master/app-tauri/src-tauri/src/main.rs	Binary entry point (calls lib::run)
+master/app-tauri/src-tauri/src/lib.rs	App setup, job manager wiring, core IPC commands, file dialogs (kdialog/zenity), window commands
+master/app-tauri/src-tauri/src/commands/	Grouped IPC command modules
+master/app-tauri/src-tauri/src/commands/mod.rs	Command module index
+master/app-tauri/src-tauri/src/commands/studio.rs	Studio IPC: prefs, annotation save/load/flatten, text blocks, snap geometry, scales, audio, takeoff, libraries
+master/corpus/	Test PDFs: manifest + fetch script (the PDFs themselves are downloaded, not committed)
+master/corpus/MANIFEST	List of corpus files and what each tests
+master/corpus/SHA256SUMS	Expected hashes of corpus files
+master/corpus/fetch.sh	Downloads/generates the corpus (needs wget or curl, and qpdf for synthetic files)
+master/crates/	Rust library/binary crates (the engine side)
+master/crates/lpdf-ai-worker/	Sandboxed local-AI worker process (JSON over stdin/stdout)
+master/crates/lpdf-ai-worker/Cargo.toml	Crate manifest
+master/crates/lpdf-ai-worker/src/lib.rs	Request/response types and session logic
+master/crates/lpdf-ai-worker/src/main.rs	Worker binary entry point
+master/crates/lpdf-ai-worker/tests/ai_worker_tests.rs	Tests: AI worker protocol
+master/crates/lpdf-cli/	`localpdf` command-line tool on the same engine
+master/crates/lpdf-cli/Cargo.toml	Crate manifest
+master/crates/lpdf-cli/src/lib.rs	CLI commands and engine construction
+master/crates/lpdf-cli/src/main.rs	CLI binary entry point
+master/crates/lpdf-cli/tests/cli_tests.rs	Tests: end-to-end CLI runs on the corpus
+master/crates/lpdf-control-bus/	Recordable pointer/key input stream for the studio (replay testing)
+master/crates/lpdf-control-bus/Cargo.toml	Crate manifest
+master/crates/lpdf-control-bus/src/lib.rs	Control message types, executor trait, replay
+master/crates/lpdf-control-bus/tests/replay.rs	Tests: deterministic replay
+master/crates/lpdf-core-types/	Shared types: error codes, settings, config, hardware tier
+master/crates/lpdf-core-types/Cargo.toml	Crate manifest
+master/crates/lpdf-core-types/src/config.rs	App settings/config and AI model manifest types
+master/crates/lpdf-core-types/src/error.rs	`LpdfError` typed errors
+master/crates/lpdf-core-types/src/lib.rs	Crate root, re-exports
+master/crates/lpdf-engine-fallback/	Backup engine (lopdf) for repair/rewrite when pdfcraft fails; many ops "unsupported"
+master/crates/lpdf-engine-fallback/Cargo.toml	Crate manifest
+master/crates/lpdf-engine-fallback/src/lib.rs	FallbackAdapter implementation
+master/crates/lpdf-engine-pdfcraft/	Primary engine adapter over pdfcraft + Office/Pandoc sidecars + summarizer/translator
+master/crates/lpdf-engine-pdfcraft/Cargo.toml	Crate manifest (pdfcraft crates pinned by git rev)
+master/crates/lpdf-engine-pdfcraft/src/lib.rs	PdfcraftAdapter: every PDF operation (note: `render` is still a stub)
+master/crates/lpdf-engine-pdfcraft/src/office_sidecar.rs	LibreOffice headless bridge (offline, sandboxed, timeouts)
+master/crates/lpdf-engine-pdfcraft/src/pandoc_sidecar.rs	Pandoc bridge for Markdown/DOCX/HTML
+master/crates/lpdf-engine-pdfcraft/src/summarizer.rs	Extractive (no-model) and local-LLM summarizer
+master/crates/lpdf-engine-pdfcraft/src/translator.rs	Experimental block-level PDF translation
+master/crates/lpdf-engine-pdfcraft/tests/extraction_tests.rs	Tests: text/image extraction
+master/crates/lpdf-engine-pdfcraft/tests/pandoc_tests.rs	Tests: Pandoc sidecar (mock binaries)
+master/crates/lpdf-engine-pdfcraft/tests/pdfa_tests.rs	Tests: PDF/A preflight
+master/crates/lpdf-engine-pdfcraft/tests/sidecar_tests.rs	Tests: Office sidecar (mock binaries, isolation)
+master/crates/lpdf-engine-pdfcraft/tests/summarizer_tests.rs	Tests: summarizer
+master/crates/lpdf-engine-port/	`PdfEngine` trait every engine implements + shared contract tests
+master/crates/lpdf-engine-port/Cargo.toml	Crate manifest
+master/crates/lpdf-engine-port/src/lib.rs	Trait, option/report types, contract test macro
+master/crates/lpdf-engine-switcher/	Tries pdfcraft then fallback; also hosts fuzz/hostile/perf/soak/SBOM harnesses
+master/crates/lpdf-engine-switcher/Cargo.toml	Crate manifest
+master/crates/lpdf-engine-switcher/src/fuzz.rs	Deterministic fuzzing of engine inputs
+master/crates/lpdf-engine-switcher/src/hostile.rs	Hostile-PDF generators (bombs, broken xref, deep trees)
+master/crates/lpdf-engine-switcher/src/lib.rs	EngineSwitcher (primary → fallback, degraded mode)
+master/crates/lpdf-engine-switcher/src/perf.rs	Per-tier performance/memory budget checks
+master/crates/lpdf-engine-switcher/src/sbom.rs	CycloneDX SBOM + supply-chain checks (licences, forbid(unsafe) allow-list)
+master/crates/lpdf-engine-switcher/src/soak.rs	Soak / leak testing
+master/crates/lpdf-engine-switcher/tests/fuzz_smoke_tests.rs	Tests: fuzz/hostile/perf/sbom/a11y/soak smoke runs
+master/crates/lpdf-fs-safety/	Atomic writes, filename sanitizing, child-process sandbox (Linux unshare, Windows Job Object)
+master/crates/lpdf-fs-safety/Cargo.toml	Crate manifest (Windows-only windows-sys)
+master/crates/lpdf-fs-safety/src/lib.rs	Safety primitives; Windows FFI isolated in cfg(windows) modules (ADR-015)
+master/crates/lpdf-fs-safety/tests/fs_safety_tests.rs	Tests: atomic write, sanitizing
+master/crates/lpdf-hw/	Hardware detection → tier L/M/H and budgets
+master/crates/lpdf-hw/Cargo.toml	Crate manifest
+master/crates/lpdf-hw/src/lib.rs	HardwareProfile (RAM/cores via sysinfo)
+master/crates/lpdf-jobs/	Background job queue: priorities, cancel, progress events, pipelines
+master/crates/lpdf-jobs/Cargo.toml	Crate manifest
+master/crates/lpdf-jobs/src/events.rs	Job progress/done/error events
+master/crates/lpdf-jobs/src/lib.rs	Crate root + RAM budget / worker concurrency (sysinfo)
+master/crates/lpdf-jobs/src/pipeline.rs	Workflow steps and built-in presets
+master/crates/lpdf-jobs/src/queue.rs	JobManager and every job kind (runs in-process today; sandboxed worker not wired yet)
+master/crates/lpdf-jobs/tests/queue_tests.rs	Tests: queue behaviour
+master/crates/lpdf-tools-convert/	Thin convert wrappers over PdfEngine (currently unused by other crates)
+master/crates/lpdf-tools-convert/Cargo.toml	Crate manifest
+master/crates/lpdf-tools-convert/src/lib.rs	Convert helpers
+master/crates/lpdf-tools-edit/	Thin edit wrappers over PdfEngine (currently unused)
+master/crates/lpdf-tools-edit/Cargo.toml	Crate manifest
+master/crates/lpdf-tools-edit/src/lib.rs	Edit helpers
+master/crates/lpdf-tools-markdown/	Thin Markdown wrappers over PdfEngine (currently unused)
+master/crates/lpdf-tools-markdown/Cargo.toml	Crate manifest
+master/crates/lpdf-tools-markdown/src/lib.rs	Markdown helpers
+master/crates/lpdf-tools-optimize/	Thin optimize wrappers over PdfEngine (currently unused)
+master/crates/lpdf-tools-optimize/Cargo.toml	Crate manifest
+master/crates/lpdf-tools-optimize/src/lib.rs	Optimize helpers
+master/crates/lpdf-tools-organize/	Thin organize wrappers over PdfEngine (currently unused)
+master/crates/lpdf-tools-organize/Cargo.toml	Crate manifest
+master/crates/lpdf-tools-organize/src/lib.rs	Organize helpers
+master/crates/lpdf-tools-security/	Thin security wrappers over PdfEngine (currently unused)
+master/crates/lpdf-tools-security/Cargo.toml	Crate manifest
+master/crates/lpdf-tools-security/src/lib.rs	Security helpers
+master/crates/lpdf-worker/	`lpdf-worker` sandboxed job process (Landlock); built and shipped, not yet called by the app
+master/crates/lpdf-worker/Cargo.toml	Crate manifest
+master/crates/lpdf-worker/src/main.rs	Worker entry: applies sandbox, runs one job
+master/docs/	Cross-platform design specs, plans and audits
+master/docs/APPLE_HIG_GLASS_SPEC.md	"Frosted glass" visual design system spec (all platforms)
+master/docs/ARCHITECTURE_AND_COMPLIANCE_AUDIT.md	Audit of studio phases D1/D2 against the plan
+master/docs/DRAWBOARD_FEATURE_CHECKLIST.md	119-item studio feature checklist with status (checked by `cargo xtask feature-map-check`)
+master/docs/DRAWBOARD_STUDIO_MASTER_PLAN.md	Plan for the spatial Studio editor (phases D1–D6)
+master/docs/STUDIO_UI_UX_OVERHAUL_SPEC.md	Studio UI/UX overhaul spec (phases U1–U5)
+master/docs/adr/	Long-form architecture decision records
+master/docs/adr/ADR-012-drawboard-artcraft-spatial-studio.md	Studio editor decision (registered as ADR-014 in logs/DECISIONS_ADR.md)
+master/docs/audit/	Earlier audit reports
+master/docs/audit/INVENTORY.md	V1 architecture inventory (Oct 2026 snapshot; partly outdated)
+master/docs/audit/debug.md	Debug log for phases 11.7–12.1b
+master/fuzz/	cargo-fuzz workspace (libFuzzer targets)
+master/fuzz/.gitignore	Ignores fuzz corpus/artifacts
+master/fuzz/Cargo.toml	Fuzz crate manifest
+master/fuzz/fuzz_targets/	Fuzz entry points
+master/fuzz/fuzz_targets/fuzz_engine_switcher.rs	Fuzz: engine switcher
+master/fuzz/fuzz_targets/fuzz_fallback_load.rs	Fuzz: fallback loader
+master/fuzz/fuzz_targets/fuzz_fs_and_ai_rpc.rs	Fuzz: filename sanitizer + AI worker RPC
+master/fuzz/fuzz_targets/fuzz_pdfcraft_load.rs	Fuzz: pdfcraft loader
+master/logs/	Project logs (append-only, except CHECKPOINT which is overwritten)
+master/logs/ADR-008-sveltekit-spa.md	Detail for the SvelteKit SPA exception (registered as ADR-011 in DECISIONS_ADR)
+master/logs/ADR-009-vendored-pdfjs.md	Detail for the vendored pdf.js exception (registered as ADR-012 in DECISIONS_ADR)
+master/logs/CHECKPOINT.md	Single "where are we now" snapshot: phase, status, next actions
+master/logs/DECISIONS_ADR.md	Decision register (all ADRs, including the ID erratum)
+master/logs/ERROR_LOG.md	Errors, root causes and fixes
+master/logs/PLAN_LOG.md	Plans written before each phase
+master/logs/PROGRESS_LOG.md	What was done per phase, with verification evidence
+master/logs/PROMPT_LOG.md	User prompts and how they were interpreted
+master/logs/UI_AUDIT_LOG.md	UI bug register and verification notes
+master/logs/sbom.cdx.json	Software bill of materials (regenerated by `cargo xtask sbom`)
+master/protocol/	Project rules (read-only except where noted)
+master/protocol/01_MASTER_CONTEXT.md	Product goals and key technology decisions
+master/protocol/02_RULES_DOS_DONTS.md	Hard rules: DOs and DON'Ts
+master/protocol/03_FAILSAFES.md	Failsafes F1–F27 (each needs an automated test)
+master/protocol/04_INSTRUCTION_FADE_PREVENTION.md	Anchor block, pre-commit checklist, drift detectors
+master/protocol/05_PHASES.md	Phase plan 0–14
+master/protocol/06_ARCHITECTURE.md	Process model, IPC, security, file management, hardware tiers
+master/protocol/07_FEATURE_MAP.md	The 7-column tool list and how each tool is built
+master/protocol/08_DEPENDENCY_VETTING.md	Rules for adding any dependency
+master/protocol/09_DIRECTORY_TREE.md	Directory tree rule (now points to /tree.md)
+master/protocol/A11Y_AUDIT.md	Accessibility audit report
+master/protocol/ENGINE_NOTES.md	Verified pdfcraft/Tauri API notes
+master/protocol/ENV.md	Recorded toolchain versions per dev machine
+master/protocol/THREAT_MODEL.md	Threat model and mitigations
+master/protocol/perf_budgets.json	Performance budget numbers checked by perf tests
+master/tools/	Developer scripts and agent-process docs
+master/tools/ANTIGRAVITY_PROMPTS.md	Prompts used with the Antigravity agent for phases 11.7–12.1
+master/tools/ANTIGRAVITY_RUNBOOK.md	Step runbook for those phases
+master/tools/CLAUDE_AUDIT_CONTEXT.md	Brief for an independent read-only audit
+master/tools/hooks/	Git hooks (install: `git config core.hooksPath master/tools/hooks`)
+master/tools/hooks/pre-commit	Blocks deletions not listed in master/.allowed-deletions
+master/tools/make_audit_bundle.sh	Collects evidence into audit_bundle.tar.gz for external review
+master/tools/sb.sh	Runs a command under CPU/RAM limits (systemd-run) for low-memory hosts
+master/ux-spec/	UX source of truth per tool column
+master/ux-spec/01_organize.md	UX: Organize PDF tools
+master/ux-spec/02_optimize.md	UX: Optimize PDF tools
+master/ux-spec/03_convert_to.md	UX: Convert to PDF tools
+master/ux-spec/04_convert_from.md	UX: Convert from PDF tools
+master/ux-spec/05_edit.md	UX: Edit PDF tools
+master/ux-spec/06_security.md	UX: PDF Security tools
+master/ux-spec/07_intelligence.md	UX: PDF Intelligence tools
+master/ux-spec/08_extras.md	UX: Extras strip (Markdown, workflows)
+master/vendor/	Third-party code tracked as submodules
+master/vendor/pdfcraft	pdfcraft PDF engine (git submodule, pinned 75360d1 / v0.15.0) — run `git submodule update --init --recursive`
+master/xtask/	`cargo xtask` project tooling
+master/xtask/Cargo.toml	Crate manifest
+master/xtask/src/main.rs	gate, protocol-lint, feature-map-check, studio-audit, fuzz/perf/sbom/soak runners
+fedora/	Fedora-specific packaging and docs (RPM). Reference platform for v0.1.0 RCs
+fedora/fedora.md	Map of fedora/ with build instructions and status
+fedora/docs/	Fedora install/QA/release documents
+fedora/docs/FEDORA_INSTALL.md	Install & user guide for Fedora (dnf, KDE)
+fedora/docs/QA_VETTING_CHECKLIST.md	RC1 manual QA checklist (not yet executed)
+fedora/docs/RC1_INSTALL_REPORT.md	RC1 RPM install/verification report
+fedora/docs/RELEASE_NOTES_v0.1.0.md	v0.1.0 release notes (Fedora RPM release)
+fedora/packaging/	Files used to build the .rpm
+fedora/packaging/build-rpm.sh	Builds CLI + worker + app and bundles the .rpm with the Fedora overlay
+fedora/packaging/desktop.template	Linux .desktop launcher template (Fedora copy)
+fedora/packaging/tauri.fedora.conf.json	Tauri config overlay: rpm target, Fedora dependency names, extra binaries
+ubuntu/	Ubuntu/Debian-specific packaging and docs (.deb). Current dev machine
+ubuntu/ubuntu.md	Map of ubuntu/ with setup, build instructions and known issues
+ubuntu/packaging/	Files used to build the .deb
+ubuntu/packaging/build-deb.sh	Builds CLI + worker + app and bundles the .deb with the Ubuntu overlay
+ubuntu/packaging/desktop.template	Linux .desktop launcher template (Ubuntu copy)
+ubuntu/packaging/tauri.ubuntu.conf.json	Tauri config overlay: deb target, Debian dependency names, extra binaries
+windows/	Windows 10/11-specific packaging and docs (NSIS/MSI)
+windows/windows.md	Map of windows/ with build instructions and status
+windows/docs/	Windows plans and decisions
+windows/docs/ADR-011-windows-platform-architecture.md	Windows architecture decision (registered as ADR-013 in DECISIONS_ADR)
+windows/docs/WINDOWS_MASTER_PLAN.md	Windows engineering plan (phases W1–W4)
+windows/packaging/	Files used to build the Windows installers
+windows/packaging/tauri.windows.conf.json	Tauri config overlay: nsis/msi targets, WebView2 bootstrapper, install mode
+windows/packaging/icons/	Microsoft Store / tile logos (not used by NSIS/MSI today)
+windows/packaging/icons/Square107x107Logo.png	Store tile logo 107 px
+windows/packaging/icons/Square142x142Logo.png	Store tile logo 142 px
+windows/packaging/icons/Square150x150Logo.png	Store tile logo 150 px
+windows/packaging/icons/Square284x284Logo.png	Store tile logo 284 px
+windows/packaging/icons/Square30x30Logo.png	Store tile logo 30 px
+windows/packaging/icons/Square310x310Logo.png	Store tile logo 310 px
+windows/packaging/icons/Square44x44Logo.png	Store tile logo 44 px
+windows/packaging/icons/Square71x71Logo.png	Store tile logo 71 px
+windows/packaging/icons/Square89x89Logo.png	Store tile logo 89 px
+windows/packaging/icons/StoreLogo.png	Store listing logo
+macos/	macOS-specific files (phase 13, not started)
+macos/macos.md	Map of macos/ and what will go here
+ios/	iOS-specific files (not in the phase plan yet)
+ios/ios.md	Map of ios/ and what will go here
+android/	Android-specific files (phase 14, not started)
+android/android.md	Map of android/ and what will go here
+master/crates/lpdf-ai-worker/src/	Crate source
+master/crates/lpdf-ai-worker/tests/	Integration tests
+master/crates/lpdf-cli/src/	Crate source
+master/crates/lpdf-cli/tests/	Integration tests
+master/crates/lpdf-control-bus/src/	Crate source
+master/crates/lpdf-control-bus/tests/	Integration tests
+master/crates/lpdf-core-types/src/	Crate source
+master/crates/lpdf-engine-fallback/src/	Crate source
+master/crates/lpdf-engine-pdfcraft/src/	Crate source
+master/crates/lpdf-engine-pdfcraft/tests/	Integration tests
+master/crates/lpdf-engine-port/src/	Crate source
+master/crates/lpdf-engine-switcher/src/	Crate source
+master/crates/lpdf-engine-switcher/tests/	Integration tests
+master/crates/lpdf-fs-safety/src/	Crate source
+master/crates/lpdf-fs-safety/tests/	Integration tests
+master/crates/lpdf-hw/src/	Crate source
+master/crates/lpdf-jobs/src/	Crate source
+master/crates/lpdf-jobs/tests/	Integration tests
+master/crates/lpdf-tools-convert/src/	Crate source
+master/crates/lpdf-tools-edit/src/	Crate source
+master/crates/lpdf-tools-markdown/src/	Crate source
+master/crates/lpdf-tools-optimize/src/	Crate source
+master/crates/lpdf-tools-organize/src/	Crate source
+master/crates/lpdf-tools-security/src/	Crate source
+master/crates/lpdf-worker/src/	Crate source
+master/xtask/src/	Tool source
+master/tools/tree/	Generator + data for /tree.md and the per-folder maps
+master/tools/tree/render_tree.py	Regenerates all maps; `--check` fails when a file is unmapped or a map is stale
+master/tools/tree/descriptions.tsv	One line per file/folder: path TAB short description (source of every map entry)
+master/tools/tree/headers/	Hand-written intro text placed above each generated map
+master/tools/tree/headers/tree.md	Intro + layout rules for /tree.md
+master/tools/tree/headers/master.md	Intro + everyday commands for master/master.md
+master/tools/tree/headers/ubuntu.md	Intro + setup/build/known issues for ubuntu/ubuntu.md
+master/tools/tree/headers/fedora.md	Intro + build steps for fedora/fedora.md
+master/tools/tree/headers/windows.md	Intro + build steps for windows/windows.md
+master/tools/tree/headers/macos.md	Intro for macos/macos.md
+master/tools/tree/headers/ios.md	Intro for ios/ios.md
+master/tools/tree/headers/android.md	Intro for android/android.md

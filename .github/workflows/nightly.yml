@@ -1,5 +1,9 @@
 name: Nightly Fuzzing & Corpus Validation
 
+defaults:
+  run:
+    working-directory: master
+
 on:
   schedule:
     - cron: "0 2 * * *" # Run at 2 AM UTC every day
@@ -28,8 +32,7 @@ jobs:
 
       - name: Run corpus validation
         run: |
-          chmod +x corpus/fetch.sh
-          ./corpus/fetch.sh
+          bash corpus/fetch.sh
 
       - name: Run deterministic adapter fuzz, hostile suite, perf check, sbom, a11y & soak smoke
         run: |
@@ -52,10 +55,10 @@ jobs:
         with:
           name: fuzz-failure-artifacts
           path: |
-            fuzz/artifacts/
-            fuzz/crash-*
-            fuzz/timeout-*
-            fuzz/oom-*
+            master/fuzz/artifacts/
+            master/fuzz/crash-*
+            master/fuzz/timeout-*
+            master/fuzz/oom-*
           if-no-files-found: ignore
 
   nightly-8h-soak:

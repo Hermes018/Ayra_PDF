@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+MAXDEL="400"; bad=0
+LIST="master/.allowed-deletions"   # repo-root relative; hooks run from the repo root
+for f in $(git diff --cached --name-only --diff-filter=D); do
+  if ! { [ -f "$LIST" ] && grep -qxF "$f" "$LIST"; }; then
+    echo "BLOCKED: deletion of '$f' is not listed in $LIST"; bad=1
+  fi
+done
+exit $bad

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "targets": ["deb"],
+    "linux": {
+      "deb": {
+        "desktopTemplate": "../../../ubuntu/packaging/desktop.template",
+        "section": "utils",
+        "depends": ["zenity"],
+        "recommends": ["libreoffice-writer", "libreoffice-calc", "libreoffice-impress", "pandoc"],
+        "files": {
+          "/usr/bin/localpdf": "../../target/release/localpdf",
+          "/usr/bin/lpdf-worker": "../../target/release/lpdf-worker"
+        }
+      }
+    }
+  }
+}

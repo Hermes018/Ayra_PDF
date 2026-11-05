@@ -1,0 +1,13 @@
+deny_out.txt
+install_deps.sh
+corpus/test_contract_out.pdf
+corpus/test_contract_out_FallbackAdapter.pdf
+corpus/test_contract_out_PdfcraftAdapter.pdf
+# 2026-11-05 seven-folder restructure (root duplicates byte-identical to master/tools/ copies; tree superseded by /tree.md)
+make_audit_bundle.sh
+ANTIGRAVITY_RUNBOOK.md
+CLAUDE_AUDIT_CONTEXT.md
+docs/DIRECTORY_TREE.md
+tools/ANTIGRAVITY_RUNBOOK.md
+tools/CLAUDE_AUDIT_CONTEXT.md
+tools/make_audit_bundle.sh

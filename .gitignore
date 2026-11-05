@@ -1,4 +1,2 @@
-target/
-
-/spike/target/
 *.pdf
+target/
