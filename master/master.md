@@ -342,6 +342,7 @@ master/
 │   ├── AGENT_ACTIVITY.md                                 # One line per agent stop (written by hooks)
 │   ├── BUGS.md                                           # Sprint bug list with P0/P1/P2 triage (lead-owned)
 │   ├── CHECKPOINT.md                                     # Single "where are we now" snapshot: phase, status, next actions
+│   ├── CHECKPOINT_HISTORY.md                             # Older CHECKPOINT snapshots (append-only), moved out to keep CHECKPOINT short
 │   ├── DECISIONS_ADR.md                                  # Decision register (all ADRs, including the ID erratum)
 │   ├── DOGFOOD.md                                        # Owner's hands-on testing notes; lead triages into BUGS.md
 │   ├── ERROR_LOG.md                                      # Errors, root causes and fixes
@@ -390,8 +391,10 @@ master/
 │   ├── build-lock.sh                                     # Runs a heavy build under the shared flock lock with CARGO_BUILD_JOBS=2 and the shared target dir (ADR-020)
 │   ├── CLAUDE_AUDIT_CONTEXT.md                           # Brief for an independent read-only audit
 │   ├── make_audit_bundle.sh                              # Collects evidence into audit_bundle.tar.gz for external review
+│   ├── restore-context.sh                                # SessionStart hook (compact/resume/startup): prints CHECKPOINT + STATE_AUTO back into context
 │   ├── run.sh                                            # Runs one heavy command under the build lock, full log to logs/runs/, prints a short summary
 │   ├── sb.sh                                             # Runs a command under CPU/RAM limits (systemd-run) for low-memory hosts
+│   ├── snapshot-state.sh                                 # PreCompact hook: writes logs/STATE_AUTO.md (git/process/disk facts) in <1 s; never fails
 │   └── verify.sh                                         # THE definition of green: Rust gate + frontend + project checks via run.sh
 ├── ux-spec/                                              # UX source of truth per tool column
 │   ├── 01_organize.md                                    # UX: Organize PDF tools

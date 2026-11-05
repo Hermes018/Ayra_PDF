@@ -28,7 +28,7 @@ Every entry has a one-line description. `master/vendor/pdfcraft` is an upstream 
 Ayra_PDF/
 ├── .claude/     # Claude Code project settings (committed)
 ├── .github/     # GitHub config. Must stay at the repo root: GitHub Actions only reads workflows from here
-├── .gitignore   # Ignores build output (`target/`), PDFs (fetched corpus) and run logs (`master/logs/runs/`)
+├── .gitignore   # Ignores build output (`target/`), PDFs (fetched corpus), run logs (`master/logs/runs/`) and STATE_AUTO.md
 ├── .gitmodules  # Registers the pinned pdfcraft engine submodule at master/vendor/pdfcraft
 ├── AGENTS.md    # Boot pointer auto-read by coding agents: layout rule + which protocol files to read first
 ├── CLAUDE.md    # Short agent rules for this repo (≤200 lines); names the hooks and links to protocol docs
@@ -382,6 +382,7 @@ master/
 │   ├── AGENT_ACTIVITY.md                                 # One line per agent stop (written by hooks)
 │   ├── BUGS.md                                           # Sprint bug list with P0/P1/P2 triage (lead-owned)
 │   ├── CHECKPOINT.md                                     # Single "where are we now" snapshot: phase, status, next actions
+│   ├── CHECKPOINT_HISTORY.md                             # Older CHECKPOINT snapshots (append-only), moved out to keep CHECKPOINT short
 │   ├── DECISIONS_ADR.md                                  # Decision register (all ADRs, including the ID erratum)
 │   ├── DOGFOOD.md                                        # Owner's hands-on testing notes; lead triages into BUGS.md
 │   ├── ERROR_LOG.md                                      # Errors, root causes and fixes
@@ -430,8 +431,10 @@ master/
 │   ├── build-lock.sh                                     # Runs a heavy build under the shared flock lock with CARGO_BUILD_JOBS=2 and the shared target dir (ADR-020)
 │   ├── CLAUDE_AUDIT_CONTEXT.md                           # Brief for an independent read-only audit
 │   ├── make_audit_bundle.sh                              # Collects evidence into audit_bundle.tar.gz for external review
+│   ├── restore-context.sh                                # SessionStart hook (compact/resume/startup): prints CHECKPOINT + STATE_AUTO back into context
 │   ├── run.sh                                            # Runs one heavy command under the build lock, full log to logs/runs/, prints a short summary
 │   ├── sb.sh                                             # Runs a command under CPU/RAM limits (systemd-run) for low-memory hosts
+│   ├── snapshot-state.sh                                 # PreCompact hook: writes logs/STATE_AUTO.md (git/process/disk facts) in <1 s; never fails
 │   └── verify.sh                                         # THE definition of green: Rust gate + frontend + project checks via run.sh
 ├── ux-spec/                                              # UX source of truth per tool column
 │   ├── 01_organize.md                                    # UX: Organize PDF tools

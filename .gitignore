@@ -1,3 +1,4 @@
 *.pdf
 target/
 master/logs/runs/
+master/logs/STATE_AUTO.md

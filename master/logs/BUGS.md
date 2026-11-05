@@ -53,3 +53,74 @@ Entry format:
 ## BUG-010 [P1] toolEngine label for insert.latex still "LaTeX Math Block" — status: open
 - Found by: fixes builder   Where: core/toolEngine.svelte.ts:131 (overridden at display sites; fix at source).
 - Owner: engines
+
+---
+# E2E baseline triage (2026-11-06 00:30, release builder baseline on 562e4f9-era code: 4 PASS / 7 FAIL / 1 BLOCKED)
+
+| Flow | Baseline |
+|---|---|
+| 1 | BLOCKED (no packages); cold launch 1.01 s, 0 console errors |
+| 2 | FAIL |
+| 3 | FAIL |
+| 4 | FAIL |
+| 5 | FAIL |
+| 6 | PASS |
+| 7 | FAIL |
+| 8 | PASS |
+| 9 | FAIL |
+| 10 | FAIL |
+| 11 | PASS (warning) |
+| 12 | PASS (5-minute soak: RSS 664→750 MB peak, file descriptors flat, no temp files) |
+
+Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, insertEngine, viewportEngine and measureEngine for these bug fixes. **engines** owns Rust (crates/, src-tauri), hatching (HatchDefs) and new adapter files. Order = work order.
+
+## BUG-011 [P0] Encrypted PDF never prompts for a password — status: open
+- Flow 2. Found by: e2e. Repro: open corpus/encrypted.pdf (user pw lpdf-test). pdf.js throws PasswordException; 0 pages, no prompt. Owner: fixes
+
+## BUG-012 [P0] CSP blocks data:/blob: images, so Organize thumbnails are blank — status: open
+- Flow 3. Found by: e2e. CSP `default-src 'self'` has no img-src. Fix: `img-src 'self' data: blob:` in tauri.conf.json. connect-src stays IPC-only (DON'T-1 unaffected); the lead approves this as a low-risk CSP change (images only). Check that snapshot and webcam images are fixed too. Owner: fixes
+
+## BUG-013 [P0] Edit Text hotspot unreachable by pointer — status: open
+- Flow 9. Found by: e2e. `#wet-layer` covers `.pdf-text-block-hotspot`, and the default Pan tool takes the click. The edit itself writes correctly. Owner: fixes
+
+## BUG-014 [P0] Organize Grid "Apply" drops rotation but reports success — status: open
+- Flow 10 (silent data loss). Found by: e2e. Reorder + delete + rotate: the rotation is lost and success is still alerted. The sidebar Rotate tool works. Owner: fixes
+
+## BUG-015 [P0] ERR-007: saved hatch outside the polygon; only 3/8 patterns distinct — status: open
+- Flow 5. Found by: e2e (37/56 segments outside the concave polygon) and survey. Owner: engines (checkpoint 2: cadcraft via lpdf-geom)
+
+## BUG-016 [P0] A second document is added but never shown (no tabs or split panes) — status: open
+- Flow 3. Found by: e2e. A second file opened via CLI/"open with" goes into activeFiles but isn't displayed. The checklist claims multi-tab/split (SplitLayout.svelte). Make the existing split/tab path work; this is a fix, not a new feature. Owner: fixes
+
+## BUG-017 [P0] Draw-mode signature loses the drawn strokes and stamps text instead — status: open
+- Flow 7 (data loss). Found by: e2e. Stamps "Signed: A. Architect, PE" instead of the drawing. Owner: fixes
+
+## BUG-018 [P0] Malformed/hostile PDFs open silently with no error or degraded notice — status: open
+- Flow 2(c). Found by: e2e. broken-xref gives an empty canvas; bombs gives 1 page; no message. Owner: fixes (UI notice) plus engines if the backend must report degraded mode
+
+## BUG-019 [P0] Erasers aren't in undo history; Undo removes a different stroke — status: open
+- Flow 4 (wrong undo = data loss). Found by: e2e. Owner: fixes
+
+## BUG-020 [P0] Fit Width / Fit Page assume A4 and ignore the page's 32 px offset (page overflows the 990 px canvas) — status: open
+- Flow 3. Found by: e2e. Owner: fixes
+
+## BUG-021 [P1] Repeated saves overwrite `<orig>.annotated.pdf`; RenderingCancelledException logged on every save — status: open
+- Flow 11. Found by: e2e. Protocol output rule: new file by default, collision-safe naming. Owner: fixes
+
+## BUG-022 [P1] Perimeter of a 72 pt square measures 216, not 288 (shape not closed) — status: open
+- Found by: engines goldens. Owner: fixes (measureEngine)
+
+## BUG-023 [P1] studio_detect_tables_and_fields fabricates an "auto" field when nothing is found (DON'T-5) — status: open
+- Found by: engines. Owner: engines
+
+## BUG-024 [P1] Hatch annotation apply error swallowed (`let _ = session.apply(...)`) — status: open
+- Found by: Linux builder + engines (studio.rs ~545). Owner: engines
+
+## BUG-025 [P2] Snap geometry capped at 4,096 segments, silently truncated (DON'T-7) — status: open
+- Found by: engines. Owner: engines
+
+## BUG-026 [P2] One ctrl+wheel notch zooms ×2.72 — status: open
+- Found by: e2e. Owner: fixes
+
+## BUG-027 [P2] Reopening a saved PDF without its .studio.json sidecar loses editable markups — status: open
+- Flow 11 warning. Found by: e2e. Owner: engines (save format), after the release

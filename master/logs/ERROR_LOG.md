@@ -81,3 +81,12 @@ Rule: 3 distinct failed fixes => status escalated-to-user, stop, ask.
 
 ## [2026-11-05] ERR-007 — status update
 - Fix plan changed. The rev 1 plan ("port cadcraft `pattern_lines`") is superseded by ADR-018 rev 2 (PROPOSED): `lpdf-adapter-cad` will depend on `cadcraft-doc` plus a patched `cadcraft-render` (re-export of `pattern_lines`), pinned to the cadcraft rev. It waits for approval. No code was written under the rev 1 plan.
+
+## [2026-11-06 00:20] ERR-008 — shared Cargo target dir across worktrees runs the wrong code
+- Phase: sprint infra   Severity: major (verification integrity)
+- Symptom: the engines builder's first `cargo xtask` in wt/engines ran an xtask binary built from wt/fixes (it checked the wrong tree).
+- Root cause: Cargo names workspace path crates by their path relative to the workspace root (also why moving the workspace didn't rebuild, ERR-004). With one shared CARGO_TARGET_DIR, worktrees overwrite each other's artifacts, and a fingerprint can look fresh, so any test or xtask binary could come from another branch. My decision to share target dirs (ADR-020 tooling, R3) was unsound.
+- Fix: `tools/build-lock.sh` now sets CARGO_TARGET_DIR to the calling worktree's own `master/target`. sccache still shares dependency builds (local, 10 GB cap). `tools/run.sh` refuses to start when free disk is below 15 GB.
+- **Approved exception to "never cargo clean"** (owner, 2026-11-06): a one-time `rm -rf master/target/debug` (54 GB, mostly stale after the dev-profile change). Disk went from 26 GB free to 78 GB free.
+- Follow-up: earlier gates in worktrees may have used cross-tree artifacts. main is re-verified after the split, and each pending merge gets a fresh verify in its own target.
+- Status: fixed

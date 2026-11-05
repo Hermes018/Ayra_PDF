@@ -199,3 +199,7 @@ Home grid = exactly ORGANIZE PDF, OPTIMIZE PDF, CONVERT TO PDF, CONVERT FROM PDF
   - cadcraft-render patch Cargo.toml rewrite
   - line references
 - Target release: v0.2.0-prototype (Linux), Sat 2026-11-07 23:59 Asia/Dhaka.
+
+## [2026-11-06] Lead decisions (sprint, within protocol)
+- **CSP `img-src 'self' data: blob:`** (BUG-012). Images only; `connect-src` stays IPC-only (DON'T-1); no script sources change. Low risk; reversible.
+- **E2E harness isolation:** each run gets a private D-Bus session and its own XDG profile, so the single-instance plugin can't hand the launch to an already-running copy. `alert()` is replaced by a recorder in tests only.

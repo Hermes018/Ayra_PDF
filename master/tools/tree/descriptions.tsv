@@ -3,7 +3,7 @@
 .github/workflows/ci.yml	Push/PR gate: `cargo xtask gate` on Fedora 44 container, Ubuntu 24.04 and Windows
 .github/workflows/nightly.yml	Nightly corpus fetch, fuzz/hostile/perf/sbom/a11y/soak harness and 8-hour soak
 .github/workflows/release-windows.yml	Tag-triggered release: tests, then rpm (fedora overlay), deb (ubuntu overlay), nsis/msi (windows overlay)
-.gitignore	Ignores build output (`target/`), PDFs (fetched corpus) and run logs (`master/logs/runs/`)
+.gitignore	Ignores build output (`target/`), PDFs (fetched corpus), run logs (`master/logs/runs/`) and STATE_AUTO.md
 .gitmodules	Registers the pinned pdfcraft engine submodule at master/vendor/pdfcraft
 AGENTS.md	Boot pointer auto-read by coding agents: layout rule + which protocol files to read first
 tree.md	This file: map of every file in every folder
@@ -451,3 +451,6 @@ master/logs/AGENT_ACTIVITY.md	One line per agent stop (written by hooks)
 master/logs/FLAKY.md	Tests that passed only on rerun, with cause and action
 master/app-tauri/src/lib/components/studio/labs.svelte.ts	Labs gate: the one place that decides if Labs tools (math text, shape-to-character) are visible/selectable; honest copy
 master/app-tauri/src/lib/views/__tests__/LabsGating.test.ts	Tests: Labs off by default, all Labs entry points hidden, honest labels derived from the classifier
+master/tools/snapshot-state.sh	PreCompact hook: writes logs/STATE_AUTO.md (git/process/disk facts) in <1 s; never fails
+master/tools/restore-context.sh	SessionStart hook (compact/resume/startup): prints CHECKPOINT + STATE_AUTO back into context
+master/logs/CHECKPOINT_HISTORY.md	Older CHECKPOINT snapshots (append-only), moved out to keep CHECKPOINT short

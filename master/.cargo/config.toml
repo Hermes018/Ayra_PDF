@@ -7,7 +7,7 @@ xtask = "run --package xtask --"
 rustc-wrapper = "sccache"
 
 [env]
-SCCACHE_CACHE_SIZE = "6G"
+SCCACHE_CACHE_SIZE = "10G"
 SCCACHE_DIR = { value = "/home/rakib/.cache/sccache", force = false }
 
 [target.x86_64-unknown-linux-gnu]

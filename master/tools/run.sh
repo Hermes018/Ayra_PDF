@@ -10,6 +10,13 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 top="$(git rev-parse --show-toplevel 2>/dev/null || (cd "$here/../.." && pwd))"
 logdir="$top/master/logs/runs"; mkdir -p "$logdir"
 log="$logdir/${name//[^A-Za-z0-9._-]/_}.log"
+# Disk guard (2026-11-06): refuse to start below 15 GB free; report instead of filling the disk.
+MIN_FREE_GB="${LPDF_MIN_FREE_GB:-15}"
+free_gb=$(df -BG --output=avail "$top" | tail -1 | tr -dc '0-9')
+if [ "${free_gb:-0}" -lt "$MIN_FREE_GB" ]; then
+  echo "[run] $name: REFUSED — only ${free_gb} GB free on $(df --output=target "$top" | tail -1) (< ${MIN_FREE_GB} GB). Free disk or drop to 2 builders; do not delete caches mid-sprint." >&2
+  exit 75
+fi
 start=$(date +%s)
 { echo "# cmd: $*"; echo "# cwd: $(pwd)"; echo "# started: $(date -Is)"; } > "$log"
 "$here/build-lock.sh" "$@" >> "$log" 2>&1
