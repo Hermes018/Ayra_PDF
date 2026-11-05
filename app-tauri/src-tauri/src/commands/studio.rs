@@ -70,6 +70,7 @@ pub struct StudioAnnotationDto {
     pub id: String,
     /// Kind of annotation: "ink" | "line" | "arrow" | "polyline" | "rect" | "ellipse" | "polygon"
     /// | "cloud" | "text" | "highlight" | "underline" | "squiggle" | "strikethrough" | "redact" | "snapshot"
+    /// | "measure.length" | "measure.polylength" | "measure.rectArea" | "measure.polyArea" | "measure.perimeter" | "measure.protractor"
     pub kind: String,
     pub page_index: u32,
     #[serde(default)]
@@ -105,6 +106,57 @@ pub struct StudioAnnotationDto {
     pub rotation_deg: Option<f64>,
     #[serde(default)]
     pub snapshot_data_url: Option<String>,
+    #[serde(default, alias = "measurement_kind")]
+    pub measurement_kind: Option<String>,
+    #[serde(default, alias = "calibrated_value")]
+    pub calibrated_value: Option<f64>,
+    #[serde(default, alias = "unit_label")]
+    pub unit_label: Option<String>,
+    #[serde(default, alias = "perimeter_value")]
+    pub perimeter_value: Option<f64>,
+    #[serde(default, alias = "volume_value")]
+    pub volume_value: Option<f64>,
+    #[serde(default, alias = "page_scale")]
+    pub page_scale: Option<PageScaleDto>,
+}
+
+/// A single vector line segment in PDF user-space points (`pt`) for OSNAP content snapping (`Phase D5`).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PdfSnapSegmentDto {
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
+}
+
+/// Extracted vector geometry for a single PDF page (`Phase D5`), capped at 4,096 segments for 120Hz OSNAP.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageSnapGeometryDto {
+    #[serde(alias = "page_index")]
+    pub page_index: u32,
+    #[serde(alias = "width_pt")]
+    pub width_pt: f64,
+    #[serde(alias = "height_pt")]
+    pub height_pt: f64,
+    pub segments: Vec<PdfSnapSegmentDto>,
+}
+
+/// Calibrated scale configuration for a PDF page (`Phase D5`).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PageScaleDto {
+    #[serde(alias = "page_index")]
+    pub page_index: u32,
+    #[serde(alias = "pt_distance")]
+    pub pt_distance: f64,
+    #[serde(alias = "real_distance")]
+    pub real_distance: f64,
+    pub unit: String,
+    pub precision: u8,
+    #[serde(default, alias = "default_depth")]
+    pub default_depth: Option<f64>,
 }
 
 /// Result returned by studio persistence and structural edit commands.
@@ -130,6 +182,12 @@ fn studio_prefs_path() -> PathBuf {
 fn studio_sidecar_path(pdf_path: &Path) -> PathBuf {
     let mut os = pdf_path.as_os_str().to_os_string();
     os.push(".studio.json");
+    PathBuf::from(os)
+}
+
+fn studio_scales_sidecar_path(pdf_path: &Path) -> PathBuf {
+    let mut os = pdf_path.as_os_str().to_os_string();
+    os.push(".scales.studio.json");
     PathBuf::from(os)
 }
 
@@ -345,7 +403,7 @@ pub fn studio_save_annotations(
                 };
                 Some(Shape::Ink { strokes: vec![pts] })
             }
-            "line" | "shape.line" | "arrow" | "shape.arrow" => {
+            "line" | "shape.line" | "arrow" | "shape.arrow" | "measure.length" => {
                 let (from, to) = if annot.points.len() >= 2 {
                     let first = &annot.points[0];
                     let last = &annot.points[annot.points.len() - 1];
@@ -367,7 +425,11 @@ pub fn studio_save_annotations(
                     end: effective_end,
                 })
             }
-            "polyline" | "shape.polyline" => {
+            "polyline"
+            | "shape.polyline"
+            | "measure.polylength"
+            | "measure.perimeter"
+            | "measure.protractor" => {
                 let vertices: Vec<[f64; 2]> = if annot.points.len() >= 2 {
                     annot.points.iter().map(|p| [p.x, p.y]).collect()
                 } else {
@@ -379,11 +441,20 @@ pub fn studio_save_annotations(
                     end: end_end,
                 })
             }
-            "rect" | "shape.rect" | "snapshot" | "select.snapshot" => {
-                Some(Shape::Rectangle { rect })
-            }
+            "rect"
+            | "shape.rect"
+            | "snapshot"
+            | "select.snapshot"
+            | "measure.rectArea"
+            | "area.rect" => Some(Shape::Rectangle { rect }),
             "ellipse" | "shape.ellipse" => Some(Shape::Oval { rect }),
-            "polygon" | "shape.polygon" | "cloud" | "shape.cloud" | "hatch.region" => {
+            "polygon"
+            | "shape.polygon"
+            | "cloud"
+            | "shape.cloud"
+            | "hatch.region"
+            | "measure.polyArea"
+            | "area.polygon" => {
                 let vertices: Vec<[f64; 2]> = if annot.points.len() >= 3 {
                     annot.points.iter().map(|p| [p.x, p.y]).collect()
                 } else {
@@ -520,6 +591,32 @@ pub fn studio_save_annotations(
                 mime: Some("application/json".to_string()),
             },
         );
+
+        // Also propagate or collect page scales into `<out_path>.scales.studio.json`
+        let mut collected_scales: Vec<PageScaleDto> = Vec::new();
+        for annot in &annotations {
+            if let Some(ref sc) = annot.page_scale {
+                if !collected_scales.iter().any(|s| s.page_index == sc.page_index) {
+                    collected_scales.push(sc.clone());
+                }
+            }
+        }
+        if collected_scales.is_empty() {
+            let in_scales = studio_scales_sidecar_path(&in_path);
+            if in_scales.exists() {
+                if let Ok(raw) = fs::read_to_string(&in_scales) {
+                    if let Ok(parsed) = serde_json::from_str::<Vec<PageScaleDto>>(&raw) {
+                        collected_scales = parsed;
+                    }
+                }
+            }
+        }
+        if !collected_scales.is_empty() {
+            if let Ok(scale_bytes) = serde_json::to_vec_pretty(&collected_scales) {
+                let out_scales = studio_scales_sidecar_path(&out_path);
+                let _ = atomic_write(&out_scales, &scale_bytes);
+            }
+        }
     }
 
     let pdf_bytes = session
@@ -551,6 +648,176 @@ pub fn studio_load_annotations(input_path: String) -> Result<Vec<StudioAnnotatio
         .map_err(|e| format!("Failed to read annotation sidecar {:?}: {}", sidecar, e))?;
     serde_json::from_str::<Vec<StudioAnnotationDto>>(&content)
         .map_err(|e| format!("Failed to parse annotation sidecar {:?}: {}", sidecar, e))
+}
+
+/// Save calibrated page scales for a PDF document atomically (`Phase D5`).
+#[tauri::command]
+pub fn studio_save_page_scales(
+    input_path: String,
+    page_scales: Vec<PageScaleDto>,
+) -> Result<(), String> {
+    let pdf_path = PathBuf::from(&input_path);
+    let sidecar = studio_scales_sidecar_path(&pdf_path);
+    let bytes = serde_json::to_vec_pretty(&page_scales)
+        .map_err(|e| format!("Failed to serialize page scales: {}", e))?;
+    atomic_write(&sidecar, &bytes)
+        .map_err(|e| format!("Failed to atomically write page scales sidecar: {}", e))
+}
+
+/// Load calibrated page scales for a PDF document (`Phase D5`).
+#[tauri::command]
+pub fn studio_load_page_scales(input_path: String) -> Result<Vec<PageScaleDto>, String> {
+    let pdf_path = PathBuf::from(&input_path);
+    let sidecar = studio_scales_sidecar_path(&pdf_path);
+    if sidecar.exists() {
+        let content = fs::read_to_string(&sidecar)
+            .map_err(|e| format!("Failed to read page scales sidecar {:?}: {}", sidecar, e))?;
+        return serde_json::from_str::<Vec<PageScaleDto>>(&content)
+            .map_err(|e| format!("Failed to parse page scales sidecar {:?}: {}", sidecar, e));
+    }
+
+    // Fallback: extract any page_scale embedded inside `.studio.json` annotations
+    let annot_sidecar = studio_sidecar_path(&pdf_path);
+    if annot_sidecar.exists() {
+        if let Ok(content) = fs::read_to_string(&annot_sidecar) {
+            if let Ok(annots) = serde_json::from_str::<Vec<StudioAnnotationDto>>(&content) {
+                let mut scales = Vec::new();
+                for a in annots {
+                    if let Some(sc) = a.page_scale {
+                        if !scales.iter().any(|s: &PageScaleDto| s.page_index == sc.page_index) {
+                            scales.push(sc);
+                        }
+                    }
+                }
+                return Ok(scales);
+            }
+        }
+    }
+
+    Ok(Vec::new())
+}
+
+const MAX_SNAP_SEGMENTS_PER_PAGE: usize = 4_096;
+
+fn push_segment_capped(
+    out: &mut Vec<PdfSnapSegmentDto>,
+    x1: f64,
+    y1: f64,
+    x2: f64,
+    y2: f64,
+) {
+    if out.len() >= MAX_SNAP_SEGMENTS_PER_PAGE {
+        return;
+    }
+    if !x1.is_finite() || !y1.is_finite() || !x2.is_finite() || !y2.is_finite() {
+        return;
+    }
+    if (x2 - x1).hypot(y2 - y1) < 1e-3 {
+        return;
+    }
+    out.push(PdfSnapSegmentDto { x1, y1, x2, y2 });
+}
+
+/// Extract vector line/rect/path segments on `page_index` in PDF user-space points (`pt`) for 120Hz OSNAP (`Phase D5`).
+/// Caps output at 4,096 segments per page and always includes the 4 page-border edges and persisted vector annotations.
+#[tauri::command]
+pub fn studio_extract_snap_geometry(
+    input_path: String,
+    page_index: u32,
+) -> Result<PageSnapGeometryDto, String> {
+    let in_path = PathBuf::from(&input_path);
+    let raw_bytes = fs::read(&in_path)
+        .map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
+    let doc_name = in_path
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .to_string();
+
+    let mut session = Session::new();
+    let doc_id = session
+        .open(
+            doc_name,
+            Some(input_path.clone()),
+            Arc::new(raw_bytes),
+            None,
+        )
+        .map_err(|e| format!("Failed to open PDF in pdfcraft session: {}", e))?;
+
+    let doc = session
+        .get(doc_id)
+        .ok_or_else(|| "Document session unavailable".to_string())?;
+
+    let page_total = doc.info.pages.len().max(1);
+    let page = (page_index as usize).min(page_total.saturating_sub(1));
+
+    let (width_pt, height_pt) = doc
+        .info
+        .pages
+        .get(page)
+        .map(|p| (f64::from(p.width).max(1.0), f64::from(p.height).max(1.0)))
+        .unwrap_or((612.0, 792.0));
+
+    let mut segments: Vec<PdfSnapSegmentDto> = Vec::with_capacity(256);
+
+    // 1. Always include the 4 page-border edges in PDF user-space points (`pt`).
+    push_segment_capped(&mut segments, 0.0, 0.0, width_pt, 0.0);
+    push_segment_capped(&mut segments, width_pt, 0.0, width_pt, height_pt);
+    push_segment_capped(&mut segments, width_pt, height_pt, 0.0, height_pt);
+    push_segment_capped(&mut segments, 0.0, height_pt, 0.0, 0.0);
+
+    // 2. Extract native vector path segments from the page content stream & Form XObjects via `pdfcraft`.
+    if let Ok(geom) = doc.measurement_paths(page) {
+        for [a, b] in geom.segments {
+            if segments.len() >= MAX_SNAP_SEGMENTS_PER_PAGE {
+                break;
+            }
+            push_segment_capped(&mut segments, a[0], a[1], b[0], b[1]);
+        }
+    }
+
+    // 3. Also include persisted structured annotation segments on this page if `.studio.json` exists.
+    if let Ok(annots) = studio_load_annotations(input_path) {
+        for annot in annots.into_iter().filter(|a| a.page_index == page_index) {
+            if segments.len() >= MAX_SNAP_SEGMENTS_PER_PAGE {
+                break;
+            }
+            if annot.points.len() >= 2 {
+                for pair in annot.points.windows(2) {
+                    push_segment_capped(
+                        &mut segments,
+                        pair[0].x,
+                        pair[0].y,
+                        pair[1].x,
+                        pair[1].y,
+                    );
+                }
+                if annot.kind.contains("polygon")
+                    || annot.kind.contains("cloud")
+                    || annot.kind.contains("hatch")
+                    || annot.kind.contains("Area")
+                {
+                    if let (Some(first), Some(last)) = (annot.points.first(), annot.points.last())
+                    {
+                        push_segment_capped(&mut segments, last.x, last.y, first.x, first.y);
+                    }
+                }
+            } else {
+                let [x0, y0, x1, y1] = normalize_rect(annot.bbox_pt);
+                push_segment_capped(&mut segments, x0, y0, x1, y0);
+                push_segment_capped(&mut segments, x1, y0, x1, y1);
+                push_segment_capped(&mut segments, x1, y1, x0, y1);
+                push_segment_capped(&mut segments, x0, y1, x0, y0);
+            }
+        }
+    }
+
+    Ok(PageSnapGeometryDto {
+        page_index,
+        width_pt,
+        height_pt,
+        segments,
+    })
 }
 
 /// Structural PDF Text Edit IPC: replaces an existing overlapping PDF text block in-place
@@ -727,6 +994,19 @@ startxref\n\
                 group_id: Some("grp-1".to_string()),
                 rotation_deg: Some(0.0),
                 snapshot_data_url: None,
+                measurement_kind: Some("area.polygon".to_string()),
+                calibrated_value: Some(14.0),
+                unit_label: Some("m²".to_string()),
+                perimeter_value: Some(15.2),
+                volume_value: Some(42.0),
+                page_scale: Some(PageScaleDto {
+                    page_index: 0,
+                    pt_distance: 72.0,
+                    real_distance: 1.0,
+                    unit: "m".to_string(),
+                    precision: 2,
+                    default_depth: Some(3.0),
+                }),
             },
         ];
 
@@ -748,6 +1028,20 @@ startxref\n\
         assert_eq!(loaded_vec.len(), 1);
         assert_eq!(loaded_vec[0].id, "annot-1");
         assert_eq!(loaded_vec[0].hatch_pattern.as_deref(), Some("diagonal-steel"));
+        assert_eq!(loaded_vec[0].calibrated_value, Some(14.0));
+        assert_eq!(loaded_vec[0].unit_label.as_deref(), Some("m²"));
+
+        let loaded_scales = studio_load_page_scales(output_pdf.to_string_lossy().to_string());
+        assert!(loaded_scales.is_ok());
+        assert_eq!(loaded_scales.unwrap().len(), 1);
+
+        let snap_geom = studio_extract_snap_geometry(output_pdf.to_string_lossy().to_string(), 0);
+        assert!(snap_geom.is_ok(), "snap extraction failed: {:?}", snap_geom);
+        let geom = snap_geom.unwrap();
+        assert_eq!(geom.page_index, 0);
+        assert!((geom.width_pt - 612.0).abs() < 1e-3);
+        assert!((geom.height_pt - 792.0).abs() < 1e-3);
+        assert!(geom.segments.len() >= 4);
 
         // Flatten test
         let flat_res = studio_save_annotations(

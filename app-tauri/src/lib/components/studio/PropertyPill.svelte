@@ -6,9 +6,16 @@
     type LineStyleId,
     type LineEnding,
     type HatchPatternExtendedId,
+    type ToolId,
   } from '$lib/core/toolEngine.svelte';
   import { commands } from '$lib/core/commandEngine.svelte';
   import { theme, type TokenName } from '$lib/core/themeContract.svelte';
+  import {
+    measureEngine,
+    isMeasureTool,
+    type CadUnit,
+  } from '$lib/core/measureEngine.svelte';
+  import { snapEngine } from '$lib/core/snapEngine.svelte';
 
   // Swatch tokens mapped strictly to the theme contract (zero hex literals)
   const SWATCH_TOKENS: { token: TokenName; label: string }[] = [
@@ -77,6 +84,28 @@
       tools.currentToolId === 'shape.cloud' ||
       tools.currentToolId.startsWith('hatch')
   );
+
+  let showMeasureControls = $derived(isMeasureTool(tools.currentToolId));
+
+  let activePageScale = $derived(measureEngine.getScaleForPage(0));
+
+  let takeoffSummaryText = $derived.by(() => {
+    const entries = Object.entries(measureEngine.totalsByUnit);
+    if (entries.length === 0) return 'No measurements';
+    return entries.map(([u, val]) => `${val.toFixed(activePageScale.precision)} ${u}`).join(' | ');
+  });
+
+  const MEASURE_TOOLS: { id: ToolId; label: string }[] = [
+    { id: 'measure.calibrate', label: 'Calibrate' },
+    { id: 'measure.length', label: 'Length' },
+    { id: 'measure.polylength', label: 'Polylength' },
+    { id: 'measure.rectArea', label: 'Rect Area' },
+    { id: 'measure.polyArea', label: 'Poly Area' },
+    { id: 'measure.perimeter', label: 'Perimeter' },
+    { id: 'measure.protractor', label: 'Protractor' },
+  ];
+
+  const CAD_UNITS: CadUnit[] = ['mm', 'cm', 'm', 'in', 'ft', 'pt'];
 
   function updateStroke(patch: Partial<StrokeStyle>) {
     if (!tools.activePreset) return;
@@ -257,6 +286,144 @@
             <option value={sc}>{sc}x</option>
           {/each}
         </select>
+      </div>
+    {/if}
+
+    <!-- Phase D5 CAD Calibration, Measurement, OSNAP & Digital Ruler Controls -->
+    {#if showMeasureControls}
+      <div class="pill-divider"></div>
+      <div class="pill-section measure-controls-section" aria-label="CAD Measurement Controls">
+        <!-- Sub-tool selector -->
+        <select
+          class="hatch-select"
+          value={tools.currentToolId === 'measure' ? 'measure.length' : tools.currentToolId}
+          onchange={(e) => tools.selectTool((e.target as HTMLSelectElement).value as ToolId)}
+          aria-label="Select Measurement Tool"
+          title="Measurement Mode"
+        >
+          {#each MEASURE_TOOLS as mt}
+            <option value={mt.id}>{mt.label}</option>
+          {/each}
+        </select>
+
+        <!-- Scale Status Badge (click to open Calibration Modal) -->
+        <button
+          type="button"
+          class="toggle-btn"
+          onclick={() => measureEngine.openCalibrationModal(0, activePageScale.ptDistance)}
+          title="Calibrate Page Scale"
+        >
+          Scale: {activePageScale.scalePresetLabel ?? `${activePageScale.realDistance} ${activePageScale.unit}`}
+        </button>
+
+        <!-- Unit Switcher -->
+        <select
+          class="hatch-select"
+          value={activePageScale.unit}
+          onchange={(e) =>
+            measureEngine.updateCurrentPageScalePatch(0, {
+              unit: (e.target as HTMLSelectElement).value as CadUnit,
+            })}
+          aria-label="Select CAD Unit"
+          title="Measurement Unit"
+        >
+          {#each CAD_UNITS as u}
+            <option value={u}>{u}</option>
+          {/each}
+        </select>
+
+        <!-- Precision Selector -->
+        <select
+          class="hatch-select"
+          value={activePageScale.precision}
+          onchange={(e) =>
+            measureEngine.updateCurrentPageScalePatch(0, {
+              precision: Number((e.target as HTMLSelectElement).value) as 0 | 1 | 2 | 3,
+            })}
+          aria-label="Select Decimal Precision"
+          title="Decimal Precision"
+        >
+          <option value={0}>0</option>
+          <option value={1}>0.1</option>
+          <option value={2}>0.01</option>
+          <option value={3}>0.001</option>
+        </select>
+
+        <!-- Depth Input for Volume Calculation -->
+        <input
+          type="number"
+          step="any"
+          min="0"
+          class="depth-input"
+          value={activePageScale.depthValue}
+          onchange={(e) =>
+            measureEngine.updateCurrentPageScalePatch(0, {
+              depthValue: Math.max(0, parseFloat((e.target as HTMLInputElement).value) || 0),
+            })}
+          aria-label="Volume Depth"
+          title="Volume Depth ({activePageScale.unit})"
+        />
+
+        <!-- Endpoint Tick Style -->
+        <select
+          class="hatch-select"
+          value={measureEngine.endpointStyle}
+          onchange={(e) => {
+            measureEngine.endpointStyle = (e.target as HTMLSelectElement)
+              .value as typeof measureEngine.endpointStyle;
+            measureEngine.recalculateAllMeasurements();
+          }}
+          aria-label="Select Dimension Tick Style"
+          title="Dimension Tick Style"
+        >
+          <option value="tick">45° Tick</option>
+          <option value="open-arrow">Open Arrow</option>
+          <option value="closed-arrow">Closed Arrow</option>
+          <option value="circle">Dot</option>
+        </select>
+
+        <!-- Tape Mode Toggle -->
+        <button
+          type="button"
+          class="toggle-btn"
+          class:active={measureEngine.tapeMode}
+          onclick={() => {
+            measureEngine.tapeMode = !measureEngine.tapeMode;
+          }}
+          title="Transient Tape Measure (Does not persist on release)"
+        >
+          Tape
+        </button>
+
+        <!-- OSNAP Toggle -->
+        <button
+          type="button"
+          class="toggle-btn"
+          class:active={snapEngine.enabled}
+          onclick={() => {
+            snapEngine.enabled = !snapEngine.enabled;
+            if (!snapEngine.enabled) snapEngine.clearSnap();
+          }}
+          title="Toggle CAD Vector OSNAP (Endpoint, Midpoint, Intersection, Perpendicular)"
+        >
+          OSNAP
+        </button>
+
+        <!-- Digital Ruler Toggle -->
+        <button
+          type="button"
+          class="toggle-btn"
+          class:active={measureEngine.ruler.visible}
+          onclick={() => measureEngine.toggleRuler()}
+          title="Toggle Interactive Digital Ruler"
+        >
+          Ruler
+        </button>
+
+        <!-- Live Takeoff Summary Pill -->
+        <span class="takeoff-summary-badge" title="Quantity Takeoff Totals">
+          Σ {takeoffSummaryText}
+        </span>
       </div>
     {/if}
   {:else if tools.supportsEraserMode}
@@ -477,5 +644,26 @@
     font-size: 11px;
     cursor: pointer;
     outline: none;
+  }
+
+  .depth-input {
+    width: 48px;
+    background: var(--canvas-selection);
+    color: var(--glass-text);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    padding: 2px 6px;
+    font-size: 11px;
+    outline: none;
+  }
+
+  .takeoff-summary-badge {
+    padding: 2px 8px;
+    background: var(--canvas-selection);
+    border: 1px solid var(--glass-border);
+    border-radius: 9999px;
+    font-size: 10.5px;
+    font-weight: 600;
+    white-space: nowrap;
   }
 </style>

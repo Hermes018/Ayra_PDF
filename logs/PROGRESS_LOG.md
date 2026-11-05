@@ -1303,3 +1303,13 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
     - Updated `docs/DRAWBOARD_FEATURE_CHECKLIST.md` (`69 DONE`, `8 IN PROGRESS`, `36 NOT STARTED`, `6 DEFERRED`).
 - **Pre-commit checklist**: 1 YES 2 YES 3 YES 4 YES 5 YES 6 YES 7 YES 8 YES 9 YES 10 YES 11 YES
 - **Gate**: pass.
+
+
+## [2026-11-05 14:31] Phase D5 — CAD OSNAP Vector Content Snapping, Page Scale Calibration, Protractor, Digital Ruler & Measurement Takeoff Suite — DONE
+- **Changes:**
+  - Extended `app-tauri/src-tauri/src/commands/studio.rs` and `app-tauri/src-tauri/src/lib.rs` with `PdfSnapSegmentDto`, `PageSnapGeometryDto`, `PageScaleDto`, `studio_extract_snap_geometry`, `studio_save_page_scales`, `studio_load_page_scales`, and measurement/scale persistence on `StudioAnnotationDto`.
+  - Created `app-tauri/src/lib/core/snapEngine.svelte.ts` implementing `SpatialGridIndex` (`cellSizePt = 32`), `pointDistance`, `segmentMidpoint`, `segmentIntersection`, `perpendicularFoot`, and deterministic OSNAP priority resolution (`endpoint > intersection > midpoint > perpendicular > grid`).
+  - Created `app-tauri/src/lib/core/measureEngine.svelte.ts` implementing `unitsPerPt`, architectural scale presets (`1:1`, `1:10`, `1:50`, `1:100`, `1:200`, `1:500`, `1/4" = 1'-0"`, `1/8" = 1'-0"`), `computePolylineLengthPt`, `computePolygonAreaPt2` (Shoelace formula), `computeVolume`, `computeAngleDeg`, `projectPointToRulerIfNear`, and `totalsByUnit`.
+  - Created `app-tauri/src/lib/components/studio/CalibrationModal.svelte` and `app-tauri/src/lib/components/studio/MeasureOverlay.svelte` and wired them into `SpatialCanvas.svelte`, `PropertyPill.svelte`, and `DockableToolbar.svelte`.
+  - Added 11 unit tests in `app-tauri/src/lib/core/snapAndMeasure.test.ts` and updated `docs/DRAWBOARD_FEATURE_CHECKLIST.md` (`78 DONE`).
+- **Pre-commit Checklist:** 1) Gate green? YES 2) Tests run? YES 3) No banned patterns? YES 4) New dep vetted? YES (None added) 5) Offline green? YES 6) Failsafes affected re-tested? YES (F1/F6 atomic write + verify-after-write tested in `studio::tests`) 7) UI matches spec? YES 8) Logs updated? YES 9) No scope creep? YES 10) Docs updated? YES 11) Tool registry matches? YES

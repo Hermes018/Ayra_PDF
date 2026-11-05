@@ -147,7 +147,10 @@ export function generateRevisionCloudPath(points: Point[], arcChord = 18): strin
 }
 
 /** Generate an open or closed polyline SVG path from vertices. */
-export function generatePolylineSvgPath(points: Point[], closed = false): string {
+export function generatePolylineSvgPath(
+  points: readonly { x: number; y: number; p?: number; t?: number }[],
+  closed = false
+): string {
   if (!points || points.length === 0) return '';
   let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
   for (let i = 1; i < points.length; i++) {

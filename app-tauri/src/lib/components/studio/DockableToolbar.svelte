@@ -270,6 +270,19 @@
       <StudioIcon name="text.review" size={16} />
     </button>
 
+    <!-- CAD Measurement & Calibration Suite -->
+    <button
+      type="button"
+      class="tool-btn"
+      class:active={tools.activeToolId === 'measure' || tools.activeToolId.startsWith('measure.')}
+      aria-pressed={tools.activeToolId === 'measure' || tools.activeToolId.startsWith('measure.')}
+      onclick={() => tools.selectTool('measure.length')}
+      title="CAD Measurement & Calibration Suite (M)"
+      aria-label="CAD Measurement Tool"
+    >
+      <StudioIcon name="measure" size={16} />
+    </button>
+
     <div class="toolbar-separator"></div>
 
     <!-- Radial Menu Summon Trigger -->

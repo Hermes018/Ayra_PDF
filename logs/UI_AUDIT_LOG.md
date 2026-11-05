@@ -118,3 +118,10 @@ This log records user acceptance testing (UAT) defects, root cause diagnoses, an
 2. **Audit & Test Gates**:
    - `app-tauri/src/lib/core/shapeAndSelection.test.ts`: 6 unit tests covering horizontal/vertical flip reflection, 6-edge alignment, group/ungroup transitions, revision cloud / polyline / squiggle / line-ending SVG path generation, point-in-polygon lasso hit testing, z-order, duplicate, format painter, and snapshot stamps.
    - Zero raw hex literals and zero local `keydown` listeners across all studio files (`cargo xtask studio-audit --strict` passed with 0 findings).
+
+
+## [2026-11-05] Phase D5 — CAD OSNAP, Scale Calibration, Digital Ruler & Measurement Suite Audit
+1. **OSNAP Indicator & Theme Token Compliance (`MeasureOverlay.svelte`, `snapEngine.svelte.ts`)**:
+   - Verified `endpoint` (square), `midpoint` (triangle), `intersection` (`X`), `perpendicular` (`∟`), and `grid` indicators use CSS variables `--snap-indicator-*` from `themeContract.svelte.ts` with zero raw hex/rgb literals.
+2. **Calibration Dialog & Digital Ruler A11y (`CalibrationModal.svelte`, `MeasureOverlay.svelte`, `PropertyPill.svelte`)**:
+   - Verified ARIA roles (`role="dialog"`, `role="toolbar"`, `role="button"`) and `tabindex` on all interactive overlays (`svelte-check` 0 errors, 0 warnings).

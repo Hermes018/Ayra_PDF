@@ -23,9 +23,9 @@
 
 | Status | Count | Description |
 |---|---:|---|
-| **`DONE` (`[x]`)** | **69** | End-to-end implemented in Rust + Svelte UI and verified by tests. |
+| **`DONE` (`[x]`)** | **78** | End-to-end implemented in Rust + Svelte UI and verified by tests. |
 | **`IN PROGRESS` (`[ ]`)** | **8** | UI state/shell or backend port exists, awaiting remaining sub-features. |
-| **`NOT STARTED` (`[ ]`)** | **36** | Scheduled across Phases D5 and D6 in `DRAWBOARD_STUDIO_MASTER_PLAN.md`. |
+| **`NOT STARTED` (`[ ]`)** | **27** | Scheduled across Phase D6 in `DRAWBOARD_STUDIO_MASTER_PLAN.md`. |
 | **`DEFERRED` (`[ ]`)** | **6** | Cloud/multiplayer features prohibited by strict offline air-gap rule (`ADR-005`). |
 | **Total** | **119** | Across 9 functional domains (108 core spec + 11 LocalPDF native extensions). |
 
@@ -93,16 +93,16 @@
 
 ## 4. Measurement, Scale & Technical Drawing Tools (11 Features)
 
-- [ ] **4.1** `[P1]` `[Phase D5]` `NOT STARTED` **Scale calibration tool** — Set page scale using two reference points (`measure.calibrate`) or known ratio (`1:100`, `1/4" = 1'-0"`) persisted to PDF ISO 32000-1 `/VP` `/Measure` dictionary (`crates/lpdf-cad-measure`).
-- [ ] **4.2** `[P2]` `[Phase D5]` `NOT STARTED` **Multiple scale presets / per-page scale** — Support different scales across sheets or viewports.
-- [ ] **4.3** `[P1]` `[Phase D5]` `NOT STARTED` **Linear distance measurement** — Measure point-to-point length with live dimension readout (`measure.length`).
-- [ ] **4.4** `[P1]` `[Phase D5]` `NOT STARTED` **Polylength / perimeter measurement** — Measure multi-segment paths (`measure.polylength` & `measure.perimeter`).
-- [ ] **4.5** `[P1]` `[Phase D5]` `NOT STARTED` **Area measurement (polygon / rectangular)** — Calculate real-world area via Shoelace formula in calibrated units (`mm²`, `cm²`, `m²`, `in²`, `ft²`).
-- [ ] **4.6** `[P1]` `[Phase D5]` `NOT STARTED` **Angle measurement / protractor** — Measure angles between lines or segments (`measure.protractor`) with `0.01°` precision.
-- [ ] **4.7** `[P1]` `[Phase D5]` `NOT STARTED` **Digital ruler overlay** — On-screen rotatable ruler for straight edges and measured lines (`measure.ruler`).
+- [x] **4.1** `[P1]` `[Phase D5]` `DONE` **Scale calibration tool** — Set page scale using two reference points (`measure.calibrate`) or architectural presets (`1:100`, `1/4" = 1'-0"`) with sidecar/annotation persistence (`app-tauri/src/lib/core/measureEngine.svelte.ts`, `CalibrationModal.svelte` & `studio_save_page_scales` in `studio.rs`).
+- [x] **4.2** `[P2]` `[Phase D5]` `DONE` **Multiple scale presets / per-page scale** — Support architectural/engineering presets (`ARCHITECTURAL_SCALE_PRESETS`), custom units (`pt`, `mm`, `cm`, `m`, `in`, `ft`), precision (`0–3`), and per-page or all-page scale assignment (`app-tauri/src/lib/core/measureEngine.svelte.ts` & `CalibrationModal.svelte`).
+- [x] **4.3** `[P1]` `[Phase D5]` `DONE` **Linear distance measurement** — Measure point-to-point length (`measure.length`) and transient tape measurements (`measureEngine.tapeMode`) with live calibrated dimension readout and configurable 45° tick/arrow endpoints (`app-tauri/src/lib/core/measureEngine.svelte.ts` & `MeasureOverlay.svelte`).
+- [x] **4.4** `[P1]` `[Phase D5]` `DONE` **Polylength / perimeter measurement** — Measure multi-segment paths (`measure.polylength` & `measure.perimeter`) with cumulative calibrated length and quantity takeoff totals (`computePolylineLengthPt` in `app-tauri/src/lib/core/measureEngine.svelte.ts`).
+- [x] **4.5** `[P1]` `[Phase D5]` `DONE` **Area measurement (polygon / rectangular) & volume estimate** — Calculate real-world area via Shoelace formula (`computePolygonAreaPt2`), perimeter, and depth-based volume (`computeVolume`) in calibrated units (`mm²`, `cm²`, `m²`, `in²`, `ft²`, `m³`, `ft³`) (`app-tauri/src/lib/core/measureEngine.svelte.ts` & `MeasureOverlay.svelte`).
+- [x] **4.6** `[P1]` `[Phase D5]` `DONE` **Angle measurement / protractor** — Measure 3-point angles (`measure.protractor`) via `computeAngleDeg` with live degree arc & badge (`app-tauri/src/lib/core/measureEngine.svelte.ts` & `MeasureOverlay.svelte`).
+- [x] **4.7** `[P1]` `[Phase D5]` `DONE` **Digital ruler overlay** — On-screen translucent rotatable graduated ruler (`measure.ruler`) with `15°` Shift-snap and collinear stroke edge projection (`projectPointToRulerIfNear` in `app-tauri/src/lib/core/measureEngine.svelte.ts` & `MeasureOverlay.svelte`).
 - [ ] **4.8** `[P2]` `[Phase D6]` `NOT STARTED` **Count / takeoff tool** — Click-to-count items with numbered/symbol markers and running totals for quantity takeoffs.
-- [ ] **4.9** `[P1]` `[Phase D5]` `NOT STARTED` **Snap to PDF geometry / vector content** — Snap cursor (`rstar` R-tree OSNAP `< 2ms`) to endpoints, midpoints, intersections, perpendiculars, and centroids.
-- [ ] **4.10** `[P1]` `[Phase D4/D5]` `NOT STARTED` **Snap to grid / snap to objects / smart guides** — Align drawings with page grid (`G`) or existing annotations.
+- [x] **4.9** `[P1]` `[Phase D5]` `DONE` **Snap to PDF geometry / vector content** — Deterministic uniform-grid (`cellSizePt = 32`) OSNAP engine snapping to PDF content stream & annotation endpoints, intersections, midpoints, and perpendicular feet (`app-tauri/src/lib/core/snapEngine.svelte.ts` & `studio_extract_snap_geometry` in `studio.rs`).
+- [x] **4.10** `[P1]` `[Phase D4/D5]` `DONE` **Snap to grid / snap to objects / smart guides** — Align drawings with configurable page grid (`gridSnapEnabled`, `gridStepPt`) and existing vector annotations (`app-tauri/src/lib/core/snapEngine.svelte.ts`).
 - [x] **4.11** `[P2]` `[Phase D4]` `DONE` **Snapshot / region capture tool** — Capture a cropped region of a page (`select.snapshot`), flip horizontally/vertically, and stamp as a movable annotation (`createSnapshotStamp` in `app-tauri/src/lib/core/selectionEngine.svelte.ts` & `SpatialCanvas.svelte`).
 
 ---

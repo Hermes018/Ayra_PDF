@@ -19,6 +19,15 @@
     isMultiClickTool,
   } from '$lib/core/shapeAndHatchEngine.svelte';
   import { selection } from '$lib/core/selectionEngine.svelte';
+  import { snapEngine } from '$lib/core/snapEngine.svelte';
+  import {
+    measureEngine,
+    isMeasureTool,
+    isMultiPointMeasureTool,
+    projectPointToRulerIfNear,
+    type PageScaleConfig,
+    type CadUnit,
+  } from '$lib/core/measureEngine.svelte';
   import defaultPresets from '$lib/core/defaultPresets.json';
   import DockableToolbar from '$lib/components/studio/DockableToolbar.svelte';
   import PropertyPill from '$lib/components/studio/PropertyPill.svelte';
@@ -27,6 +36,8 @@
   import FavoritesBar from '$lib/components/studio/FavoritesBar.svelte';
   import StudioIcon from '$lib/components/studio/StudioIcon.svelte';
   import HatchDefs from '$lib/components/studio/HatchDefs.svelte';
+  import MeasureOverlay from '$lib/components/studio/MeasureOverlay.svelte';
+  import CalibrationModal from '$lib/components/studio/CalibrationModal.svelte';
 
   let { viewId = 'main-canvas' } = $props<{ viewId?: string }>();
 
@@ -252,6 +263,70 @@
           groupId: s.groupId ?? null,
           rotationDeg: s.rotationDeg ?? 0,
           snapshotDataUrl: s.snapshotDataUrl ?? null,
+          measurementKind: null,
+          calibratedValue: null,
+          unitLabel: null,
+          perimeterValue: null,
+          volumeValue: null,
+          pageScale: measureEngine.getScaleForPage(pageIndex)
+            ? {
+                pageIndex,
+                ptDistance: measureEngine.getScaleForPage(pageIndex).ptDistance,
+                realDistance: measureEngine.getScaleForPage(pageIndex).realDistance,
+                unit: measureEngine.getScaleForPage(pageIndex).unit,
+                precision: measureEngine.getScaleForPage(pageIndex).precision,
+                defaultDepth: measureEngine.getScaleForPage(pageIndex).depthValue,
+              }
+            : null,
+        };
+      });
+
+      const measureDtos = measureEngine.measurements.map((m) => {
+        const pdfPts = m.points.map((pt) => {
+          const conv = worldToPdfPagePt({ x: pt.x, y: pt.y }, m.pageIndex);
+          return { x: conv.x, y: conv.y, p: 0.5, t: null };
+        });
+        const xs = pdfPts.map((p) => p.x);
+        const ys = pdfPts.map((p) => p.y);
+        const minX = xs.length ? Math.min(...xs) : 0;
+        const minY = ys.length ? Math.min(...ys) : 0;
+        const maxX = xs.length ? Math.max(...xs) : 10;
+        const maxY = ys.length ? Math.max(...ys) : 10;
+        const sc = measureEngine.getScaleForPage(m.pageIndex);
+        return {
+          id: m.id,
+          kind: `measure.${m.kind}`,
+          pageIndex: m.pageIndex,
+          points: pdfPts,
+          bboxPt: [minX, minY, maxX, maxY],
+          colorRgb: parseCssColorToRgb(m.strokeColor),
+          fillRgb: null,
+          widthPt: m.strokeWidthPt,
+          opacity: 1.0,
+          lineStyle: 'solid',
+          startEnding: m.endpointStyle === 'open-arrow' ? 'open-arrow' : 'slash',
+          endEnding: m.endpointStyle === 'open-arrow' ? 'open-arrow' : 'slash',
+          hatchPattern:
+            m.kind === 'area.rect' || m.kind === 'area.polygon' ? 'diagonal-steel' : 'none',
+          hatchScale: 1.0,
+          text: m.formattedLabel,
+          fontSize: 10,
+          groupId: null,
+          rotationDeg: 0,
+          snapshotDataUrl: null,
+          measurementKind: m.kind,
+          calibratedValue: m.calibratedValue,
+          unitLabel: m.unitLabel,
+          perimeterValue: m.perimeterCalibrated ?? null,
+          volumeValue: m.volumeCalibrated ?? null,
+          pageScale: {
+            pageIndex: sc.pageIndex,
+            ptDistance: sc.ptDistance,
+            realDistance: sc.realDistance,
+            unit: sc.unit,
+            precision: sc.precision,
+            defaultDepth: sc.depthValue,
+          },
         };
       });
 
@@ -263,7 +338,7 @@
       }>('studio_save_annotations', {
         inputPath,
         outputPath,
-        annotations: dtos,
+        annotations: [...dtos, ...measureDtos],
         flatten,
       });
 
@@ -397,8 +472,83 @@
       }
 
       await loadPersistedAnnotations(path);
+      await loadSnapGeometryAndScales(path, pdf.numPages);
     } catch (err) {
       console.error('Failed to render PDF in SpatialCanvas:', err);
+    }
+  }
+
+  async function loadSnapGeometryAndScales(path: string, pageCount: number) {
+    try {
+      const scales = await invoke<
+        Array<{
+          pageIndex: number;
+          ptDistance: number;
+          realDistance: number;
+          unit: string;
+          precision: number;
+          defaultDepth?: number;
+        }>
+      >('studio_load_page_scales', { inputPath: path });
+      if (Array.isArray(scales) && scales.length > 0) {
+        const nextScales: Record<number, PageScaleConfig> = { ...measureEngine.scales };
+        for (const sc of scales) {
+          nextScales[sc.pageIndex] = {
+            pageIndex: sc.pageIndex,
+            ptDistance: sc.ptDistance || 72,
+            realDistance: sc.realDistance || 25.4,
+            unit: (sc.unit as CadUnit) || 'mm',
+            precision: (Math.min(3, Math.max(0, sc.precision ?? 2)) as 0 | 1 | 2 | 3),
+            depthValue: sc.defaultDepth ?? 0,
+          };
+        }
+        measureEngine.scales = nextScales;
+        measureEngine.recalculateAllMeasurements();
+      }
+    } catch {
+      // Safe fallback when no scales sidecar exists
+    }
+
+    const limit = Math.min(pageCount, 12);
+    for (let p = 0; p < limit; p++) {
+      try {
+        const geom = await invoke<{
+          pageIndex: number;
+          widthPt: number;
+          heightPt: number;
+          segments: Array<{ x1: number; y1: number; x2: number; y2: number }>;
+        }>('studio_extract_snap_geometry', { inputPath: path, pageIndex: p });
+        if (geom && Array.isArray(geom.segments)) {
+          const worldSegs = geom.segments.map((s) => {
+            const p1 = pdfPagePtToWorld({ x: s.x1, y: s.y1 }, p);
+            const p2 = pdfPagePtToWorld({ x: s.x2, y: s.y2 }, p);
+            return { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y };
+          });
+          snapEngine.setPageSegments(p, worldSegs);
+        }
+      } catch {
+        // Safe fallback in test environment
+      }
+    }
+  }
+
+  async function savePageScalesToSidecar(scales: PageScaleConfig[]) {
+    const inputPath = loadedFilePath ?? appState.currentFile;
+    if (!inputPath) return;
+    try {
+      await invoke('studio_save_page_scales', {
+        inputPath,
+        pageScales: scales.map((s) => ({
+          pageIndex: s.pageIndex,
+          ptDistance: s.ptDistance,
+          realDistance: s.realDistance,
+          unit: s.unit,
+          precision: s.precision,
+          defaultDepth: s.depthValue,
+        })),
+      });
+    } catch {
+      // Safe fallback in test environment
     }
   }
 
@@ -477,13 +627,27 @@
       ]);
     }
 
+    // Seed page-border vector snap segments for default layout pages
+    viewport.pages.forEach((pg, idx) => {
+      const w = pg.widthPt * PT_TO_CSS;
+      const h = pg.heightPt * PT_TO_CSS;
+      const x0 = pg.worldX;
+      const y0 = pg.worldY;
+      snapEngine.setPageSegments(idx, [
+        { x1: x0, y1: y0, x2: x0 + w, y2: y0 },
+        { x1: x0 + w, y1: y0, x2: x0 + w, y2: y0 + h },
+        { x1: x0 + w, y1: y0 + h, x2: x0, y2: y0 + h },
+        { x1: x0, y1: y0 + h, x2: x0, y2: y0 },
+      ]);
+    });
+
     commands.onRadialToggle = () => {
       if (typeof window !== 'undefined') {
         openRadialAt(window.innerWidth / 2, window.innerHeight / 2);
       }
     };
 
-    // Register Phase D4 global command handlers (zero local keydown listeners)
+    // Register Phase D4 & D5 global command handlers (zero local keydown listeners)
     commands.register('selection.duplicate', (doc) => {
       selection.duplicateSelected();
       return { next: doc, label: 'Duplicate Selection' };
@@ -501,7 +665,9 @@
       return { next: doc, label: 'Delete Selection' };
     });
     commands.register('studio.confirm', (doc) => {
-      if (shapes.isCreating && isMultiClickTool(tools.currentToolId)) {
+      if (measureEngine.activeDraft) {
+        measureEngine.commitActiveDraft();
+      } else if (shapes.isCreating && isMultiClickTool(tools.currentToolId)) {
         shapes.commitPolyline();
       } else if (shapes.editingTextBox) {
         commitStructuralTextOrAnnotation();
@@ -509,6 +675,7 @@
       return { next: doc, label: 'Confirm Active Operation' };
     });
     commands.register('studio.cancel', (doc) => {
+      measureEngine.cancelDraft();
       shapes.cancelActiveShape();
       selection.clearSelection();
       return { next: doc, label: 'Cancel Operation' };
@@ -564,7 +731,34 @@
     return inv ? inv.apply({ x: screenX, y: screenY }) : { x: screenX, y: screenY };
   }
 
+  function resolveSnappedWorldPoint(rawWorld: Pt, pageIndex: number): Pt {
+    const rulerProj = projectPointToRulerIfNear(rawWorld, measureEngine.ruler, 14);
+    if (rulerProj.snapped) {
+      return { x: rulerProj.x, y: rulerProj.y };
+    }
+    const anchor =
+      measureEngine.activeDraft && measureEngine.activeDraft.points.length > 0
+        ? measureEngine.activeDraft.points[measureEngine.activeDraft.points.length - 1]
+        : shapes.activeShape && shapes.activeShape.points.length > 0
+          ? shapes.activeShape.points[shapes.activeShape.points.length - 1]
+          : null;
+    const hit = snapEngine.resolveSnap(
+      pageIndex,
+      rawWorld.x,
+      rawWorld.y,
+      anchor,
+      currentView.zoom,
+      ink.completedStrokes
+    );
+    return hit ? { x: hit.x, y: hit.y } : rawWorld;
+  }
+
   function handleDoubleClick(e: MouseEvent) {
+    if (measureEngine.activeDraft && isMultiPointMeasureTool(tools.currentToolId)) {
+      e.preventDefault();
+      measureEngine.commitActiveDraft();
+      return;
+    }
     if (shapes.isCreating && isMultiClickTool(tools.currentToolId)) {
       e.preventDefault();
       shapes.commitPolyline();
@@ -577,7 +771,7 @@
     const target = e.target as HTMLElement | null;
     if (
       target?.closest(
-        '.spatial-hud, .dockable-toolbar, .property-pill, .favorites-bar, .modal-backdrop, .radial-menu, .selection-action-bar, .inline-text-editor, button, select, input, textarea'
+        '.spatial-hud, .dockable-toolbar, .property-pill, .favorites-bar, .modal-backdrop, .radial-menu, .selection-action-bar, .inline-text-editor, .digital-ruler-widget, button, select, input, textarea'
       )
     ) {
       return;
@@ -594,10 +788,35 @@
       return;
     }
 
-    const worldPt = getWorldPoint(e.clientX, e.clientY);
-    const pageIndex = findPageForWorldPoint(worldPt);
+    const rawWorldPt = getWorldPoint(e.clientX, e.clientY);
+    const pageIndex = findPageForWorldPoint(rawWorldPt);
+    const worldPt = resolveSnappedWorldPoint(rawWorldPt, pageIndex);
     const pressure = e.pointerType === 'pen' ? e.pressure || 0.5 : 0.5;
     const activeTool = tools.currentToolId;
+
+    // Digital Ruler Toggle Tool
+    if (activeTool === 'measure.ruler') {
+      measureEngine.ruler = {
+        ...measureEngine.ruler,
+        visible: true,
+        xPt: worldPt.x,
+        yPt: worldPt.y,
+      };
+      return;
+    }
+
+    // Phase D5 CAD Calibration & Measurement Suite
+    if (isMeasureTool(activeTool)) {
+      if (isMultiPointMeasureTool(activeTool)) {
+        measureEngine.startOrAddPoint(activeTool, pageIndex, worldPt);
+        return;
+      }
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      } catch {}
+      measureEngine.startOrAddPoint(activeTool, pageIndex, worldPt);
+      return;
+    }
 
     // Structural Edit Mode or Inline Text Box tool
     if (
@@ -711,7 +930,14 @@
 
     if (!canvasContainer) return;
 
-    const currentWorld = getWorldPoint(e.clientX, e.clientY);
+    const rawWorld = getWorldPoint(e.clientX, e.clientY);
+    const pageIndex = findPageForWorldPoint(rawWorld);
+    const currentWorld = resolveSnappedWorldPoint(rawWorld, pageIndex);
+
+    if (measureEngine.activeDraft) {
+      measureEngine.updateHoverPoint(currentWorld);
+      return;
+    }
 
     if (selectionDragMode === 'marquee' || selectionDragMode === 'snapshot') {
       selection.updateMarquee(currentWorld.x, currentWorld.y);
@@ -742,7 +968,9 @@
 
     const events = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [e];
     for (const ev of events) {
-      const worldPt = getWorldPoint(ev.clientX, ev.clientY);
+      const coalescedRaw = getWorldPoint(ev.clientX, ev.clientY);
+      const rulerPt = projectPointToRulerIfNear(coalescedRaw, measureEngine.ruler, 14);
+      const worldPt = rulerPt.snapped ? { x: rulerPt.x, y: rulerPt.y } : coalescedRaw;
       const pressure = ev.pointerType === 'pen' ? ev.pressure || 0.5 : 0.5;
 
       if (tools.activeToolId === 'laser') {
@@ -776,6 +1004,22 @@
   function handlePointerUp(e: PointerEvent) {
     if (isPanning) {
       isPanning = false;
+      try {
+        if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
+          (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+        }
+      } catch {}
+      return;
+    }
+
+    if (
+      measureEngine.activeDraft &&
+      !isMultiPointMeasureTool(tools.currentToolId)
+    ) {
+      const rawWorld = getWorldPoint(e.clientX, e.clientY);
+      const pageIndex = findPageForWorldPoint(rawWorld);
+      const snappedWorld = resolveSnappedWorldPoint(rawWorld, pageIndex);
+      measureEngine.commitTwoPointDrag(snappedWorld);
       try {
         if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId)) {
           (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
@@ -1436,8 +1680,14 @@
         <path d={ink.getLaserSvgPath()} fill="var(--laser-glow)" opacity="0.85" />
         <path d={ink.getLaserCoreSvgPath()} fill="var(--laser-core)" opacity="1.0" />
       {/if}
+
+      <!-- Phase D5 CAD Measurements, OSNAP Indicators & Interactive Digital Ruler -->
+      <MeasureOverlay activePageIndex={0} />
     </g>
   </svg>
+
+  <!-- Phase D5 Page Scale Calibration Modal -->
+  <CalibrationModal onSaveScales={savePageScalesToSidecar} />
 
   <!-- Inline Rich Text Box / Structural PDF Text Block Editor Overlay -->
   {#if shapes.editingTextBox}

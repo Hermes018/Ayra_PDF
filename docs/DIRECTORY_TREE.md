@@ -42,21 +42,26 @@ localpdf-studio-protocol/
 │   │       │   ├── defaultPresets.json         # Out-of-the-box pen/highlighter presets
 │   │       │   ├── defaultShortcuts.json       # Canonical keyboard shortcut bindings
 │   │       │   ├── inkEngine.svelte.ts         # Variable-width spline ink, laser decay & eraser
+│   │       │   ├── measureEngine.svelte.ts     # CAD scale calibration, length, area, volume, protractor & ruler
 │   │       │   ├── radialGeometry.ts           # Math for 8-wedge radial hit testing
 │   │       │   ├── radialGeometry.test.ts      # Unit tests for radial arc/wedge math
 │   │       │   ├── radialLayout.json           # 8-wedge layout & flyout registry
 │   │       │   ├── selectionEngine.svelte.ts   # Marquee/lasso selection, group, align, flip, z-order & snapshot
 │   │       │   ├── shapeAndHatchEngine.svelte.ts # Geometric shapes, polylines, clouds, hatch & text review
 │   │       │   ├── shapeAndSelection.test.ts   # Unit tests for Phase D4 shapes, selection, align & flip
+│   │       │   ├── snapAndMeasure.test.ts      # Unit tests for Phase D5 OSNAP, calibration, Shoelace area & ruler
+│   │       │   ├── snapEngine.svelte.ts        # Uniform spatial grid index & priority OSNAP solver
 │   │       │   ├── studioReactivity.test.ts    # Unit tests for reactivity, ink, RDP & dock math
 │   │       │   ├── themeContract.svelte.ts     # CSS variable cascade (single colour source)
 │   │       │   ├── toolEngine.svelte.ts        # Reactive active tool & preset engine
 │   │       │   └── viewportEngine.svelte.ts    # Hardware-accelerated DOMMatrix transforms
 │   │       │
 │   │       ├── components/studio/              # Drawboard-Class Spatial Studio UI
+│   │       │   ├── CalibrationModal.svelte     # Two-point & architectural preset page scale calibration dialog
 │   │       │   ├── DockableToolbar.svelte      # Frosted glass toolbar (snappable/floating)
 │   │       │   ├── FavoritesBar.svelte         # Pinned favorite tool presets pill
 │   │       │   ├── HatchDefs.svelte            # Reusable theme-aware CAD hatch SVG <pattern> defs
+│   │       │   ├── MeasureOverlay.svelte       # CAD dimension lines, OSNAP indicators & interactive Digital Ruler
 │   │       │   ├── PropertyPill.svelte         # Floating reactive tool property pill
 │   │       │   ├── RadialMenu.svelte           # 8-wedge marking menu with nested flyouts
 │   │       │   ├── ShortcutSettings.svelte     # Custom keybinding configuration modal
