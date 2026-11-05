@@ -1504,3 +1504,13 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Gate:** `tools/verify.sh` GREEN on main: gate (fmt, clippy, nextest, deny, audit, protocol-lint, android SKIPPED), feature-map, studio-audit, svelte-check, vitest, tree-map.
 - **Rollbacks:** none needed.
 - **Subagents:** all run on Opus; high effort for verifier, reviewer and engines (the engines builder was spawned before this rule and keeps its original effort until re-spawned).
+
+## [2026-11-05 23:15] Merge: wt/fixes checkpoint 1 — Labs gating + honest copy — DONE
+- **Change:** LaTeX insert (2.16) and ink-to-text (8.10) are behind Labs, off by default, with one gate (`labs.svelte.ts`). Copy rewritten to match the code; checklist notes corrected (my earlier 8.10 note was wrong too).
+- **Review:**
+  - Round 1 FAIL: 2 major, 4 minor. Wrong character list; tests pinned the wrong copy.
+  - Round 2 PASS: all fixed. 5 minor follow-ups filed as BUG-001..006.
+- **Verify:**
+  - Round 1: RED on tree-map only (lead's map step).
+  - Round 2: `tools/verify.sh` GREEN (gate, feature-map, studio-audit, svelte-check, vitest 153/153, tree-map). One staging slip by the lead (regenerated maps not staged) was caught by the verifier; fixed by staging, so index = verified tree.
+- **Commit / tag:** 6c18734 (fast-forwarded to main), tag fixes-cp1-green.
