@@ -347,6 +347,7 @@ master/
 │   │   └── INVENTORY.md                                  # V1 architecture inventory (Oct 2026 snapshot; partly outdated)
 │   ├── APPLE_HIG_GLASS_SPEC.md                           # "Frosted glass" visual design system spec (all platforms)
 │   ├── ARCHITECTURE_AND_COMPLIANCE_AUDIT.md              # Audit of studio phases D1/D2 against the plan
+│   ├── CRAFT_ECOSYSTEM_SURVEY.md                         # Survey of the 10 storytold *craft repos: licences, deps, unsafe, what to port/adopt (ADR-018 PROPOSED)
 │   ├── DRAWBOARD_FEATURE_CHECKLIST.md                    # 119-item studio feature checklist with status (checked by `cargo xtask feature-map-check`)
 │   ├── DRAWBOARD_STUDIO_MASTER_PLAN.md                   # Plan for the spatial Studio editor (phases D1–D6)
 │   └── STUDIO_UI_UX_OVERHAUL_SPEC.md                     # Studio UI/UX overhaul spec (phases U1–U5)
@@ -413,7 +414,14 @@ master/
 │   ├── 06_security.md                                    # UX: PDF Security tools
 │   ├── 07_intelligence.md                                # UX: PDF Intelligence tools
 │   └── 08_extras.md                                      # UX: Extras strip (Markdown, workflows)
-├── vendor/                                               # Third-party code tracked as submodules
+├── vendor/                                               # Third-party code: pdfcraft submodule + local crate patches
+│   ├── patches/                                          # Local patches of third-party crates applied via [patch] in master/Cargo.toml
+│   │   └── winprint/                                     # winprint (Windows printing, via pdfcraft → craft-print) without its network build-dependencies (ADR-017)
+│   │       ├── src/                                      # Byte-identical copy of upstream winprint.rs @ 5f80b9b src/ (44 files, not listed individually)
+│   │       ├── Cargo.toml                                # Upstream manifest minus build/dev-dependencies; `pdfium` default off
+│   │       ├── LICENSE.md                                # Upstream BSD-3-Clause licence
+│   │       ├── PATCH_NOTES.md                            # Exactly what differs from upstream and how to re-sync
+│   │       └── README.md                                 # Upstream readme
 │   └── pdfcraft                                          # pdfcraft PDF engine (git submodule, pinned 75360d1 / v0.15.0) — run `git submodule update --init --recursive`
 ├── xtask/                                                # `cargo xtask` project tooling
 │   ├── src/                                              # Tool source

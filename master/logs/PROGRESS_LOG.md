@@ -1414,3 +1414,30 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
   - nextest: 154/155; the failure is the real Markdown→PDF bug ERR-005, exposed because pandoc is now installed.
   - cargo deny and cargo audit: fail (ERR-006, pre-existing; reqwest/rustls on Windows targets only).
 - Restructure committed on the user's explicit instruction; the red gate is pre-existing and logged (ERR-005, ERR-006).
+
+## [2026-11-05 22:10] Phase R1 — Craft ecosystem survey + first green gate (ERR-005, ERR-006) — DONE
+- **Changes:**
+  - **Survey:** `docs/CRAFT_ECOSYSTEM_SURVEY.md`, a read-only survey of 10 storytold repos cloned to `~/craft-ref`, with nothing built or added as a dependency. Also ADR-018 (PROPOSED). Found ERR-007 (saved hatch ignores polygon boundary).
+  - **ERR-006 (ADR-017):** a local `[patch]` copy of winprint without its network build-dependencies removes reqwest/hyper/sigstore/webpki-root-certs from the Windows tree. `cargo update` took six crates to patched versions. Three unmaintained zbus notices are ignored, each with a reason.
+  - **ERR-005:** Markdown → PDF now goes Pandoc → DOCX → LibreOffice sidecar (single and batch).
+- **Gate:** `CARGO_BUILD_JOBS=2 cargo xtask gate` — **PASSED GREEN** (first time). fmt ✓ · clippy -D warnings ✓ · nextest 155/155 ✓ · cargo deny (advisories/bans/licenses/sources ok) ✓ · cargo audit ✓ · protocol-lint ✓.
+- **Extra evidence:**
+  - `cargo tree --target {x86_64,aarch64}-pc-windows-msvc|x86_64-unknown-linux-gnu -i reqwest|hyper|ureq|…` is empty on all three targets.
+  - `localpdf md to-pdf` on real Markdown produced a PDF that `qpdf --check` accepts, with headings, list and table preserved.
+  - `render_tree.py --check` ✓.
+- **Pre-commit checklist:**
+
+  | # | Check | Answer |
+  |---|---|---|
+  | 1 | Gate green | YES |
+  | 2 | Tests run | YES |
+  | 3 | No banned patterns | YES |
+  | 4 | New deps vetted and recorded | YES. No new runtime deps; winprint patch is the same crate (BSD-3-Clause), ADR-017 |
+  | 5 | Offline | YES. HTTP client removed |
+  | 6 | Failsafes | YES. F9, F16, F20 |
+  | 7 | UI screenshot diff | N/A, no UI change |
+  | 8 | Logs updated | YES |
+  | 9 | No scope creep | YES |
+  | 10 | Docs / ADR | YES. ADR-017, ADR-018 proposed |
+  | 11 | Tool registry | YES |
+- **Commit note (R1):** because of a staging slip, commit `500297f` (titled ERR-006) also contains the ERR-005 code fix (`lpdf-engine-pdfcraft/src/{lib.rs,pandoc_sidecar.rs}`), `docs/CRAFT_ECOSYSTEM_SURVEY.md` and the tree-script change. It was not split, because the protocol forbids history rewrites without approval. The logs and maps are in the follow-up commit.

@@ -137,3 +137,26 @@ Home grid = exactly ORGANIZE PDF, OPTIMIZE PDF, CONVERT TO PDF, CONVERT FROM PDF
 
 ## ADR-015 approval [2026-11-05]
 - ADR-015 (Windows FFI allow-list: only `lpdf-fs-safety` may relax `forbid(unsafe_code)`, on Windows only) is **approved by the user** (PROMPT_LOG #14). The "PENDING USER CONFIRMATION" status above is superseded.
+
+## ADR-017 [2026-11-05] Remove the HTTP client from the Windows dependency tree; advisory policy (ERR-006)
+- **Context:** `cargo deny`/`cargo audit` failed. On Windows targets pdfcraft → `craft-print` → `winprint` (rev `5f80b9b`) carries **build-dependencies** `reqwest` + sigstore + `webpki-root-certs`. They exist to download PDFium at build time behind winprint's `pdfium` feature, which craft-print disables, but Cargo always compiles build-dependencies. Upstream pdfcraft HEAD (`42bc4f1`) pins the same winprint rev, so a pin bump does not help. The remaining advisories had semver-compatible fixes, except three "unmaintained" notices.
+- **Options:**
+  - (a) A local `[patch]` copy of winprint with the build-deps removed. Byte-identical `src/`; runtime behaviour unchanged.
+  - (b) Stub out `craft-print`: loses Windows printing.
+  - (c) Hide it with deny target filters: does not remove the HTTP client. Rejected.
+  - (d) Ask upstream to make the build-deps optional: right long-term, but blocks us now.
+- **Decision:** (a), via `master/vendor/patches/winprint/` (see its `PATCH_NOTES.md`) and `[patch."https://github.com/storytold/winprint.rs"]` in `master/Cargo.toml`.
+  - `cargo update -p` moved crypto-bigint 0.7.5→0.7.10, ctutils 0.4.3→0.4.8, rustls 0.23.45→0.23.46, rustls-webpki 0.103.15→0.103.16, tokio 1.53.2→1.54.1 and async-executor 1.14.0→1.14.1 (yanked).
+  - RUSTSEC-2026-0370/0371/0372 (zvariant, zbus_names, zvariant_derive: **unmaintained**, not vulnerable, no upgrade) are ignored with reasons in `deny.toml` and `.cargo/audit.toml`. They are Linux-only, via tauri-plugin-opener and single-instance. Revisit when zbus drops them.
+- **Consequences:** No HTTP client (reqwest/hyper/ureq/isahc/surf/curl) in the Linux or Windows trees (`cargo tree --target … -i …` is empty). `rustls` 0.23.46 remains on Windows only, as a TLS/crypto library used by `pdfcraft-sign` → `rustls-cng` for Windows certificate-store signing; no network code path. Re-sync the patch whenever craft-print bumps winprint.
+- **Approved by:** agent-within-scope, implementing the user's instruction (2026-11-05, "remove reqwest … get cargo deny and cargo audit green"). User may veto the fork in favour of (d).
+
+## ADR-018 [2026-11-05] storytold craft ecosystem: what to adopt vs port — **PROPOSED**
+- **Context:** User asked for a read-only survey of 10 storytold repos (`docs/CRAFT_ECOSYSTEM_SURVEY.md`).
+- **Proposal:**
+  - No craft crate becomes a runtime dependency yet. Pointer-rate engines stay in TypeScript, porting specific algorithms with attribution.
+  - Rust-side candidates, all MIT OR Apache-2.0, `forbid(unsafe)`, no HTTP/GUI: `kurbo` (already in the graph), `vectorcraft-pathops` (+ `linesweeper`, MIT OR Apache-2.0) for stroke fitting / boolean erase / outline export, and `designcraft-compose` for Knuth-Plass text reflow.
+  - Port cadcraft's hatch sweep (fixes ERR-007) and snap ranking/units; vectorcraft recognition/width/RDP; designcraft distribute/smart guides/gesture model; photocraft colour-to-alpha + pressure curve.
+  - Audit craft-libs `pdf` separately as the real Rust renderer.
+  - Phase order in survey §6.
+- **Status:** PROPOSED, awaiting user approval. Nothing adopted.

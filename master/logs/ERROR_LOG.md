@@ -67,3 +67,14 @@ Rule: 3 distinct failed fixes => status escalated-to-user, stop, ask.
 - Root cause: mostly the pdfcraft pin bump to 75360d1 (commit 1c1d884, no ADR, DON'T-15). **On Windows targets** it pulls `reqwest` (HTTP client: pdfcraft-print → craft-print → winprint build script → sigstore-verify → reqwest) and `rustls` (pdfcraft-sign → rustls-cng). Linux target trees contain neither (`cargo tree --target x86_64-unknown-linux-gnu -i reqwest` is empty), so Linux builds stay network-free. Windows builds conflict with F9 / DON'T-1.
 - Fix: OPEN, needs its own phase. Re-vet the pdfcraft pin (feature-gate print/sign on Windows, or patch winprint's build script), update the affected crates, then re-run `cargo deny` and `cargo audit`.
 - Status: open
+
+## [2026-11-05] ERR-005 / ERR-006 — status update
+- ERR-005 **fixed**: Markdown → PDF now goes Pandoc (gfm → DOCX) → LibreOffice sidecar (DOCX → PDF), for single and batch conversion. Verified with real pandoc 3.1 + LibreOffice 26.2: `localpdf md to-pdf` on a file with a heading, a bullet list with bold text, and a table produced a PDF that `qpdf --check` accepts; `pdftotext` shows the structure intact. `test_adapter_markdown_methods_integration` passes. Without LibreOffice the call returns `ExternalDependencyError` (tile greyed per FEATURE_MAP §1.3).
+- ERR-006 **fixed** (ADR-017): `cargo deny check` → advisories ok, bans ok, licenses ok, sources ok; `cargo audit` exit 0.
+
+## [2026-11-05] ERR-007 — saved hatch fills bounding box, not polygon
+- Phase: D4 (found by craft survey)   Severity: major (visible output defect)
+- Symptom: hatched polygons and clouds render clipped on screen (SVG pattern inside the path) but the saved PDF draws hatch lines across the whole bounding box. Several patterns (masonry, tiling, timber, earth, insulation, concrete) degenerate to the same grid or horizontal lines. Crosshatch angle differs between screen and PDF.
+- Root cause: `studio.rs:529` passes `rect` (bounding box) to `generate_hatch_strokes`, which has no polygon clipping.
+- Fix: OPEN. Port cadcraft `pattern_lines`/`crossings`/`dash` (survey §4.4), pending ADR-018.
+- Status: open

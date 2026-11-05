@@ -337,7 +337,7 @@ master/ux-spec/05_edit.md	UX: Edit PDF tools
 master/ux-spec/06_security.md	UX: PDF Security tools
 master/ux-spec/07_intelligence.md	UX: PDF Intelligence tools
 master/ux-spec/08_extras.md	UX: Extras strip (Markdown, workflows)
-master/vendor/	Third-party code tracked as submodules
+master/vendor/	Third-party code: pdfcraft submodule + local crate patches
 master/vendor/pdfcraft	pdfcraft PDF engine (git submodule, pinned 75360d1 / v0.15.0) — run `git submodule update --init --recursive`
 master/xtask/	`cargo xtask` project tooling
 master/xtask/Cargo.toml	Crate manifest
