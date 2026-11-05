@@ -323,6 +323,7 @@ master/
 │   ├── CRAFT_ECOSYSTEM_SURVEY.md                         # Survey of the 10 storytold *craft repos: licences, deps, unsafe, what to port/adopt (ADR-018 PROPOSED)
 │   ├── DRAWBOARD_FEATURE_CHECKLIST.md                    # 119-item studio feature checklist with status (checked by `cargo xtask feature-map-check`)
 │   ├── DRAWBOARD_STUDIO_MASTER_PLAN.md                   # Plan for the spatial Studio editor (phases D1–D6)
+│   ├── PROTOTYPE_SCOPE.md                                # v0.2.0-prototype scope: 12 golden-path flows with pass criteria, corpus, triage rules, milestones
 │   ├── STUDIO_UI_UX_OVERHAUL_SPEC.md                     # Studio UI/UX overhaul spec (phases U1–U5)
 │   └── UPGRADING.md                                      # DRAFT procedure for bumping a pinned upstream engine (branch → gate → verifier → log)
 ├── fuzz/                                                 # cargo-fuzz workspace (libFuzzer targets)

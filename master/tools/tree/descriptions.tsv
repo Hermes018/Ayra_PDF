@@ -436,3 +436,5 @@ master/tools/build-lock.sh	Runs a heavy build under the shared flock lock with C
 master/docs/adr/ADR-018-upstream-engines.md	ADR-018 rev 2 (PROPOSED): consume craft engines as pinned deps behind adapter crates, WASM spike, upstream manifest
 master/docs/UPGRADING.md	DRAFT procedure for bumping a pinned upstream engine (branch → gate → verifier → log)
 master/docs/PROTOTYPE_SCOPE.md	v0.2.0-prototype scope: 12 golden-path flows with pass criteria, corpus, triage rules, milestones
+master/logs/BUGS.md	Sprint bug list with P0/P1/P2 triage (lead-owned)
+master/logs/DOGFOOD.md	Owner's hands-on testing notes; lead triages into BUGS.md
