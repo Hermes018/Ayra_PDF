@@ -56,6 +56,15 @@
           "/usr/bin/lpdf-worker": "../../target/release/lpdf-worker"
         }
       }
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "both"
+      }
     }
   }
 }

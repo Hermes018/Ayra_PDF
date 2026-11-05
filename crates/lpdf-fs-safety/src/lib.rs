@@ -73,11 +73,13 @@ pub mod win_sandbox {
     };
 
     pub const CREATE_NO_WINDOW_FLAG: u32 = 0x0800_0000;
+    pub const BELOW_NORMAL_PRIORITY_CLASS_FLAG: u32 = 0x0000_4000;
     pub const SIDECAR_MEMORY_LIMIT_BYTES: usize = 1024 * 1024 * 1024; // 1 GiB per ADR-001
 
-    /// Configures `std::process::Command` on Windows to suppress console window flashing.
+    /// Configures `std::process::Command` on Windows to suppress console window flashing
+    /// and apply `BELOW_NORMAL_PRIORITY_CLASS` (`0x0000_4000`) for background worker QoS (Phase W3).
     pub fn apply_no_window_flags(cmd: &mut Command) {
-        cmd.creation_flags(CREATE_NO_WINDOW_FLAG);
+        cmd.creation_flags(CREATE_NO_WINDOW_FLAG | BELOW_NORMAL_PRIORITY_CLASS_FLAG);
     }
 
     /// RAII Win32 Job Object that enforces a 1 GiB memory ceiling and guarantees

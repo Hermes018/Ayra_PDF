@@ -265,6 +265,7 @@
           groupId: s.groupId ?? null,
           rotationDeg: s.rotationDeg ?? 0,
           snapshotDataUrl: s.snapshotDataUrl ?? null,
+          author: s.author ?? inserts.activeAuthor,
           measurementKind: null,
           calibratedValue: null,
           unitLabel: null,
@@ -316,6 +317,7 @@
           groupId: null,
           rotationDeg: 0,
           snapshotDataUrl: null,
+          author: inserts.activeAuthor,
           measurementKind: m.kind,
           calibratedValue: m.calibratedValue,
           unitLabel: m.unitLabel,
@@ -1479,7 +1481,7 @@
   <svg id="vector-layer" class="vector-layer" role="presentation">
     <HatchDefs scale={tools.activePreset?.fill.hatchScale ?? 1.0} />
     <g style:transform={worldTransform}>
-      {#each ink.completedStrokes as stroke (stroke.id)}
+      {#each ink.completedStrokes.filter((st) => inserts.isStrokeVisibleForAuthorFilter(st)) as stroke (stroke.id)}
         {@const bbox = computeStrokeBBox(stroke)}
         {@const dash = getStrokeDashArray(stroke.lineStyle, stroke.widthPt)}
         {@const fillUrl = getFillForStroke(stroke)}

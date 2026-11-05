@@ -1,4 +1,4 @@
-#![forbid(unsafe_code)]
+#![cfg_attr(not(target_os = "windows"), forbid(unsafe_code))]
 
 pub use lpdf_core_types::HardwareTier;
 use sysinfo::System;
@@ -68,6 +68,43 @@ impl HardwareProfile {
             HardwareTier::Low => std::cmp::min(free_memory_mb * 40 / 100, 1024),
             HardwareTier::Medium => std::cmp::min(free_memory_mb * 50 / 100, 4096),
             HardwareTier::High => std::cmp::min(free_memory_mb * 50 / 100, 16384),
+        }
+    }
+}
+
+/// Phase W3: RAII guard that lowers the current worker thread priority to
+/// `THREAD_PRIORITY_BELOW_NORMAL` on Windows during heavy PDF/OCR jobs so UI frames stay at 60–120fps.
+pub struct WorkerQosGuard {
+    _private: (),
+}
+
+impl WorkerQosGuard {
+    pub fn enter() -> Self {
+        #[cfg(target_os = "windows")]
+        {
+            #![allow(unsafe_code)]
+            use windows_sys::Win32::System::Threading::{
+                GetCurrentThread, SetThreadPriority, THREAD_PRIORITY_BELOW_NORMAL,
+            };
+            unsafe {
+                let _ = SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
+            }
+        }
+        Self { _private: () }
+    }
+}
+
+impl Drop for WorkerQosGuard {
+    fn drop(&mut self) {
+        #[cfg(target_os = "windows")]
+        {
+            #![allow(unsafe_code)]
+            use windows_sys::Win32::System::Threading::{
+                GetCurrentThread, SetThreadPriority, THREAD_PRIORITY_NORMAL,
+            };
+            unsafe {
+                let _ = SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
+            }
         }
     }
 }

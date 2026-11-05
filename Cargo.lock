@@ -114,6 +114,8 @@ dependencies = [
  "tracing-appender",
  "tracing-subscriber",
  "ts-rs 12.0.1",
+ "window-vibrancy",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3471,6 +3473,7 @@ dependencies = [
  "lpdf-core-types",
  "serde",
  "sysinfo",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3488,6 +3491,7 @@ dependencies = [
  "tracing",
  "ts-rs 10.1.0",
  "uuid",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

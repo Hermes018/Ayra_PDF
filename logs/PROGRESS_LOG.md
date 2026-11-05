@@ -1315,6 +1315,21 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Pre-commit Checklist:** 1) Gate green? YES 2) Tests run? YES 3) No banned patterns? YES 4) New dep vetted? YES (None added) 5) Offline green? YES 6) Failsafes affected re-tested? YES (F1/F6 atomic write + verify-after-write tested in `studio::tests`) 7) UI matches spec? YES 8) Logs updated? YES 9) No scope creep? YES 10) Docs updated? YES 11) Tool registry matches? YES
 
 
+## [2026-11-05 15:28] Phase D6.1 (113/113 Offline Features DONE) & Windows Track Phases W2–W4 — DONE
+- **Changes:**
+  - **Phase D6.1 (Final 5 Offline Features -> `113/113 DONE` in `docs/DRAWBOARD_FEATURE_CHECKLIST.md`)**:
+    1. `7.10` Workspace Document Tags, Folders, Favorites & Recent Files: Implemented `WorkspaceDocumentEntryDto` & `studio_workspace_library` in `app-tauri/src-tauri/src/commands/studio.rs` and `upsertWorkspaceDocument` / `loadWorkspaceDocuments` + Workspace Docs tab in `insertEngine.svelte.ts` & `AnnotationLedger.svelte`.
+    2. `8.4` Shared Annotation Visibility / Author Filtering: Added `author` metadata on `ActiveStroke` and `StudioAnnotationDto`, plus `authorFilter` & `isStrokeVisibleForAuthorFilter` in `insertEngine.svelte.ts`, `AnnotationLedger.svelte`, and `#vector-layer` in `SpatialCanvas.svelte`.
+    3. `8.7` Watch-Folder Auto-Ingest: Implemented `studio_scan_watch_folder` in `studio.rs` and `scanWatchFolder` in `insertEngine.svelte.ts` & `AnnotationLedger.svelte` (strictly local filesystem, zero network).
+    4. `8.10` Handwriting Recognition (Ink-to-Text): Implemented offline geometric stroke classifier `recognizeHandwritingStrokesToText` and undoable `convertSelectedInkToText` in `insertEngine.svelte.ts` & `AnnotationLedger.svelte`.
+    5. `8.12` Auto Table & Form Field Detection: Implemented `DetectedRegionDto` & `studio_detect_tables_and_fields` in `studio.rs` and `detectTablesAndFields` in `insertEngine.svelte.ts` & `AnnotationLedger.svelte`.
+  - **Windows Track Phases W2, W3, W4 (`docs/WINDOWS_MASTER_PLAN.md`)**:
+    1. **Phase W2 (Window Vibrancy & Cold-Start Reveal)**: Added `[target.'cfg(target_os = "windows")'.dependencies]` (`window-vibrancy = "0.8.1"`, `windows-sys = "0.61.2"`) in `app-tauri/src-tauri/Cargo.toml`, implemented `set_window_vibrancy_theme` and `show_main_window` in `app-tauri/src-tauri/src/lib.rs`, and wired `syncWindowVibrancy` in `themeContract.svelte.ts` & `state.svelte.ts`.
+    2. **Phase W3 (Hardware-Adaptive RAM Governor & Win32 EcoQoS)**: Implemented `detect_system_memory_budget_mb()` and `adaptive_worker_concurrency()` in `crates/lpdf-jobs/src/lib.rs`, `BELOW_NORMAL_PRIORITY_CLASS_FLAG` (`0x0000_4000`) in `crates/lpdf-fs-safety/src/lib.rs`, and `WorkerQosGuard` in `crates/lpdf-hw/src/lib.rs`.
+    3. **Phase W4 (Windows Installer Config & Cross-Platform CI)**: Added `.github/workflows/release-windows.yml` and configured `bundle.windows` (`embedBootstrapper` + `nsis.installMode = "both"`) in `app-tauri/src-tauri/tauri.conf.json`.
+- **Pre-commit Checklist:** 1) Gate green? YES 2) Tests run? YES 3) No banned patterns? YES 4) New dep vetted? YES (`window-vibrancy` MIT/Apache-2.0, `windows-sys` MIT/Apache-2.0, already in `Cargo.lock`) 5) Offline green? YES 6) Failsafes affected re-tested? YES 7) UI matches spec? YES 8) Logs updated? YES 9) No scope creep? YES 10) Docs updated? YES 11) Tool registry matches? YES
+
+
 ## [2026-11-05 15:01] Phase D6 — Complete Insert Suite, LaTeX, Signatures, Audio Notes, Markup Library & Quantity Takeoff — DONE
 - **Changes:**
   - Extended `app-tauri/src-tauri/src/commands/studio.rs` and `app-tauri/src-tauri/src/lib.rs` with `MeasurementRecord`, `MarkupLibraryItemDto`, `studio_attach_audio` (embedding PCM WAV/WebM audio streams into PDFs via `pdfcraft` `Edit::AddAttachment` + sound pin annotation with `atomic_write` & verify-after-write), `studio_export_takeoff_csv` (RFC 4180 CSV spreadsheet with formula-injection protection and per-unit summary rows), and `studio_markup_library` (`list`, `save`, `delete`, `clear`).
@@ -1322,3 +1337,18 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
   - Created `app-tauri/src/lib/components/studio/AnnotationLedger.svelte` (collapsible left-side drawer for sorting/filtering annotations & measurements, exporting Quantity Takeoff CSV, managing the Reusable Markup Library, and hosting the LaTeX, Signature, Audio Note, and `Paste to Pages...` modals) and wired into `SpatialCanvas.svelte` and `PropertyPill.svelte`.
   - Added 7 unit tests in `app-tauri/src/lib/core/insertAndTakeoff.test.ts` and 1 comprehensive Rust test (`test_studio_d6_audio_takeoff_csv_and_markup_library`) in `studio.rs`, and updated `docs/DRAWBOARD_FEATURE_CHECKLIST.md` (`108 DONE`).
 - **Pre-commit Checklist:** 1) Gate green? YES 2) Tests run? YES 3) No banned patterns? YES 4) New dep vetted? YES (None added) 5) Offline green? YES 6) Failsafes affected re-tested? YES (F1/F6 atomic write + verify-after-write tested in `studio::tests`) 7) UI matches spec? YES 8) Logs updated? YES 9) No scope creep? YES 10) Docs updated? YES 11) Tool registry matches? YES
+
+
+## [2026-11-05 15:28] Phase D6.1 (113/113 Offline Features DONE) & Windows Track Phases W2–W4 — DONE
+- **Changes:**
+  - **Phase D6.1 (Final 5 Offline Features -> `113/113 DONE` in `docs/DRAWBOARD_FEATURE_CHECKLIST.md`)**:
+    1. `7.10` Workspace Document Tags, Folders, Favorites & Recent Files: Implemented `WorkspaceDocumentEntryDto` & `studio_workspace_library` in `app-tauri/src-tauri/src/commands/studio.rs` and `upsertWorkspaceDocument` / `loadWorkspaceDocuments` + Workspace Docs tab in `insertEngine.svelte.ts` & `AnnotationLedger.svelte`.
+    2. `8.4` Shared Annotation Visibility / Author Filtering: Added `author` metadata on `ActiveStroke` and `StudioAnnotationDto`, plus `authorFilter` & `isStrokeVisibleForAuthorFilter` in `insertEngine.svelte.ts`, `AnnotationLedger.svelte`, and `#vector-layer` in `SpatialCanvas.svelte`.
+    3. `8.7` Watch-Folder Auto-Ingest: Implemented `studio_scan_watch_folder` in `studio.rs` and `scanWatchFolder` in `insertEngine.svelte.ts` & `AnnotationLedger.svelte` (strictly local filesystem, zero network).
+    4. `8.10` Handwriting Recognition (Ink-to-Text): Implemented offline geometric stroke classifier `recognizeHandwritingStrokesToText` and undoable `convertSelectedInkToText` in `insertEngine.svelte.ts` & `AnnotationLedger.svelte`.
+    5. `8.12` Auto Table & Form Field Detection: Implemented `DetectedRegionDto` & `studio_detect_tables_and_fields` in `studio.rs` and `detectTablesAndFields` in `insertEngine.svelte.ts` & `AnnotationLedger.svelte`.
+  - **Windows Track Phases W2, W3, W4 (`docs/WINDOWS_MASTER_PLAN.md`)**:
+    1. **Phase W2 (Window Vibrancy & Cold-Start Reveal)**: Added `[target.'cfg(target_os = "windows")'.dependencies]` (`window-vibrancy = "0.8.1"`, `windows-sys = "0.61.2"`) in `app-tauri/src-tauri/Cargo.toml`, implemented `set_window_vibrancy_theme` and `show_main_window` in `app-tauri/src-tauri/src/lib.rs`, and wired `syncWindowVibrancy` in `themeContract.svelte.ts` & `state.svelte.ts`.
+    2. **Phase W3 (Hardware-Adaptive RAM Governor & Win32 EcoQoS)**: Implemented `detect_system_memory_budget_mb()` and `adaptive_worker_concurrency()` in `crates/lpdf-jobs/src/lib.rs`, `BELOW_NORMAL_PRIORITY_CLASS_FLAG` (`0x0000_4000`) in `crates/lpdf-fs-safety/src/lib.rs`, and `WorkerQosGuard` in `crates/lpdf-hw/src/lib.rs`.
+    3. **Phase W4 (Windows Installer Config & Cross-Platform CI)**: Added `.github/workflows/release-windows.yml` and configured `bundle.windows` (`embedBootstrapper` + `nsis.installMode = "both"`) in `app-tauri/src-tauri/tauri.conf.json`.
+- **Pre-commit Checklist:** 1) Gate green? YES 2) Tests run? YES 3) No banned patterns? YES 4) New dep vetted? YES (`window-vibrancy` MIT/Apache-2.0, `windows-sys` MIT/Apache-2.0, already in `Cargo.lock`) 5) Offline green? YES 6) Failsafes affected re-tested? YES 7) UI matches spec? YES 8) Logs updated? YES 9) No scope creep? YES 10) Docs updated? YES 11) Tool registry matches? YES

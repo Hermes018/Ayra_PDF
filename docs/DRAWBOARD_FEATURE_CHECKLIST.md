@@ -23,9 +23,9 @@
 
 | Status | Count | Description |
 |---|---:|---|
-| **`DONE` (`[x]`)** | **108** | End-to-end implemented in Rust + Svelte UI and verified by tests. |
+| **`DONE` (`[x]`)** | **113** | End-to-end implemented in Rust + Svelte UI and verified by tests. |
 | **`IN PROGRESS` (`[ ]`)** | **0** | UI state/shell or backend port exists, awaiting remaining sub-features. |
-| **`NOT STARTED` (`[ ]`)** | **5** | Optional post-MVP local AI/watch-folder extensions. |
+| **`NOT STARTED` (`[ ]`)** | **0** | All 113 offline features completed across Phases D1–D6.1. |
 | **`DEFERRED` (`[ ]`)** | **6** | Cloud/multiplayer features prohibited by strict offline air-gap rule (`ADR-005`). |
 | **Total** | **119** | Across 9 functional domains (108 core spec + 11 LocalPDF native extensions). |
 
@@ -156,7 +156,7 @@
 - [x] **7.7** `[P2]` `[Phase D6]` `DONE` **Print with / without markup** — Export/print clean or flattened annotated PDFs (`studio_save_annotations` in `app-tauri/src-tauri/src/commands/studio.rs` & `SpatialCanvas.svelte`).
 - [x] **7.8** `[P2]` `[Phase 9]` `DONE` **Password protection & PDF permissions** — Open/edit password-protected PDFs and set AES-256 encryption on export (`protect_pdf` & `unlock_pdf` in `crates/lpdf-tools-security/src/lib.rs` & `SecurityView.svelte`).
 - [x] **7.9** `[P2]` `[Phase 7]` `DONE` **File size optimization / compression** — Reduce PDF size via multi-stage stream compression and F12 never-grow failsafe (`compress_pdf` in `crates/lpdf-tools-optimize/src/lib.rs` & `OptimizeView.svelte`).
-- [ ] **7.10** `[P2]` `[Phase D6]` `NOT STARTED` **Document tags, folders, favorites & recent files** — Organize local documents in a structured home/library view.
+- [x] **7.10** `[P2]` `[Phase D6.1]` `DONE` **Document tags, folders, favorites & recent files** — Organize local documents in a structured home/library view (`studio_workspace_library` in `app-tauri/src-tauri/src/commands/studio.rs`, `insertEngine.svelte.ts` & `AnnotationLedger.svelte`).
 
 ---
 
@@ -167,15 +167,15 @@
 - [x] **8.1** `[P2]` `[Phase D6]` `DONE` **Audio notes attached to page locations** — Record voice notes (`MediaRecorder` + offline PCM WAV synthesis) and embed as PDF `/Sound` / `/FileAttachment` streams (`studio_attach_audio` in `app-tauri/src-tauri/src/commands/studio.rs`, `insertEngine.svelte.ts` & `AnnotationLedger.svelte`).
 - [ ] **8.2** `[P3]` `[N/A]` `DEFERRED (OFFLINE PROTOCOL)` **Real-time collaboration** — *Banned by zero-network air-gap rule (`ADR-005`).*
 - [x] **8.3** `[P2]` `[Phase D6]` `DONE` **Asynchronous collaboration (comments & replies)** — Persistent structured sidecar and embedded PDF annotation dictionaries for offline file exchange (`studio_save_annotations` in `app-tauri/src-tauri/src/commands/studio.rs` & `AnnotationLedger.svelte`).
-- [ ] **8.4** `[P2]` `[Phase D6]` `NOT STARTED` **Shared annotation visibility / author filtering** — Filter or toggle annotations by author inside the local PDF annotation dictionary.
+- [x] **8.4** `[P2]` `[Phase D6.1]` `DONE` **Shared annotation visibility / author filtering** — Filter or toggle annotations by author inside the local PDF annotation dictionary (`authorFilter` & `isStrokeVisibleForAuthorFilter` in `insertEngine.svelte.ts`, `AnnotationLedger.svelte` & `SpatialCanvas.svelte`).
 - [ ] **8.5** `[P2]` `[N/A]` `DEFERRED (OFFLINE PROTOCOL)` **Cloud document storage & cross-device sync** — *Banned by zero-network air-gap rule (`ADR-005`).*
 - [ ] **8.6** `[P3]` `[N/A]` `DEFERRED (OFFLINE PROTOCOL)` **Third-party storage integrations (Google Drive / OneDrive / Dropbox)** — *Banned by zero-network air-gap rule (`ADR-005`).*
-- [ ] **8.7** `[P3]` `[Phase D6]` `NOT STARTED` **Email-to-workspace / Watch-folder auto-ingest** — *Adapted per `ADR-012 §8`*: Local filesystem `notify` watch-folder daemon auto-ingests dropped PDFs/images into the workspace (zero network).
+- [x] **8.7** `[P3]` `[Phase D6.1]` `DONE` **Email-to-workspace / Watch-folder auto-ingest** — *Adapted per `ADR-012 §8`*: Local filesystem watch-folder scanner auto-ingests dropped PDFs into the workspace with zero network (`studio_scan_watch_folder` in `app-tauri/src-tauri/src/commands/studio.rs`, `insertEngine.svelte.ts` & `AnnotationLedger.svelte`).
 - [ ] **8.8** `[P3]` `[N/A]` `DEFERRED (OFFLINE PROTOCOL)` **QR / mobile companion handoff** — *Network handoff banned by `ADR-005`; local webcam/file import covered in 2.10.*
 - [x] **8.9** `[P1]` `[Phase 7]` `DONE` **OCR (Optical Character Recognition)** — Convert scanned PDFs/images into searchable, selectable text via pure-Rust offline `ocrs` engine (`ocr_pdf` in `crates/lpdf-tools-optimize/src/lib.rs` & `OptimizeView.svelte`).
-- [ ] **8.10** `[P2]` `[Phase D6]` `NOT STARTED` **Handwriting recognition (ink-to-text)** — Convert handwritten stylus notes into editable typed text via offline model.
+- [x] **8.10** `[P2]` `[Phase D6.1]` `DONE` **Handwriting recognition (ink-to-text)** — Convert handwritten stylus notes into editable typed text via offline geometric stroke classifier (`recognizeHandwritingStrokesToText` & `convertSelectedInkToText` in `insertEngine.svelte.ts` & `AnnotationLedger.svelte`).
 - [x] **8.11** `[P3]` `[Phase 11]` `DONE` **AI document summary / Q&A / key-point extraction** — Summarize pages via offline TextRank extractive engine + local GGUF LLM (`candle-core` in `crates/lpdf-ai-local/src/lib.rs` & `AiSummarizeView.svelte`).
-- [ ] **8.12** `[P3]` `[Phase D6]` `NOT STARTED` **Auto table / form field detection** — Automatically detect tables or fillable regions in flat PDFs.
+- [x] **8.12** `[P3]` `[Phase D6.1]` `DONE` **Auto table / form field detection** — Automatically detect tables or fillable regions in flat PDFs (`studio_detect_tables_and_fields` in `app-tauri/src-tauri/src/commands/studio.rs`, `insertEngine.svelte.ts` & `AnnotationLedger.svelte`).
 - [ ] **8.13** `[P3]` `[N/A]` `DEFERRED (OFFLINE PROTOCOL)` **Team / organization workspace & license management** — *Banned by zero-network air-gap rule (`ADR-005`).*
 - [ ] **8.14** `[P3]` `[N/A]` `DEFERRED (OFFLINE PROTOCOL)` **Shared document permissions (view-only / comment / edit links)** — *Cloud links banned by `ADR-005`; local PDF permission flags covered in 7.8.*
 

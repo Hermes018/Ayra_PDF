@@ -643,6 +643,41 @@ fn get_engine_version() -> String {
     format!("pdfcraft v0.15.0 ({})", "75360d1d")
 }
 
+/// Phase W2: Windows 11/10 DWM Mica / Acrylic / High-Contrast Window Vibrancy.
+/// On Linux/Wayland, returns `Ok(())` cleanly as a no-op.
+#[tauri::command]
+fn set_window_vibrancy_theme(window: tauri::Window, theme: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        let normalized = theme.trim().to_ascii_lowercase();
+        let is_dark = normalized != "light" && normalized != "daylight-paper" && normalized != "paper";
+        if normalized == "high-contrast" || normalized == "contrast" {
+            let _ = window_vibrancy::clear_mica(&window);
+            let _ = window_vibrancy::clear_acrylic(&window);
+        } else if window_vibrancy::apply_mica(&window, Some(is_dark)).is_err() {
+            let rgba = if is_dark {
+                Some((18, 22, 31, 215))
+            } else {
+                Some((246, 244, 238, 225))
+            };
+            let _ = window_vibrancy::apply_acrylic(&window, rgba);
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (&window, &theme);
+    }
+    Ok(())
+}
+
+/// Phase W2: Cold-Start Window Reveal to eliminate white-flash before Svelte mounts.
+#[tauri::command]
+fn show_main_window(window: tauri::Window) -> Result<(), String> {
+    window.show().map_err(|e| e.to_string())?;
+    let _ = window.set_focus();
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let _log_guard = setup_logging();
@@ -655,8 +690,9 @@ pub fn run() {
     // Create the job event channel
     let (event_tx, mut event_rx) = job_event_channel();
 
-    // Default concurrency = 2 (Tier L safe); will be configurable per-tier later
-    let job_manager = Arc::new(JobManager::new(2, event_tx));
+    // Phase W3: Hardware-adaptive worker concurrency via GlobalMemoryStatusEx / /proc/meminfo
+    let worker_concurrency = lpdf_jobs::adaptive_worker_concurrency();
+    let job_manager = Arc::new(JobManager::new(worker_concurrency, event_tx));
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -704,7 +740,12 @@ pub fn run() {
             commands::studio::studio_load_page_scales,
             commands::studio::studio_attach_audio,
             commands::studio::studio_export_takeoff_csv,
-            commands::studio::studio_markup_library
+            commands::studio::studio_markup_library,
+            commands::studio::studio_workspace_library,
+            commands::studio::studio_scan_watch_folder,
+            commands::studio::studio_detect_tables_and_fields,
+            set_window_vibrancy_theme,
+            show_main_window
         ])
         .setup(|app| {
             // Forward job events to the Tauri frontend as structured events

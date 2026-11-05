@@ -22,3 +22,11 @@ ts-rs = "10.1.0"
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread"] }
 
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.61.2", features = [
+    "Win32_Foundation",
+    "Win32_System_SystemInformation",
+    "Win32_System_Threading",
+] }
+
+

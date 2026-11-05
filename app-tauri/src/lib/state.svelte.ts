@@ -219,6 +219,7 @@ class AppState {
             docEl.classList.add('light');
             docEl.classList.remove('dark');
         }
+        theme.syncWindowVibrancy(resolved);
     }
 
     /* ---------- User Preferences Persistence ---------- */

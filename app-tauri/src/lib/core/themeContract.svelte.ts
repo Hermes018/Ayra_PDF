@@ -64,9 +64,19 @@ export class GlobalThemeContract {
         for (const key of Object.keys(table) as TokenName[]) root.style.setProperty(key, table[key]);
         root.style.setProperty('--motion-duration', this.reducedMotion ? '0ms' : table['--motion-duration']);
         root.dataset.theme = this.resolved;
+        this.syncWindowVibrancy(this.resolved);
       });
     });
     return () => { dark.removeEventListener('change', onDark); motion.removeEventListener('change', onMotion); stop(); };
+  }
+
+  /** Phase W2: Synchronize Windows 11/10 DWM Mica/Acrylic window vibrancy with active theme. */
+  syncWindowVibrancy(themeName?: string): void {
+    if (typeof window === 'undefined') return;
+    const targetTheme = themeName ?? this.resolved;
+    import('@tauri-apps/api/core')
+      .then(({ invoke }) => invoke('set_window_vibrancy_theme', { theme: targetTheme }))
+      .catch(() => {});
   }
 }
 export const theme = new GlobalThemeContract();

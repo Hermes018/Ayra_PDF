@@ -20,11 +20,13 @@
     onNotice?: (msg: string) => void;
   } = $props();
 
-  let activeTab = $state<'ledger' | 'library'>('ledger');
+  let activeTab = $state<'ledger' | 'library' | 'workspace'>('ledger');
   let filterQuery = $state<string>('');
   let filterKind = $state<'all' | 'annotations' | 'measurements'>('all');
   let sortBy = $state<'page' | 'type'>('page');
   let newLibraryTitle = $state<string>('Custom Markup Stamp');
+  let docTagsInput = $state<string>('structural, rev-2');
+  let docFolderInput = $state<string>('Project Blueprints');
 
   // Signature draw points for Draw mode
   let sigDrawPoints = $state<Array<{ x: number; y: number; p: number }>>([]);
@@ -45,6 +47,7 @@
     const rows: LedgerEntry[] = [];
     if (filterKind === 'all' || filterKind === 'annotations') {
       for (const s of ink.completedStrokes) {
+        if (!inserts.isStrokeVisibleForAuthorFilter(s)) continue;
         rows.push({
           id: s.id,
           category: 'annotation',
@@ -170,7 +173,18 @@
             inserts.loadMarkupLibraryFromBackend();
           }}
         >
-          Markup Library ({inserts.markupLibrary.length})
+          Vault ({inserts.markupLibrary.length})
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          class:active={activeTab === 'workspace'}
+          onclick={() => {
+            activeTab = 'workspace';
+            inserts.loadWorkspaceDocuments();
+          }}
+        >
+          Docs ({inserts.workspaceDocs.length})
         </button>
       </div>
       <button
@@ -204,12 +218,50 @@
           </select>
           <select
             class="ledger-select"
+            bind:value={inserts.authorFilter}
+            aria-label="Filter by Author"
+          >
+            <option value="ALL">Author: All</option>
+            {#each inserts.getAvailableAuthors() as authorName}
+              <option value={authorName}>{authorName}</option>
+            {/each}
+          </select>
+          <select
+            class="ledger-select"
             bind:value={sortBy}
             aria-label="Sort Ledger By"
           >
             <option value="page">Sort: Page</option>
             <option value="type">Sort: Tool</option>
           </select>
+        </div>
+        <div class="ledger-filter-row">
+          <button
+            type="button"
+            class="ledger-action-btn"
+            onclick={() => {
+              const converted = inserts.convertSelectedInkToText();
+              if (converted) {
+                onNotice?.(`Converted ink to editable text: "${converted.text}"`);
+              } else {
+                onNotice?.('Draw or select a freehand ink stroke first.');
+              }
+            }}
+            title="Convert selected handwritten ink strokes to editable text box (8.10)"
+          >
+            Ink → Text
+          </button>
+          <button
+            type="button"
+            class="ledger-action-btn"
+            onclick={async () => {
+              const regions = await inserts.detectTablesAndFields(activePdfPath, 0);
+              onNotice?.(`Detected ${regions.length} table/form regions on page.`);
+            }}
+            title="Auto-detect tables and fillable form fields on page (8.12)"
+          >
+            Auto-Detect Tables
+          </button>
         </div>
       </div>
 
@@ -263,7 +315,7 @@
           Paste to Pages...
         </button>
       </footer>
-    {:else}
+    {:else if activeTab === 'library'}
       <!-- Reusable Markup Library Vault -->
       <div class="library-controls">
         <input
@@ -299,6 +351,78 @@
             >
               Stamp
             </button>
+          </div>
+        {/each}
+      </div>
+    {:else}
+      <!-- Workspace Document Tags, Folders, Favorites & Watch-Folder Auto-Ingest (7.10 & 8.7) -->
+      <div class="library-controls">
+        <input
+          type="text"
+          class="ledger-search"
+          placeholder="Folder name (e.g. Project Blueprints)..."
+          bind:value={docFolderInput}
+          aria-label="Workspace Document Folder"
+        />
+        <input
+          type="text"
+          class="ledger-search"
+          placeholder="Comma-separated tags (e.g. structural, rev-2)..."
+          bind:value={docTagsInput}
+          aria-label="Workspace Document Tags"
+        />
+        <button
+          type="button"
+          class="ledger-action-btn primary"
+          onclick={async () => {
+            const path = activePdfPath || 'untitled-drawing.pdf';
+            const title = path.split(/[\\/]/).pop() || path;
+            const tags = docTagsInput
+              .split(',')
+              .map((t) => t.trim())
+              .filter(Boolean);
+            await inserts.upsertWorkspaceDocument({
+              path,
+              title,
+              folder: docFolderInput.trim() || 'General',
+              tags,
+              favorite: true,
+              last_opened_ms: Date.now(),
+            });
+            onNotice?.(`Tagged & favorited "${title}" in ${docFolderInput}.`);
+          }}
+        >
+          ★ Favorite & Tag Active PDF
+        </button>
+
+        <div class="ledger-filter-row">
+          <input
+            type="text"
+            class="ledger-search"
+            placeholder="Local watch folder path..."
+            bind:value={inserts.watchFolderPath}
+            aria-label="Watch Folder Path"
+          />
+          <button
+            type="button"
+            class="ledger-action-btn"
+            onclick={async () => {
+              const found = await inserts.scanWatchFolder();
+              onNotice?.(`Watch folder scanned: ${found.length} PDFs ingested.`);
+            }}
+          >
+            Scan
+          </button>
+        </div>
+      </div>
+
+      <div class="library-list">
+        {#each inserts.workspaceDocs as doc (doc.path)}
+          <div class="library-card">
+            <div class="lib-meta">
+              <span class="lib-title">{doc.favorite ? '★ ' : ''}{doc.title}</span>
+              <span class="lib-sub">{doc.folder} • {doc.tags.join(', ')}</span>
+            </div>
           </div>
         {/each}
       </div>

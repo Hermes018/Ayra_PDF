@@ -44,6 +44,7 @@ export interface ActiveStroke {
   snapshotDataUrl?: string;
   flipH?: boolean;
   flipV?: boolean;
+  author?: string;
 }
 
 /** Distance from point p to line segment ab */

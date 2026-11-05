@@ -6,6 +6,7 @@ import {
   applyGrayscaleThresholdToRgba,
   parsePageRangeSpec,
   buildOfflineWavBytes,
+  recognizeHandwritingStrokesToText,
 } from './insertEngine.svelte';
 import { ink } from './inkEngine.svelte';
 import { measureEngine } from './measureEngine.svelte';
@@ -108,5 +109,52 @@ describe('Phase D6 — Insert Suite, LaTeX, Signatures, Audio Notes, Markup Libr
     const csvRows = await inserts.exportTakeoffCsv('/tmp/test-takeoff.csv');
     expect(csvRows.length).toBe(1);
     expect(csvRows[0].raw_pt).toBeCloseTo(144, 1);
+  });
+
+  it('verifies Phase D6.1 final 5 offline features (7.10, 8.4, 8.7, 8.10, 8.12)', async () => {
+    // 1. 8.4 Shared annotation visibility / author filtering
+    inserts.activeAuthor = 'Architect A';
+    const s1 = inserts.stampQuickInsert('insert.note', 100, 100, 0, 'Note by A');
+    inserts.activeAuthor = 'Engineer B';
+    const s2 = inserts.stampQuickInsert('insert.note', 140, 140, 0, 'Note by B');
+    expect(inserts.getAvailableAuthors()).toContain('Architect A');
+    expect(inserts.getAvailableAuthors()).toContain('Engineer B');
+    inserts.authorFilter = 'Architect A';
+    expect(inserts.isStrokeVisibleForAuthorFilter(s1)).toBe(true);
+    expect(inserts.isStrokeVisibleForAuthorFilter(s2)).toBe(false);
+    inserts.authorFilter = 'ALL';
+
+    // 2. 8.10 Handwriting recognition (ink-to-text)
+    ink.startStroke(50, 50, 0.7, 'pen.a');
+    ink.addPoint(50, 95, 0.7);
+    const drawn = ink.endStroke();
+    expect(drawn).not.toBeNull();
+    selection.selectedIds = [drawn!.id];
+    const recognized = recognizeHandwritingStrokesToText([drawn!]);
+    expect(recognized).toContain('Ink Note:');
+    const converted = inserts.convertSelectedInkToText([drawn!]);
+    expect(converted?.tool).toBe('insert.textBox');
+    expect(converted?.text).toContain('Ink Note:');
+
+    // 3. 7.10 Workspace document tags, folders & favorites
+    const docs = await inserts.upsertWorkspaceDocument({
+      path: '/tmp/structural-plan.pdf',
+      title: 'structural-plan.pdf',
+      folder: 'Structural Set',
+      tags: ['foundation', 'rev-3'],
+      favorite: true,
+      last_opened_ms: 1700000100000,
+    });
+    expect(docs.some((d) => d.title === 'structural-plan.pdf' && d.favorite)).toBe(true);
+
+    // 4. 8.7 Watch-folder auto-ingest
+    const scanned = await inserts.scanWatchFolder('/tmp/watch-ingest');
+    expect(Array.isArray(scanned)).toBe(true);
+
+    // 5. 8.12 Auto table & form field detection
+    const regions = await inserts.detectTablesAndFields(null, 0);
+    expect(regions.length).toBeGreaterThanOrEqual(2);
+    expect(regions.some((r) => r.kind === 'table')).toBe(true);
+    expect(regions.some((r) => r.kind === 'form-field')).toBe(true);
   });
 });

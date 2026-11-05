@@ -11,6 +11,8 @@ localpdf-studio-protocol/
 ├── Cargo.toml                                  # Workspace root manifest
 ├── deny.toml                                   # Supply chain & license policies (MIT / Apache-2.0 only)
 ├── rust-toolchain.toml                         # Pinned Rust toolchain (1.85.0)
+├── .github/workflows/                          # Cross-platform CI/CD pipelines
+│   └── release-windows.yml                     # Windows MSVC (NSIS/MSI) & Linux RPM release workflow
 │
 ├── app-tauri/                                  # Tauri v2 Desktop & Svelte 5 Frontend
 │   ├── Cargo.toml                              # Tauri backend crate manifest
