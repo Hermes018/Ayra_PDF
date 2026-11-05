@@ -38,6 +38,8 @@
   import HatchDefs from '$lib/components/studio/HatchDefs.svelte';
   import MeasureOverlay from '$lib/components/studio/MeasureOverlay.svelte';
   import CalibrationModal from '$lib/components/studio/CalibrationModal.svelte';
+  import AnnotationLedger from '$lib/components/studio/AnnotationLedger.svelte';
+  import { inserts, type PageOverlayTemplate } from '$lib/core/insertEngine.svelte';
 
   let { viewId = 'main-canvas' } = $props<{ viewId?: string }>();
 
@@ -818,6 +820,26 @@
       return;
     }
 
+    // Phase D6 Insert Suite (LaTeX, Signature, Audio Note Modals + Callout / Stamp / Image Quick Stamp)
+    if (
+      activeTool === 'insert.latex' ||
+      activeTool === 'insert.signature' ||
+      activeTool === 'insert.audio'
+    ) {
+      inserts.openInsertModalForTool(activeTool, worldPt.x, worldPt.y, pageIndex);
+      return;
+    }
+
+    if (
+      activeTool === 'callout.single' ||
+      activeTool === 'callout.multi' ||
+      activeTool === 'insert.stamp' ||
+      activeTool === 'insert.image'
+    ) {
+      inserts.stampQuickInsert(activeTool, worldPt.x, worldPt.y, pageIndex);
+      return;
+    }
+
     // Structural Edit Mode or Inline Text Box tool
     if (
       editMode === 'structural' ||
@@ -1265,6 +1287,29 @@
           Commit Redactions
         </button>
       {/if}
+      <select
+        class="hud-overlay-select"
+        value={inserts.pageOverlay}
+        onchange={(e) => {
+          inserts.pageOverlay = (e.target as HTMLSelectElement).value as PageOverlayTemplate;
+        }}
+        aria-label="Page Background Overlay Template"
+        title="Non-destructive Page Background Overlay (Engineering Grid, Isometric, Ruled)"
+      >
+        <option value="none">BG: None</option>
+        <option value="engineering-grid">BG: Eng Grid</option>
+        <option value="isometric-grid">BG: Isometric</option>
+        <option value="ruled-paper">BG: Ruled</option>
+      </select>
+      <button
+        type="button"
+        class="hud-action-btn"
+        class:primary-btn={inserts.ledgerOpen}
+        onclick={() => inserts.toggleLedger()}
+        title="Open Annotation History, Markup Library & Quantity Takeoff CSV Drawer"
+      >
+        Ledger & Takeoff
+      </button>
     </div>
   </div>
 
@@ -1310,6 +1355,16 @@
       <button
         type="button"
         class="sel-btn"
+        onclick={() => {
+          inserts.pastePagesModalOpen = true;
+        }}
+        title="Multi-Page Advanced Paste (All, Even, Odd, Range)"
+      >
+        Paste to Pages...
+      </button>
+      <button
+        type="button"
+        class="sel-btn"
         class:active={selection.formatPainterActive}
         onclick={() => selection.copyStyleFromSelected()}
         title="Format Painter: Copy Style & Click Target Object"
@@ -1336,6 +1391,85 @@
 
         <div class="page-render-surface">
           <canvas class="page-pdf-canvas" bind:this={pageCanvases[index]}></canvas>
+          {#if inserts.pageOverlay !== 'none'}
+            <svg
+              class="page-template-overlay"
+              viewBox="0 0 {page.widthPt * PT_TO_CSS} {page.heightPt * PT_TO_CSS}"
+              preserveAspectRatio="none"
+              aria-label="Page Background Overlay ({inserts.pageOverlay})"
+            >
+              <defs>
+                {#if inserts.pageOverlay === 'engineering-grid'}
+                  <pattern
+                    id="tpl-eng-{index}"
+                    width="24"
+                    height="24"
+                    patternUnits="userSpaceOnUse"
+                  >
+                    <path
+                      d="M 24 0 L 0 0 0 24"
+                      fill="none"
+                      stroke="var(--canvas-grid-minor)"
+                      stroke-width="0.7"
+                    />
+                  </pattern>
+                  <pattern
+                    id="tpl-eng-major-{index}"
+                    width="120"
+                    height="120"
+                    patternUnits="userSpaceOnUse"
+                  >
+                    <rect width="120" height="120" fill="url(\x23tpl-eng-{index})" />
+                    <path
+                      d="M 120 0 L 0 0 0 120"
+                      fill="none"
+                      stroke="var(--canvas-grid-major)"
+                      stroke-width="1.2"
+                    />
+                  </pattern>
+                {:else if inserts.pageOverlay === 'isometric-grid'}
+                  <pattern
+                    id="tpl-iso-{index}"
+                    width="48"
+                    height="27.71"
+                    patternUnits="userSpaceOnUse"
+                  >
+                    <path
+                      d="M 0 0 L 48 27.71 M 48 0 L 0 27.71 M 24 0 L 24 27.71"
+                      fill="none"
+                      stroke="var(--canvas-grid-major)"
+                      stroke-width="0.75"
+                    />
+                  </pattern>
+                {:else if inserts.pageOverlay === 'ruled-paper'}
+                  <pattern
+                    id="tpl-ruled-{index}"
+                    width="100"
+                    height="28"
+                    patternUnits="userSpaceOnUse"
+                  >
+                    <line
+                      x1="0"
+                      y1="27"
+                      x2="100"
+                      y2="27"
+                      stroke="var(--canvas-grid-major)"
+                      stroke-width="0.9"
+                    />
+                  </pattern>
+                {/if}
+              </defs>
+              <rect
+                width="100%"
+                height="100%"
+                fill={inserts.pageOverlay === 'engineering-grid'
+                  ? `url(\x23tpl-eng-major-${index})`
+                  : inserts.pageOverlay === 'isometric-grid'
+                    ? `url(\x23tpl-iso-${index})`
+                    : `url(\x23tpl-ruled-${index})`}
+              />
+            </svg>
+          {/if}
         </div>
       </div>
     {/each}
@@ -1453,28 +1587,53 @@
             stroke-width={Math.max(1.5, stroke.widthPt)}
             opacity={stroke.opacity}
           />
-        {:else if (stroke.tool === 'insert.text' || stroke.tool === 'insert.textBox' || stroke.tool === 'insert.note') && stroke.text}
+        {:else if (stroke.tool === 'insert.text' || stroke.tool === 'insert.textBox' || stroke.tool === 'insert.note' || stroke.tool === 'insert.latex' || stroke.tool === 'insert.signature' || stroke.tool === 'insert.audio' || stroke.tool === 'insert.stamp' || stroke.tool === 'insert.image' || stroke.tool === 'callout.single' || stroke.tool === 'callout.multi') && (stroke.text || stroke.snapshotDataUrl)}
           <g>
-            <rect
-              x={bbox.minX}
-              y={bbox.minY}
-              width={bbox.width}
-              height={bbox.height}
-              fill="var(--glass-bg)"
-              stroke={stroke.color}
-              stroke-width="1"
-              stroke-dasharray="3 2"
-              rx="4"
-            />
-            <text
-              x={bbox.minX + 8}
-              y={bbox.minY + (stroke.fontSize ?? 14) + 6}
-              fill={stroke.color}
-              font-size="{stroke.fontSize ?? 14}px"
-              font-family="Inter, sans-serif"
-            >
-              {stroke.text}
-            </text>
+            {#if stroke.tool === 'callout.single' || stroke.tool === 'callout.multi'}
+              <path
+                d={generatePolylineSvgPath(stroke.points, false)}
+                fill="none"
+                stroke={stroke.color}
+                stroke-width={stroke.widthPt}
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            {/if}
+            {#if stroke.snapshotDataUrl}
+              <image
+                href={stroke.snapshotDataUrl}
+                x={bbox.minX}
+                y={bbox.minY}
+                width={bbox.width}
+                height={bbox.height}
+                preserveAspectRatio="xMidYMid meet"
+              />
+            {:else}
+              <rect
+                x={bbox.minX}
+                y={bbox.minY}
+                width={bbox.width}
+                height={bbox.height}
+                fill="var(--glass-bg)"
+                stroke={stroke.color}
+                stroke-width={stroke.tool === 'insert.stamp' ? 2.2 : 1.2}
+                stroke-dasharray={stroke.tool === 'insert.stamp' || stroke.tool === 'insert.latex' ? undefined : '3 2'}
+                rx="4"
+              />
+            {/if}
+            {#if stroke.text}
+              <text
+                x={bbox.minX + 8}
+                y={bbox.minY + (stroke.fontSize ?? 14) + 6}
+                fill={stroke.color}
+                font-size="{stroke.fontSize ?? 14}px"
+                font-weight={stroke.tool === 'insert.stamp' ? '700' : '500'}
+                font-style={stroke.tool === 'insert.signature' || stroke.tool === 'insert.latex' ? 'italic' : 'normal'}
+                font-family="Inter, sans-serif"
+              >
+                {stroke.text}
+              </text>
+            {/if}
           </g>
         {:else if (stroke.tool === 'select.snapshot' || stroke.tool === 'snapshot') && stroke.snapshotDataUrl}
           <g
@@ -1689,6 +1848,15 @@
   <!-- Phase D5 Page Scale Calibration Modal -->
   <CalibrationModal onSaveScales={savePageScalesToSidecar} />
 
+  <!-- Phase D6 Annotation History, Quantity Takeoff CSV, Markup Library & Insert Suite Modals -->
+  <AnnotationLedger
+    activePdfPath={loadedFilePath ?? appState.currentFile}
+    totalPages={viewport.pages.length}
+    onNotice={(msg) => {
+      statusNotice = msg;
+    }}
+  />
+
   <!-- Inline Rich Text Box / Structural PDF Text Block Editor Overlay -->
   {#if shapes.editingTextBox}
     <div
@@ -1875,6 +2043,27 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
+  }
+
+  .page-template-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0.72;
+  }
+
+  .hud-overlay-select {
+    background: var(--canvas-selection);
+    color: var(--glass-text);
+    border: 1px solid var(--glass-border);
+    border-radius: 9999px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
   }
 
   /* Frosted Glass HUD Controls */

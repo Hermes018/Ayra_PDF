@@ -87,6 +87,24 @@
 
   let showMeasureControls = $derived(isMeasureTool(tools.currentToolId));
 
+  let showInsertControls = $derived(
+    tools.currentToolId.startsWith('insert.') ||
+      tools.currentToolId.startsWith('callout.') ||
+      tools.currentToolId === 'text.review'
+  );
+
+  const INSERT_TOOLS: { id: ToolId; label: string }[] = [
+    { id: 'insert.textBox', label: 'Text Box' },
+    { id: 'insert.note', label: 'Sticky Note' },
+    { id: 'callout.single', label: 'Callout' },
+    { id: 'callout.multi', label: 'Multi-Callout' },
+    { id: 'insert.latex', label: 'LaTeX Math' },
+    { id: 'insert.signature', label: 'Signature' },
+    { id: 'insert.audio', label: 'Audio Note' },
+    { id: 'insert.stamp', label: 'Stamp' },
+    { id: 'insert.image', label: 'Image' },
+  ];
+
   let activePageScale = $derived(measureEngine.getScaleForPage(0));
 
   let takeoffSummaryText = $derived.by(() => {
@@ -424,6 +442,24 @@
         <span class="takeoff-summary-badge" title="Quantity Takeoff Totals">
           Σ {takeoffSummaryText}
         </span>
+      </div>
+    {/if}
+
+    <!-- Phase D6 Insert Suite Sub-Tool Switcher -->
+    {#if showInsertControls}
+      <div class="pill-divider"></div>
+      <div class="pill-section insert-controls-section" aria-label="Insert and Callout Suite">
+        <select
+          class="hatch-select"
+          value={tools.currentToolId}
+          onchange={(e) => tools.selectTool((e.target as HTMLSelectElement).value as ToolId)}
+          aria-label="Select Insert or Callout Tool"
+          title="Insert / Callout Mode"
+        >
+          {#each INSERT_TOOLS as it}
+            <option value={it.id}>{it.label}</option>
+          {/each}
+        </select>
       </div>
     {/if}
   {:else if tools.supportsEraserMode}

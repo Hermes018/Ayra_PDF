@@ -125,3 +125,10 @@ This log records user acceptance testing (UAT) defects, root cause diagnoses, an
    - Verified `endpoint` (square), `midpoint` (triangle), `intersection` (`X`), `perpendicular` (`∟`), and `grid` indicators use CSS variables `--snap-indicator-*` from `themeContract.svelte.ts` with zero raw hex/rgb literals.
 2. **Calibration Dialog & Digital Ruler A11y (`CalibrationModal.svelte`, `MeasureOverlay.svelte`, `PropertyPill.svelte`)**:
    - Verified ARIA roles (`role="dialog"`, `role="toolbar"`, `role="button"`) and `tabindex` on all interactive overlays (`svelte-check` 0 errors, 0 warnings).
+
+
+## [2026-11-05] Phase D6 — Complete Insert Suite, LaTeX, Signatures, Audio Notes, Markup Library & Quantity Takeoff Audit
+1. **Offline Insert Suite & Theme Token Compliance (`insertEngine.svelte.ts`, `AnnotationLedger.svelte`, `SpatialCanvas.svelte`)**:
+   - Verified `insert.latex` (`compileLatexToVector`, `svgPathToPdfOps`), `insert.signature` (`draw`, `type`, `webcam` with `applyGrayscaleThresholdToRgba`), `insert.audio` (`MediaRecorder` + PCM WAV fallback + `studio_attach_audio`), `callout.single`, `callout.multi`, `insert.note`, `insert.stamp`, `insert.image`, and non-destructive Page Background SVG templates (`engineering-grid`, `isometric-grid`, `ruled-paper`) use CSS variables from `themeContract.svelte.ts` with zero raw hex literals and zero `{@html}` usage.
+2. **Annotation Ledger, Quantity Takeoff CSV & Reusable Markup Library (`AnnotationLedger.svelte`, `studio.rs`)**:
+   - Verified `studio_export_takeoff_csv` (with RFC 4180 escaping and formula-injection guard), `studio_markup_library`, and multi-page `Paste to Pages...` (`All`, `Even`, `Odd`, `1-5`) pass all Vitest and Rust unit tests (`svelte-check` 0 errors, 0 warnings).

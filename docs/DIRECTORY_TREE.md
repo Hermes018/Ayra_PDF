@@ -42,6 +42,8 @@ localpdf-studio-protocol/
 │   │       │   ├── defaultPresets.json         # Out-of-the-box pen/highlighter presets
 │   │       │   ├── defaultShortcuts.json       # Canonical keyboard shortcut bindings
 │   │       │   ├── inkEngine.svelte.ts         # Variable-width spline ink, laser decay & eraser
+│   │       │   ├── insertAndTakeoff.test.ts    # Unit tests for Phase D6 LaTeX, signatures, audio, multi-page paste & CSV
+│   │       │   ├── insertEngine.svelte.ts      # LaTeX vector compiler, signatures, audio notes, callouts, library & takeoff
 │   │       │   ├── measureEngine.svelte.ts     # CAD scale calibration, length, area, volume, protractor & ruler
 │   │       │   ├── radialGeometry.ts           # Math for 8-wedge radial hit testing
 │   │       │   ├── radialGeometry.test.ts      # Unit tests for radial arc/wedge math
@@ -57,6 +59,7 @@ localpdf-studio-protocol/
 │   │       │   └── viewportEngine.svelte.ts    # Hardware-accelerated DOMMatrix transforms
 │   │       │
 │   │       ├── components/studio/              # Drawboard-Class Spatial Studio UI
+│   │       │   ├── AnnotationLedger.svelte     # Collapsible annotation history, takeoff CSV & markup library drawer
 │   │       │   ├── CalibrationModal.svelte     # Two-point & architectural preset page scale calibration dialog
 │   │       │   ├── DockableToolbar.svelte      # Frosted glass toolbar (snappable/floating)
 │   │       │   ├── FavoritesBar.svelte         # Pinned favorite tool presets pill

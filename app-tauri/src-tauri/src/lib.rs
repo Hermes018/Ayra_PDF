@@ -701,7 +701,10 @@ pub fn run() {
             commands::studio::studio_edit_pdf_text_block,
             commands::studio::studio_extract_snap_geometry,
             commands::studio::studio_save_page_scales,
-            commands::studio::studio_load_page_scales
+            commands::studio::studio_load_page_scales,
+            commands::studio::studio_attach_audio,
+            commands::studio::studio_export_takeoff_csv,
+            commands::studio::studio_markup_library
         ])
         .setup(|app| {
             // Forward job events to the Tauri frontend as structured events

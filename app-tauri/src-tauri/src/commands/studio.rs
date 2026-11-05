@@ -468,7 +468,17 @@ pub fn studio_save_annotations(
                 let cloud = kind == "cloud" || kind == "shape.cloud";
                 Some(Shape::Polygon { vertices, cloud })
             }
-            "text" | "insert.text" | "insert.textBox" => {
+            "text"
+            | "insert.text"
+            | "insert.textBox"
+            | "insert.note"
+            | "insert.latex"
+            | "insert.signature"
+            | "insert.audio"
+            | "insert.stamp"
+            | "insert.image"
+            | "callout.single"
+            | "callout.multi" => {
                 let font_size = annot.font_size.unwrap_or(12.0).clamp(6.0, 96.0);
                 Some(Shape::TextBox { rect, font_size })
             }
@@ -931,6 +941,306 @@ pub fn studio_edit_pdf_text_block(
     })
 }
 
+/// Phase D6 Quantity Takeoff CSV Record (`studio_export_takeoff_csv`).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MeasurementRecord {
+    #[serde(default)]
+    pub id: String,
+    pub page_index: u32,
+    pub measurement_type: String,
+    pub raw_pt: f64,
+    pub calibrated_value: f64,
+    pub unit: String,
+    pub color: String,
+    #[serde(default)]
+    pub label: Option<String>,
+}
+
+/// Phase D6 Reusable Markup Library Item (`studio_markup_library`).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MarkupLibraryItemDto {
+    pub id: String,
+    pub title: String,
+    pub category: String,
+    pub tool_id: String,
+    pub svg_path: String,
+    pub color_token: String,
+    pub stroke_width: f64,
+    #[serde(default)]
+    pub latex_source: Option<String>,
+    #[serde(default)]
+    pub text_label: Option<String>,
+    #[serde(default)]
+    pub data_url: Option<String>,
+    pub created_at_ms: u64,
+}
+
+fn get_markup_library_path() -> PathBuf {
+    if let Ok(custom_dir) = std::env::var("LPDF_STUDIO_CONFIG_DIR") {
+        let dir = PathBuf::from(custom_dir);
+        let _ = fs::create_dir_all(&dir);
+        return dir.join("studio_markup_library.json");
+    }
+    if let Some(proj_dirs) = ProjectDirs::from("", "", "localpdf") {
+        let config_dir = proj_dirs.config_dir();
+        let _ = fs::create_dir_all(config_dir);
+        config_dir.join("studio_markup_library.json")
+    } else {
+        PathBuf::from("studio_markup_library.json")
+    }
+}
+
+/// Escape an arbitrary string for RFC 4180 CSV with spreadsheet formula-injection protection.
+fn csv_field(s: &str) -> String {
+    let trimmed = s.trim_start();
+    let needs_prefix = trimmed.starts_with('=')
+        || trimmed.starts_with('+')
+        || trimmed.starts_with('-')
+        || trimmed.starts_with('@');
+    let escaped = s.replace('"', "\"\"");
+    if needs_prefix {
+        format!("\"'{}'\"", escaped)
+    } else {
+        format!("\"{}\"", escaped)
+    }
+}
+
+/// Phase D6 Audio Notes & Embeds: embeds WebM/WAV audio bytes as a PDF `/Sound` / `/FileAttachment`
+/// stream and stamps an audio note marker on `page_index` at `(x_pt, y_pt)`.
+#[tauri::command]
+pub fn studio_attach_audio(
+    input_path: String,
+    output_path: String,
+    page_index: u32,
+    x_pt: f64,
+    y_pt: f64,
+    audio_bytes: Vec<u8>,
+) -> Result<StudioSaveResult, String> {
+    if audio_bytes.is_empty() {
+        return Err("Audio payload cannot be empty".to_string());
+    }
+
+    let in_path = PathBuf::from(&input_path);
+    let out_path = PathBuf::from(&output_path);
+
+    let raw_bytes = fs::read(&in_path)
+        .map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
+    let doc_name = in_path
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .to_string();
+
+    let mut session = Session::new();
+    let doc_id = session
+        .open(
+            doc_name,
+            Some(input_path.clone()),
+            Arc::new(raw_bytes),
+            None,
+        )
+        .map_err(|e| format!("Failed to open PDF in pdfcraft session: {}", e))?;
+
+    let page_total = session
+        .get(doc_id)
+        .map(|d| d.info.pages.len())
+        .unwrap_or(1)
+        .max(1);
+    let page = (page_index as usize).min(page_total.saturating_sub(1));
+
+    // Detect WAV vs WebM header for MIME metadata
+    let is_wav = audio_bytes.len() >= 4 && &audio_bytes[0..4] == b"RIFF";
+    let ext = if is_wav { "wav" } else { "webm" };
+    let mime = if is_wav { "audio/wav" } else { "audio/webm" };
+    let attachment_name = format!(
+        "studio-audio-p{}-{}-{}.{}",
+        page + 1,
+        x_pt.round() as i64,
+        y_pt.round() as i64,
+        ext
+    );
+
+    session
+        .apply(
+            doc_id,
+            Edit::AddAttachment {
+                name: attachment_name.clone(),
+                bytes: audio_bytes.clone(),
+                description: Some(format!(
+                    "LocalPDF Studio Audio Note (Page {}, {:.1}pt, {:.1}pt)",
+                    page + 1,
+                    x_pt,
+                    y_pt
+                )),
+                mime: Some(mime.to_string()),
+            },
+        )
+        .map_err(|e| format!("Failed to embed audio stream into PDF: {}", e))?;
+
+    // Place a visual sound pin annotation at `(x_pt, y_pt)` referencing the embedded audio stream
+    let pin_rect = normalize_rect([x_pt - 12.0, y_pt - 12.0, x_pt + 84.0, y_pt + 16.0]);
+    let sound_annot = NewAnnotation {
+        page,
+        shape: Shape::TextBox {
+            rect: pin_rect,
+            font_size: 10.0,
+        },
+        style: Style {
+            color: [0.05, 0.58, 0.53],
+            opacity: 0.95,
+            width: 1.5,
+            fill: Some([0.80, 0.98, 0.95]),
+        },
+        contents: format!(
+            "[Audio Note: {} ({} bytes)]",
+            attachment_name,
+            audio_bytes.len()
+        ),
+        author: "LocalPDF Studio Audio".to_string(),
+    };
+
+    session
+        .apply(doc_id, Edit::AddAnnotation(sound_annot))
+        .map_err(|e| format!("Failed to attach audio pin annotation: {}", e))?;
+
+    let pdf_bytes = session
+        .save_bytes(doc_id)
+        .map_err(|e| format!("Failed to serialize PDF with embedded audio: {}", e))?;
+
+    atomic_write(&out_path, &pdf_bytes)
+        .map_err(|e| format!("Failed to atomically write output PDF: {}", e))?;
+
+    let page_count = verify_written_pdf(&out_path)?;
+
+    Ok(StudioSaveResult {
+        output_path,
+        saved_count: 1,
+        flattened: false,
+        page_count,
+    })
+}
+
+/// Phase D6 Quantity Takeoff Export: writes a clean RFC 4180 CSV spreadsheet of all measurements
+/// (Page, Type, Raw Pt, Calibrated Value, Unit, Color, Label) plus per-unit summary totals.
+#[tauri::command]
+pub fn studio_export_takeoff_csv(
+    measurements: Vec<MeasurementRecord>,
+    output_path: String,
+) -> Result<(), String> {
+    let out_path = PathBuf::from(&output_path);
+    let mut csv_out = String::with_capacity(measurements.len() * 96 + 256);
+
+    csv_out.push_str(
+        "\"ID\",\"Page\",\"Type\",\"Raw Pt\",\"Calibrated Value\",\"Unit\",\"Color\",\"Label\"\r\n",
+    );
+
+    let mut unit_totals: std::collections::BTreeMap<(String, String), f64> =
+        std::collections::BTreeMap::new();
+
+    for (idx, m) in measurements.iter().enumerate() {
+        let row_id = if m.id.trim().is_empty() {
+            format!("M-{:03}", idx + 1)
+        } else {
+            m.id.clone()
+        };
+        let label = m.label.as_deref().unwrap_or("");
+        let line = format!(
+            "{},{},{},{:.2},{:.4},{},{},{}\r\n",
+            csv_field(&row_id),
+            m.page_index + 1,
+            csv_field(&m.measurement_type),
+            m.raw_pt,
+            m.calibrated_value,
+            csv_field(&m.unit),
+            csv_field(&m.color),
+            csv_field(label),
+        );
+        csv_out.push_str(&line);
+
+        if m.calibrated_value.is_finite() {
+            let key = (m.measurement_type.clone(), m.unit.clone());
+            let entry = unit_totals.entry(key).or_insert(0.0);
+            *entry += m.calibrated_value;
+        }
+    }
+
+    // Append summary section for construction quantity takeoff
+    if !unit_totals.is_empty() {
+        csv_out.push_str("\r\n\"SUMMARY\",\"\",\"Type\",\"\",\"Total Calibrated\",\"Unit\",\"\",\"\"\r\n");
+        for ((mtype, unit), total) in unit_totals {
+            let summary_line = format!(
+                "\"TOTAL\",\"\",{},\"\",{:.4},{},\"\",\"\"\r\n",
+                csv_field(&mtype),
+                total,
+                csv_field(&unit)
+            );
+            csv_out.push_str(&summary_line);
+        }
+    }
+
+    atomic_write(&out_path, csv_out.as_bytes())
+        .map_err(|e| format!("Failed to atomically write takeoff CSV {:?}: {}", out_path, e))
+}
+
+/// Phase D6 Reusable Markup Library Vault (`studio_markup_library`).
+/// Supports actions: `"list"` / `"load"`, `"save"` / `"add"`, `"delete"`, `"clear"`.
+#[tauri::command]
+pub fn studio_markup_library(action: String, payload: Option<String>) -> Result<String, String> {
+    let lib_path = get_markup_library_path();
+    let mut items: Vec<MarkupLibraryItemDto> = if lib_path.exists() {
+        let raw = fs::read_to_string(&lib_path)
+            .map_err(|e| format!("Failed to read markup library {:?}: {}", lib_path, e))?;
+        serde_json::from_str::<Vec<MarkupLibraryItemDto>>(&raw).unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+
+    match action.as_str() {
+        "list" | "load" => serde_json::to_string(&items)
+            .map_err(|e| format!("Failed to serialize markup library: {}", e)),
+        "save" | "add" => {
+            let raw_payload =
+                payload.ok_or_else(|| "Missing payload for studio_markup_library save".to_string())?;
+            if let Ok(single_item) = serde_json::from_str::<MarkupLibraryItemDto>(&raw_payload) {
+                items.retain(|existing| existing.id != single_item.id);
+                items.push(single_item);
+            } else if let Ok(batch_items) =
+                serde_json::from_str::<Vec<MarkupLibraryItemDto>>(&raw_payload)
+            {
+                items = batch_items;
+            } else {
+                return Err("Invalid JSON payload for studio_markup_library".to_string());
+            }
+            let bytes = serde_json::to_vec_pretty(&items)
+                .map_err(|e| format!("Failed to serialize markup library: {}", e))?;
+            atomic_write(&lib_path, &bytes)
+                .map_err(|e| format!("Failed to atomically save markup library: {}", e))?;
+            serde_json::to_string(&items)
+                .map_err(|e| format!("Failed to serialize updated markup library: {}", e))
+        }
+        "delete" => {
+            let target_id = payload
+                .ok_or_else(|| "Missing item id for studio_markup_library delete".to_string())?;
+            items.retain(|item| item.id != target_id);
+            let bytes = serde_json::to_vec_pretty(&items)
+                .map_err(|e| format!("Failed to serialize markup library: {}", e))?;
+            atomic_write(&lib_path, &bytes)
+                .map_err(|e| format!("Failed to atomically save markup library: {}", e))?;
+            serde_json::to_string(&items)
+                .map_err(|e| format!("Failed to serialize updated markup library: {}", e))
+        }
+        "clear" => {
+            items.clear();
+            let bytes = serde_json::to_vec_pretty(&items)
+                .map_err(|e| format!("Failed to serialize empty markup library: {}", e))?;
+            atomic_write(&lib_path, &bytes)
+                .map_err(|e| format!("Failed to atomically clear markup library: {}", e))?;
+            Ok("[]".to_string())
+        }
+        other => Err(format!("Unsupported studio_markup_library action '{}'", other)),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1078,6 +1388,87 @@ startxref\n\
         let save_info = res.unwrap();
         assert_eq!(save_info.page_count, 1);
         assert!(output_pdf.exists());
+
+        let _ = fs::remove_dir_all(&tmp_dir);
+    }
+
+    #[test]
+    fn test_studio_d6_audio_takeoff_csv_and_markup_library() {
+        let tmp_dir =
+            std::env::temp_dir().join(format!("lpdf_studio_d6_{}", std::process::id()));
+        let _ = fs::create_dir_all(&tmp_dir);
+        std::env::set_var("LPDF_STUDIO_CONFIG_DIR", &tmp_dir);
+
+        let input_pdf = tmp_dir.join("input_d6.pdf");
+        let output_audio_pdf = tmp_dir.join("output_audio_d6.pdf");
+        let csv_path = tmp_dir.join("takeoff_d6.csv");
+        create_sample_pdf(&input_pdf);
+
+        // 1. Audio attachment test (minimal RIFF WAV header + samples)
+        let fake_wav = b"RIFF$\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00D\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00".to_vec();
+        let audio_res = studio_attach_audio(
+            input_pdf.to_string_lossy().to_string(),
+            output_audio_pdf.to_string_lossy().to_string(),
+            0,
+            144.0,
+            520.0,
+            fake_wav,
+        );
+        assert!(audio_res.is_ok(), "audio attach failed: {:?}", audio_res);
+        assert_eq!(audio_res.unwrap().page_count, 1);
+
+        // 2. Quantity Takeoff CSV export test (including formula injection guard)
+        let records = vec![
+            MeasurementRecord {
+                id: "M-001".to_string(),
+                page_index: 0,
+                measurement_type: "measure.distance".to_string(),
+                raw_pt: 144.0,
+                calibrated_value: 2.0,
+                unit: "m".to_string(),
+                color: "var(--measure-line)".to_string(),
+                label: Some("=SUM(A1:A2)".to_string()),
+            },
+            MeasurementRecord {
+                id: "M-002".to_string(),
+                page_index: 0,
+                measurement_type: "measure.distance".to_string(),
+                raw_pt: 216.0,
+                calibrated_value: 3.0,
+                unit: "m".to_string(),
+                color: "var(--measure-line)".to_string(),
+                label: Some("North Wall".to_string()),
+            },
+        ];
+        let csv_res = studio_export_takeoff_csv(records, csv_path.to_string_lossy().to_string());
+        assert!(csv_res.is_ok(), "csv export failed: {:?}", csv_res);
+        let csv_content = fs::read_to_string(&csv_path).unwrap();
+        assert!(csv_content.contains("\"ID\",\"Page\",\"Type\""));
+        assert!(csv_content.contains("\"'=SUM(A1:A2)'\""));
+        assert!(csv_content.contains("\"TOTAL\",\"\",\"measure.distance\",\"\",5.0000,\"m\""));
+
+        // 3. Markup Library roundtrip test
+        let item = MarkupLibraryItemDto {
+            id: "lib-item-1".to_string(),
+            title: "Structural Approval Stamp".to_string(),
+            category: "Stamps".to_string(),
+            tool_id: "insert.stamp".to_string(),
+            svg_path: "M 0 0 L 100 0 L 100 40 L 0 40 Z".to_string(),
+            color_token: "--accent".to_string(),
+            stroke_width: 2.0,
+            latex_source: None,
+            text_label: Some("APPROVED".to_string()),
+            data_url: None,
+            created_at_ms: 1700000000000,
+        };
+        let payload = serde_json::to_string(&item).unwrap();
+        let save_lib = studio_markup_library("save".to_string(), Some(payload));
+        assert!(save_lib.is_ok());
+        let list_lib = studio_markup_library("list".to_string(), None).unwrap();
+        assert!(list_lib.contains("Structural Approval Stamp"));
+
+        let del_lib = studio_markup_library("delete".to_string(), Some("lib-item-1".to_string())).unwrap();
+        assert_eq!(del_lib.trim(), "[]");
 
         let _ = fs::remove_dir_all(&tmp_dir);
     }
