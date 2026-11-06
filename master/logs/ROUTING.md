@@ -56,4 +56,7 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 11:20 | review+verify | BUG-046 | sonnet/medium | ok | | PASS, minor → BUG-047 |
 | 2026-11-06 11:24 | review+verify+visual | sweep g7 | sonnet/medium | ok | | PASS code; visual not done (screens wiped) |
 | 2026-11-06 11:24 | merge-verify | g7 password dialog (security) + flow 2 | opus/high | fail | | autocomplete=off dropped (security regression); flow 2 PASS |
-| 2026-11-06 11:26 | fixes-build | g7 fix round (autocomplete, audio close, reshoot) | sonnet/medium | running | | |
+| 2026-11-06 11:26 | fixes-build | g7 fix round (autocomplete, audio close, reshoot) | sonnet/medium | ok | | |
+| 2026-11-06 11:30 | merge-verify | g7 password recheck (read-only) | opus/high | ok | | PASS |
+| 2026-11-06 11:30 | review+gate+visual | g7 fix round | sonnet/medium | ok | | GREEN; ledger visual minors → g8 |
+| 2026-11-06 11:30 | fixes-build | sweep group 8 (SpatialCanvas chrome + ledger visual + signature labels) | sonnet/medium | running | | |

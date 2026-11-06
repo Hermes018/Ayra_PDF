@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 11:16 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 11:30 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -10,10 +10,10 @@ Updated 2026-11-06 11:16 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 ## Worktrees
 | Worktree | HEAD | State |
 |---|---|---|
-| main | ef3ed13 (tags sweep-g6-green … ui-library-green, …) | lead |
+| main | 388f396 (tags sweep-g7-green, release-bug046-green, …) | lead |
 | wt/engines | 9919398 + CP3 uncommitted | PARKED; target dir deleted (owner 08:50) — rebuild needed before CP3 tests |
-| wt/fixes | ef3ed13 | RUNNING (sonnet/med): sweep g7 AnnotationLedger + password dialog → ui/Dialog top layer (security path → Opus-high check); then g8 SpatialCanvas chrome, g9 PropertyPill; ETA ~15:30 |
-| wt/release | main | RUNNING (sonnet/med): BUG-046 flow 7 matcher false-fail (P1); then idle until Sat AM packaging |
+| wt/fixes | 388f396 | RUNNING (sonnet/med): ledger visual fixes (dark contrast, clipped select, wrap) → sweep g8 SpatialCanvas chrome + signature labels/flow 7 selectors; then g9 PropertyPill |
+| wt/release | daa2bb4 (merged) | idle until Sat AM packaging (D); follow-ups BUG-041/047/048 |
 | android | 644caf3 | paused until Sun |
 
 ## P0 (BUGS.md)
