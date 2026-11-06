@@ -93,6 +93,9 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
+    height: var(--control-height-lg);
+    max-width: calc(100% - var(--space-8));
+    overflow: hidden;
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-pill);
     background: var(--surface-dialog);
@@ -101,6 +104,7 @@
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
     color: var(--glass-text);
+    box-sizing: border-box;
   }
 
   .fav-title {
@@ -110,12 +114,15 @@
     letter-spacing: 0.05em;
     opacity: 0.65;
     padding-right: var(--space-1);
+    flex-shrink: 0;
   }
 
   .fav-items {
     display: flex;
     align-items: center;
     gap: var(--space-1);
+    overflow-x: auto;
+    overflow-y: hidden;
   }
 
   :global(.fav-btn) {

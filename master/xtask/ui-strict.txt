@@ -57,3 +57,12 @@ lib/views/BatchQueueView.svelte
 lib/views/SettingsView.svelte
 lib/views/AboutView.svelte
 lib/i18n/faq/*.json
+# Argon sweep (AT-10 through AT-14)
+lib/components/ui/ColorSwatch.svelte
+lib/gallery/Gallery.svelte
+lib/components/studio/StudioIcon.svelte
+lib/components/studio/HatchDefs.svelte
+routes/+page.svelte
+routes/gallery/+page.svelte
+routes/+layout.svelte
+lib/components/For.svelte

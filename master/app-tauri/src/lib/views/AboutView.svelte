@@ -95,6 +95,7 @@
         {:else if licenceLoading}
             <p class="note" role="status">Loading the licence notices…</p>
         {:else if licenceText !== null}
+            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
             <div class="licence-region" role="region" aria-label="Licence notices" tabindex="0">
                 <pre>{licenceText}</pre>
             </div>

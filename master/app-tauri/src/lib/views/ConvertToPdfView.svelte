@@ -682,8 +682,6 @@
     }
 
     .tile-desc,
-    .toggle-subtitle,
-    .radio-desc,
     .help-text {
         color: var(--text-secondary);
         font-size: var(--font-size-footnote);

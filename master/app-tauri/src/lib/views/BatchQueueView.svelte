@@ -607,35 +607,6 @@
         gap: var(--space-4);
     }
 
-    .empty-state {
-        background: var(--glass-bg-surface);
-        -webkit-backdrop-filter: var(--glass-blur);
-        backdrop-filter: var(--glass-blur);
-        border: 2px dashed var(--glass-border-subtle);
-        border-radius: var(--radius-lg, 14px);
-        padding: calc(var(--space-8) * 2) var(--space-8);
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: var(--space-4);
-    }
-
-    .empty-icon {
-        font-size: calc(var(--font-size-title1) * 2.5);
-    }
-
-    .empty-state h3 {
-        margin: 0;
-        font-size: var(--font-size-title1);
-        color: var(--text-primary);
-    }
-
-    .empty-state p {
-        margin: 0;
-        color: var(--text-secondary);
-        max-width: 450px;
-    }
 
     /* Job Card */
     .job-card {

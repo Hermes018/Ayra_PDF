@@ -2710,8 +2710,6 @@
     padding: 0 var(--space-1);
   }
 
-  .sel-btn:hover,
-
   .inline-text-editor {
     position: absolute;
     top: 120px;

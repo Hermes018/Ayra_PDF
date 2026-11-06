@@ -587,11 +587,18 @@ fn run_feature_map_check() {
 ///   `docs/UI_CONSISTENCY_INVENTORY.md`.
 fn run_studio_audit(args: &[String]) {
     let strict = args.iter().any(|a| a == "--strict");
-    let strict_file = args
-        .iter()
-        .position(|a| a == "--strict")
-        .and_then(|i| args.get(i + 1))
-        .filter(|a| !a.starts_with("--"));
+    let default_strict = "xtask/ui-strict.txt".to_string();
+    let strict_file = if strict {
+        Some(
+            args.iter()
+                .position(|a| a == "--strict")
+                .and_then(|i| args.get(i + 1))
+                .filter(|a| !a.starts_with("--"))
+                .unwrap_or(&default_strict),
+        )
+    } else {
+        None
+    };
     let list = args.iter().any(|a| a == "--list");
     let write_inventory = args.iter().any(|a| a == "--write-inventory");
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();

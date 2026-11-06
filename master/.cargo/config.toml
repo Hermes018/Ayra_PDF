@@ -1,17 +1,16 @@
 [alias]
 xtask = "run --package xtask --"
 
-# Build speed (PROMPT_LOG #18). sccache = local disk cache only (no remote backend), shared by all
-# worktrees; it caches dependency crates (workspace crates stay incremental). mold = Linux linker.
-[build]
-rustc-wrapper = "sccache"
+# Build speed (PROMPT_LOG #18). Optional if sccache/mold are installed on the host.
+# [build]
+# rustc-wrapper = "sccache"
 
 [env]
 SCCACHE_CACHE_SIZE = "10G"
 SCCACHE_DIR = { value = "/home/rakib/.cache/sccache", force = false }
 
-[target.x86_64-unknown-linux-gnu]
-rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+# [target.x86_64-unknown-linux-gnu]
+# rustflags = ["-C", "link-arg=-fuse-ld=mold"]
 
 # ADR-018 R3: storytold craft sources are vendored, so builds of them are offline and reproducible.
 # Only these git sources are replaced; crates.io still comes from the registry cache.
