@@ -66,5 +66,6 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 11:49 | review+gate | g8 fix delta | sonnet/medium | ok | | PASS, GREEN |
 | 2026-11-06 11:49 | fixes-build | sweep group 9 PropertyPill (+ undo wiring test) | sonnet/medium | ok | | last main-flow screen; app total 808 in 14 non-main files |
 | 2026-11-06 11:54 | review+gate+visual | sweep g9 | sonnet/medium | ok | | PASS, GREEN |
-| 2026-11-06 11:54 | release-build | BUG-048 per-run screenshots | sonnet/medium (agent file) | running | | |
+| 2026-11-06 11:54 | release-build | BUG-048 per-run screenshots | sonnet/medium (agent file) | ok | | |
 | 2026-11-06 11:55 | fixes-build | sweep rest (non-main-flow screens) group 10+ | sonnet/medium | running | | hard stop 16:45 |
+| 2026-11-06 11:57 | review+verify | BUG-048 | sonnet/medium | ok | | PASS, minors → BUG-049 |

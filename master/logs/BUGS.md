@@ -208,5 +208,8 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 ## BUG-047 [P2] Flow 7 ink matcher accepts an /AP/N stream that draws nothing — status: open
 - ink_match.py:30-35 accepts any /AP/N with /Length > 0, so a `q Q` stream (~4 bytes) with a valid /Rect and no /InkList would pass. Fix: require a path operator (m/l/c/re) or a minimum length. Only page 0 is read (wrong-page strokes fail, which is correct today). Found by: BUG-046 review. Owner: release
 
-## BUG-048 [P2] E2E screenshots go to a shared folder (e2e/out/screens) that a later run can wipe — status: open
+## BUG-048 [P2] E2E screenshots go to a shared folder (e2e/out/screens) that a later run can wipe — status: fixed (tag release-bug048-green)
 - All sweep screenshots in wt/fixes disappeared after a later flow 2 run, so a reviewer found none for group 7. Fix: write screenshots into the per-run folder (out/runs/<run-id>/screens) and never clear the shared folder; print the path. Found by: lead (g7 visual review). Owner: release
+
+## BUG-049 [P2] Per-run screenshot layout: small races — status: open
+- common.py:365-372: the one-time move of an old real out/screens leaves the path briefly missing; two overlapping first runs could race. run.py:111: run ids have 1 s resolution, so identical runs in the same second share a folder. Only one E2E run happens at a time today. Found by: BUG-048 review. Owner: release
