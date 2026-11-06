@@ -71,4 +71,6 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 11:57 | review+verify | BUG-048 | sonnet/medium | ok | | PASS, minors → BUG-049 |
 | 2026-11-06 12:05 | review+gate+visual | sweep g10 | sonnet/medium | fail | | fake demo highlight (major), tabs a11y, opacity 0 |
 | 2026-11-06 12:05 | merge-verify (read-only) | g10 Optimize/Edit output paths | opus/high | ok | | runner OK; found pre-existing P0 output==input |
-| 2026-11-06 12:07 | fixes-build | g10 fix round (P0 BUG-050 first) | sonnet/medium | running | | |
+| 2026-11-06 12:07 | fixes-build | g10 fix round (P0 BUG-050 first) | sonnet/medium | ok | | backend guard + collision-safe names app-wide |
+| 2026-11-06 12:21 | merge-verify | BUG-050 + g10 (backend guard, security naming, flows 2,8,10,11) | opus/high | running | | sole runner |
+| 2026-11-06 12:21 | reviewer (read-only) | g10 fix round frontend + visual | sonnet/medium | running | | |
