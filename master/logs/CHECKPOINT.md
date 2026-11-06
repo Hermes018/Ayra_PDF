@@ -1,30 +1,26 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 16:12 Asia/Dhaka by the lead (Sonnet 5.5). If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 ~16:45 Asia/Dhaka by the lead (Sonnet 5.5) at the OWNER'S BUDGET STOP. Trust STATE_AUTO.md for git/process facts.
 
-## Sprint
-- **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59; **rc1 target Sat 18:00**. Feature freeze. Scope: docs/PROTOTYPE_SCOPE.md.
-- **Owner plan (15:14):** 1) 12-flow rerun + real-PDF run, fix P0s test-first (save/redaction → Opus-high verifier); 2) packaging to **v0.2.0-rc1** (0.2.0, LTO, AppImage+rpm+deb, SHA256SUMS, clean install, network-isolated run, About/licences, README/QUICKSTART/KNOWN_ISSUES/CHANGELOG; RC verifier Opus high; tag) → tell owner **READY TO PUSH**; 3) P1s touching save/redaction/files/engines/harness; 4) ARGON_TASKS.md (done, "READY TO PUSH" given at 77b50dd). Stop new work at weekly 92 %.
-- **Budget (owner 16:2x): weekly 78 %, ≈1 %/h, within budget.** Burn > 1 %/h → only (a) E2E/P0, (b) owner findings, (c) packaging, (d) RC. One builder at a time; one combined review+verify pass except RC and save/redaction (Opus high). Don't poll the soak. Lead is Sonnet 5.5; `.claude/agents` roles routed per call.
-- **Owner decisions:** BUG-061 (soak memory): if it still grows with tabs closed → P0 only if > ~1 GB in a normal 2 h session, else P1 + KNOWN_ISSUES, never an RC blocker. BUG-062 counted-retry policy approved. LTO: measure the peak first; if fat LTO breaches the RAM budget use lto="thin" + codegen-units=1 and record it. Clean install = fresh HOME in a no-network sandbox (unshare/bwrap), method recorded in the RC notes.
+## STATE: STOPPED. No agents, builds or app instances running. Nothing pushed (the owner pushes).
+- Goal: v0.2.0-prototype, tag by Sat 2026-11-07 23:59; rc1 target Sat 18:00. **v0.2.0-rc1 is NOT built or tagged.** Weekly was 78 % (≈1 %/h) at the last report. Stop new work at 92 %.
+- The exact remaining steps, in order, with commands and acceptance checks: **master/docs/ARGON_TASKS.md section 0 (A to E)**. Low-risk items: sections 1-4 of the same file. Strong-review list: section 2.
 
-## Worktrees
-| Worktree | State |
-|---|---|
-| main (7987e45) | all code merged through the UI sweep (tag ui-sweep-complete) + ARGON_TASKS. Untracked LOCALPDF_MASTER_HANDOVER.md in the repo root is NOT ours: left alone |
-| wt/fixes (warm target) | RUNNING (sonnet/med): BUG-062 counted retry + BUG-061 diagnostic (soak closes tabs; 20 min runs + idle; harness only) |
-| wt/release | RUNNING (sonnet/med): packaging B1 — measure LTO peak, build AppImage/deb/rpm → ~/LocalPDF-rc1/, SHA256SUMS, SBOM, KI-006 offline proof (no app instance) |
-| wt/engines | parked (CP3 uncommitted, target deleted); android paused |
+## Branches (all local)
+| Branch | Head | State |
+|---|---|---|
+| main | e1d2203 | VERIFIED code: everything through packaging prep A (tag packaging-prep-a-green); the E2E rerun, UI sweep and all fixes are merged. Commits after 7987e45 are docs and logs only. Untracked `LOCALPDF_MASTER_HANDOVER.md` in the root is not ours: untouched |
+| wt/fixes | db28b40 | **WIP, unverified:** BUG-062 counted retry (`e2e/soak_retry.py`, `test_soak_retry.py`, edits to `flow12_soak.py`, `run.py`) and the BUG-061 close-tabs change. The soak diagnostic NEVER ran |
+| wt/release | 53aebd9 | **WIP, unverified:** `master/tools/sbom_npm.py` (**UNREVIEWED: Claude must review before any SBOM ships**) + a partial `RAM_BUDGET.md` edit. LTO measurement was cancelled mid-compile. No packages built; `~/LocalPDF-rc1/` does not exist |
+| wt/engines | 13b9bb3 | **WIP, unverified:** CP3 (BUG-029/030 streaming guard moved to `lpdf-engine-pdfcraft/src/guard.rs`, `path_exists` returns Result). Compiles; tests never run. Deletion listed in `.allowed-deletions` |
+| track/android | 644caf3 | paused (ADR-019 draft) |
 
-## E2E on main 83fd51c (golden run 20261106T144532)
-- PASS: 2–11, 14–23, 13 (needs VITE_LPDF_GALLERY=1 build, binary e2e/out/bin/localpdf-studio-gallery). BLOCKED: 1 (no rpm until packaging). FAIL: 12 soak.
-- **BUG-061** soak memory +13 MB/min (745→1,460 MB, 1.9×; FDs flat): diagnostic queued (close tabs per iteration, short soaks, idle check). **BUG-062** driver disconnect: implement counted retry (release).
-- **BUG-063 closed — driver drift** (stale post-sweep labels in the dogfood driver; app fine: markup 8/8, redaction DF-04, Edit Text DF-01 PASS with current selectors; step 3 text coverage = known P2 BUG-038).
+## E2E on main 83fd51c
+2-11, 13 (needs `VITE_LPDF_GALLERY=1` build), 14-23 PASS. 1 BLOCKED until packages exist. 12 soak FAIL: BUG-061 (+13 MB/min, probably the loop never closing tabs; unproven) and BUG-062 (driver disconnect). Real-PDF rerun: BUG-063 closed as driver drift (stale labels); the text-coverage step stays a known P2 (BUG-038).
 
-## Next actions
-1. BUG-062 retry + BUG-061 diagnostic (release job below).
-2. Then the full 1 h soak on the RC package (in B2).
-3. Packaging: B1 building (above); then B2 = no-network clean-install + network-isolated run + docs (README, QUICKSTART, CHANGELOG, KNOWN_ISSUES) → RC verifier (Opus high) → tag v0.2.0-rc1 → READY TO PUSH.
+## Next action (first thing)
+Claude reviews `tools/sbom_npm.py` and the three WIP branches, then follows ARGON_TASKS.md section 0: A (soak) → B (LTO measure + packages) → C (install tests, network-isolated run, docs) → D (verify.sh, 12 flows, fresh Opus-high verifier, tag v0.2.0-rc1) → **READY TO PUSH**.
 
 ## Standing rules
-- RAM: training first; 2 HEAVY slots (docs/RAM_BUDGET.md). Disk 38.5 GiB free; run.sh refuses < 15 GB; delete only regenerable targets of idle worktrees.
-- Unpushed: everything since origin/main 2fa8927 (the owner pushes). Known issues: KNOWN_ISSUES.md KI-001..008. Bugs: logs/BUGS.md.
+- Training RAM first (2 HEAVY slots, docs/RAM_BUDGET.md). Disk 30 GiB free; run.sh refuses < 15 GB. No container runtime: clean install = fresh HOME in `unshare -rn`.
+- Owner rules: BUG-061 is a P0 only if memory would grow > ~1 GB in a normal 2 h session, else P1 + KNOWN_ISSUES. LTO fallback `lto="thin"` + `codegen-units=1` if fat LTO breaches the RAM cap. Save/redaction/settings changes get an Opus-high verifier.
+- Docs: KNOWN_ISSUES.md KI-001..008 (KI-005 is stale). Bugs: logs/BUGS.md.
