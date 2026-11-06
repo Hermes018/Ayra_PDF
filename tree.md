@@ -506,8 +506,10 @@ master/
 │   │   └── flow20_sweep_ledger.py                            # E2E smoke (sweep): annotation ledger and its dialogs, light/dark screenshots at 2 sizes, no console errors
 │   ├── .gitignore                                            # Ignores e2e/out/ (reports, screenshots, copied binary)
 │   ├── common.py                                             # Ground-truth helpers (poppler/qpdf/hashes), process sampling, isolation (private D-Bus/XDG)
+│   ├── ink_match.py                                          # Matcher for content-less annotations (drawn signature): one /Ink or /Stamp with non-empty InkList or AP, /Rect on page and covering the drawn stroke, enough points (BUG-046)
 │   ├── pkg_smoke.py                                          # Clean-user install smoke test for rpm/deb/AppImage (flows 1-2 against the packaged binary, fresh HOME)
 │   ├── run.py                                                # Runner: python3 master/e2e/run.py [--flows] [--binary] [--soak-minutes]
+│   ├── test_flow07_matcher.py                                # Self-test for ink_match.py: 9 synthetic cases (empty, duplicate, off-page, too few points fail; real strokes pass)
 │   ├── test_leak_check.py                                    # Tests (BUG-031): post-run leak check catches leaked harness/dbus processes; nothing left after bus stop or SIGTERM
 │   └── wd.py                                                 # Minimal W3C WebDriver client (urllib)
 ├── fuzz/                                                     # cargo-fuzz workspace (libFuzzer targets)
