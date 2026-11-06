@@ -1606,3 +1606,6 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - pkg_smoke (fresh HOME): flow 1 PASS, flow 2 PASS; contents check OK (GUI, CLI, worker, .desktop with PDF MimeType, icon); no leftovers.
 - With the earlier main run: flows 1, 2, 4, 6, 11 all PASS (the tier's E2E subset).
 - Disk: 19 GB free (< 22 GB owner threshold): target dirs to revisit with the owner.
+## [2026-11-06 09:51] Automated real-world dogfood
+- Automated real-world dogfood: 8 files (DF-01..08), all public by heuristic. Open 8/8 (1.3–3.7 s), render 8/8, text 1 PASS / 7 PARTIAL, forms N/A, markup 8/8, redaction (DF-04) sentence gone + qpdf ok, large-file flag DF-03 2.9 GB RSS. No P0s. Originals' SHA-256 unchanged 8/8. Corpus candidates DF-01..08 await owner approval.
+- BUG-031 fixed on wt/release (in review).

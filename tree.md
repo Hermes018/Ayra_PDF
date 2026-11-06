@@ -443,6 +443,7 @@ master/
 │   ├── APPLE_HIG_GLASS_SPEC.md                               # "Frosted glass" visual design system spec (all platforms)
 │   ├── ARCHITECTURE_AND_COMPLIANCE_AUDIT.md                  # Audit of studio phases D1/D2 against the plan
 │   ├── CRAFT_ECOSYSTEM_SURVEY.md                             # Survey of the 10 storytold *craft repos: licences, deps, unsafe, what to port/adopt (ADR-018 PROPOSED)
+│   ├── DESIGN_LANGUAGE.md                                    # App-wide design language: principles, tokens (themeContract + NEW), shared ui/ components (create vs reuse), patterns, wording guide, sweep "done" rules
 │   ├── DRAWBOARD_FEATURE_CHECKLIST.md                        # 119-item studio feature checklist with status (checked by `cargo xtask feature-map-check`)
 │   ├── DRAWBOARD_STUDIO_MASTER_PLAN.md                       # Plan for the spatial Studio editor (phases D1–D6)
 │   ├── ENGINE_REUSE_MATRIX.md                                # ADR-018 R1 matrix: each hand-written engine function → craft candidate → ADOPT/ADOPT-WASM/KEEP-PORT/REJECT
@@ -471,6 +472,7 @@ master/
 │   ├── common.py                                             # Ground-truth helpers (poppler/qpdf/hashes), process sampling, isolation (private D-Bus/XDG)
 │   ├── pkg_smoke.py                                          # Clean-user install smoke test for rpm/deb/AppImage (flows 1-2 against the packaged binary, fresh HOME)
 │   ├── run.py                                                # Runner: python3 master/e2e/run.py [--flows] [--binary] [--soak-minutes]
+│   ├── test_leak_check.py                                    # Tests (BUG-031): post-run leak check catches leaked harness/dbus processes; nothing left after bus stop or SIGTERM
 │   └── wd.py                                                 # Minimal W3C WebDriver client (urllib)
 ├── fuzz/                                                     # cargo-fuzz workspace (libFuzzer targets)
 │   ├── fuzz_targets/                                         # Fuzz entry points
@@ -493,6 +495,7 @@ master/
 │   ├── CHECKPOINT_HISTORY.md                                 # Older CHECKPOINT snapshots (append-only), moved out to keep CHECKPOINT short
 │   ├── DECISIONS_ADR.md                                      # Decision register (all ADRs, including the ID erratum)
 │   ├── DOGFOOD.md                                            # Owner's hands-on testing notes; lead triages into BUGS.md
+│   ├── DOGFOOD_AUTO.md                                       # Automated real-world PDF dogfood results (files by anonymised DF-xx ID only; mapping kept outside the repo)
 │   ├── ERROR_LOG.md                                          # Errors, root causes and fixes
 │   ├── FLAKY.md                                              # Tests that passed only on rerun, with cause and action
 │   ├── PLAN_LOG.md                                           # Plans written before each phase

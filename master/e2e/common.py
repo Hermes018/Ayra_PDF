@@ -274,9 +274,10 @@ class PrivateBus:
         conf = os.path.join(d, "bus.conf")
         with open(conf, "w") as f:
             f.write(_BUS_CONF.format(dir=d))
+        # Own session/process group (BUG-031): stop() kills the whole group, never just the leader.
         self.proc = subprocess.Popen([exe, f"--config-file={conf}", "--nofork",
                                       "--print-address=1"], stdout=subprocess.PIPE,
-                                     stderr=subprocess.DEVNULL, text=True)
+                                     stderr=subprocess.DEVNULL, text=True, start_new_session=True)
         ready, _, _ = select.select([self.proc.stdout], [], [], 10)
         self.address = self.proc.stdout.readline().strip() if ready else None
         if not self.address:
@@ -284,14 +285,68 @@ class PrivateBus:
             raise RuntimeError("private dbus-daemon did not print its address within 10 s")
 
     def stop(self):
-        if self.proc and self.proc.poll() is None:
-            self.proc.terminate()
-            try:
-                self.proc.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                self.proc.kill()
+        if self.proc:
+            for sig in (signal.SIGTERM, signal.SIGKILL):
+                try:
+                    os.killpg(self.proc.pid, sig)  # the group leader is the daemon (setsid)
+                except OSError:
+                    pass
+                try:
+                    self.proc.wait(timeout=3)
+                    break
+                except subprocess.TimeoutExpired:
+                    continue
         if getattr(self, "dir", None):
             shutil.rmtree(self.dir, ignore_errors=True)
+
+
+# ---------------------------------------------------------------------------------------------
+# Harness-process sweep (BUG-031): every process of a run carries LPDF_E2E_RUN=<id> in its
+# environment (inherited from run.py) and the private bus is identified by its /tmp/lpdf-bus-*
+# config path. After a run, anything still alive fails the run.
+# ---------------------------------------------------------------------------------------------
+RUN_ENV = "LPDF_E2E_RUN"
+
+
+def harness_procs(marker, bus_dir=None):
+    """PIDs (excluding this process, zombies) whose environ holds RUN_ENV=<marker> or whose
+    command line names `bus_dir`."""
+    me, found = os.getpid(), []
+    needle = f"{RUN_ENV}={marker}".encode()
+    for d in os.listdir("/proc"):
+        if not d.isdigit() or int(d) == me:
+            continue
+        pid = int(d)
+        try:
+            if _is_zombie(pid):
+                continue
+            with open(f"/proc/{pid}/environ", "rb") as f:
+                hit = needle in f.read().split(b"\0")
+            if not hit and bus_dir:
+                with open(f"/proc/{pid}/cmdline", "rb") as f:
+                    hit = bus_dir.encode() in f.read()
+            if hit:
+                found.append(pid)
+        except OSError:
+            continue
+    return found
+
+
+def kill_harness(marker, bus_dir=None, wait=5):
+    """SIGKILL every harness process; returns (killed, survivors)."""
+    killed = []
+    deadline = time.time() + wait
+    while True:
+        pids = harness_procs(marker, bus_dir)
+        if not pids or time.time() > deadline:
+            return killed, pids
+        for p in pids:
+            try:
+                os.kill(p, signal.SIGKILL)
+                killed.append(p)
+            except OSError:
+                pass
+        time.sleep(0.2)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -314,6 +369,10 @@ class Context:
 
     def close(self):
         self.bus.stop()
+
+    def post_run_check(self, marker):
+        """Fail-the-run check: returns (leaked_pids, survivors) after killing any leftovers."""
+        return kill_harness(marker, getattr(self.bus, "dir", None))
 
 
 class Flow:

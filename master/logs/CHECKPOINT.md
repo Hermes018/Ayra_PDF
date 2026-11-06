@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 08:18 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 09:52 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -10,10 +10,10 @@ Updated 2026-11-06 08:18 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 ## Worktrees
 | Worktree | HEAD | State |
 |---|---|---|
-| main | 52b7a17 (tags fixes-err007-green, fixes-p0-green, …) | lead |
-| wt/engines | 9919398 + CP3 uncommitted (BUG-029/030 + minors; compiles, tests NOT run) | PARKED (tier). NOTE: CP3 changes path_exists to Result<bool,String>; fixes must adapt when CP3 merges |
-| wt/fixes | 52b7a17 (merged) | idle; next: BUG-032/033/035 (P1) if the tier allows |
-| wt/release | 6fa23a8 WIP (follow-ups 1,2,3,5,6; unverified) | PAUSED. After restart: verify + merge; then BUG-031 (P1, process-group reap + no-leftover check). KI-006 offline AppImage proof → Saturday packaging, before RC |
+| main | 0291a99 (tags release-bug031-green, fixes-err007-green, …) | lead |
+| wt/engines | 9919398 + CP3 uncommitted | PARKED; target dir deleted (owner 08:50) — rebuild needed before CP3 tests |
+| wt/fixes | 409f10e + A2 audit + triage staged (16 files) | review+verify (sonnet/med) RUNNING → merge → C0 component library |
+| wt/release | 0291a99 (merged: WIP follow-ups + BUG-031) | idle; next: Sat AM packaging (D) incl. KI-006, .rpm |
 | android | 644caf3 | paused until Sun |
 
 ## P0 (BUGS.md)
@@ -23,6 +23,10 @@ Updated 2026-11-06 08:18 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 1. E2E flows 1, 2, 4, 6, 11 on main (running).
 2. DOGFOOD build (AppImage) for the owner.
 3. Pace check at ~09:00 (owner %); then P1s, if the tier allows.
+
+## UI consistency workstream (owner 2026-11-06 09:28; feature freeze holds)
+A inventory (done: 12 screens, no shared ui components, E2E only Organize) + A2 audit ext. (fixes, running) → B docs/DESIGN_LANGUAGE.md (Opus medium, running) → **C0 shared component library first (owner): headless Svelte 5 lib (Bits UI/Melt UI) vetted MIT/Apache + offline, our tokens; 10 base components + unit tests; dev-only gallery route (excluded from release) + E2E screenshot; decision in reuse matrix; checkpoint commit before the dependency** → C sweep main-flow screens (+ per-screen E2E smoke; ErrorState on every long-job/file-I/O screen) (Sonnet medium, strict audit, screenshots) by 17:00 → 17–18 E2E + screenshots → Sat AM D packaging (0.2.0, LTO, rpm/deb/AppImage, SBOM, offline run) → RC 18:00. Owner dogfood findings beat sweep work. If weekly > 80 % before Sat noon: stop sweep at main-flow screens, finish D, rest → UI_BACKLOG.md.
+- Weekly 66 % at 09:28 (≈0.7 %/h since 07:47): tier stays 85–92 %; owner un-paused release builder. DOGFOOD copy: ~/LocalPDF-dogfood/ (+SHA256SUMS).
 
 ## Cuts (KNOWN_ISSUES.md)
 KI-001 tab switch clears undo · KI-002 Organize intermediate file · KI-003 Labs · KI-004 split view → Labs · KI-005 no LTO, version 0.1.0 · KI-006 AppImage tools pinned, prefetch once · KI-007 no Close document.

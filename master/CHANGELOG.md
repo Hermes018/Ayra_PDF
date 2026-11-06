@@ -39,7 +39,7 @@ Markers:
 - Organize: reorder, delete and merge, checked page by page in the output (flow 10). Rotation via
   the page grid's Apply: **(pending BUG-014)**. The separate Rotate Pages tool works (flow 10).
   Page thumbnails: **(pending BUG-012)**.
-- Labs setting (off by default) for the experimental LaTeX insert and ink-to-text.
+- Labs setting (off by default) for the experimental LaTeX insert and ink-to-text (not E2E-tested).
 - Linux packages: `.rpm` (Fedora), `.deb` (Ubuntu) and a portable AppImage. Each package also ships
   the `localpdf` CLI and the `lpdf-worker` sandbox worker, and registers a `.desktop` entry that
   opens PDFs. An extracted-package smoke test passed flow 1, and flow 2 except BUG-011/018
@@ -49,7 +49,7 @@ Markers:
 - Repository layout: the shared workspace is now `master/`, and the OS folders hold packaging only
   (ADR-016).
 - Engine reuse rules (ADR-018 rev 3).
-- The Studio top bar fits narrow canvases. An empty Studio shows an "Open a PDF" state, and a cold
+- The Studio top bar fits narrow canvases (not E2E-tested). An empty Studio shows an "Open a PDF" state, and a cold
   launch takes under 3 s (flow 1).
 
 ### Fixed
