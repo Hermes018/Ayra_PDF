@@ -8,7 +8,7 @@ OUT="$ROOT/master/logs/STATE_AUTO.md"
 T() { timeout "${1}" "${@:2}" 2>/dev/null; }
 {
   echo "# STATE_AUTO — generated $(date -Is) by tools/snapshot-state.sh (facts; trust this over CHECKPOINT.md)"
-  echo "- Throttle: $(grep -m1 -o 'Throttle tier:.*' "$ROOT/master/logs/CHECKPOINT.md" 2>/dev/null || echo 'Throttle tier: (not recorded in CHECKPOINT)')"
+  echo "- Throttle: $(grep -m1 -o 'Throttle tier[^|]*' "$ROOT/master/logs/CHECKPOINT.md" 2>/dev/null || echo 'Throttle tier: (not recorded in CHECKPOINT)')"
   echo "- Routing: $(ls "$ROOT/.claude/agents" 2>/dev/null | wc -l) agent files in .claude/agents; last ROUTING rows:"
   grep '^| 20' "$ROOT/master/logs/ROUTING.md" 2>/dev/null | tail -3
   echo
