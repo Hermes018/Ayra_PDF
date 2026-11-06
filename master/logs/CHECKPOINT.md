@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 09:52 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 09:53 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -10,9 +10,9 @@ Updated 2026-11-06 09:52 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 ## Worktrees
 | Worktree | HEAD | State |
 |---|---|---|
-| main | 0291a99 (tags release-bug031-green, fixes-err007-green, …) | lead |
+| main | f68e55d (tags ui-audit-green = revert point before UI library dep, release-bug031-green, …) | lead |
 | wt/engines | 9919398 + CP3 uncommitted | PARKED; target dir deleted (owner 08:50) — rebuild needed before CP3 tests |
-| wt/fixes | 409f10e + A2 audit + triage staged (16 files) | review+verify (sonnet/med) RUNNING → merge → C0 component library |
+| wt/fixes | f68e55d | RUNNING (sonnet/med): C0 shared component library (headless lib eval, tokens unify, 10 ui/ comps, tests, gated gallery + E2E screenshots) |
 | wt/release | 0291a99 (merged: WIP follow-ups + BUG-031) | idle; next: Sat AM packaging (D) incl. KI-006, .rpm |
 | android | 644caf3 | paused until Sun |
 
