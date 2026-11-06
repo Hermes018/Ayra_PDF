@@ -86,7 +86,7 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 ## BUG-014 [P0] Organize Grid "Apply" drops rotation but reports success — status: fixed (263bb7e, tag fixes-p0-green)
 - Flow 10 (silent data loss). Found by: e2e. Reorder + delete + rotate: the rotation is lost and success is still alerted. The sidebar Rotate tool works. Owner: fixes
 
-## BUG-015 [P0] ERR-007: saved hatch outside the polygon; only 3/8 patterns distinct — status: open
+## BUG-015 [P0] ERR-007: saved hatch outside the polygon; only 3/8 patterns distinct — status: fixed (52b7a17, tag fixes-err007-green)
 - Flow 5. Found by: e2e (37/56 segments outside the concave polygon) and survey. Owner: engines (checkpoint 2: cadcraft via lpdf-geom)
 - ERR-007 fix moves to the fixes builder after the restart (throttle tier 85–92 %): licence-clean clipping port + own parametric patterns (owner 07:40).
 
@@ -153,4 +153,18 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 - No test that a single-step or failed Organize apply deletes nothing.
 - Discard during an in-flight save still opens the saved copy as a tab and leaves a stale baseline entry.
 - svelte-check a11y warning: `<form role=dialog>` at SpatialCanvas.svelte:1760.
+- Owner: fixes
+
+## BUG-035 [P1] Hatch pitch and dash lengths stretch at 45/135° — status: open
+- fill.rs:108-125 measures hatch pitch vertically (the b offset), not perpendicular to the line, and measures dash lengths along the x or y axis. Spacing and dashes stretch at 45/135°. Fix it, or document it and update the golden.
+- Found by: ERR-007 reviewer
+- Owner: fixes
+
+## BUG-036 [P2] ERR-007 test and edge leftovers — status: open
+- studio_hatch.rs ~370: the 1e17 case uses `let _ =`, so it cannot fail.
+- hatch_save_e2e.rs: the `want ⊆ drawn` check runs one way only; the trailing `let _ = Path::new` is dead code.
+- studio.rs hatch_loops: a polygon with only 2 finite points silently falls back to a bounding-box hatch, and only one loop is passed.
+- The preview pattern phase can differ from the saved PDF by up to one tile.
+- Add a clean-room statement to fill.rs and UPSTREAM_MANIFEST: generic sweep/crossings code, nothing copied from cadcraft.
+- Found by: ERR-007 reviewer
 - Owner: fixes

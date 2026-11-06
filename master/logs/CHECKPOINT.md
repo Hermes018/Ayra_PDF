@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 07:54 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 08:18 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -10,21 +10,19 @@ Updated 2026-11-06 07:54 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 ## Worktrees
 | Worktree | HEAD | State |
 |---|---|---|
-| main | 263bb7e (tags fixes-p0-green, engines-cp2b-green, release-cp2-green) | lead |
+| main | 52b7a17 (tags fixes-err007-green, fixes-p0-green, …) | lead |
 | wt/engines | 9919398 + CP3 uncommitted (BUG-029/030 + minors; compiles, tests NOT run) | PARKED (tier). NOTE: CP3 changes path_exists to Result<bool,String>; fixes must adapt when CP3 merges |
-| wt/fixes | 127e7c7 | RUNNING: ERR-007 (BUG-015) on fixes-builder (Sonnet high); then BUG-032/033 |
+| wt/fixes | 52b7a17 (merged) | idle; next: BUG-032/033/035 (P1) if the tier allows |
 | wt/release | 6fa23a8 WIP (follow-ups 1,2,3,5,6; unverified) | PAUSED. After restart: verify + merge; then BUG-031 (P1, process-group reap + no-leftover check). KI-006 offline AppImage proof → Saturday packaging, before RC |
 | android | 644caf3 | paused until Sun |
 
 ## P0 (BUGS.md)
-- Merged 263bb7e: BUG-011..014, 016..022 fixed. Only BUG-015 (ERR-007) is open.
-- **BUG-015 / ERR-007:** NOT fixed in the shipped build. Cadcraft is merged behind a switch (off); the switch patch is ready (wt/engines logs/runs/hatch-default-switch.patch). **Unblocked (owner 07:40):** licence-clean clip port + own parametric patterns, engines round after the restart.
-- **P1 open:** 021, 022 (fixes, done in wt/fixes), 028 (fixes), 029, 030 (engines). BUG-010, 023, 024 fixed (merged).
+- All P0s fixed on main (52b7a17). BUG-015/ERR-007 fixed with our own clipping + patterns.
 
 ## Next 3 actions
-1. Owner restarts the session. Then: check the restore hook, spawn status-snapshot to prove routing is live, check and log the Haiku agents' actual effort.
-2. ERR-007 on the fixes builder (Sonnet high), with a merge-verifier on Opus high because the output is saved geometry.
-3. E2E flows 1, 2, 4, 6 and 11 on main, then the DOGFOOD build. Release WIP 6fa23a8: verify + merge, and BUG-031.
+1. E2E flows 1, 2, 4, 6, 11 on main (running).
+2. DOGFOOD build (AppImage) for the owner.
+3. Pace check at ~09:00 (owner %); then P1s, if the tier allows.
 
 ## Cuts (KNOWN_ISSUES.md)
 KI-001 tab switch clears undo · KI-002 Organize intermediate file · KI-003 Labs · KI-004 split view → Labs · KI-005 no LTO, version 0.1.0 · KI-006 AppImage tools pinned, prefetch once · KI-007 no Close document.

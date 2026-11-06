@@ -16,4 +16,7 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 07:54 | reviewer | fixes R5 | sonnet/medium | ok | | |
 | 2026-11-06 07:54 | merge-verify | fixes R5 (save path) | opus/high | ok | | |
 | 2026-11-06 08:00 | status-snapshot | routing proof after restart | haiku (agent file) | ok | | requestedModel=claude-haiku-5-5 ×4; effort=medium (inherited from ~/.claude/settings.json effortLevel; no effort field in file) |
-| 2026-11-06 08:02 | fixes-build | ERR-007 / BUG-015 clipping + own patterns | sonnet/high (agent file) | running | | |
+| 2026-11-06 08:02 | fixes-build | ERR-007 / BUG-015 clipping + own patterns | sonnet/high (agent file) | ok | | verify GREEN; own code |
+| 2026-11-06 08:15 | reviewer | ERR-007 | sonnet/medium (agent file) | ok | | |
+| 2026-11-06 08:15 | merge-verify | ERR-007 (engine + saved geometry) | opus/high (agent file) | ok | | |
+| 2026-11-06 08:18 | e2e-run | flows 1,2,4,6,11 on main | haiku/low (agent file) | running | | |

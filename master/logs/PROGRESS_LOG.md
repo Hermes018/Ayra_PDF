@@ -1593,3 +1593,6 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 
 ## [2026-11-06 07:54] Merge: fixes P0 batch — DONE
 - 263bb7e, tag fixes-p0-green. Five review rounds; R5: reviewer sonnet/medium PASS (minors), merge-verifier opus/high verify.sh GREEN (nextest 186/186, vitest 255/255); save-path checks a–e each covered by a failing-if-reverted test. Tabs kept (no single-document fallback). New: BUG-032, 033 (P1), 034 (P2).
+
+## [2026-11-06 08:18] Merge: ERR-007 / BUG-015 — DONE
+- 52b7a17, tag fixes-err007-green. Our own even-odd polygon clipping with holes, plus 9 original parametric patterns; Studio hatch is the default; cadcraft stays off. Reviewer sonnet/medium PASS with minors (BUG-035 P1, BUG-036 P2). Merge-verifier opus/high: verify.sh GREEN, nextest 202/202. An independent parse of the saved PDFs found 498 segments, 0 outside the concave L, and 9 pairwise-distinct patterns. Legacy would fail (118/207 outside). No licence-unclear crates are in the shipped tree. AR-CONC ×1/16 is an adapter display scale; upstream data is unmodified (owner rule, UPSTREAM_MANIFEST + UPGRADING 3a).
