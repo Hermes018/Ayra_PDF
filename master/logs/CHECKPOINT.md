@@ -1,11 +1,11 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 14:50 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 15:14 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
 - **Milestones:** Fri 08:00 matrix/goldens/baseline/P0 list (done); Fri 18:00 adapters merged + ERR-007 + P0 flows green + DOGFOOD build; Sat 14:00 DOGFOOD triaged; Sat 18:00 rc1; Sat 23:59 tag.
 - **Throttle tier: 85–92 % — IN EFFECT since 07:55** (owner 07:49: weekly 65 %, ≈7 %/h): lead + fixes builder only; P0s only; E2E flows 1, 2, 4, 6, 11; Opus only for the lead and the RC verifier; save-path/atomic-write/redaction changes keep the Opus-high verifier. ERR-007 (P0) goes to the fixes builder.
-- **Budget rules (owner 14:50; weekly 77 %, burn ≈ 2 %/h since 09:09, allowance ≈ 0.7 %/h to Sat 23:59):** UI sweep is closed (it finished at 14:44; the rest goes to UI_BACKLOG). Priorities only: (a) E2E 12-flow results + P0s, (b) owner DOGFOOD/real-PDF findings, (c) Sat packaging D, (d) RC verification. One builder at a time unless two P0s are independent. Reviewer + verifier as ONE combined pass, except the RC and save/redaction paths (Opus high). Don't poll the soak. Every report states weekly % and burn; **burn > 1 %/h since the last check → stop all work outside (a)–(d); (c) packaging and (d) RC verification are never paused (owner). Packaging: Sat AM, or earlier if E2E is clean with no open P0s; Sonnet medium. Opus high only for the RC verifier (+ save/redaction rule).**
+- **Plan from 15:14 (owner; lead now Sonnet 5.5; Argon, a weaker AI, takes minor work after this session):** 1) finish the 12-flow rerun + real-PDF run, fix P0s test-first (save/redaction → Opus-high verifier); 2) packaging to **v0.2.0-rc1** (0.2.0, LTO, AppImage+rpm+deb, SHA256SUMS, clean-container install, network-isolated run, About/licences, docs; RC verifier Opus high; tag) → tell owner **READY TO PUSH**; 3) P1s touching save/redaction/files/engines/harness; 4) master/docs/ARGON_TASKS.md → **READY TO PUSH**. Stop new work at weekly 92 %. Weekly 77 %, burn > 1 %/h → only (a)–(d), packaging+RC never paused. One builder at a time; one combined review+verify pass except RC and save/redaction (Opus high). Don't poll the soak.
 - **Routing:** CLAUDE.md "Model routing". `.claude/agents/` is not loaded until a session restart, so roles are routed via Agent per-call model/effort.
 
 ## Worktrees
