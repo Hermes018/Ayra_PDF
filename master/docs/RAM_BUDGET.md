@@ -77,3 +77,8 @@ When running on an 8 GiB host (`MemTotal < 12000 MB`, currently ~7.65 GiB total,
   - `VITEST_MAX_WORKERS=2`
   - `NEXTEST_TEST_THREADS=2`
 - **Zero-Waste Rules**: Never chain `cargo` and `pnpm`; never run `cargo clean`. Host auto-detection implemented dynamically in `tools/ram-budget.env`, `tools/sched.sh`, `tools/protect.sh`, and `tools/run.sh`.
+
+## Release build LTO decision 2026-11-06 (8GB Laptop Override)
+- Prior 32GB test measured whole-cgroup `memory.peak` 5,863 MiB with fat LTO.
+- On 8GB host (~3.6 GiB available), fat LTO causes swap thrashing/OOM.
+- **Decision: `[profile.release] lto = "thin"`, `codegen-units = 1` enforced.**
