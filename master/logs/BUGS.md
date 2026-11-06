@@ -183,3 +183,6 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 - No fillable, encrypted or damaged file in the 8 files, so forms (step 4) was N/A and the error-message path is untested. Need a blank public fillable form.
 - Found by: automated dogfood (DOGFOOD_AUTO.md)
 - Owner: release
+
+## BUG-040 [P2] 6 element-level Enter/Space handlers on role=button elements (local key listeners) — status: deferred (after release)
+- Dropzone ×2, AiSummarizeView ×2, PipelinesView ×1, FaqModal backdrop ×1; allowlisted in xtask/ui-px-allowlist.txt with reasons. They are activation handlers on clickable non-button elements, not app shortcuts: the shared Button component (component library batch) replaces them during the sweep, so the listeners go away instead of moving to commandEngine. Owner: fixes
