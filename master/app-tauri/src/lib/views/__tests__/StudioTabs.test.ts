@@ -1,10 +1,20 @@
 import { expect, test, vi, beforeEach, afterEach, describe } from 'vitest';
+import { tick } from 'svelte';
 import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/svelte';
 
 // BUG-016: a second document (CLI / "open with" / Open PDF) must be shown, as a tab, and switching
 // tabs must keep each document's view state and markups.
 
 const saved: string[] = [];
+// Optional gate for studio_save_annotations: lets a test hold a save in flight, then fail it.
+let saveGate: { wait: Promise<void>; release: (fail: boolean) => void } | null = null;
+function holdNextSave() {
+    let release!: (fail: boolean) => void;
+    const wait = new Promise<void>((res, rej) => {
+        release = (fail) => (fail ? rej(new Error('disk full')) : res());
+    });
+    saveGate = { wait, release };
+}
 
 vi.mock('@tauri-apps/api/core', () => ({
     invoke: vi.fn(async (cmd: string, args: any) => {
@@ -15,6 +25,11 @@ vi.mock('@tauri-apps/api/core', () => ({
             return [args.path === '/docs/a.pdf' ? 1 : 3];
         }
         if (cmd === 'studio_save_annotations') {
+            if (saveGate) {
+                const g = saveGate;
+                saveGate = null;
+                await g.wait;
+            }
             saved.push(args.outputPath);
             return { outputPath: args.outputPath, savedCount: args.annotations.length, flattened: false, pageCount: 1 };
         }
@@ -27,6 +42,7 @@ import { appState } from '$lib/state.svelte';
 import { viewport } from '$lib/core/viewportEngine.svelte';
 import { ink } from '$lib/core/inkEngine.svelte';
 import { clearDocumentSessions, isDocumentRestored } from '../studio/documentSessions';
+import { commands } from '$lib/core/commandEngine.svelte';
 
 function fakePdfjs() {
     return {
@@ -171,6 +187,39 @@ describe('Closing a tab with unsaved markups asks first (F11)', () => {
         await waitFor(() => expect(saved).toHaveLength(1));
         await waitFor(() => expect(appState.activeFiles).not.toContain('/docs/b.pdf'));
         expect(appState.activeFiles).toContain(saved[0]); // the saved copy stays open
+    });
+
+    // DATA SAFETY: Escape or a backdrop click while the Save from this dialog is running must not
+    // dismiss the dialog (the tab would otherwise close the moment the save ends, unreviewed).
+    test('while a save from the close dialog is in flight, Escape and a backdrop click keep dialog and tab; Cancel works after it fails', async () => {
+        const detach = commands.attachKeyboard(window);
+        try {
+            drawStroke(300);
+            holdNextSave();
+            const gate = saveGate!;
+            await fireEvent.click(closeBtn(1));
+            const dialog = await screen.findByTestId('close-tab-dialog');
+            await fireEvent.click(screen.getByTestId('close-tab-save')); // save now waits on the gate
+            await waitFor(() => expect(screen.getByTestId('close-tab-cancel')).toHaveAttribute('aria-disabled', 'true'));
+
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+            await tick();
+            expect(screen.getByTestId('close-tab-dialog')).toBeInTheDocument();
+            await fireEvent.click(dialog.parentElement as HTMLElement); // the backdrop
+            await tick();
+            expect(screen.getByTestId('close-tab-dialog')).toBeInTheDocument();
+            expect(appState.activeFiles).toContain('/docs/b.pdf');
+
+            gate.release(true); // the save fails
+            await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/Could not save/));
+            expect(appState.activeFiles).toContain('/docs/b.pdf');
+            await fireEvent.click(screen.getByTestId('close-tab-cancel'));
+            expect(screen.queryByTestId('close-tab-dialog')).not.toBeInTheDocument();
+            expect(appState.activeFiles).toContain('/docs/b.pdf');
+            expect(ink.completedStrokes).toHaveLength(1);
+        } finally {
+            detach();
+        }
     });
 
     test('an inactive dirty tab also asks (its markups live in the stashed session)', async () => {

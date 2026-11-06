@@ -110,6 +110,7 @@
 {#if pendingClose}
   <Dialog
     bind:open={dialogOpen}
+    variant="alert"
     title={`Close "${fileName(pendingClose)}"?`}
     onclose={onDialogClose}
     data-testid="close-tab-dialog"

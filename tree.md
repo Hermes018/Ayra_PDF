@@ -497,7 +497,8 @@ master/
 │   │   ├── flow14_sweep_organize.py                          # E2E smoke (sweep): Organize screen opens, light/dark screenshots at 2 sizes, no console errors
 │   │   ├── flow15_sweep_shell.py                             # E2E smoke (sweep): app shell (Sidebar, StatusBar, MainLayout) light/dark screenshots at 2 sizes, no console errors
 │   │   ├── flow16_sweep_overlays.py                          # E2E smoke (sweep): toasts and the FAQ dialog, light/dark screenshots at 2 sizes, no console errors
-│   │   └── flow17_sweep_studio_docs.py                       # E2E smoke (sweep): document tabs, favourites bar and split layout, light/dark screenshots at 2 sizes, no console errors
+│   │   ├── flow17_sweep_studio_docs.py                       # E2E smoke (sweep): document tabs, favourites bar and split layout, light/dark screenshots at 2 sizes, no console errors
+│   │   └── flow18_sweep_studio_panels.py                     # E2E smoke (sweep): calibration dialog and shortcut settings, light/dark screenshots at 2 sizes, no console errors
 │   ├── .gitignore                                            # Ignores e2e/out/ (reports, screenshots, copied binary)
 │   ├── common.py                                             # Ground-truth helpers (poppler/qpdf/hashes), process sampling, isolation (private D-Bus/XDG)
 │   ├── pkg_smoke.py                                          # Clean-user install smoke test for rpm/deb/AppImage (flows 1-2 against the packaged binary, fresh HOME)

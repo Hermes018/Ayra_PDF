@@ -10,8 +10,9 @@
     onclose: () => void;
     children: Snippet;
     actions?: Snippet;
-    /** 'sheet' docks to the bottom edge; 'dialog' is centred. */
-    variant?: 'dialog' | 'sheet';
+    /** 'sheet' docks to the bottom edge; 'dialog' is centred; 'alert' is a centred destructive/blocking confirm
+     * (role=alertdialog, the body is its description). */
+    variant?: 'dialog' | 'sheet' | 'alert';
   };
 
   let {
@@ -27,6 +28,8 @@
 
   const uid = $props.id();
   const titleId = `${uid}-title`;
+  const bodyId = `${uid}-body`;
+  const layout = $derived(variant === 'sheet' ? 'sheet' : 'dialog');
   let card = $state<HTMLElement | null>(null);
   let returnTo: HTMLElement | null = null;
 
@@ -91,20 +94,21 @@
 
 {#if open}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <div class="lp-backdrop lp-backdrop--{variant}" role="presentation" onclick={(e) => e.target === e.currentTarget && close()}>
+  <div class="lp-backdrop lp-backdrop--{layout}" role="presentation" onclick={(e) => e.target === e.currentTarget && close()}>
     <div
       bind:this={card}
-      class="lp-dialog lp-dialog--{variant} {klass}"
-      role="dialog"
+      class="lp-dialog lp-dialog--{layout} {klass}"
+      role={variant === 'alert' ? 'alertdialog' : 'dialog'}
       aria-modal="true"
       aria-labelledby={titleId}
+      aria-describedby={variant === 'alert' ? bodyId : undefined}
       tabindex="-1"
       data-testid={testid}
     >
       <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <span class="lp-sentinel" tabindex="0" aria-hidden="true" onfocus={wrapToLast}></span>
       <h2 id={titleId} class="lp-dialog-title">{title}</h2>
-      <div class="lp-dialog-body">{@render children()}</div>
+      <div id={bodyId} class="lp-dialog-body">{@render children()}</div>
       {#if actions}<div class="lp-dialog-actions">{@render actions()}</div>{/if}
       <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <span class="lp-sentinel" tabindex="0" aria-hidden="true" onfocus={wrapToFirst}></span>

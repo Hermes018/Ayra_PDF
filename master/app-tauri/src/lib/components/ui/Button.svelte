@@ -25,7 +25,7 @@
       selected?: boolean;
       /** Native tooltip text (use for extra detail; the accessible name still comes from the children). */
       title?: string;
-      /** Extra data-* attributes for the native button. */
+      /** Extra data-* attributes for the native button (other keys are ignored). */
       attrs?: Record<string, string>;
     };
 
@@ -49,6 +49,11 @@
     class: klass = '',
     'data-testid': testid,
   }: Props = $props();
+
+  // Only data-* (not data-testid) may pass through `attrs`, so it can never override role, aria-*, title or type.
+  const safeAttrs = $derived(
+    Object.fromEntries(Object.entries(attrs ?? {}).filter(([k]) => k.startsWith('data-') && k !== 'data-testid')),
+  );
 
   const uid = $props.id();
   const tipId = `${uid}-reason`;
@@ -78,11 +83,11 @@
     {role}
     aria-selected={role === 'tab' ? !!selected : undefined}
     {title}
-    {...attrs}
     aria-disabled={disabled || undefined}
     aria-busy={busy || undefined}
     aria-describedby={disabled ? tipId : undefined}
     data-testid={testid}
+    {...safeAttrs}
     onclick={activate}
   >
     {#if busy}
@@ -136,6 +141,7 @@
   .lp-btnwrap.is-block { display: flex; width: 100%; }
   .lp-btn.is-block { width: 100%; justify-content: flex-start; font-weight: 400; }
   .lp-btn--plain.is-block { color: var(--text-primary); }
+  .lp-btn[aria-pressed='true'],
   .lp-btn.is-current { background: var(--glass-bg-active); color: var(--accent-primary); font-weight: 600; }
 
   .lp-dots { display: inline-flex; gap: var(--space-1); }

@@ -28,3 +28,6 @@ lib/components/FaqModal.svelte
 lib/components/studio/DocumentTabs.svelte
 lib/components/studio/FavoritesBar.svelte
 lib/views/studio/SplitLayout.svelte
+# Sweep group 5: Studio panels (PropertyPill deferred, see docs/UI_BACKLOG.md)
+lib/components/studio/CalibrationModal.svelte
+lib/components/studio/ShortcutSettings.svelte

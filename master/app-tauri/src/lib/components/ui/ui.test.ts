@@ -89,6 +89,26 @@ describe('Button', () => {
     render(Button, { variant: 'plain', pressed: false, onclick: () => {}, children: text('Pen') });
     expect(screen.getByRole('button', { name: 'Pen' })).toHaveAttribute('aria-pressed', 'false');
   });
+  it('attrs cannot override role, aria-*, title, type or the test id', () => {
+    render(Button, {
+      variant: 'plain',
+      role: 'tab',
+      selected: true,
+      title: 'real title',
+      'data-testid': 'real-id',
+      attrs: { role: 'button', 'aria-selected': 'false', 'aria-disabled': 'true', 'aria-current': 'page', title: 'fake', type: 'submit', 'data-testid': 'fake-id', 'data-path': '/x' },
+      onclick: () => {},
+      children: text('Tab'),
+    });
+    const t = screen.getByRole('tab', { name: 'Tab' });
+    expect(t).toHaveAttribute('aria-selected', 'true');
+    expect(t).toHaveAttribute('title', 'real title');
+    expect(t).toHaveAttribute('data-testid', 'real-id');
+    expect(t).toHaveAttribute('type', 'button');
+    expect(t).not.toHaveAttribute('aria-disabled');
+    expect(t).not.toHaveAttribute('aria-current');
+    expect(t).toHaveAttribute('data-path', '/x'); // data-* still passes through
+  });
   it('disabled: ignores clicks, stays focusable, exposes the reason via aria-describedby', async () => {
     const onclick = vi.fn();
     render(Button, { variant: 'primary', onclick, disabled: true, disabledReason: 'Open a PDF to enable Save', children: text('Save') });
@@ -231,6 +251,19 @@ describe('Dialog', () => {
     const d = screen.getByRole('dialog', { name: 'Delete 3 pages?' });
     expect(d).toHaveAttribute('aria-modal', 'true');
     expect(d).toHaveTextContent('This removes them from the new file.');
+  });
+  it('alert variant (destructive confirm): role=alertdialog, aria-describedby points at the body, centred like dialog', () => {
+    mount({ variant: 'alert' });
+    const d = screen.getByRole('alertdialog', { name: 'Delete 3 pages?' });
+    expect(d).toHaveAttribute('aria-modal', 'true');
+    const body = document.getElementById(d.getAttribute('aria-describedby') ?? '');
+    expect(body).not.toBeNull();
+    expect(body).toHaveTextContent('This removes them from the new file.');
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+  it('plain dialog has no aria-describedby', () => {
+    mount();
+    expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-describedby');
   });
   it('renders nothing when closed', () => {
     mount({ open: false });

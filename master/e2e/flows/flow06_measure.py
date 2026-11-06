@@ -15,7 +15,7 @@ import common
 NUM = 6
 TITLE = "Measure"
 TOL = 0.005
-DIALOG = '[aria-label="Page Scale Calibration Dialog"]'
+DIALOG = '[data-testid="calibration-dialog"]'
 
 
 def _first_number(text):
@@ -46,12 +46,12 @@ def run(flow):
     if not flow.check("calibration dialog opens after a two-point drag", dlg, ""):
         app.quit()
         return
-    app.set_input(f"{DIALOG} input.modal-input", 100, 0)
+    app.set_input(f'{DIALOG} [data-testid="calibration-distance"]', 100, 0)
     unit_ok = app.s.js(f"""
         const s = [...document.querySelectorAll('{DIALOG} select')].find(s => [...s.options].some(o => o.value === 'mm'));
         if (!s) return false; s.value = 'mm'; s.dispatchEvent(new Event('change', {{bubbles: true}})); return true;
     """)
-    app.click_button("Save Calibrated Scale")
+    app.click_button("Save calibrated scale")
     time.sleep(0.3)
     closed = not app.s.js(f"return !!document.querySelector('{DIALOG}')")
     flow.check("calibration saved (100 mm over 300 px)", unit_ok and closed, f"unit set {unit_ok}, closed {closed}")
