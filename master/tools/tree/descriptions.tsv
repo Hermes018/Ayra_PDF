@@ -192,7 +192,7 @@ master/app-tauri/src-tauri/src/commands/studio.rs	Studio IPC: prefs, annotation 
 master/corpus/	Test PDFs: manifest + fetch script (the PDFs themselves are downloaded, not committed)
 master/corpus/MANIFEST	List of corpus files and what each tests
 master/corpus/SHA256SUMS	Expected hashes of corpus files
-master/corpus/fetch.sh	Downloads/generates the corpus (needs wget or curl, and qpdf for synthetic files)
+master/corpus/fetch.sh	Downloads/generates the corpus incl. scanned.pdf and encrypted.pdf (POSIX sh; needs wget/curl, qpdf, pdftoppm)
 master/crates/	Rust library/binary crates (the engine side)
 master/crates/lpdf-ai-worker/	Sandboxed local-AI worker process (JSON over stdin/stdout)
 master/crates/lpdf-ai-worker/Cargo.toml	Crate manifest
@@ -454,3 +454,28 @@ master/app-tauri/src/lib/views/__tests__/LabsGating.test.ts	Tests: Labs off by d
 master/tools/snapshot-state.sh	PreCompact hook: writes logs/STATE_AUTO.md (git/process/disk facts) in <1 s; never fails
 master/tools/restore-context.sh	SessionStart hook (compact/resume/startup): prints CHECKPOINT + STATE_AUTO back into context
 master/logs/CHECKPOINT_HISTORY.md	Older CHECKPOINT snapshots (append-only), moved out to keep CHECKPOINT short
+master/e2e/	Golden-path E2E tests (12 flows, tauri-driver/WebDriver, Python stdlib; dev only)
+master/e2e/.gitignore	Ignores e2e/out/ (reports, screenshots, copied binary)
+master/e2e/run.py	Runner: python3 master/e2e/run.py [--flows] [--binary] [--soak-minutes]
+master/e2e/wd.py	Minimal W3C WebDriver client (urllib)
+master/e2e/common.py	Ground-truth helpers (poppler/qpdf/hashes), process sampling, isolation (private D-Bus/XDG)
+master/e2e/flows/	One module per PROTOTYPE_SCOPE flow
+master/e2e/flows/__init__.py	Flow registry
+master/e2e/flows/flow01_install_launch.py	Flow 1: install + cold launch < 3 s, no console errors
+master/e2e/flows/flow02_open.py	Flow 2: open small/large/scanned/encrypted/malformed PDFs
+master/e2e/flows/flow03_navigate.py	Flow 3: pan/zoom/pinch/fit, thumbnails, multiple documents
+master/e2e/flows/flow04_ink.py	Flow 4: pen, highlighter, erasers, undo/redo
+master/e2e/flows/flow05_shapes_hatch.py	Flow 5: shapes, polygon-clipped distinct hatching, revision cloud
+master/e2e/flows/flow06_measure.py	Flow 6: calibrate, length/area/angle, ledger, CSV export
+master/e2e/flows/flow07_insert.py	Flow 7: text box, callout, note, stamp, signature
+master/e2e/flows/flow08_redact.py	Flow 8: redact and confirm removal with pdftotext/qpdf
+master/e2e/flows/flow09_edit_text.py	Flow 9: edit PDF text in place
+master/e2e/flows/flow10_organize.py	Flow 10: reorder, rotate, delete, merge pages
+master/e2e/flows/flow11_save_reopen.py	Flow 11: save new file, original untouched, reopen in app/poppler/pdf.js
+master/e2e/flows/flow12_soak.py	Flow 12: scripted soak, crash/memory/fd/temp checks
+master/logs/checkpoints/	Per-worktree builder checkpoints (each builder keeps its own current)
+master/logs/checkpoints/release.md	Release builder state: task, files, tests, next step, blockers
+master/CHANGELOG.md	Release notes for v0.2.0-prototype (draft; finalised by the lead at tag time)
+master/e2e/pkg_smoke.py	Clean-user install smoke test for rpm/deb/AppImage (flows 1-2 against the packaged binary, fresh HOME)
+ubuntu/packaging/build-appimage.sh	Builds the AppImage from master/ with the AppImage overlay (linuxdeploy fetched at build time only)
+ubuntu/packaging/tauri.appimage.conf.json	Tauri config overlay: AppImage target plus the CLI and worker binaries

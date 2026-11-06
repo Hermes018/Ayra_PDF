@@ -201,7 +201,7 @@ master/
 │   ├── vitest-setup.ts                                   # Vitest setup: jest-dom matchers and Tauri IPC mocks
 │   └── vitest.config.ts                                  # Vitest config (jsdom environment, test file globs)
 ├── corpus/                                               # Test PDFs: manifest + fetch script (the PDFs themselves are downloaded, not committed)
-│   ├── fetch.sh                                          # Downloads/generates the corpus (needs wget or curl, and qpdf for synthetic files)
+│   ├── fetch.sh                                          # Downloads/generates the corpus incl. scanned.pdf and encrypted.pdf (POSIX sh; needs wget/curl, qpdf, pdftoppm)
 │   ├── MANIFEST                                          # List of corpus files and what each tests
 │   └── SHA256SUMS                                        # Expected hashes of corpus files
 ├── crates/                                               # Rust library/binary crates (the engine side)
@@ -328,6 +328,26 @@ master/
 │   ├── PROTOTYPE_SCOPE.md                                # v0.2.0-prototype scope: 12 golden-path flows with pass criteria, corpus, triage rules, milestones
 │   ├── STUDIO_UI_UX_OVERHAUL_SPEC.md                     # Studio UI/UX overhaul spec (phases U1–U5)
 │   └── UPGRADING.md                                      # DRAFT procedure for bumping a pinned upstream engine (branch → gate → verifier → log)
+├── e2e/                                                  # Golden-path E2E tests (12 flows, tauri-driver/WebDriver, Python stdlib; dev only)
+│   ├── flows/                                            # One module per PROTOTYPE_SCOPE flow
+│   │   ├── __init__.py                                   # Flow registry
+│   │   ├── flow01_install_launch.py                      # Flow 1: install + cold launch < 3 s, no console errors
+│   │   ├── flow02_open.py                                # Flow 2: open small/large/scanned/encrypted/malformed PDFs
+│   │   ├── flow03_navigate.py                            # Flow 3: pan/zoom/pinch/fit, thumbnails, multiple documents
+│   │   ├── flow04_ink.py                                 # Flow 4: pen, highlighter, erasers, undo/redo
+│   │   ├── flow05_shapes_hatch.py                        # Flow 5: shapes, polygon-clipped distinct hatching, revision cloud
+│   │   ├── flow06_measure.py                             # Flow 6: calibrate, length/area/angle, ledger, CSV export
+│   │   ├── flow07_insert.py                              # Flow 7: text box, callout, note, stamp, signature
+│   │   ├── flow08_redact.py                              # Flow 8: redact and confirm removal with pdftotext/qpdf
+│   │   ├── flow09_edit_text.py                           # Flow 9: edit PDF text in place
+│   │   ├── flow10_organize.py                            # Flow 10: reorder, rotate, delete, merge pages
+│   │   ├── flow11_save_reopen.py                         # Flow 11: save new file, original untouched, reopen in app/poppler/pdf.js
+│   │   └── flow12_soak.py                                # Flow 12: scripted soak, crash/memory/fd/temp checks
+│   ├── .gitignore                                        # Ignores e2e/out/ (reports, screenshots, copied binary)
+│   ├── common.py                                         # Ground-truth helpers (poppler/qpdf/hashes), process sampling, isolation (private D-Bus/XDG)
+│   ├── pkg_smoke.py                                      # Clean-user install smoke test for rpm/deb/AppImage (flows 1-2 against the packaged binary, fresh HOME)
+│   ├── run.py                                            # Runner: python3 master/e2e/run.py [--flows] [--binary] [--soak-minutes]
+│   └── wd.py                                             # Minimal W3C WebDriver client (urllib)
 ├── fuzz/                                                 # cargo-fuzz workspace (libFuzzer targets)
 │   ├── fuzz_targets/                                     # Fuzz entry points
 │   │   ├── fuzz_engine_switcher.rs                       # Fuzz: engine switcher
@@ -337,6 +357,8 @@ master/
 │   ├── .gitignore                                        # Ignores fuzz corpus/artifacts
 │   └── Cargo.toml                                        # Fuzz crate manifest
 ├── logs/                                                 # Project logs (append-only, except CHECKPOINT which is overwritten)
+│   ├── checkpoints/                                      # Per-worktree builder checkpoints (each builder keeps its own current)
+│   │   └── release.md                                    # Release builder state: task, files, tests, next step, blockers
 │   ├── ADR-008-sveltekit-spa.md                          # Detail for the SvelteKit SPA exception (registered as ADR-011 in DECISIONS_ADR)
 │   ├── ADR-009-vendored-pdfjs.md                         # Detail for the vendored pdf.js exception (registered as ADR-012 in DECISIONS_ADR)
 │   ├── AGENT_ACTIVITY.md                                 # One line per agent stop (written by hooks)
@@ -421,6 +443,7 @@ master/
 ├── .allowed-deletions                                    # Paths the pre-commit hook allows to be deleted (all other deletions are blocked)
 ├── Cargo.lock                                            # Pinned versions of every Rust dependency (committed for reproducible builds)
 ├── Cargo.toml                                            # Rust workspace manifest: members, release profile, patches pointing at pdfcraft's vendored crates
+├── CHANGELOG.md                                          # Release notes for v0.2.0-prototype (draft; finalised by the lead at tag time)
 ├── deny.toml                                             # cargo-deny policy: licence allow-list (no GPL/AGPL), banned crates, advisories
 ├── master.md                                             # Map of master/ with build/dev commands
 ├── MASTER_PROMPT.md                                      # Original project boot prompt given to the first coding agent
