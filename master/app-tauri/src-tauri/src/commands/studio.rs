@@ -394,6 +394,20 @@ pub fn studio_save_annotations(
         .unwrap_or(1)
         .max(1);
 
+    // BUG-054: a redaction on a page that does not exist is refused up front (typed error, nothing written). It used
+    // to be clamped onto the LAST page, which redacted the wrong page. (Pages here are 0-based.)
+    for annot in &annotations {
+        if matches!(annot.kind.as_str(), "redact" | "review.redact")
+            && (annot.page_index as usize) >= page_total
+        {
+            return Err(format!(
+                "REDACTION_PAGE_OUT_OF_RANGE: page {} does not exist; this document has {} page(s) (pages start at 1)",
+                annot.page_index as usize + 1,
+                page_total
+            ));
+        }
+    }
+
     let mut has_redactions = false;
     let mut saved_count = 0usize;
 
@@ -1743,6 +1757,47 @@ mod tests {
             "{r:?}"
         );
         assert_eq!(fs::read(&existing).unwrap(), b"previous");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // BUG-054: Studio redactions are 0-based and checked: an out-of-range page is refused with the typed error and
+    // nothing is written (it used to be clamped onto the LAST page, redacting the wrong page).
+    #[test]
+    fn studio_redaction_on_a_page_that_does_not_exist_is_refused_not_clamped() {
+        let dir = std::env::temp_dir().join(format!("lpdf_bug054_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let input = dir.join("one-page.pdf");
+        create_sample_pdf(&input);
+        let annot = |page: u32| -> StudioAnnotationDto {
+            serde_json::from_value(serde_json::json!({
+                "id": "r1", "kind": "redact", "pageIndex": page,
+                "bboxPt": [10.0, 10.0, 200.0, 100.0]
+            }))
+            .unwrap()
+        };
+        let i = input.to_string_lossy().to_string();
+
+        for bad in [1u32, 7] {
+            let out = dir.join(format!("out-{bad}.pdf"));
+            let r = studio_save_annotations(
+                i.clone(),
+                out.to_string_lossy().to_string(),
+                vec![annot(bad)],
+                true,
+            );
+            assert!(
+                r.as_ref()
+                    .is_err_and(|e| e.contains("REDACTION_PAGE_OUT_OF_RANGE")),
+                "page {bad} of a 1-page document must be refused: {r:?}"
+            );
+            assert!(!out.exists(), "nothing may be written");
+        }
+        // the last real page (index 0 of a 1-page document) still works
+        let ok = dir.join("ok.pdf");
+        let r = studio_save_annotations(i, ok.to_string_lossy().to_string(), vec![annot(0)], true);
+        assert!(r.is_ok(), "{r:?}");
+        assert!(ok.exists());
         let _ = fs::remove_dir_all(&dir);
     }
 

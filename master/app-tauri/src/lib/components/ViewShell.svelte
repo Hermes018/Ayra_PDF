@@ -23,7 +23,7 @@
     main: Snippet;
     busyLabel?: string | null;
     oncancel?: () => void;
-    error?: { what: string; next: string; retry: () => void } | null;
+    error?: { what: string; next: string; retry?: () => void } | null;
   } = $props();
 
   let currentPath = $derived(appState.currentFile);

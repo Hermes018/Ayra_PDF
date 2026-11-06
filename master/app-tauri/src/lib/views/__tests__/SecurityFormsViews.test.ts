@@ -167,6 +167,27 @@ describe('Security (SECURITY path: presentation only)', () => {
     });
 });
 
+describe('Retry after the file changed mid-job (BUG-055)', () => {
+    test('Security: a job that fails after the open file changed offers no Retry (it would send a blank password)', async () => {
+        let fail!: (e: Error) => void;
+        (IpcClient.runJob as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+            () => new Promise((_res, rej) => (fail = rej))
+        );
+        render(SecurityView);
+        await fireEvent.input(screen.getByTestId('protect-password'), { target: { value: 'pw1' } });
+        await click(screen.getByRole('button', { name: 'Protect PDF' }));
+        appState.addFiles(['/docs/b.pdf']);
+        appState.setActiveFile('/docs/b.pdf');
+        await flush();
+        fail(new Error('engine said no'));
+        await flush();
+        await flush();
+        expect(screen.getByRole('alert')).toHaveTextContent("Couldn't protect the PDF.");
+        expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+        expect((screen.getByTestId('protect-password') as HTMLInputElement).value).toBe('');
+    });
+});
+
 describe('Forms', () => {
     test('sign: browse picks the certificate, the password is cleared after success', async () => {
         render(FormsView);

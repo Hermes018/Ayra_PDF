@@ -10,17 +10,28 @@ export type JobRequestSource = JobRequest | (() => Promise<JobRequest>);
 export interface JobError {
   what: string;
   next: string;
-  retry: () => void;
+  /** Absent when a Retry would no longer be safe (the input changed while the job ran). */
+  retry?: () => void;
 }
 
 export class JobRunner {
   busyLabel = $state<string | null>(null);
   error = $state<JobError | null>(null);
   #abort: AbortController | null = null;
+  #stale = false;
 
-  /** Drop a shown error (e.g. when the open file changed: its Retry belongs to the old file). Never while running. */
+  /**
+   * The input changed (another file was opened). When idle, drop a shown error (its Retry belongs to the old file).
+   * While a job runs, its eventual failure is shown WITHOUT a Retry, since Retry would use the new state.
+   */
+  invalidate(): void {
+    if (this.busyLabel) this.#stale = true;
+    else this.error = null;
+  }
+
+  /** @deprecated use invalidate() */
   reset(): void {
-    if (!this.busyLabel) this.error = null;
+    this.invalidate();
   }
 
   cancel(): void {
@@ -30,6 +41,7 @@ export class JobRunner {
   async run(label: string, what: string, next: string, source: JobRequestSource): Promise<void> {
     if (this.busyLabel) return; // checked and set before any await: a double click starts one job
     this.error = null;
+    this.#stale = false;
     this.busyLabel = label;
     this.#abort = new AbortController();
     const signal = this.#abort.signal;
@@ -40,7 +52,9 @@ export class JobRunner {
       if (!signal.aborted) {
         console.error(`${what}`, e);
         const f = friendlyJobError(e instanceof Error ? e.message : String(e), { what, next });
-        this.error = { what: f.what, next: f.next, retry: () => void this.run(label, what, next, source) };
+        this.error = this.#stale
+          ? { what: f.what, next: f.next }
+          : { what: f.what, next: f.next, retry: () => void this.run(label, what, next, source) };
       }
     } finally {
       this.busyLabel = null;

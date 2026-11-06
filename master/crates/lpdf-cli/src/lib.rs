@@ -103,7 +103,7 @@ COMMANDS:
         unlock <input.pdf> <output.pdf> --password <PASS>
             Decrypt and remove password restriction from document.
         redact <input.pdf> <output.pdf> --region <page:x,y,w,h> ...
-            Permanently redact rectangular regions from pages.
+            Permanently redact rectangular regions. Pages start at 1 (page 0 or a page past the end is refused).
 
     Convert & Archival:
         pdfa <input.pdf> <output.pdf> [--conformance <2b|3b|1b>]

@@ -396,6 +396,21 @@ fn test_cli_help() {
     assert!(msg.contains("pipeline"));
 }
 
+// BUG-055: the redact help says pages start at 1 (page 0 is refused by the engine).
+#[test]
+fn test_cli_redact_help_says_pages_start_at_1() {
+    let mut engine = MockEngine::new();
+    let args = vec!["localpdf".into(), "--help".into()];
+    let msg = lpdf_cli::run_cli_with_engine(&args, &mut engine).unwrap();
+    let redact = msg
+        .lines()
+        .skip_while(|l| !l.trim_start().starts_with("redact <input.pdf>"))
+        .take(2)
+        .collect::<Vec<_>>()
+        .join(" ");
+    assert!(redact.contains("Pages start at 1"), "{redact}");
+}
+
 #[test]
 fn test_cli_markdown_help() {
     let mut engine = MockEngine::new();

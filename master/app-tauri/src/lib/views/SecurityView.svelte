@@ -39,7 +39,7 @@
         untrack(() => {
             protectPassword = '';
             unlockPassword = '';
-            jobs.reset();
+            jobs.invalidate();
             pageCount = null;
             redactError = null;
         });

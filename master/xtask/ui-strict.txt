@@ -48,3 +48,5 @@ lib/views/ConvertView.svelte
 lib/views/FormsView.svelte
 lib/views/SecurityView.svelte
 lib/components/PdfViewer.svelte
+lib/views/ConvertFromPdfView.svelte
+lib/views/ConvertToPdfView.svelte

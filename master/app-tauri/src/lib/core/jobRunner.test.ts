@@ -31,7 +31,7 @@ describe('JobRunner', () => {
     expect(r.error).toMatchObject({ what: "Couldn't repair the file.", next: 'Check the file, then try again.' });
     expect(JSON.stringify(r.error)).not.toContain('engine said no'); // details go to the log, not the UI
     runJob.mockResolvedValueOnce('id');
-    r.error!.retry();
+    r.error!.retry!();
     await vi.waitFor(() => expect(r.error).toBeNull());
     expect(runJob).toHaveBeenCalledTimes(2);
   });
@@ -63,7 +63,7 @@ describe('JobRunner', () => {
     await r.run('Repairing', "Couldn't repair the file.", 'Try again.', build);
     expect(r.error?.what).toBe('A file named a_repaired.pdf already exists.');
     runJob.mockResolvedValueOnce('id');
-    r.error!.retry();
+    r.error!.retry!();
     await vi.waitFor(() => expect(runJob).toHaveBeenCalledTimes(2));
     const outs = runJob.mock.calls.map((c) => (c[0] as { output_path: string }).output_path);
     expect(outs).toEqual(['/a_repaired-1.pdf', '/a_repaired-2.pdf']);
@@ -76,5 +76,34 @@ describe('JobRunner', () => {
     });
     expect(r.busyLabel).toBeNull();
     expect(r.error?.what).toBe("Couldn't repair the file.");
+  });
+
+  // BUG-055: if the input changed while a job ran, a later Retry would use the new state (a blank password, another file).
+  it('invalidate() while running: the failure is shown WITHOUT a Retry', async () => {
+    let fail!: (e: Error) => void;
+    runJob.mockReturnValue(new Promise<void>((_res, rej) => (fail = rej)));
+    const r = new JobRunner();
+    const p = r.run('Protecting', "Couldn't protect the PDF.", 'Try again.', REQ);
+    r.invalidate();
+    fail(new Error('engine said no'));
+    await p;
+    expect(r.error?.what).toBe("Couldn't protect the PDF.");
+    expect(r.error?.retry).toBeUndefined();
+  });
+
+  it('invalidate() when idle clears a shown error', async () => {
+    runJob.mockRejectedValueOnce(new Error('x'));
+    const r = new JobRunner();
+    await r.run('Repairing', "Couldn't repair the file.", 'Try again.', REQ);
+    expect(r.error).not.toBeNull();
+    r.invalidate();
+    expect(r.error).toBeNull();
+  });
+
+  it('a normal failure still offers Retry', async () => {
+    runJob.mockRejectedValueOnce(new Error('x'));
+    const r = new JobRunner();
+    await r.run('Repairing', "Couldn't repair the file.", 'Try again.', REQ);
+    expect(typeof r.error?.retry).toBe('function');
   });
 });

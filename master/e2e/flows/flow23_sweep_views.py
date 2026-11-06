@@ -15,7 +15,7 @@ TITLE = "UI sweep smoke: tool views"
 SIZES = [(1200, 800), (1600, 1000)]
 THEMES = [("light", "Light"), ("dark", "Dark")]
 # (sidebar label, short name, css scope for the raw-control check)
-VIEWS = [("Convert", "convert", ".convert-container .tab-bar"),
+VIEWS = [("Convert", "convert", ".convert-container"),
          ("Optimize", "optimize", ".view-container"),
          ("Edit", "edit", ".view-container"),
          ("Security", "security", ".view-container"),
@@ -41,6 +41,12 @@ def run(flow):
             btn.click()
             time.sleep(0.8)
             flow.check(f"{key}: {label} controls are ui/ components", s.js(RAW_JS, scope) == 0, str(s.js(RAW_JS, scope)))
+            if name == "convert":
+                tab = s.find_text("[role=tab]", "Convert to PDF")
+                if tab:
+                    tab.click()
+                    time.sleep(0.6)
+                    flow.check(f"{key}: Convert to PDF tab controls are ui/ components", s.js(RAW_JS, scope) == 0, str(s.js(RAW_JS, scope)))
             if name in ("edit", "optimize", "security"):
                 clipped = s.js("const c = document.querySelector('.view-container .sidebar'); if (!c) return null;"
                                " return [...c.querySelectorAll('input, select, button')].filter(e => e.getBoundingClientRect().right > c.getBoundingClientRect().right + 1).length")

@@ -90,8 +90,7 @@ describe('ConvertFromPdfView', () => {
         await fireEvent.click(pdfaTile);
 
         // Select PDF/A-3b radio
-        const radio3b = screen.getByRole('radio', { name: /PDF\/A-3b/i });
-        await fireEvent.click(radio3b);
+        await fireEvent.change(screen.getByLabelText(/PDF\/A conformance level/i), { target: { value: 'PdfA3b' } });
 
         // Submit
         const btn = screen.getByRole('button', { name: /Convert Now/i });
@@ -220,8 +219,8 @@ describe('ConvertFromPdfView', () => {
         const submitSpy = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('test-native-job');
         render(ConvertFromPdfView);
 
-        const toggle = screen.getByLabelText(/Native Text Only \(Bypass OCR\)/i) as HTMLInputElement;
-        expect(toggle.checked).toBe(false);
+        const toggle = screen.getByRole('switch', { name: /Native text only/i });
+        expect(toggle).toHaveAttribute('aria-checked', 'false');
 
         await fireEvent.click(toggle);
         expect(appState.preferNativeText).toBe(true);

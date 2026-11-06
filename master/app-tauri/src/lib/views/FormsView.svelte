@@ -28,7 +28,7 @@
         void currentPath;
         untrack(() => {
             signPassword = '';
-            jobs.reset();
+            jobs.invalidate();
         });
     });
 
