@@ -17,7 +17,12 @@ mkdir -p "$(dirname "$SCHED_LOG")" 2>/dev/null
 RESERVE_MIB=$(( ${LPDF_RESERVE_G:-6} * 1024 ))
 PEAK_LIGHT_MIB=${PEAK_LIGHT_MIB:-1536}
 PEAK_HEAVY_MIB=${PEAK_HEAVY_MIB:-6144}
-SLOT_FILES=(/tmp/lpdf-build.lock /tmp/lpdf-build.lock.2)
+if [ "${MAX_HEAVY_SLOTS:-2}" -eq 1 ]; then
+  SLOT_FILES=(/tmp/lpdf-build.lock)
+else
+  SLOT_FILES=(/tmp/lpdf-build.lock /tmp/lpdf-build.lock.2)
+fi
+MIN_AVAIL_MIB=${MIN_AVAIL_MIB:-$(( RESERVE_MIB + 2048 ))}
 
 sched_mem_avail() { awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo; }
 sched_log() { printf '%s %s\n' "$(date -Is)" "$*" >> "$SCHED_LOG" 2>/dev/null; }
@@ -44,16 +49,16 @@ sched_acquire() {
   if [ "$class" = LIGHT ]; then
     while :; do
       avail=$(sched_mem_avail)
-      if [ "$avail" -gt $(( RESERVE_MIB + 2048 )) ]; then
+      if [ "$avail" -ge "$MIN_AVAIL_MIB" ]; then
         sched_log "ADMIT LIGHT name=$name avail_MiB=$avail waited_s=$(( $(date +%s) - t0 ))"; return 0
       fi
-      [ -z "$logged" ] && { sched_log "WAIT LIGHT name=$name avail_MiB=$avail (< reserve+2GiB)"; logged=1; }
+      [ -z "$logged" ] && { sched_log "WAIT LIGHT name=$name avail_MiB=$avail (< ${MIN_AVAIL_MIB}MiB guard)"; logged=1; }
       sleep 2
     done
   fi
   local ticket="$SCHED_DIR/queue/$(sched_prio_num)-$(date +%s%N)-$$"
   : > "$ticket"
-  want=1; { [ "${LPDF_EXCLUSIVE:-0}" = 1 ] || [ "${LPDF_PRIO:-}" = e2e ]; } && want=2   # E2E exclusive until its peak is measured
+  want=1; { [ "${MAX_HEAVY_SLOTS:-2}" -gt 1 ] && { [ "${LPDF_EXCLUSIVE:-0}" = 1 ] || [ "${LPDF_PRIO:-}" = e2e ]; }; } && want=2   # E2E exclusive until its peak is measured
   while :; do
     for t in "$SCHED_DIR"/queue/*; do            # drop tickets of dead waiters
       [ -e "$t" ] || continue; kill -0 "${t##*-}" 2>/dev/null || rm -f "$t"
@@ -62,20 +67,22 @@ sched_acquire() {
     avail=$(sched_mem_avail)
     if [ "$SCHED_DIR/queue/$head" = "$ticket" ]; then
       SCHED_FDS=(); local i got=0
-      for i in 0 1; do
+      for i in $(seq 0 $(( ${#SLOT_FILES[@]} - 1 ))); do
         [ "$got" -ge "$want" ] && break
         if [ "$i" = 1 ] && [ "$want" = 1 ] && [ "$avail" -lt $(( 2 * PEAK_HEAVY_MIB + RESERVE_MIB )) ]; then break; fi
         local fd; exec {fd}>"${SLOT_FILES[$i]}"
         if flock -n "$fd"; then SCHED_FDS+=("$fd"); got=$((got+1)); else exec {fd}>&-; fi
       done
-      if [ "$got" -ge "$want" ] && [ "$avail" -ge $(( PEAK_HEAVY_MIB + RESERVE_MIB )) ]; then
+      local need_mem=$(( PEAK_HEAVY_MIB + RESERVE_MIB ))
+      [ "$need_mem" -lt "$MIN_AVAIL_MIB" ] && need_mem=$MIN_AVAIL_MIB
+      if [ "$got" -ge "$want" ] && [ "$avail" -ge "$need_mem" ]; then
         rm -f "$ticket"
         slots=$(for f in "${SLOT_FILES[@]}"; do flock -n "$f" true 2>/dev/null || echo x; done | wc -l)
-        sched_log "ADMIT HEAVY name=$name prio=${LPDF_PRIO:-other} avail_MiB=$avail need_MiB=$(( PEAK_HEAVY_MIB + RESERVE_MIB )) slots_held=$got waited_s=$(( $(date +%s) - t0 ))"
+        sched_log "ADMIT HEAVY name=$name prio=${LPDF_PRIO:-other} avail_MiB=$avail need_MiB=$need_mem slots_held=$got waited_s=$(( $(date +%s) - t0 ))"
         return 0
       fi
       for fd in "${SCHED_FDS[@]}"; do exec {fd}>&-; done; SCHED_FDS=()
-      [ "$logged" != head ] && { sched_log "WAIT HEAVY name=$name prio=${LPDF_PRIO:-other} avail_MiB=$avail need_MiB=$(( PEAK_HEAVY_MIB + RESERVE_MIB )) reason=$([ "$avail" -lt $(( PEAK_HEAVY_MIB + RESERVE_MIB )) ] && echo memory || echo slots-busy)"; logged=head; }
+      [ "$logged" != head ] && { sched_log "WAIT HEAVY name=$name prio=${LPDF_PRIO:-other} avail_MiB=$avail need_MiB=$need_mem reason=$([ "$avail" -lt "$need_mem" ] && echo memory || echo slots-busy)"; logged=head; }
     else
       [ "$logged" != queued ] && [ "$logged" != head ] && { sched_log "WAIT HEAVY name=$name prio=${LPDF_PRIO:-other} avail_MiB=$avail reason=queued-behind=$head"; logged=queued; }
     fi

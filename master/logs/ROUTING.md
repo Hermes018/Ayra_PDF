@@ -113,3 +113,27 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 16:12 | release-build | packaging B1: measure LTO, build rpm/deb/AppImage, SHA256SUMS, SBOM, KI-006 offline proof | sonnet/medium | running | | no app instance; wt/release cold target |
 | 2026-11-06 16:14 | release-build | BUG-062 counted retry + BUG-061 close-tabs soak diagnostic (in wt/fixes) | sonnet/medium | running | | harness; shares the app instance with nobody (B1 builds only) |
 | 2026-11-06 16:24 | stop | owner budget stop: agents cancelled (B1 LTO measure, soak diagnostic), WIP committed on 3 branches, ARGON_TASKS section 0 written | sonnet/low | ok | | no verify run (owner) |
+| 2026-11-06 17:50 | governance | lock Fedora 44 8GB RAM caps, Base Pro 4-tier hybrid routing, and Flash/Argon execution plan | argon/low | ok | | 13 roles mapped; Phase F1-F4 execution plan locked |
+
+---
+
+## 2026-11-06 Fedora 44 KDE Plasma (8GB RAM) — Base Pro Quota Policy & Hybrid Model Routing
+
+### 1. 4-Tier Model Assignment for All 13 `.claude/agents/*.md` Roles
+| Tier | Model & Effort | Quota Share | Assigned Agent Roles (`.claude/agents/*.md`) | Operational Rules & Context Limits |
+| :--- | :--- | :--- | :--- | :--- |
+| **Tier 1: Workhorse Builders & Read-Only Scouts** | **Gemini 3.8 Flash (`High`)** | **80%** | 1. `explorer`<br>2. `log-reader`<br>3. `status-snapshot`<br>4. `checkpoint-writer`<br>5. `fixes-builder` (incl. `ui-sweeper`, `doc-writer`, `soak-runner`, AT-01..15) | • Exact file paths only (zero repo-wide grep).<br>• Replies strictly `<= 150 words` (`PASS/FAIL · findings · files`).<br>• Heavy builds only via `tools/run.sh <name> <cmd>`. |
+| **Tier 2: Surgical Reviewer & Packaging Architect** | **Gemini 4 Argon (`Low`)** | **15%** | 6. `reviewer` (diffs <= 200 lines)<br>7. `provenance-auditor` (`tools/sbom_npm.py`)<br>8. `release-builder` (Packaging B1/B2 & Fedora 44 `.rpm`/AppImage/`.deb`)<br>*(+ Lead Orchestrator editorial/planning)* | • Never reads raw build logs or explores directories.<br>• Inspects only pre-extracted `git diff` (`<= 200 lines`) and `<= 150-word` reports.<br>• Delegates file edits and test runs to Tier 1 (`3.8 Flash High`). |
+| **Tier 3: Complex Engine & P0 Escalation** | **Gemini 4 Argon (`Medium`)** | **4%** | 9. `engines-builder` (ADR-018 craft adapters)<br>10. `bug-triager` (`BUG-061`/`BUG-062` & P0/P1/P2)<br>11. `escalation` (Tier 1 twice-failed tasks) | • Invoked ONLY when Tier 1 (`3.8 Flash High`) fails twice on the same task or for surgical Rust concurrency/geometry edits.<br>• Drop back to Tier 1/2 immediately once surgical fix compiles. |
+| **Tier 4: Supreme Safety & RC Verifier** | **Claude Opus 5.5 (`High`)** *(or Argon `Medium` Fresh Session if Opus = 0%)* | **1%** | 12. `merge-verifier` (`lpdf-fs-safety`, atomic save-path, cryptographic redaction)<br>13. `rc-verifier` (`v0.2.0-rc1` final sign-off) | • Fresh context given ONLY spec/ADR, `git diff`, and `tools/verify.sh` output.<br>• Never sees builder reasoning. Never used for coding, exploration, or UI tasks. |
+
+### 2. Base Pro Quota Throttle Tiers
+- **Green Tier (Active Workhorse Execution):**
+  - Execute `docs/ARGON_TASKS.md` outside §0 (`AT-01..07`, `AT-10..15`) on **Gemini 3.8 Flash (`High`)** in batched, single-gate micro-phases (`Phase F1` and `Phase F2` in `docs/FLASH_AND_ARGON_EXECUTION_PLAN.md`).
+  - Execute §0 preparation (`wt/fixes` inspection, `tools/sbom_npm.py` audit prep, Packaging B1/B2 build execution) on **Gemini 3.8 Flash (`High`)**.
+- **Red / Critical Tier (Protected High-Reasoning Reserve):**
+  - Reserve **Gemini 4 Argon (`Low`/`Medium`)** and remaining **Claude Opus 5.5 (`High`)** strictly for §0 merge verification (`wt/fixes`, `wt/release`, `wt/engines`), `tools/sbom_npm.py` security sign-off, LTO/package verification, and `v0.2.0-rc1` final tagging.
+- **Escalation Protocol:**
+  - 1st failure on `3.8 Flash (High)` -> retry with exact line numbers on `3.8 Flash (High)`.
+  - 2nd failure on `3.8 Flash (High)` -> escalate to `Argon (Low/Med)` (`escalation` role) and log in this table.
+

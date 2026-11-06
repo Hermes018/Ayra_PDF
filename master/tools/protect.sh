@@ -4,16 +4,20 @@
 # oom_score_adj 800 (the kernel kills agent jobs first); nice 10 + idle IO. LPDF_MEM_MAX_G overrides
 # the cap downwards. Falls back to `ulimit -v` only if user scopes are unavailable.
 set -uo pipefail
-RESERVE_G=${LPDF_RESERVE_G:-6}
-avail_g=$(awk '/MemAvailable/{printf "%d", $2/1048576}' /proc/meminfo)
-max_g=$(( avail_g - RESERVE_G ))
-[ -n "${LPDF_MEM_MAX_G:-}" ] && [ "$LPDF_MEM_MAX_G" -lt "$max_g" ] && max_g=$LPDF_MEM_MAX_G
-if [ "$max_g" -lt 2 ]; then
-  echo "[protect] REFUSED: MemAvailable ${avail_g} GiB leaves < 2 GiB above the ${RESERVE_G} GiB reserve" >&2
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -f "$here/ram-budget.env" ] && . "$here/ram-budget.env"
+avail_mb=$(awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo)
+min_guard=${MIN_AVAIL_MIB:-2200}
+if [ "$avail_mb" -lt "$min_guard" ]; then
+  echo "[protect] REFUSED: MemAvailable ${avail_mb} MiB leaves less than the ${min_guard} MiB guard" >&2
   exit 75
 fi
+RESERVE_G=${LPDF_RESERVE_G:-1}
+max_g=$(( (avail_mb - (RESERVE_G * 1024)) / 1024 ))
+[ "$max_g" -lt 2 ] && max_g=2
+[ -n "${LPDF_MEM_MAX_G:-}" ] && [ "$LPDF_MEM_MAX_G" -lt "$max_g" ] && max_g=$LPDF_MEM_MAX_G
 high_g=$(( max_g > 3 ? max_g - 2 : max_g ))
-export NEXTEST_TEST_THREADS=${NEXTEST_TEST_THREADS:-2} NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=3072}"
+export NEXTEST_TEST_THREADS=${NEXTEST_TEST_THREADS:-2} NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=2048}"
 if systemd-run --user --scope -q true 2>/dev/null; then
   exec choom -n 800 -- systemd-run --user --scope -q --collect \
     -p MemoryHigh="${high_g}G" -p MemoryMax="${max_g}G" -p MemorySwapMax=0 \

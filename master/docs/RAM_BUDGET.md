@@ -66,3 +66,14 @@ The sccache server daemon inherited the flock file descriptor and held the singl
 - **Decision: 2 HEAVY slots.** PEAK_HEAVY_MIB 5,120 → 4,096 (the measured max rounded up; the 1.25 margin is dropped). The live rule is unchanged: slot 2 opens only when MemAvailable ≥ 2 × 4,096 + 6,144 = 14,336 MiB (it was 16,384, which never opened at ~16.0 GiB available). The per-job cgroup cap is unchanged.
 - E2E peak is still unmeasured, so `LPDF_PRIO=e2e` jobs take both slots (sched.sh) until it is measured.
 - Live test 08:04: two concurrent HEAVY jobs admitted on separate slots at 16,033 MiB available.
+
+## Recalibration for 8GB Laptop (Intel i5-1135G7, 2026-11-06)
+When running on an 8 GiB host (`MemTotal < 12000 MB`, currently ~7.65 GiB total, ~3.6 GiB available):
+- **Max concurrent HEAVY slots = 1**: Only one HEAVY job runs at a time (`SLOT_FILES=(/tmp/lpdf-build.lock)`).
+- **Minimum MemAvailable guard = 2200 MB (2.2 GiB)**: Jobs require at least 2200 MiB free MemAvailable to start; prevents memory exhaustion and swap thrashing.
+- **Compiler & Runtime Bounds**:
+  - `CARGO_BUILD_JOBS=2`
+  - `NODE_OPTIONS="--max-old-space-size=2048"`
+  - `VITEST_MAX_WORKERS=2`
+  - `NEXTEST_TEST_THREADS=2`
+- **Zero-Waste Rules**: Never chain `cargo` and `pnpm`; never run `cargo clean`. Host auto-detection implemented dynamically in `tools/ram-budget.env`, `tools/sched.sh`, `tools/protect.sh`, and `tools/run.sh`.

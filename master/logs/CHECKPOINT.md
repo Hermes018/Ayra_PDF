@@ -1,26 +1,26 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 ~16:45 Asia/Dhaka by the lead (Sonnet 5.5) at the OWNER'S BUDGET STOP. Trust STATE_AUTO.md for git/process facts.
+Updated 2026-11-06 ~17:54 Asia/Dhaka by Lead Editorial Architect (Gemini 4 Argon Low). Trust `STATE_AUTO.md` for git/process facts.
 
-## STATE: STOPPED. No agents, builds or app instances running. Nothing pushed (the owner pushes).
-- Goal: v0.2.0-prototype, tag by Sat 2026-11-07 23:59; rc1 target Sat 18:00. **v0.2.0-rc1 is NOT built or tagged.** Weekly was 78 % (≈1 %/h) at the last report. Stop new work at 92 %.
-- The exact remaining steps, in order, with commands and acceptance checks: **master/docs/ARGON_TASKS.md section 0 (A to E)**. Low-risk items: sections 1-4 of the same file. Strong-review list: section 2.
+## STATE: GOVERNANCE & 8GB RAM BASELINE LOCKED ON `main`
+- **Current Host:** Fedora 44 KDE Plasma (Wayland, `rpm`/`dnf` native, WebKitGTK) · Intel Core i5-1135G7 · ~8 GiB RAM (7.65 GiB total, ~3.6 GiB available, 33 GiB disk free).
+- **8GB RAM Guard Active:** `1` HEAVY slot max (`SLOT_FILES=(/tmp/lpdf-build.lock)`), `MemAvailable >= 2200 MB` guard, `CARGO_BUILD_JOBS=2`, `NEXTEST_TEST_THREADS=2`, `VITEST_MAX_WORKERS=2`, `NODE_OPTIONS="--max-old-space-size=2048"`.
+- **Current Position:** Governance constitution (`CLAUDE.md` / `AGENTS.md`), 4-Tier Base Pro Multi-Agent Routing (`logs/ROUTING.md` + `.claude/agents/*.md`), `docs/LOCALPDF_MASTER_HANDOVER.md`, and `docs/FLASH_AND_ARGON_EXECUTION_PLAN.md` locked on `main`.
+- **Goal:** `v0.2.0-prototype` (`v0.2.0-rc1` tag target). **v0.2.0-rc1 is NOT built or tagged yet.**
 
-## Branches (all local)
+## Branches (all local / remote tracking)
 | Branch | Head | State |
 |---|---|---|
-| main | e1d2203 | VERIFIED code: everything through packaging prep A (tag packaging-prep-a-green); the E2E rerun, UI sweep and all fixes are merged. Commits after 7987e45 are docs and logs only. Untracked `LOCALPDF_MASTER_HANDOVER.md` in the root is not ours: untouched |
-| wt/fixes | db28b40 | **WIP, unverified:** BUG-062 counted retry (`e2e/soak_retry.py`, `test_soak_retry.py`, edits to `flow12_soak.py`, `run.py`) and the BUG-061 close-tabs change. The soak diagnostic NEVER ran |
-| wt/release | 53aebd9 | **WIP, unverified:** `master/tools/sbom_npm.py` (**UNREVIEWED: Claude must review before any SBOM ships**) + a partial `RAM_BUDGET.md` edit. LTO measurement was cancelled mid-compile. No packages built; `~/LocalPDF-rc1/` does not exist |
-| wt/engines | 13b9bb3 | **WIP, unverified:** CP3 (BUG-029/030 streaming guard moved to `lpdf-engine-pdfcraft/src/guard.rs`, `path_exists` returns Result). Compiles; tests never run. Deletion listed in `.allowed-deletions` |
-| track/android | 644caf3 | paused (ADR-019 draft) |
+| `main` | `0402344` (+ governance commit) | VERIFIED code through packaging prep A (tag `packaging-prep-a-green`), plus 8GB RAM recalibration and Base Pro governance docs. |
+| `origin/wt/fixes` | `db28b40` | **WIP, unverified:** BUG-062 counted retry (`e2e/soak_retry.py`, `test_soak_retry.py`, `flow12_soak.py`, `run.py`) and BUG-061 close-tabs change. Soak diagnostic not run yet. |
+| `origin/wt/release` | `53aebd9` | **WIP, unverified:** `master/tools/sbom_npm.py` (needs Argon Low `provenance-auditor` review before shipping) + partial `RAM_BUDGET.md` edit. |
+| `origin/wt/engines` | `13b9bb3` | **WIP, unverified:** CP3 (BUG-029/030 streaming guard moved to `lpdf-engine-pdfcraft/src/guard.rs`, `path_exists` returns `Result`). |
+| `origin/track/android` | `644caf3` | Paused (ADR-019 draft). |
 
-## E2E on main 83fd51c
-2-11, 13 (needs `VITE_LPDF_GALLERY=1` build), 14-23 PASS. 1 BLOCKED until packages exist. 12 soak FAIL: BUG-061 (+13 MB/min, probably the loop never closing tabs; unproven) and BUG-062 (driver disconnect). Real-PDF rerun: BUG-063 closed as driver drift (stale labels); the text-coverage step stays a known P2 (BUG-038).
+## Next 3 Immediate Actions (Follow `master/docs/FLASH_AND_ARGON_EXECUTION_PLAN.md`)
+1. **Action 1 (Phase F1 — Frontend & UI Strict Batch):** Switch CLI to **Gemini 3.8 Flash (`High`)** and execute Sub-Phase F1.1 (`AT-10`, `AT-11`) & Sub-Phase F1.2 (`AT-12..AT-15`, including `BUG-045` `FavoritesBar.svelte` CSS fix) with single batched frontend-only verification (`pnpm check`, `vitest`, `cargo xtask studio-audit --strict`).
+2. **Action 2 (Phase F2 — Isolated Unit Test Batch):** Execute Sub-Phase F2.1 (`AT-01..AT-04`) & Sub-Phase F2.2 (`AT-05..AT-07`) on **Gemini 3.8 Flash (`High`)** with targeted `cargo nextest` & `vitest`.
+3. **Action 3 (Phase F3 — §0 Worktree Audit & Fedora 44 Packaging):** Execute §0 `wt/fixes` + `wt/release` (`sbom_npm.py`) + `wt/engines` audit and Fedora 44 Packaging B1/B2 (`lto = "thin"`, `.rpm`, `.deb`, `.AppImage`, offline smoke) with **Flash (`High`)** doing the heavy lifting and **Argon (`Low`/`Med`)** / **Opus (`High`)** performing surgical verifier sign-off, followed by Phase F4 (`v0.2.0-rc1` tag).
 
-## Next action (first thing)
-Claude reviews `tools/sbom_npm.py` and the three WIP branches, then follows ARGON_TASKS.md section 0: A (soak) → B (LTO measure + packages) → C (install tests, network-isolated run, docs) → D (verify.sh, 12 flows, fresh Opus-high verifier, tag v0.2.0-rc1) → **READY TO PUSH**.
-
-## Standing rules
-- Training RAM first (2 HEAVY slots, docs/RAM_BUDGET.md). Disk 30 GiB free; run.sh refuses < 15 GB. No container runtime: clean install = fresh HOME in `unshare -rn`.
-- Owner rules: BUG-061 is a P0 only if memory would grow > ~1 GB in a normal 2 h session, else P1 + KNOWN_ISSUES. LTO fallback `lto="thin"` + `codegen-units=1` if fat LTO breaches the RAM cap. Save/redaction/settings changes get an Opus-high verifier.
-- Docs: KNOWN_ISSUES.md KI-001..008 (KI-005 is stale). Bugs: logs/BUGS.md.
+## Standing Rules
+- **4-Tier Base Pro Routing:** Tier 1 `3.8 Flash (High)` (80% workhorse) · Tier 2 `Argon (Low)` (15% lead/reviewer/packaging) · Tier 3 `Argon (Medium)` (4% engine/escalation) · Tier 4 `Opus 5.5 (High)` (1% save/redaction/RC verifier).
+- **Owner Rules:** `BUG-061` is P0 only if memory grows > ~1 GB in a normal 2h session, else P1 + `KI-009`. On 8GB laptop, use `lto = "thin"` + `codegen-units = 1` for release builds. Never push (`owner pushes`).

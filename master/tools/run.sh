@@ -21,7 +21,7 @@ fi
 command -v sccache >/dev/null 2>&1 && sccache --start-server >/dev/null 2>&1 || true
 start=$(date +%s)
 { echo "# cmd: $*"; echo "# cwd: $(pwd)"; echo "# started: $(date -Is)"; } > "$log"
-( TOP="$top"; export CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-2}" CARGO_TARGET_DIR="$top/master/target"
+( TOP="$top"; export CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-2}" CARGO_TARGET_DIR="$top/master/target" NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=2048}" VITEST_MAX_WORKERS="${VITEST_MAX_WORKERS:-2}"
   [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
   . "$here/sched.sh"; sched_exec "$name" "$@" ) >> "$log" 2>&1
 rc=$?
