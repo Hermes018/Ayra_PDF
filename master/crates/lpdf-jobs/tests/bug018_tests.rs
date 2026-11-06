@@ -260,3 +260,40 @@ fn intermediate_name_pattern() {
     assert!(!m(Path::new("/x/plan.organizing-1.pdf.bak")));
     assert!(!m(Path::new("/x/plan.organizing-1 2.pdf")), "token chars");
 }
+
+/// A file replaced (new inode) under the intermediate's name after the job wrote it is refused,
+/// left in place, and forgotten by the registry.
+#[cfg(unix)]
+#[tokio::test]
+async fn delete_intermediate_refuses_a_replaced_file() {
+    let dir = temp_dir("replaced");
+    let original = dir.join("plan.pdf");
+    std::fs::copy(corpus("standard-text.pdf"), &original).unwrap();
+    let (tx, mut rx) = job_event_channel();
+    let manager = JobManager::new(1, tx);
+    let inter = dir.join("plan.organizing-r1.pdf");
+    let ev = run(
+        &manager,
+        &mut rx,
+        JobRequest::ExtractPages {
+            input_path: original.to_string_lossy().to_string(),
+            output_path: inter.to_string_lossy().to_string(),
+            pages: vec![0],
+        },
+    )
+    .await;
+    assert!(matches!(ev, JobEvent::Completed { .. }), "{ev:?}");
+    // Swap in a different file under the same name (new inode).
+    let swap = dir.join("swap.tmp");
+    std::fs::write(&swap, b"%PDF-1.4\nnot ours\n").unwrap();
+    std::fs::rename(&swap, &inter).unwrap();
+    let err = manager.delete_session_intermediate(&inter).unwrap_err();
+    assert!(err.to_string().contains("replaced"), "{err}");
+    assert!(inter.exists(), "the replacement is left untouched");
+    assert!(
+        !manager.created_this_session(&inter),
+        "registry entry dropped"
+    );
+    assert!(manager.delete_session_intermediate(&inter).is_err());
+    let _ = std::fs::remove_dir_all(&dir);
+}

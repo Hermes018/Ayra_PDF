@@ -325,7 +325,7 @@ where
 
     let canonical_raw = input_path.canonicalize().map_err(LpdfError::Io)?;
     let canonical_input = lpdf_fs_safety::simplify_path_for_sidecar(&canonical_raw);
-    let header_bytes = std::fs::read(&canonical_input).map_err(LpdfError::Io)?;
+    let header_bytes = crate::guard::read_guarded(&canonical_input)?;
     if header_bytes.is_empty() || !header_bytes.starts_with(b"%PDF-") {
         return Err(LpdfError::InvalidInput(
             "Input file is not a valid PDF document (missing %PDF- header)".into(),

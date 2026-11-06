@@ -358,8 +358,8 @@ pub fn studio_save_annotations(
     let in_path = PathBuf::from(&input_path);
     let out_path = PathBuf::from(&output_path);
 
-    let raw_bytes =
-        fs::read(&in_path).map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
+    let raw_bytes = lpdf_engine_pdfcraft::guard::read_guarded(&in_path)
+        .map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
     let doc_name = in_path
         .file_name()
         .unwrap_or_default()
@@ -749,8 +749,8 @@ pub fn studio_extract_snap_geometry(
     page_index: u32,
 ) -> Result<PageSnapGeometryDto, String> {
     let in_path = PathBuf::from(&input_path);
-    let raw_bytes =
-        fs::read(&in_path).map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
+    let raw_bytes = lpdf_engine_pdfcraft::guard::read_guarded(&in_path)
+        .map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
     let doc_name = in_path
         .file_name()
         .unwrap_or_default()
@@ -858,8 +858,8 @@ pub fn studio_extract_text_blocks(
         return Ok(Vec::new());
     }
 
-    let raw_bytes =
-        fs::read(&in_path).map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
+    let raw_bytes = lpdf_engine_pdfcraft::guard::read_guarded(&in_path)
+        .map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
     let doc_name = in_path
         .file_name()
         .unwrap_or_default()
@@ -936,8 +936,8 @@ pub fn studio_edit_pdf_text_block(
     let in_path = PathBuf::from(&input_path);
     let out_path = PathBuf::from(&output_path);
 
-    let raw_bytes =
-        fs::read(&in_path).map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
+    let raw_bytes = lpdf_engine_pdfcraft::guard::read_guarded(&in_path)
+        .map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
     let doc_name = in_path
         .file_name()
         .unwrap_or_default()
@@ -1109,8 +1109,8 @@ pub fn studio_attach_audio(
     let in_path = PathBuf::from(&input_path);
     let out_path = PathBuf::from(&output_path);
 
-    let raw_bytes =
-        fs::read(&in_path).map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
+    let raw_bytes = lpdf_engine_pdfcraft::guard::read_guarded(&in_path)
+        .map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
     let doc_name = in_path
         .file_name()
         .unwrap_or_default()
@@ -1476,8 +1476,8 @@ pub fn studio_detect_tables_and_fields(
     page_index: u32,
 ) -> Result<Vec<DetectedRegionDto>, String> {
     let in_path = PathBuf::from(&input_path);
-    let raw_bytes =
-        fs::read(&in_path).map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
+    let raw_bytes = lpdf_engine_pdfcraft::guard::read_guarded(&in_path)
+        .map_err(|e| format!("Failed to read input PDF {:?}: {}", in_path, e))?;
     let doc_name = in_path
         .file_name()
         .unwrap_or_default()
@@ -1572,14 +1572,16 @@ pub fn studio_detect_tables_and_fields(
 }
 
 /// BUG-018 (b): read-only existence check for an absolute local path (no read, no network).
-/// Relative paths and paths that cannot be checked (permissions, I/O error) report `false`.
+/// `Ok(true)`/`Ok(false)` only when the answer is certain; a relative path or a stat error
+/// (permissions, I/O) is `Err`, which the frontend treats as "taken".
 #[tauri::command]
-pub fn path_exists(path: String) -> bool {
-    path_exists_at(Path::new(&path))
-}
-
-fn path_exists_at(path: &Path) -> bool {
-    path.is_absolute() && path.try_exists().unwrap_or(false)
+pub fn path_exists(path: String) -> Result<bool, String> {
+    let p = Path::new(&path);
+    if !p.is_absolute() {
+        return Err(format!("path must be absolute: {path}"));
+    }
+    p.try_exists()
+        .map_err(|e| format!("cannot check {path}: {e}"))
 }
 
 /// BUG-018 (c): delete an Organize intermediate `<stem>.organizing-<token>.pdf` that a job of this
@@ -1607,16 +1609,35 @@ mod tests {
         let file = dir.join("present.pdf");
         fs::write(&file, b"%PDF-1.4\n").unwrap();
         let before = fs::read(&file).unwrap();
-        assert!(path_exists(file.to_string_lossy().to_string()));
-        assert!(path_exists(dir.to_string_lossy().to_string()));
-        assert!(!path_exists(
-            dir.join("absent.pdf").to_string_lossy().to_string()
-        ));
+        assert_eq!(path_exists(file.to_string_lossy().to_string()), Ok(true));
+        assert_eq!(path_exists(dir.to_string_lossy().to_string()), Ok(true));
+        assert_eq!(
+            path_exists(dir.join("absent.pdf").to_string_lossy().to_string()),
+            Ok(false)
+        );
         assert!(
-            !path_exists("present.pdf".to_string()),
+            path_exists("present.pdf".to_string()).is_err(),
             "relative paths are never resolved"
         );
-        assert!(!path_exists(String::new()));
+        assert!(path_exists(String::new()).is_err());
+        #[cfg(unix)]
+        {
+            // A stat error (no search permission on the parent) is Err, not "absent".
+            use std::os::unix::fs::PermissionsExt;
+            let locked = dir.join("locked");
+            fs::create_dir_all(&locked).unwrap();
+            fs::set_permissions(&locked, fs::Permissions::from_mode(0o000)).unwrap();
+            let probe = locked.join("x.pdf").to_string_lossy().to_string();
+            let is_root = std::env::var("USER").map(|u| u == "root").unwrap_or(false);
+            let res = path_exists(probe);
+            fs::set_permissions(&locked, fs::Permissions::from_mode(0o755)).unwrap();
+            if !is_root {
+                assert!(
+                    res.is_err(),
+                    "permission errors must not read as absent: {res:?}"
+                );
+            }
+        }
         assert_eq!(
             fs::read(&file).unwrap(),
             before,
@@ -1938,8 +1959,8 @@ startxref\n\
         let detected =
             studio_detect_tables_and_fields(input_pdf.to_string_lossy().to_string(), 0).unwrap();
         assert!(
-            detected.iter().all(|d| !d.id.ends_with("-auto")),
-            "no fabricated regions: {detected:?}"
+            detected.is_empty(),
+            "nothing to detect on the one-line sample page: {detected:?}"
         );
 
         let _ = fs::remove_dir_all(&tmp_dir);

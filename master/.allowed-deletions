@@ -11,3 +11,5 @@ docs/DIRECTORY_TREE.md
 tools/ANTIGRAVITY_RUNBOOK.md
 tools/CLAUDE_AUDIT_CONTEXT.md
 tools/make_audit_bundle.sh
+# 2026-11-06 engines CP3 (WIP, unverified): F4 guard moved from lpdf-engine-switcher to lpdf-engine-pdfcraft/src/guard.rs
+master/crates/lpdf-engine-switcher/src/guard.rs

@@ -3392,6 +3392,7 @@ dependencies = [
  "lpdf-core-types",
  "lpdf-engine-port",
  "lpdf-fs-safety",
+ "miniz_oxide 0.8.9",
  "pdfcraft-cos",
  "pdfcraft-engine",
  "pdfcraft-forms",

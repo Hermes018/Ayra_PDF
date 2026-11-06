@@ -361,7 +361,7 @@ pub fn convert_pdf_to_office(
     let canonical_input = lpdf_fs_safety::simplify_path_for_sidecar(&canonical_raw);
 
     // Validate that input file is a valid PDF
-    let pdf_bytes = std::fs::read(&canonical_input).map_err(LpdfError::Io)?;
+    let pdf_bytes = crate::guard::read_guarded(&canonical_input)?;
     if pdf_bytes.is_empty() || !pdf_bytes.starts_with(b"%PDF-") {
         return Err(LpdfError::InvalidInput(
             "Input file is not a valid PDF document (missing %PDF- header)".into(),

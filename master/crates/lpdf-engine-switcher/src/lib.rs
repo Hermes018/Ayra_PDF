@@ -14,7 +14,8 @@ use std::path::{Path, PathBuf};
 
 #[cfg(any(test, feature = "test-utils"))]
 pub mod fuzz;
-pub mod guard;
+/// F4 guards; implemented in lpdf-engine-pdfcraft (which owns pdfcraft-cos for the ratio cap).
+pub use lpdf_engine_pdfcraft::guard;
 #[cfg(any(test, feature = "test-utils"))]
 pub mod hostile;
 #[cfg(any(test, feature = "test-utils"))]
@@ -80,13 +81,9 @@ impl PdfEngine for EngineSwitcher {
         self.loaded_path = Some(path.to_path_buf());
         self.active = None;
 
-        // F4 preflight: refuse structurally hostile files before either engine parses them.
-        let bytes = std::fs::read(path).map_err(LpdfError::Io)?;
-        if let Err(trip) = guard::preflight(&bytes) {
-            tracing::warn!("EngineSwitcher: {}", trip);
-            return Err(LpdfError::ResourceLimit(trip.to_string()));
-        }
-        drop(bytes);
+        // F4 guards (BUG-018/029/030): streaming structure scan + decompression-ratio cap, cached per
+        // (path, size, mtime); both engines are refused a hostile file.
+        lpdf_engine_pdfcraft::guard::check_file(path)?;
 
         // Try primary first
         match self.primary.load(path) {
@@ -146,15 +143,20 @@ impl PdfEngine for EngineSwitcher {
 
     fn merge(&self, input_paths: &[&Path], output_path: &Path) -> Result<()> {
         // Merge operations are static/standalone and go through primary.
+        for p in input_paths {
+            lpdf_engine_pdfcraft::guard::check_file(p)?;
+        }
         self.primary.merge(input_paths, output_path)
     }
 
     fn extract_pages(&self, input_path: &Path, pages: &[usize], output_path: &Path) -> Result<()> {
         // Extract operations are static/standalone and go through primary.
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.extract_pages(input_path, pages, output_path)
     }
 
     fn delete_pages(&self, input_path: &Path, pages: &[usize], output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.delete_pages(input_path, pages, output_path)
     }
 
@@ -165,11 +167,13 @@ impl PdfEngine for EngineSwitcher {
         degrees: i32,
         output_path: &Path,
     ) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary
             .rotate_pages(input_path, pages, degrees, output_path)
     }
 
     fn rotate_document(&self, input_path: &Path, degrees: i32, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary
             .rotate_document(input_path, degrees, output_path)
     }
@@ -180,14 +184,17 @@ impl PdfEngine for EngineSwitcher {
         profile: lpdf_engine_port::OptimizeProfile,
         output_path: &Path,
     ) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.compress(input_path, profile, output_path)
     }
 
     fn repair(&self, input_path: &Path, output_path: &Path) -> Result<Vec<String>> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.repair(input_path, output_path)
     }
 
     fn ocr(&self, input_path: &Path, lang: &str, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.ocr(input_path, lang, output_path)
     }
 
@@ -198,6 +205,7 @@ impl PdfEngine for EngineSwitcher {
         output_path: &Path,
         native_text_only: bool,
     ) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary
             .ocr_with_options(input_path, lang, output_path, native_text_only)
     }
@@ -209,11 +217,13 @@ impl PdfEngine for EngineSwitcher {
         permissions: lpdf_engine_port::Permissions,
         output_path: &Path,
     ) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary
             .protect(input_path, password, permissions, output_path)
     }
 
     fn unlock(&self, input_path: &Path, password: &str, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.unlock(input_path, password, output_path)
     }
 
@@ -223,6 +233,7 @@ impl PdfEngine for EngineSwitcher {
         annotation: &lpdf_engine_port::AnnotationDef,
         output_path: &Path,
     ) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary
             .add_annotation(input_path, annotation, output_path)
     }
@@ -233,15 +244,18 @@ impl PdfEngine for EngineSwitcher {
         settings: &lpdf_engine_port::WatermarkSettings,
         output_path: &Path,
     ) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary
             .add_watermark(input_path, settings, output_path)
     }
 
     fn flatten_comments(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.flatten_comments(input_path, output_path)
     }
 
     fn flatten_forms(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.flatten_forms(input_path, output_path)
     }
 
@@ -251,6 +265,7 @@ impl PdfEngine for EngineSwitcher {
         fields: &std::collections::HashMap<String, String>,
         output_path: &Path,
     ) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.fill_form(input_path, fields, output_path)
     }
 
@@ -261,6 +276,7 @@ impl PdfEngine for EngineSwitcher {
         password: &str,
         output_path: &Path,
     ) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary
             .sign_document(input_path, p12_path, password, output_path)
     }
@@ -271,46 +287,57 @@ impl PdfEngine for EngineSwitcher {
         regions: Vec<RedactionRegion>,
         output_path: &Path,
     ) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.redact(input_path, regions, output_path)
     }
 
     fn image_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.image_to_pdf(input_path, output_path)
     }
 
     fn text_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.text_to_pdf(input_path, output_path)
     }
 
     fn structural_docx_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.structural_docx_to_pdf(input_path, output_path)
     }
 
     fn html_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.html_to_pdf(input_path, output_path)
     }
 
     fn pdf_to_images(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.pdf_to_images(input_path, output_path)
     }
 
     fn extract_all_images(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.extract_all_images(input_path, output_path)
     }
 
     fn pdf_to_text(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.pdf_to_text(input_path, output_path)
     }
 
     fn pdf_to_structural_docx(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.pdf_to_structural_docx(input_path, output_path)
     }
 
     fn pdf_to_html(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.pdf_to_html(input_path, output_path)
     }
 
     fn pdf_to_rtf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.pdf_to_rtf(input_path, output_path)
     }
 
@@ -320,6 +347,7 @@ impl PdfEngine for EngineSwitcher {
         conformance: PdfAConformance,
         output_path: &Path,
     ) -> Result<PdfAPreflightReport> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary
             .pdf_to_pdfa(input_path, conformance, output_path)
     }
@@ -330,6 +358,7 @@ impl PdfEngine for EngineSwitcher {
         format: OfficeInputFormat,
         output_path: &Path,
     ) -> Result<std::path::PathBuf> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.office_to_pdf(input_path, format, output_path)
     }
 
@@ -339,14 +368,17 @@ impl PdfEngine for EngineSwitcher {
         format: OfficeOutputFormat,
         output_path: &Path,
     ) -> Result<std::path::PathBuf> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.pdf_to_office(input_path, format, output_path)
     }
 
     fn markdown_to_pdf(&self, input_path: &Path, output_path: &Path) -> Result<std::path::PathBuf> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.markdown_to_pdf(input_path, output_path)
     }
 
     fn pdf_to_markdown(&self, input_path: &Path, output_path: &Path) -> Result<std::path::PathBuf> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary.pdf_to_markdown(input_path, output_path)
     }
 
@@ -356,6 +388,7 @@ impl PdfEngine for EngineSwitcher {
         format: MarkdownDocFormat,
         output_path: &Path,
     ) -> Result<std::path::PathBuf> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary
             .markdown_to_doc(input_path, format, output_path)
     }
@@ -366,6 +399,7 @@ impl PdfEngine for EngineSwitcher {
         format: MarkdownDocFormat,
         output_path: &Path,
     ) -> Result<std::path::PathBuf> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary
             .doc_to_markdown(input_path, format, output_path)
     }
@@ -386,6 +420,7 @@ impl PdfEngine for EngineSwitcher {
         output_path: &Path,
         length: SummaryLength,
     ) -> Result<ExtractiveSummaryReport> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary
             .summarize_extractive(input_path, output_path, length)
     }
@@ -396,6 +431,7 @@ impl PdfEngine for EngineSwitcher {
         output_path: &Path,
         options: LlmSummaryOptions,
     ) -> Result<LlmSummaryReport> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary
             .summarize_llm_map_reduce(input_path, output_path, options)
     }
@@ -406,6 +442,7 @@ impl PdfEngine for EngineSwitcher {
         output_pdf_path: &Path,
         options: TranslateOptions,
     ) -> Result<TranslatePdfReport> {
+        lpdf_engine_pdfcraft::guard::check_file(input_path)?;
         self.primary
             .translate_pdf_experimental(input_path, output_pdf_path, options)
     }

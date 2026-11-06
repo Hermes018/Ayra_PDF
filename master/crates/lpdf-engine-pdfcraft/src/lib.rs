@@ -10,6 +10,7 @@ use lpdf_engine_port::{
 use std::path::Path;
 use std::sync::Arc;
 
+pub mod guard;
 pub mod office_sidecar;
 pub mod pandoc_sidecar;
 pub mod summarizer;
@@ -37,7 +38,7 @@ impl PdfcraftAdapter {
 
 impl PdfEngine for PdfcraftAdapter {
     fn load(&mut self, path: &Path) -> Result<()> {
-        let bytes = std::fs::read(path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(path)?;
         let name = path
             .file_name()
             .unwrap_or_default()
@@ -125,7 +126,7 @@ impl PdfEngine for PdfcraftAdapter {
     fn merge(&self, input_paths: &[&Path], output_path: &Path) -> Result<()> {
         let mut sources = Vec::new();
         for path in input_paths {
-            let bytes = std::fs::read(path).map_err(LpdfError::Io)?;
+            let bytes = guard::read_guarded(path)?;
             let name = path
                 .file_name()
                 .unwrap_or_default()
@@ -158,7 +159,7 @@ impl PdfEngine for PdfcraftAdapter {
 
     fn extract_pages(&self, input_path: &Path, pages: &[usize], output_path: &Path) -> Result<()> {
         let mut session = pdfcraft_engine::Session::new();
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let name = input_path
             .file_name()
             .unwrap_or_default()
@@ -192,7 +193,7 @@ impl PdfEngine for PdfcraftAdapter {
 
     fn delete_pages(&self, input_path: &Path, pages: &[usize], output_path: &Path) -> Result<()> {
         let mut session = pdfcraft_engine::Session::new();
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let name = input_path
             .file_name()
             .unwrap_or_default()
@@ -242,7 +243,7 @@ impl PdfEngine for PdfcraftAdapter {
         output_path: &Path,
     ) -> Result<()> {
         let mut session = pdfcraft_engine::Session::new();
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let name = input_path
             .file_name()
             .unwrap_or_default()
@@ -287,7 +288,7 @@ impl PdfEngine for PdfcraftAdapter {
 
     fn rotate_document(&self, input_path: &Path, degrees: i32, output_path: &Path) -> Result<()> {
         let mut session = pdfcraft_engine::Session::new();
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let name = input_path
             .file_name()
             .unwrap_or_default()
@@ -343,7 +344,7 @@ impl PdfEngine for PdfcraftAdapter {
         use pdfcraft_engine::optimize::{Compression, ImageSettings, Settings};
 
         let mut session = pdfcraft_engine::Session::new();
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let name = input_path
             .file_name()
             .unwrap_or_default()
@@ -416,7 +417,7 @@ impl PdfEngine for PdfcraftAdapter {
 
     fn repair(&self, input_path: &Path, output_path: &Path) -> Result<Vec<String>> {
         let mut session = pdfcraft_engine::Session::new();
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let name = input_path
             .file_name()
             .unwrap_or_default()
@@ -469,7 +470,7 @@ impl PdfEngine for PdfcraftAdapter {
         // Wrap in catch_unwind to satisfy F23 (ML Inference Failure)
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
             let mut session = pdfcraft_engine::Session::new();
-            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let bytes = guard::read_guarded(&input_path)?;
             let name = input_path
                 .file_name()
                 .unwrap_or_default()
@@ -550,7 +551,7 @@ impl PdfEngine for PdfcraftAdapter {
 
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
             let mut session = pdfcraft_engine::Session::new();
-            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let bytes = guard::read_guarded(&input_path)?;
             let name = input_path
                 .file_name()
                 .unwrap_or_default()
@@ -628,7 +629,7 @@ impl PdfEngine for PdfcraftAdapter {
 
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
             let mut session = pdfcraft_engine::Session::new();
-            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let bytes = guard::read_guarded(&input_path)?;
             let name = input_path
                 .file_name()
                 .unwrap_or_default()
@@ -688,7 +689,7 @@ impl PdfEngine for PdfcraftAdapter {
 
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
             let mut session = pdfcraft_engine::Session::new();
-            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let bytes = guard::read_guarded(&input_path)?;
             let name = input_path
                 .file_name()
                 .unwrap_or_default()
@@ -790,7 +791,7 @@ impl PdfEngine for PdfcraftAdapter {
 
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
             let mut session = pdfcraft_engine::Session::new();
-            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let bytes = guard::read_guarded(&input_path)?;
             let name = input_path
                 .file_name()
                 .unwrap_or_default()
@@ -874,7 +875,7 @@ impl PdfEngine for PdfcraftAdapter {
 
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
             let mut session = pdfcraft_engine::Session::new();
-            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let bytes = guard::read_guarded(&input_path)?;
             let name = input_path
                 .file_name()
                 .unwrap_or_default()
@@ -943,7 +944,7 @@ impl PdfEngine for PdfcraftAdapter {
 
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
             let mut session = pdfcraft_engine::Session::new();
-            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let bytes = guard::read_guarded(&input_path)?;
             let name = input_path
                 .file_name()
                 .unwrap_or_default()
@@ -1016,7 +1017,7 @@ impl PdfEngine for PdfcraftAdapter {
 
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
             let mut session = pdfcraft_engine::Session::new();
-            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let bytes = guard::read_guarded(&input_path)?;
             let name = input_path
                 .file_name()
                 .unwrap_or_default()
@@ -1091,7 +1092,7 @@ impl PdfEngine for PdfcraftAdapter {
         let password = password.to_string();
 
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
-            let bytes = std::fs::read(&input_path).map_err(LpdfError::Io)?;
+            let bytes = guard::read_guarded(&input_path)?;
             let p12_bytes = std::fs::read(&p12_path).map_err(LpdfError::Io)?;
 
             let doc = pdfcraft_cos::Document::open(Arc::new(bytes))
@@ -1154,7 +1155,7 @@ impl PdfEngine for PdfcraftAdapter {
         output_path: &Path,
     ) -> Result<()> {
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+            let bytes = guard::read_guarded(input_path)?;
             let mut session = pdfcraft_engine::Session::new();
             let name = input_path
                 .file_name()
@@ -1249,7 +1250,7 @@ impl PdfEngine for PdfcraftAdapter {
     }
 
     fn pdf_to_images(&self, input_path: &Path, output_path: &Path) -> Result<()> {
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let arc_bytes = Arc::new(bytes);
         let name = input_path
             .file_name()
@@ -1317,7 +1318,7 @@ impl PdfEngine for PdfcraftAdapter {
     }
 
     fn extract_all_images(&self, input_path: &Path, output_path: &Path) -> Result<()> {
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let arc_bytes = Arc::new(bytes);
         let name = input_path
             .file_name()
@@ -1375,7 +1376,7 @@ impl PdfEngine for PdfcraftAdapter {
     }
 
     fn pdf_to_text(&self, input_path: &Path, output_path: &Path) -> Result<()> {
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let arc_bytes = Arc::new(bytes);
         let name = input_path
             .file_name()
@@ -1424,7 +1425,7 @@ impl PdfEngine for PdfcraftAdapter {
     }
 
     fn pdf_to_structural_docx(&self, input_path: &Path, output_path: &Path) -> Result<()> {
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let arc_bytes = Arc::new(bytes);
         let name = input_path
             .file_name()
@@ -1469,7 +1470,7 @@ impl PdfEngine for PdfcraftAdapter {
     }
 
     fn pdf_to_html(&self, input_path: &Path, output_path: &Path) -> Result<()> {
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let arc_bytes = Arc::new(bytes);
         let name = input_path
             .file_name()
@@ -1517,7 +1518,7 @@ impl PdfEngine for PdfcraftAdapter {
     }
 
     fn pdf_to_rtf(&self, input_path: &Path, output_path: &Path) -> Result<()> {
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let arc_bytes = Arc::new(bytes);
         let name = input_path
             .file_name()
@@ -1577,7 +1578,7 @@ impl PdfEngine for PdfcraftAdapter {
             PdfAConformance::PdfA3b => pdfcraft_engine::pdfa::Level::A3b,
         };
 
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let arc_bytes = Arc::new(bytes);
         let name = input_path
             .file_name()
@@ -1792,7 +1793,7 @@ impl PdfEngine for PdfcraftAdapter {
         output_path: &Path,
         length: SummaryLength,
     ) -> Result<ExtractiveSummaryReport> {
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let arc_bytes = Arc::new(bytes);
         let name = input_path
             .file_name()
@@ -1854,7 +1855,7 @@ impl PdfEngine for PdfcraftAdapter {
                 .file_name()
                 .and_then(|s| s.to_str())
                 .unwrap_or("doc.pdf");
-            let data = std::fs::read(input_path).map_err(LpdfError::Io)?;
+            let data = guard::read_guarded(input_path)?;
             let arc_bytes = Arc::new(data);
             let doc_id = session
                 .open(
@@ -1909,7 +1910,7 @@ impl PdfEngine for PdfcraftAdapter {
                 .file_name()
                 .and_then(|s| s.to_str())
                 .unwrap_or("doc.pdf");
-            let data = std::fs::read(input_path).map_err(LpdfError::Io)?;
+            let data = guard::read_guarded(input_path)?;
             let arc_bytes = Arc::new(data);
             let doc_id = session
                 .open(
@@ -1969,7 +1970,7 @@ impl PdfcraftAdapter {
             .file_name()
             .and_then(|s| s.to_str())
             .unwrap_or("file");
-        let bytes = std::fs::read(input_path).map_err(LpdfError::Io)?;
+        let bytes = guard::read_guarded(input_path)?;
         let arc_bytes = Arc::new(bytes);
 
         // Atomic convert to PDF

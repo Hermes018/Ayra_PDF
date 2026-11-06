@@ -15,3 +15,7 @@ pdfcraft-engine = { git = "https://github.com/storytold/pdfcraft", rev = "75360d
 pdfcraft-forms = { git = "https://github.com/storytold/pdfcraft", rev = "75360d1d7db06fed974f48c914d4c04132757187" }
 pdfcraft-sign = { git = "https://github.com/storytold/pdfcraft", rev = "75360d1d7db06fed974f48c914d4c04132757187" }
 pdfcraft-cos = { git = "https://github.com/storytold/pdfcraft", rev = "75360d1d7db06fed974f48c914d4c04132757187" }
+
+[dev-dependencies]
+# Test-only: build flate bombs for the F4 decompression-ratio guard (already in Cargo.lock).
+miniz_oxide = "0.8"

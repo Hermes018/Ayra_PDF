@@ -4,7 +4,7 @@
 //! runtime is never starved. Each job gets a `CancellationToken` for
 //! cooperative cancellation.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -678,7 +678,30 @@ pub struct JobManager {
     event_tx: JobEventSender,
     /// Canonical paths of every output a job of THIS process wrote successfully. Never cleared by
     /// `clear_finished_jobs`, so cleanup of app-created intermediates stays possible (BUG-018 c).
-    created_outputs: Arc<Mutex<HashSet<PathBuf>>>,
+    created_outputs: Arc<Mutex<HashMap<PathBuf, FileId>>>,
+}
+
+/// Identity of a file as created: (device, inode) on Unix, (len, mtime) elsewhere. Re-checked
+/// right before unlinking, so a file swapped in under the same name is never deleted.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FileId(u64, u64);
+
+fn file_id(meta: &std::fs::Metadata) -> FileId {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        FileId(meta.dev(), meta.ino())
+    }
+    #[cfg(not(unix))]
+    {
+        let mtime = meta
+            .modified()
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_nanos() as u64)
+            .unwrap_or(0);
+        FileId(meta.len(), mtime)
+    }
 }
 
 /// File-name marker of the intermediates Organize writes when it both reorders and rotates.
@@ -716,7 +739,7 @@ impl JobManager {
             jobs: Arc::new(Mutex::new(HashMap::new())),
             semaphore: Arc::new(Semaphore::new(max_concurrent)),
             event_tx,
-            created_outputs: Arc::new(Mutex::new(HashSet::new())),
+            created_outputs: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
@@ -729,7 +752,7 @@ impl JobManager {
             .created_outputs
             .lock()
             .unwrap_or_else(|e| e.into_inner());
-        set.contains(&canon)
+        set.contains_key(&canon)
     }
 
     /// Delete an Organize intermediate (`<stem>.organizing-<token>.pdf`) that a job of THIS
@@ -760,9 +783,19 @@ impl JobManager {
             .created_outputs
             .lock()
             .unwrap_or_else(|e| e.into_inner());
-        if !set.contains(&canon) {
+        let Some(created) = set.get(&canon).cloned() else {
             return Err(LpdfError::InvalidInput(format!(
                 "not created by this session, refusing to delete: {}",
+                path.display()
+            )));
+        };
+        // Re-check identity right before unlinking: a file replaced since the job wrote it
+        // (same name, different inode) is not ours; forget it and refuse.
+        let now = std::fs::symlink_metadata(&canon).map_err(LpdfError::Io)?;
+        if !now.file_type().is_file() || file_id(&now) != created {
+            set.remove(&canon);
+            return Err(LpdfError::InvalidInput(format!(
+                "file was replaced since this session created it, refusing to delete: {}",
                 path.display()
             )));
         }
@@ -772,7 +805,7 @@ impl JobManager {
     }
 
     fn record_created(
-        created: &Arc<Mutex<HashSet<PathBuf>>>,
+        created: &Arc<Mutex<HashMap<PathBuf, FileId>>>,
         jobs: &Arc<Mutex<HashMap<JobId, JobEntry>>>,
         job_id: &str,
     ) {
@@ -782,11 +815,13 @@ impl JobManager {
         };
         if let Some(out) = out {
             if let Ok(canon) = std::fs::canonicalize(&out) {
-                if std::fs::symlink_metadata(&canon).is_ok_and(|m| m.file_type().is_file()) {
-                    created
-                        .lock()
-                        .unwrap_or_else(|e| e.into_inner())
-                        .insert(canon);
+                if let Ok(m) = std::fs::symlink_metadata(&canon) {
+                    if m.file_type().is_file() {
+                        created
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner())
+                            .insert(canon, file_id(&m));
+                    }
                 }
             }
         }

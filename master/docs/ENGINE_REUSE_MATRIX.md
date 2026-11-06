@@ -93,6 +93,7 @@ The `lpdf-tools-*` crates (organize, security, edit, convert, optimize, markdown
 | P8 | `:112` `PdfcraftAdapter::save` (`std::fs::write`) | n/a (ours) | **REJECT** | Not a reuse question; F1 gap: use `atomic_write`. | M (F1) |
 | P9 | `crates/lpdf-engine-fallback` (lopdf repair, F7) | pdfcraft vendors lopdf itself | **REJECT** | F7 needs an engine independent of the primary; pdfcraft cannot be its own fallback. | L |
 | P10 | Office/pandoc sidecars `office_sidecar.rs`, `pandoc_sidecar.rs` | pdfcraft has structural DOCX only | **REJECT** | Sidecars are for XLSX/PPTX/complex DOCX by protocol; out of R1 scope. | L |
+| P11 | F4 resource guards `crates/lpdf-engine-pdfcraft/src/guard.rs` (streaming `/Length` scan with `#xx` names and indirect lengths; decompression-ratio cap; verdict cache; `read_guarded` at every adapter/studio input read) | pdfcraft@75360d1 `crates/filters/src/lib.rs:142` `decode(chain, data, max_output)` (bounded decoders) and `crates/cos/src/object.rs:285` `Stream::decoded_within`; pdfcraft's own reads use a fixed `MAX_DECODED` = 1 GiB (`object.rs:214`) | **ADOPT** | The ratio cap decodes with pdfcraft's own bounded decoder at our engine boundary. **Open decision:** making the ratio native at pdfcraft's internal decode sites needs a small pdfcraft-cos patch (ratio-aware `MAX_DECODED`), maintained like ADR-017; until then pdfcraft's internal decodes keep the 1 GiB cap. | M: every stream of a new file is decoded once more at first open (cached per path+size+mtime). |
 
 ## 4. Shared crates and conventions
 
@@ -106,11 +107,11 @@ The `lpdf-tools-*` crates (organize, security, edit, convert, optimize, markdown
 | `lint/ast-grep/rules/string-error.yml` ("String as an error type" → thiserror enum) | cadcraft | **Yes in spirit** (DO-7). | `studio.rs` returns `Result<_, String>` everywhere; new adapter crates use typed errors with stable codes (`GeomError::code`). Migrating `studio.rs` is post-prototype. |
 | Workspace `edition = "2024"`, `rust-version = "1.95"` | cadcraft | n/a | Only matters because cadcraft crates need >= 1.95; our toolchain is stable 1.99 but `Cargo.toml` still declares `rust-version = "1.74"` (inaccurate once cadcraft is linked). |
 
-## 5. Summary (61 rows)
+## 5. Summary (62 rows)
 
 | Decision | Count | Rows |
 |---|---|---|
-| ADOPT | 24 | T6, T8, T13, T14, T16, T27, T29, T31, T41; R1, R2, R3, R4, R5, R7, R8, R9; P1-P7 (P1-P6 already pdfcraft) |
+| ADOPT | 25 | T6, T8, T13, T14, T16, T27, T29, T31, T41; R1, R2, R3, R4, R5, R7, R8, R9; P1-P7 (P1-P6 already pdfcraft), P11 |
 | ADOPT-WASM (provisional, S1) | 7 | T1, T2, T3, T7, T23, T38, T39 |
 | KEEP-PORT | 4 | T11, T15, T19, T24 |
 | REJECT | 26 | T4, T5, T9, T10, T12, T17, T18, T20, T21, T22, T25, T26, T28, T30, T32, T33, T34, T35, T36, T37, T40, T42; R6; P8, P9, P10 |
