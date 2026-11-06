@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 16:30 Asia/Dhaka by the lead (Sonnet 5.5). If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 16:12 Asia/Dhaka by the lead (Sonnet 5.5). If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59; **rc1 target Sat 18:00**. Feature freeze. Scope: docs/PROTOTYPE_SCOPE.md.
@@ -10,9 +10,9 @@ Updated 2026-11-06 16:30 Asia/Dhaka by the lead (Sonnet 5.5). If this disagrees 
 ## Worktrees
 | Worktree | State |
 |---|---|
-| main (1e78e1b) | all code merged through the UI sweep (tag ui-sweep-complete) + ARGON_TASKS. Untracked LOCALPDF_MASTER_HANDOVER.md in the repo root is NOT ours: left alone |
-| wt/fixes (warm target) | RUNNING (sonnet/med): packaging prep A — version 0.2.0, About screen, Reset preferences (settings → Opus-high), build hash |
-| wt/release | idle; target deleted. Packaging builds run from main (warm release cache) |
+| main (7987e45) | all code merged through the UI sweep (tag ui-sweep-complete) + ARGON_TASKS. Untracked LOCALPDF_MASTER_HANDOVER.md in the repo root is NOT ours: left alone |
+| wt/fixes (warm target) | idle; packaging prep A merged (tag packaging-prep-a-green) |
+| wt/release | RUNNING (sonnet/med): packaging B1 — measure LTO peak, build AppImage/deb/rpm → ~/LocalPDF-rc1/, SHA256SUMS, SBOM, KI-006 offline proof (no app instance) |
 | wt/engines | parked (CP3 uncommitted, target deleted); android paused |
 
 ## E2E on main 83fd51c (golden run 20261106T144532)
@@ -23,7 +23,7 @@ Updated 2026-11-06 16:30 Asia/Dhaka by the lead (Sonnet 5.5). If this disagrees 
 ## Next actions
 1. BUG-063 verdict → if app regression: fix test-first (Opus-high); if drift: fix the driver and rerun steps 3/5/6.
 2. Then BUG-062 retry policy + BUG-061 diagnostic (one release-builder job; app instance is shared).
-3. Packaging: part A merge (Opus-high for Reset preferences), then build rpm/deb/AppImage with measured LTO, SHA256SUMS, SBOM (`cargo xtask sbom`), no-network clean-install test, docs, RC verifier, tag v0.2.0-rc1.
+3. Packaging: B1 building (above); then B2 = no-network clean-install + network-isolated run + docs (README, QUICKSTART, CHANGELOG, KNOWN_ISSUES) → RC verifier (Opus high) → tag v0.2.0-rc1 → READY TO PUSH.
 
 ## Standing rules
 - RAM: training first; 2 HEAVY slots (docs/RAM_BUDGET.md). Disk 38.5 GiB free; run.sh refuses < 15 GB; delete only regenerable targets of idle worktrees.
