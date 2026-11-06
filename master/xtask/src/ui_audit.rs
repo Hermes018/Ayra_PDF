@@ -862,6 +862,22 @@ pub fn audit_source(file: &str, src: &str, shared_tags: &[&str]) -> Vec<Violatio
 /// Audit the user-visible strings of an i18n JSON catalog (FAQ answers, labels, ...) with the same overclaim and
 /// Title Case rules as the `.svelte` files. A short value (at most six words, no sentence punctuation) is a label
 /// and must be sentence case; every value is checked for overclaiming words and for "100% <word>" claims.
+/// Overclaim terms in the other FAQ locales (plain substrings: these scripts have no word boundaries).
+/// Mirrors the English list: military-grade, instant, zero-cloud, perfect.
+const OVERCLAIM_TERMS_I18N: &[&str] = &[
+    "মিলিটারী",
+    "সামরিক মান",
+    "তাৎক্ষণিক",
+    "军用",
+    "零网络",
+    "瞬间",
+    "軍用",
+    "瞬時",
+    "niveau militaire",
+    "instantané",
+    "ராணுவ",
+];
+
 pub fn audit_i18n_json(file: &str, src: &str) -> Vec<Violation> {
     let mut out = Vec::new();
     let english = file.ends_with("/en.json") || file == "en.json";
@@ -883,6 +899,19 @@ pub fn audit_i18n_json(file: &str, src: &str) -> Vec<Violation> {
                     "overclaiming wording `{w}`: say what the feature does, not how well"
                 ),
             });
+        }
+        for term in OVERCLAIM_TERMS_I18N {
+            if lower.contains(term) {
+                out.push(Violation {
+                    file: file.to_string(),
+                    line: i + 1,
+                    rule: Rule::Overclaim,
+                    detail: (*term).to_string(),
+                    message: format!(
+                        "overclaiming wording `{term}`: say what the feature does, not how well"
+                    ),
+                });
+            }
         }
         let words = value.split_whitespace().count();
         let sentence = value.ends_with(['.', '?', '!', ':', ';']) || value.contains(". ");
@@ -1760,6 +1789,23 @@ mod tests {
     // i18n JSON strings: the same overclaim and Title Case rules as the .svelte files.
     fn i18n(src: &str) -> Vec<Violation> {
         audit_i18n_json("lib/i18n/faq/en.json", src)
+    }
+
+    #[test]
+    fn i18n_overclaims_are_flagged_in_every_locale() {
+        for (file, bad) in [
+            ("bn.json", r#"{"a": "এএসই-২৫৬ মিলিটারী-গ্রেড এনক্রিপশন।"}"#),
+            ("zh.json", r#"{"a": "采用军用级加密。"}"#),
+            ("ja.json", r#"{"a": "軍用グレードの暗号化。"}"#),
+            ("fr.json", r#"{"a": "chiffrement de niveau militaire."}"#),
+            ("ta.json", r#"{"a": "ராணுவ தரத்திலான குறியாக்கம்."}"#),
+            ("fr.json", r#"{"a": "aperçu instantané."}"#),
+        ] {
+            let v = audit_i18n_json(&format!("lib/i18n/faq/{file}"), bad);
+            assert!(v.iter().any(|x| x.rule == Rule::Overclaim), "{file}: {bad}");
+        }
+        let ok = audit_i18n_json("lib/i18n/faq/bn.json", r#"{"a": "এএসই-২৫৬ এনক্রিপশন।"}"#);
+        assert!(ok.is_empty());
     }
 
     #[test]

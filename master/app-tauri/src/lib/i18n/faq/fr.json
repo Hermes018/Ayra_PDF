@@ -37,7 +37,7 @@
       "feature": "Sécurité et Signatures",
       "question": "Quel est le niveau de sécurité du chiffrement et de la signature numérique ?",
       "answer": "La sécurité chiffre les PDF en AES-256 (Acrobat X et versions ultérieures) et signe avec des certificats PKCS#12 ; les contrôles d'intégrité échouent de façon sûre.",
-      "usage": "Définissez les mots de passe utilisateur et propriétaire, configurez les permissions ou signez avec un certificat PKCS#12 (.p12/.pfx).",
+      "usage": "Définissez un mot de passe d'ouverture du PDF, ou signez avec un certificat PKCS#12 (.p12/.pfx).",
       "outputs": "Document PDF chiffré conforme aux normes ISO ou document signé numériquement au standard PAdES.",
       "offlineBoundaries": "Les mots de passe et clés privées sont purgés (zeroized) de la mémoire vive immédiatement après leur utilisation."
     },

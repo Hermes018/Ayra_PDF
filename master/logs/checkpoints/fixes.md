@@ -71,3 +71,4 @@
 - Visual: Batch header compact, StudioIcon += bolt/chip/globe/file/clock/warning/arrow.right (emoji removed in the 3 views), Toggle label left-aligned, Settings grid aligned, disabled destructive Button legible, floating Help and FAQ only when sidebar collapsed (test), Gated opt-in / Model ready.
 - Flow 23 leftover: wd.stop_group waits for whole driver group (test_driver_stop.py red->green). verify GREEN; flows 10, 23 PASS, no leftover warning.
 - BUG-059 remainder: import refuses on unreadable settings (Rust test), UI Import disabled, handler-direct tests, military-grade removed (AES-256 only) + audit word. verify GREEN, flow 23 PASS.
+- BUG-060: per-locale overclaim terms + test; bn military-grade removed; FAQ usage no longer claims print/copy permissions or owner password (6 locales); Import reason test scoped. verify run.

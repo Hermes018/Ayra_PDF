@@ -12,7 +12,7 @@
       "answer": "转换完全在您的设备本地运行，由原生 Rust 矢量引擎与沙箱化文档适配器提供支持。",
       "usage": "在侧边栏中选择“转换”，选择“PDF 导出”或“转换为 PDF”，配置目标格式（Office、图片、PDF/A、HTML、TXT）并启动转换。",
       "outputs": "原子化写入高质量 DOCX、XLSX、PPTX、PNG、JPEG、PDF/A-2b/3b、HTML 或 TXT 至目标目录。",
-      "offlineBoundaries": "完全零网络请求，无远程云端遥测。所有操作均在隔离的本地子工作进程中完成。"
+      "offlineBoundaries": "不发起网络请求，无远程云端遥测。所有操作均在隔离的本地子工作进程中完成。"
     },
     {
       "id": "organize",
@@ -37,7 +37,7 @@
       "feature": "安全与数字签名 (Security)",
       "question": "LocalPDF Studio 的加密与数字签名安全性如何？",
       "answer": "使用 AES-256（Acrobat X 及更高版本）加密 PDF，并使用 PKCS#12 证书签名；完整性检查失败时会拒绝操作。",
-      "usage": "设定用户/所有者密码，精细化配置打印与复制权限，或导入 PKCS#12 (.p12/.pfx) 证书执行数字签署。",
+      "usage": "设定打开 PDF 所需的密码，或导入 PKCS#12 (.p12/.pfx) 证书执行数字签署。",
       "outputs": "生成符合 ISO 标准的加密 PDF 或具备防篡改校验特征的 PAdES 数字签名文档。",
       "offlineBoundaries": "密码与私钥使用完毕后在内存中立即归零清空 (Zeroize)，不进行远程时间戳服务器轮询。"
     },

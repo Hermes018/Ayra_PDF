@@ -261,7 +261,10 @@ describe('SettingsView', () => {
         await screen.findByTestId('settings-loaded');
         const imp = screen.getByRole('button', { name: 'Import model' });
         expect(imp).toHaveAttribute('aria-disabled', 'true');
-        expect(document.body.textContent).toContain("Settings couldn't be loaded. Retry first.");
+        // The reason is attached to the Import button itself (the Save button has the same text).
+        const tip = imp.getAttribute('aria-describedby');
+        expect(tip).toBeTruthy();
+        expect(document.getElementById(tip as string)).toHaveTextContent("Settings couldn't be loaded. Retry first.");
         await fireEvent.input(screen.getByLabelText('Local model file path'), { target: { value: '/m/x.gguf' } });
         await (component as unknown as { handleImportModel: () => Promise<void> }).handleImportModel();
         expect(IpcClient.importLocalAiModel).not.toHaveBeenCalled();

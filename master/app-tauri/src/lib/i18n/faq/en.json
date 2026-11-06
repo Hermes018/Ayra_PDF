@@ -12,7 +12,7 @@
       "answer": "Conversion runs on your device using native Rust vector engines and sandboxed document adapters.",
       "usage": "Select Convert in the sidebar, choose Convert From PDF or Convert To PDF, configure your target format (Office, Image, PDF/A, HTML, TXT), and click Convert.",
       "outputs": "Generates pristine DOCX, XLSX, PPTX, PNG, JPEG, PDF/A-2b/3b, HTML, or TXT files atomically to your target folder.",
-      "offlineBoundaries": "Zero network requests. No cloud telemetry, no remote servers. Everything runs in isolated local worker processes."
+      "offlineBoundaries": "No network requests. No cloud telemetry, no remote servers. Everything runs in isolated local worker processes."
     },
     {
       "id": "organize",
@@ -37,7 +37,7 @@
       "feature": "Security and signatures",
       "question": "How secure is encryption and digital signing in LocalPDF Studio?",
       "answer": "Security encrypts PDFs with AES-256 (Acrobat X and later) and signs with PKCS#12 certificates; integrity checks fail closed.",
-      "usage": "Set user and owner passwords, configure granular print/copy permissions, or select a PKCS#12 (.p12/.pfx) digital certificate to sign.",
+      "usage": "Set a password that is needed to open the PDF, or select a PKCS#12 (.p12/.pfx) digital certificate to sign.",
       "outputs": "Standard-compliant encrypted PDF or PAdES digitally signed document with cryptographically verifiable digests.",
       "offlineBoundaries": "Passwords and private keys are zeroized in RAM immediately after use. No remote timestamp authority pings or certificate upload."
     },
