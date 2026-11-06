@@ -1596,3 +1596,7 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 
 ## [2026-11-06 08:18] Merge: ERR-007 / BUG-015 — DONE
 - 52b7a17, tag fixes-err007-green. Our own even-odd polygon clipping with holes, plus 9 original parametric patterns; Studio hatch is the default; cadcraft stays off. Reviewer sonnet/medium PASS with minors (BUG-035 P1, BUG-036 P2). Merge-verifier opus/high: verify.sh GREEN, nextest 202/202. An independent parse of the saved PDFs found 498 segments, 0 outside the concave L, and 9 pairwise-distinct patterns. Legacy would fail (118/207 outside). No licence-unclear crates are in the shipped tree. AR-CONC ×1/16 is an adapter display scale; upstream data is unmodified (owner rule, UPSTREAM_MANIFEST + UPGRADING 3a).
+
+## [2026-11-06 08:20] E2E P0 subset on main (52b7a17): flows 2, 4, 6, 11 PASS; flow 1 BLOCKED (no bundle yet)
+- Debug binary build 18 s (sccache). Report: e2e/out/runs/20261106T081925-online-f1_2_4_6_11/report.json. Flow 4 WARN: one leftover process killed by reap. No leftovers after the run.
+- Next: DOGFOOD AppImage build + pkg_smoke (flows 1–2) running.
