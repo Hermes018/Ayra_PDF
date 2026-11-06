@@ -31,4 +31,7 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 09:51 | review+verify | A2 audit + triage | sonnet/medium (agent file) | ok | | PASS, minors → BUG-042 |
 | 2026-11-06 09:51 | review+verify | release WIP + BUG-031 | sonnet/medium (agent file) | ok | | PASS, minors → BUG-041 |
 | 2026-11-06 09:53 | fixes-build | C0 shared component library + gallery | sonnet/medium (owner) | ok | | from scratch (Bits UI/Melt REJECT), vitest 301 |
-| 2026-11-06 10:04 | review+verify+visual | C0 library | sonnet/medium (agent file) | running | | |
+| 2026-11-06 10:04 | review+verify+visual | C0 library | sonnet/medium (agent file) | ok | | PASS w/ 2 visual majors (dark dialog contrast, tooltip clip) → fix round |
+| 2026-11-06 10:05 | fixes-build | C0 fix round (dialog contrast, tooltip clamp, gallery check control, env -u, BUG-043) | sonnet/medium | ok | | |
+| 2026-11-06 10:11 | review+verify | C0 delta recheck + fresh gate | sonnet/medium (agent file) | ok | | 3/4 PASS, tooltip overlap minor; gate GREEN |
+| 2026-11-06 10:11 | fixes-build | sweep group 1 (main-flow screens) | sonnet/medium (owner) | running | | |
