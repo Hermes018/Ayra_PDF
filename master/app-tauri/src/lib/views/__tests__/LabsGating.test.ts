@@ -225,8 +225,8 @@ describe('Labs gating (2.16 math text, 8.10 shape guess)', () => {
         test('property pill insert picker has no math-text option', () => {
             tools.selectTool('callout.single');
             render(PropertyPill);
-            const picker = screen.getByRole('combobox', { name: 'Select Insert or Callout Tool' });
-            expect(within(picker).getByText('Sticky Note')).toBeInTheDocument();
+            const picker = screen.getByRole('combobox', { name: 'Insert or callout tool' });
+            expect(within(picker).getByText('Sticky note')).toBeInTheDocument();
             expect(within(picker).queryByText(MATH_TEXT_LABS.label)).not.toBeInTheDocument();
             expect(within(picker).queryByText(/latex/i)).not.toBeInTheDocument();
         });
@@ -321,7 +321,7 @@ describe('Labs gating (2.16 math text, 8.10 shape guess)', () => {
         test('property pill lists and labels the tool as "Math text (Labs)"', () => {
             tools.selectTool('callout.single');
             render(PropertyPill);
-            const picker = screen.getByRole('combobox', { name: 'Select Insert or Callout Tool' });
+            const picker = screen.getByRole('combobox', { name: 'Insert or callout tool' });
             expect(within(picker).getByText(MATH_TEXT_LABS.label)).toBeInTheDocument();
 
             tools.selectTool('insert.latex');

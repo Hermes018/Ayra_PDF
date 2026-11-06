@@ -13,6 +13,7 @@ import EmptyState from './EmptyState.svelte';
 import ErrorState from './ErrorState.svelte';
 import Progress from './Progress.svelte';
 import SidebarSection from './SidebarSection.svelte';
+import ColorSwatch from './ColorSwatch.svelte';
 
 const text = (s: string) => createRawSnippet(() => ({ render: () => `<span>${s}</span>` }));
 const btn = (label: string) => createRawSnippet(() => ({ render: () => `<button type="button">${label}</button>` }));
@@ -425,5 +426,40 @@ describe('IconButton shortcut chords in the app', () => {
       expect(describedText(screen.getByRole('button', { name: 'Label' }))).toBe(`Label (${chord})`);
       unmount();
     }
+  });
+});
+
+describe('compact variants (toolbar pills)', () => {
+  it('Select compact: class for the small control, still labelled, label hidden when asked', () => {
+    render(Select, { value: 'a', label: 'Line style', hideLabel: true, compact: true, options: [{ value: 'a', label: 'Solid' }] });
+    expect(screen.getByLabelText('Line style')).toHaveClass('lp-select--compact');
+  });
+  it('Input compact: class for the small control', () => {
+    render(Input, { value: '0', label: 'Volume depth', hideLabel: true, compact: true, type: 'number' });
+    expect(screen.getByLabelText('Volume depth')).toHaveClass('lp-input--compact');
+  });
+});
+
+describe('ColorSwatch', () => {
+  it('is a native button named by its label, with the colour as background', () => {
+    render(ColorSwatch, { color: 'rgb(10, 20, 30)', label: 'Blue colour', pressed: false, onclick: () => {} });
+    const b = screen.getByRole('button', { name: 'Blue colour' });
+    expect(b.tagName).toBe('BUTTON');
+    expect(b).toHaveAttribute('aria-pressed', 'false');
+    expect((b as HTMLElement).style.background).toContain('rgb(10, 20, 30)');
+  });
+  it('shows the selected colour with aria-pressed=true and the is-pressed ring class', () => {
+    render(ColorSwatch, { color: 'red', label: 'Red colour', pressed: true, onclick: () => {} });
+    const b = screen.getByRole('button', { name: 'Red colour' });
+    expect(b).toHaveAttribute('aria-pressed', 'true');
+    expect(b).toHaveClass('is-pressed');
+  });
+  it('click activates it; the label is also its tooltip', async () => {
+    const onclick = vi.fn();
+    render(ColorSwatch, { color: 'red', label: 'Red colour', onclick, 'data-testid': 'sw-red' });
+    const b = screen.getByTestId('sw-red');
+    await fireEvent.click(b);
+    expect(onclick).toHaveBeenCalledTimes(1);
+    expect(describedText(b)).toBe('Red colour');
   });
 });
