@@ -82,4 +82,6 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 12:49 | reviewer (read-only) | BUG-052 frontend | sonnet/medium | fail | | BLOCKER Convert status banner deleted (silent errors) |
 | 2026-11-06 12:53 | fixes-build | BUG-052 fix round (banner, toast, pipelines banner, diag canonical) | sonnet/medium | ok | | |
 | 2026-11-06 12:59 | review+verify (combined) | BUG-052 fix delta | opus/high | ok | | GREEN, flow 10 PASS |
-| 2026-11-06 13:03 | fixes-build | sweep remaining groups (non-main-flow) | sonnet/medium | running | | hard stop 16:45 |
+| 2026-11-06 13:03 | fixes-build | sweep group 11 (Forms, Security, PdfViewer) | sonnet/medium | ok | | password kept after failure (flagged) |
+| 2026-11-06 13:09 | merge-verify | g11 security/redaction/password + flows 2,8 | opus/high | running | | sole runner |
+| 2026-11-06 13:09 | reviewer (read-only) | g11 frontend + visual | sonnet/medium | running | | |
