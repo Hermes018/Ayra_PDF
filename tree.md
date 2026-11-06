@@ -501,6 +501,7 @@ master/
 │   │   └── winprint-optional-pdfium-build-deps.md            # Draft issue: make winprint's PDFium download build-deps optional (ADR-017)
 │   ├── APPLE_HIG_GLASS_SPEC.md                               # "Frosted glass" visual design system spec (all platforms)
 │   ├── ARCHITECTURE_AND_COMPLIANCE_AUDIT.md                  # Audit of studio phases D1/D2 against the plan
+│   ├── ARGON_TASKS.md                                        # Low-risk task list for the weaker Argon agent: rules, DO-NOT-TOUCH list, strict-audit workflow, tasks AT-01..AT-15 with acceptance tests, done checklist
 │   ├── CRAFT_ECOSYSTEM_SURVEY.md                             # Survey of the 10 storytold *craft repos: licences, deps, unsafe, what to port/adopt (ADR-018 PROPOSED)
 │   ├── DESIGN_LANGUAGE.md                                    # App-wide design language: principles, tokens (themeContract + NEW), shared ui/ components (create vs reuse), patterns, wording guide, sweep "done" rules
 │   ├── DRAWBOARD_FEATURE_CHECKLIST.md                        # 119-item studio feature checklist with status (checked by `cargo xtask feature-map-check`)

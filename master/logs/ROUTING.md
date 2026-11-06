@@ -104,4 +104,4 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 14:40 | fixes-build | BUG-060 FAQ text (bn military-grade, permissions claim) + audit all locales | sonnet/medium | ok | | |
 | 2026-11-06 14:44 | review+verify (combined) | BUG-060 text | sonnet/low | fail | | skipped 2 of 4 checks; lead covered with 2 greps (1st Sonnet miss on this task) |
 | 2026-11-06 14:44 | e2e-run | full E2E on main: flows 1-12 (1 h soak) + sweep 13-23 | sonnet/low (escalation rule) | running | | |
-| 2026-11-06 15:14 | docs | ARGON_TASKS.md (step 4, doc-only) | sonnet/medium | running | | lead switched to Sonnet 5.5 (owner /model) |
+| 2026-11-06 15:14 | docs | ARGON_TASKS.md (step 4, doc-only) | sonnet/medium | ok | | lead removed AT-08/16/17, restricted AT-15 (SpatialCanvas holds save code) |
