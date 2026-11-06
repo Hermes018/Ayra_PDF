@@ -4,6 +4,11 @@
     import { appState } from '$lib/state.svelte';
     import { IpcClient, pickFilesDialog } from '$lib/ipc';
     import type { JobRequest } from '$lib/bindings/JobRequest';
+    import Button from '$lib/components/ui/Button.svelte';
+    import Input from '$lib/components/ui/Input.svelte';
+    import Select from '$lib/components/ui/Select.svelte';
+    import ErrorState from '$lib/components/ui/ErrorState.svelte';
+    import Progress from '$lib/components/ui/Progress.svelte';
 
     // The viewer reactive path comes directly from the global active files
     let currentPath = $derived(appState.currentFile);
@@ -12,8 +17,24 @@
     let extractPagesInput = $state("");
     let deletePagesInput = $state("");
     let rotatePagesInput = $state("");
-    let rotateDegrees = $state(90);
-    let rotateDocDegrees = $state(90);
+    // Select values are strings; converted to degrees when the job is built.
+    let rotateDegrees = $state('90');
+    let rotateDocDegrees = $state('90');
+    const DEGREE_OPTIONS = [
+        { value: '90', label: '90° clockwise' },
+        { value: '180', label: '180°' },
+        { value: '-90', label: '90° counter-clockwise' },
+    ];
+
+    // Field errors replace the old alert() dialogs; a running job shows Progress with Cancel; a failed
+    // job or file picker shows an ErrorState with Retry.
+    let extractError = $state<string | undefined>(undefined);
+    let deleteError = $state<string | undefined>(undefined);
+    let rotateError = $state<string | undefined>(undefined);
+    let busyLabel = $state<string | null>(null);
+    let opAbort: AbortController | null = null;
+    let opError = $state<{ what: string; next: string; retry: () => void } | null>(null);
+    let browseError = $state(false);
 
     function parsePages(input: string): number[] {
         const pages = new Set<number>();
@@ -36,117 +57,93 @@
         return Array.from(pages).sort((a, b) => a - b);
     }
 
+    const PAGES_HINT = 'Enter page numbers like 1, 3, 5-7.';
+
+    /** Runs one job and waits for it (existing IPC job signals); Cancel aborts it through cancel_job. */
+    async function runOp(label: string, what: string, req: JobRequest): Promise<void> {
+        if (busyLabel) return;
+        opError = null;
+        busyLabel = label;
+        opAbort = new AbortController();
+        const signal = opAbort.signal;
+        try {
+            await IpcClient.runJob(req, { signal });
+        } catch (e) {
+            if (!signal.aborted) {
+                console.error(`${what} failed:`, e);
+                opError = {
+                    what,
+                    next: 'Check the page numbers and that the file is still there, then try again. The original file is unchanged.',
+                    retry: () => void runOp(label, what, req),
+                };
+            }
+        } finally {
+            busyLabel = null;
+            opAbort = null;
+        }
+    }
+
     async function handleExtract() {
         if (!currentPath) return;
         const pages = parsePages(extractPagesInput);
-        if (pages.length === 0) {
-            alert("Please enter valid page numbers (e.g. 1, 3, 5-7).");
-            return;
-        }
-
-        const outputPath = currentPath.replace(/\.pdf$/i, '_extracted.pdf');
-        const req: JobRequest = {
-            op: "ExtractPages",
+        extractError = pages.length === 0 ? PAGES_HINT : undefined;
+        if (pages.length === 0) return;
+        await runOp('Extracting pages', "Couldn't extract the pages.", {
+            op: 'ExtractPages',
             input_path: currentPath,
-            output_path: outputPath,
-            pages: pages
-        };
-
-        try {
-            const jobId = await IpcClient.submitJob(req);
-            console.log("Extract job submitted with ID:", jobId);
-        } catch (e) {
-            console.error("Failed to submit extract job:", e);
-        }
+            output_path: currentPath.replace(/\.pdf$/i, '_extracted.pdf'),
+            pages,
+        });
     }
 
     async function handleDelete() {
         if (!currentPath) return;
         const pages = parsePages(deletePagesInput);
-        if (pages.length === 0) {
-            alert("Please enter valid page numbers to delete.");
-            return;
-        }
-
-        const outputPath = currentPath.replace(/\.pdf$/i, '_deleted.pdf');
-        const req: JobRequest = {
-            op: "DeletePages",
+        deleteError = pages.length === 0 ? PAGES_HINT : undefined;
+        if (pages.length === 0) return;
+        await runOp('Deleting pages', "Couldn't delete the pages.", {
+            op: 'DeletePages',
             input_path: currentPath,
-            output_path: outputPath,
-            pages: pages
-        };
-
-        try {
-            const jobId = await IpcClient.submitJob(req);
-            console.log("Delete job submitted with ID:", jobId);
-        } catch (e) {
-            console.error("Failed to submit delete job:", e);
-        }
+            output_path: currentPath.replace(/\.pdf$/i, '_deleted.pdf'),
+            pages,
+        });
     }
 
     async function handleRotate() {
         if (!currentPath) return;
         const pages = parsePages(rotatePagesInput);
-        if (pages.length === 0) {
-            alert("Please enter valid page numbers to rotate.");
-            return;
-        }
-
-        const outputPath = currentPath.replace(/\.pdf$/i, '_rotated.pdf');
-        const req: JobRequest = {
-            op: "RotatePages",
+        rotateError = pages.length === 0 ? PAGES_HINT : undefined;
+        if (pages.length === 0) return;
+        await runOp('Rotating pages', "Couldn't rotate the pages.", {
+            op: 'RotatePages',
             input_path: currentPath,
-            output_path: outputPath,
-            pages: pages,
-            degrees: rotateDegrees
-        };
-
-        try {
-            const jobId = await IpcClient.submitJob(req);
-            console.log("Rotate job submitted with ID:", jobId);
-        } catch (e) {
-            console.error("Failed to submit rotate job:", e);
-        }
+            output_path: currentPath.replace(/\.pdf$/i, '_rotated.pdf'),
+            pages,
+            degrees: Number(rotateDegrees),
+        });
     }
 
     async function handleRotateDoc() {
         if (!currentPath) return;
-
-        const outputPath = currentPath.replace(/\.pdf$/i, `_rotdoc_${rotateDocDegrees}.pdf`);
-        const req: JobRequest = {
-            op: "RotateDocument",
+        await runOp('Rotating the document', "Couldn't rotate the document.", {
+            op: 'RotateDocument',
             input_path: currentPath,
-            output_path: outputPath,
-            degrees: rotateDocDegrees
-        };
-
-        try {
-            const jobId = await IpcClient.submitJob(req);
-            console.log("Rotate document job submitted with ID:", jobId);
-        } catch (e) {
-            console.error("Failed to submit rotate document job:", e);
-        }
+            output_path: currentPath.replace(/\.pdf$/i, `_rotdoc_${rotateDocDegrees}.pdf`),
+            degrees: Number(rotateDocDegrees),
+        });
     }
 
     async function handleMerge() {
         if (activeFiles.length < 2) return;
-        
-        const outputPath = activeFiles[0].replace(/\.pdf$/i, '_merged.pdf');
-        const req: JobRequest = {
-            op: "Merge",
+        await runOp('Merging files', "Couldn't merge the files.", {
+            op: 'Merge',
             input_paths: activeFiles,
-            output_path: outputPath
-        };
-
-        try {
-            const jobId = await IpcClient.submitJob(req);
-            console.log("Merge job submitted with ID:", jobId);
-        } catch (e) {
-            console.error("Failed to submit merge job:", e);
-        }
+            output_path: activeFiles[0].replace(/\.pdf$/i, '_merged.pdf'),
+        });
     }
 
     async function handleBrowseFiles() {
+        browseError = false;
         try {
             const files = await pickFilesDialog(true, ['pdf']);
             if (files && files.length > 0) {
@@ -154,6 +151,7 @@
             }
         } catch (e) {
             console.error("Failed to open file picker:", e);
+            browseError = true;
         }
     }
 </script>
@@ -162,14 +160,29 @@
     <div class="header">
         <h2>Organize PDFs</h2>
         <div class="controls">
-            <button type="button" class="browse-button" onclick={handleBrowseFiles} aria-label="Browse PDF files">
-                📁 Browse Files
-            </button>
+            <Button variant="primary" onclick={handleBrowseFiles}>Browse files</Button>
             <span class="active-file-path">
                 {currentPath || 'No file selected. Drag and drop a PDF.'}
             </span>
         </div>
     </div>
+
+    {#if browseError}
+        <ErrorState
+            what="Couldn't open the file picker."
+            next="Try again, or drag a PDF into the window."
+            retry={handleBrowseFiles}
+        />
+    {/if}
+    {#if opError}
+        <ErrorState what={opError.what} next={opError.next} retry={opError.retry} data-testid="organize-op-error" />
+    {/if}
+    {#if busyLabel}
+        <Progress value={null} label={busyLabel} data-testid="organize-op-progress" />
+        <div class="progress-cancel">
+            <Button variant="secondary" size="sm" onclick={() => opAbort?.abort()} data-testid="organize-op-cancel">Cancel</Button>
+        </div>
+    {/if}
 
     <div class="viewer-layout">
         <div class="tools-sidebar">
@@ -177,79 +190,77 @@
             <p>Select pages to extract, delete, or reorder.</p>
 
             <div class="tool-section">
-                <h4>Extract Pages</h4>
+                <h4>Extract pages</h4>
                 {#if currentPath}
-                    <input 
-                        type="text" 
-                        class="pages-input" 
-                        bind:value={extractPagesInput} 
-                        placeholder="e.g. 1, 3, 5-10" 
-                    />
-                    <button class="action-button" onclick={handleExtract} disabled={!extractPagesInput.trim()}>
+                    <Input label="Pages to extract" bind:value={extractPagesInput} placeholder="e.g. 1, 3, 5-10" error={extractError} />
+                    <Button
+                        variant="primary"
+                        onclick={handleExtract}
+                        disabled={!extractPagesInput.trim() || !!busyLabel}
+                        disabledReason={busyLabel ? 'Wait for the current job to finish, or cancel it' : 'Enter the pages to extract'}
+                    >
                         Extract
-                    </button>
+                    </Button>
                 {:else}
                     <p class="empty-text">Select a file to extract pages.</p>
                 {/if}
             </div>
 
             <div class="tool-section">
-                <h4>Delete Pages</h4>
+                <h4>Delete pages</h4>
                 {#if currentPath}
-                    <input 
-                        type="text" 
-                        class="pages-input" 
-                        bind:value={deletePagesInput} 
-                        placeholder="e.g. 1, 3, 5-10" 
-                    />
-                    <button class="action-button action-danger" onclick={handleDelete} disabled={!deletePagesInput.trim()}>
-                        Delete
-                    </button>
+                    <Input label="Pages to delete" bind:value={deletePagesInput} placeholder="e.g. 1, 3, 5-10" error={deleteError} />
+                    <Button
+                        variant="destructive"
+                        onclick={handleDelete}
+                        disabled={!deletePagesInput.trim() || !!busyLabel}
+                        disabledReason={busyLabel ? 'Wait for the current job to finish, or cancel it' : 'Enter the pages to delete'}
+                    >
+                        Delete pages
+                    </Button>
                 {:else}
                     <p class="empty-text">Select a file to delete pages.</p>
                 {/if}
             </div>
 
             <div class="tool-section">
-                <h4>Rotate Pages</h4>
+                <h4>Rotate pages</h4>
                 {#if currentPath}
-                    <input 
-                        type="text" 
-                        class="pages-input" 
-                        bind:value={rotatePagesInput} 
-                        placeholder="e.g. 1, 3, 5-10" 
-                    />
-                    <select class="pages-input" bind:value={rotateDegrees}>
-                        <option value={90}>90° Clockwise</option>
-                        <option value={180}>180°</option>
-                        <option value={-90}>90° Counter-Clockwise</option>
-                    </select>
-                    <button class="action-button" onclick={handleRotate} disabled={!rotatePagesInput.trim()}>
-                        Rotate
-                    </button>
+                    <Input label="Pages to rotate" bind:value={rotatePagesInput} placeholder="e.g. 1, 3, 5-10" error={rotateError} data-testid="organize-rotate-pages-input" />
+                    <Select label="Direction" bind:value={rotateDegrees} options={DEGREE_OPTIONS} />
+                    <Button
+                        variant="primary"
+                        data-testid="organize-rotate-pages-btn"
+                        onclick={handleRotate}
+                        disabled={!rotatePagesInput.trim() || !!busyLabel}
+                        disabledReason={busyLabel ? 'Wait for the current job to finish, or cancel it' : 'Enter the pages to rotate'}
+                    >
+                        Rotate pages
+                    </Button>
                 {:else}
                     <p class="empty-text">Select a file to rotate pages.</p>
                 {/if}
             </div>
 
             <div class="tool-section">
-                <h4>Rotate Document</h4>
+                <h4>Rotate document</h4>
                 {#if currentPath}
-                    <select class="pages-input" bind:value={rotateDocDegrees}>
-                        <option value={90}>90° Clockwise</option>
-                        <option value={180}>180°</option>
-                        <option value={-90}>90° Counter-Clockwise</option>
-                    </select>
-                    <button class="action-button" onclick={handleRotateDoc}>
-                        Rotate All
-                    </button>
+                    <Select label="Direction" bind:value={rotateDocDegrees} options={DEGREE_OPTIONS} />
+                    <Button
+                        variant="primary"
+                        onclick={handleRotateDoc}
+                        disabled={!!busyLabel}
+                        disabledReason="Wait for the current job to finish, or cancel it"
+                    >
+                        Rotate all pages
+                    </Button>
                 {:else}
                     <p class="empty-text">Select a file to rotate.</p>
                 {/if}
             </div>
 
             <div class="tool-section">
-                <h4>Files to Merge</h4>
+                <h4>Files to merge</h4>
                 {#if activeFiles.length > 0}
                     <ul class="file-list">
                         <For items={activeFiles}>
@@ -258,15 +269,21 @@
                             {/snippet}
                         </For>
                     </ul>
-                    <button class="merge-button" data-testid="organize-merge-btn" onclick={handleMerge} disabled={activeFiles.length < 2}>
-                        Merge All
-                    </button>
+                    <Button
+                        variant="primary"
+                        data-testid="organize-merge-btn"
+                        onclick={handleMerge}
+                        disabled={activeFiles.length < 2 || !!busyLabel}
+                        disabledReason={busyLabel ? 'Wait for the current job to finish, or cancel it' : 'Open at least two PDFs to enable Merge all'}
+                    >
+                        Merge all
+                    </Button>
                 {:else}
                     <p class="empty-text">Drag files here to merge.</p>
                 {/if}
             </div>
         </div>
-        
+
         <!-- Main PDF Viewer Area -->
         <div class="viewer-main">
             <GridEditor filePath={currentPath} />
@@ -309,31 +326,8 @@
         flex-wrap: wrap;
     }
 
-    .browse-button {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        background: var(--accent-primary);
-        color: var(--text-on-accent);
-        font-weight: 600;
-        font-size: 0.85rem;
-        border: none;
-        border-radius: var(--radius-md, 10px);
-        box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-sm);
-        cursor: pointer;
-        white-space: nowrap;
-        transition: opacity var(--dur-fast, 120ms) ease, transform var(--dur-fast, 120ms) ease;
-    }
 
-    .browse-button:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
-    }
 
-    .browse-button:active {
-        transform: translateY(0);
-    }
 
     .active-file-path {
         background-color: var(--glass-bg-input);
@@ -409,16 +403,6 @@
         font-size: 0.95rem;
     }
 
-    .pages-input {
-        width: 100%;
-        padding: 0.5rem;
-        background-color: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        color: var(--text-primary);
-        border-radius: var(--radius-md, 10px);
-        margin-bottom: 0.75rem;
-        box-sizing: border-box;
-    }
 
     .file-list {
         list-style: none;
@@ -440,30 +424,13 @@
         text-overflow: ellipsis;
     }
 
-    .action-button, .merge-button {
-        width: 100%;
-        padding: 0.65rem;
-        background-color: var(--accent-primary);
-        color: var(--text-on-accent);
-        border: none;
-        border-radius: var(--radius-md, 10px);
-        font-weight: 600;
-        cursor: pointer;
-        transition: opacity var(--dur-fast, 120ms) ease;
-    }
 
-    .action-button:disabled, .merge-button:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-    }
 
-    .action-button:not(:disabled):hover, .merge-button:not(:disabled):hover {
-        opacity: 0.9;
-    }
 
-    .action-danger {
-        background-color: var(--semantic-danger);
-        color: var(--text-on-accent);
+
+    .progress-cancel {
+        display: flex;
+        justify-content: flex-end;
     }
 
     .empty-text {

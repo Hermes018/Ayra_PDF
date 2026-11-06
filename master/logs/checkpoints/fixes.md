@@ -1,4 +1,5 @@
 # checkpoints/fixes.md — fixes builder (wt/fixes). Builder keeps this current; < 150 lines.
+- **C sweep, group 1 DONE (Organize: OrganizeView, GridEditor, Dropzone), uncommitted, awaiting lead review.** Order: logs/runs/sweep-order.md. Violations 25->0 (ui-strict lists them). verify GREEN; flows 10+14 PASS (logs/runs/sweep-e2e10.log). Flow10 selectors/labels/organized glob updated; OrganizeApply.test aria-disabled. New: e2e/flows/flow14_sweep_organize.py, logs/runs/sweep-order.md. Next: group 2 (Sidebar, StatusBar, MainLayout) after merge.
 - **C0 review fixes done (opaque dialog, tooltip clamp, marker+control, env guard, run.py text, BUG-043 Space). CURRENT TASK (C0, shared UI component library) — uncommitted, plan runs/plan-C0.md:** Bits UI 2.20.6 / Melt 0.44.0 evaluated, both REJECT
   (row in ENGINE_REUSE_MATRIX 4b; licences fine, keyboard-ownership conflict). Tokens: themeContract.svelte.ts is the single source
   (+applyToRoot, 11 NEW, full --glass-blur); app.css keeps only aliases/layout (red logs/runs/c0-theme-red-keep.log -> green c0-theme-green.log).

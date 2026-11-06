@@ -3,6 +3,8 @@
     import { getCurrentWebview } from '@tauri-apps/api/webview';
     import { appState } from '$lib/state.svelte';
     import { pickFilesDialog } from '$lib/ipc';
+    import Button from '$lib/components/ui/Button.svelte';
+    import ErrorState from '$lib/components/ui/ErrorState.svelte';
 
     let {
         onFilesSelected,
@@ -17,9 +19,11 @@
     } = $props();
     
     let isDragging = $state(false);
+    let pickerFailed = $state(false);
     let unlisten: (() => void) | undefined;
 
     async function handleBrowse() {
+        pickerFailed = false;
         try {
             const paths = await pickFilesDialog(multiple, extensions);
             if (paths && paths.length > 0) {
@@ -31,6 +35,7 @@
             }
         } catch (e) {
             console.error('Failed to open file picker:', e);
+            pickerFailed = true;
         }
     }
 
@@ -63,44 +68,26 @@
 </script>
 
 {#if mode === 'inline'}
-    <div
-        class="inline-dropzone"
-        role="button"
-        tabindex="0"
-        onclick={handleBrowse}
-        onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleBrowse(); } }}
-    >
+    <div class="inline-dropzone">
         <span class="icon" aria-hidden="true">📄</span>
         <div class="drop-text">
-            <h3>Drag & Drop PDFs here</h3>
-            <p>or click to browse from local storage</p>
+            <h3>Drag and drop PDFs here</h3>
+            <p>or choose files from this computer</p>
         </div>
-        <button
-            type="button"
-            class="browse-btn"
-            onclick={(e) => { e.stopPropagation(); handleBrowse(); }}
-        >
-            📁 Browse Files...
-        </button>
+        <Button variant="secondary" onclick={handleBrowse}>Browse files</Button>
+        {#if pickerFailed}
+            <ErrorState what="Couldn't open the file picker." next="Try again, or drag the PDFs into the window." retry={handleBrowse} />
+        {/if}
     </div>
 {:else if isDragging}
-    <div
-        class="dropzone-overlay"
-        role="button"
-        tabindex="0"
-        onclick={handleBrowse}
-        onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleBrowse(); } }}
-    >
+    <div class="dropzone-overlay" role="presentation">
         <div class="drop-message">
             <span class="icon" aria-hidden="true">📄</span>
-            <h2>Drop PDFs here</h2>
-            <button
-                type="button"
-                class="browse-btn"
-                onclick={(e) => { e.stopPropagation(); handleBrowse(); }}
-            >
-                📁 Browse Files...
-            </button>
+            <h2>Drop PDFs to open them</h2>
+            <Button variant="secondary" onclick={handleBrowse}>Browse files</Button>
+            {#if pickerFailed}
+                <ErrorState what="Couldn't open the file picker." next="Try again, or drop the PDFs here." retry={handleBrowse} />
+            {/if}
         </div>
     </div>
 {/if}
@@ -120,7 +107,6 @@
         align-items: center;
         justify-content: center;
         border: 4px dashed var(--accent-primary);
-        cursor: pointer;
     }
 
     .drop-message {
@@ -149,7 +135,6 @@
         background: var(--glass-bg-surface);
         -webkit-backdrop-filter: var(--glass-blur);
         backdrop-filter: var(--glass-blur);
-        cursor: pointer;
         transition: border-color var(--dur-fast, 120ms) ease, background-color var(--dur-fast, 120ms) ease;
         text-align: center;
         margin: 1rem 0;
@@ -172,30 +157,8 @@
         font-size: 0.9rem;
     }
 
-    .browse-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1.25rem;
-        background: var(--glass-bg-input);
-        color: var(--text-primary);
-        font-weight: 600;
-        font-size: 0.9rem;
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-md, 10px);
-        box-shadow: inset 0 1px 0 0 var(--glass-border-specular);
-        cursor: pointer;
-        transition: background-color var(--dur-fast, 120ms) ease, transform var(--dur-fast, 120ms) ease;
-    }
 
-    .browse-btn:hover {
-        background: var(--glass-bg-hover);
-        transform: translateY(-1px);
-    }
 
-    .browse-btn:active {
-        transform: translateY(0);
-    }
 
     .icon {
         font-size: 3.5rem;

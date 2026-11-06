@@ -3,6 +3,10 @@
     import { invoke } from '@tauri-apps/api/core';
     import { IpcClient } from '$lib/ipc';
     import { applyOrganize } from './organizeApply';
+    import Button from '$lib/components/ui/Button.svelte';
+    import IconButton from '$lib/components/ui/IconButton.svelte';
+    import ErrorState from '$lib/components/ui/ErrorState.svelte';
+    import Progress from '$lib/components/ui/Progress.svelte';
 
     let { filePath } = $props<{ filePath: string | null }>();
 
@@ -61,7 +65,8 @@
                 });
             }
         } catch (err: any) {
-            error = err.message;
+            console.error('Failed to load pages for Organize:', err);
+            error = err?.message ?? 'load failed';
         } finally {
             loading = false;
         }
@@ -136,26 +141,35 @@
 
 <div class="grid-editor-container">
     {#if loading}
-        <div class="loading">Loading pages...</div>
+        <div class="loading" role="status">Loading pages…</div>
     {:else if error}
-        <div class="error">{error}</div>
+        <ErrorState
+            what="Couldn't load the pages."
+            next="The file may be damaged or no longer there. Check it, then try again."
+            retry={() => filePath && loadPdf(filePath)}
+            data-testid="organize-load-error"
+        />
     {:else if pages.length > 0}
         <div class="toolbar">
             <span class="info">{pages.filter(p => !p.deleted).length} of {pages.length} pages selected</span>
-            <button
-                class="apply-btn"
-                data-testid="organize-apply-btn"
-                onclick={applyChanges}
-                disabled={pages.length === 0 || applyStatus.state === 'running'}
-            >
-                {applyStatus.state === 'running' ? 'Applying…' : 'Apply Changes'}
-            </button>
-            {#if applyStatus.state === 'running'}
-                <button class="apply-btn cancel" data-testid="organize-cancel-btn" onclick={() => applyAbort?.abort()}>
-                    Cancel
-                </button>
-            {/if}
+            <div class="toolbar-actions">
+                <Button
+                    variant="primary"
+                    data-testid="organize-apply-btn"
+                    onclick={applyChanges}
+                    disabled={pages.length === 0 || applyStatus.state === 'running'}
+                    disabledReason={applyStatus.state === 'running' ? 'Applying changes. Cancel to stop.' : 'Open a PDF with pages to enable Apply changes'}
+                >
+                    Apply changes
+                </Button>
+                {#if applyStatus.state === 'running'}
+                    <Button variant="secondary" data-testid="organize-cancel-btn" onclick={() => applyAbort?.abort()}>Cancel</Button>
+                {/if}
+            </div>
         </div>
+        {#if applyStatus.state === 'running'}
+            <Progress value={null} label="Applying changes" />
+        {/if}
         {#if applyStatus.state !== 'idle'}
             <div
                 class="apply-status {applyStatus.state}"
@@ -194,10 +208,20 @@
                     </div>
 
                     <div class="page-overlay">
-                        <button class="action-btn" data-testid="organize-rotate-btn" onclick={() => rotatePage(i)} title="Rotate" aria-label="Rotate page {i + 1}">↻</button>
-                        <button class="action-btn {page.deleted ? 'restore' : 'danger'}" data-testid="organize-delete-btn" onclick={() => toggleDelete(i)} title="Delete/Restore" aria-label="{page.deleted ? 'Restore' : 'Delete'} page {i + 1}">
-                            {page.deleted ? '↩' : '×'}
-                        </button>
+                        <IconButton
+                            icon="redo"
+                            size="sm"
+                            ariaLabel="Rotate page {i + 1}"
+                            data-testid="organize-rotate-btn"
+                            onclick={() => rotatePage(i)}
+                        />
+                        <IconButton
+                            icon={page.deleted ? 'undo' : 'close'}
+                            size="sm"
+                            ariaLabel="{page.deleted ? 'Restore' : 'Delete'} page {i + 1}"
+                            data-testid="organize-delete-btn"
+                            onclick={() => toggleDelete(i)}
+                        />
                     </div>
                 </div>
             {/each}
@@ -209,9 +233,9 @@
 
 <style>
     .apply-status {
-        margin: 0 0 12px;
-        padding: 8px 12px;
-        border-radius: 6px;
+        margin: 0 0 var(--space-3);
+        padding: var(--space-2) var(--space-3);
+        border-radius: var(--radius-xs);
         font-size: 0.85rem;
         border: 1px solid var(--glass-border-subtle);
         background: var(--glass-bg-elevated);
@@ -230,7 +254,7 @@
         width: 100%;
         height: 100%;
         background-color: var(--glass-bg-canvas);
-        border-radius: 8px;
+        border-radius: var(--radius-sm);
         overflow: hidden;
     }
 
@@ -243,37 +267,20 @@
         border-bottom: 1px solid var(--glass-border-subtle);
     }
 
+    .toolbar-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+    }
+
     .info {
         color: var(--text-secondary);
         font-size: 0.9rem;
     }
 
-    .apply-btn {
-        background-color: var(--semantic-success);
-        color: var(--text-on-accent);
-        border: none;
-        padding: 0.5rem 1.5rem;
-        border-radius: 4px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: opacity 0.2s;
-    }
 
-    .apply-btn.cancel {
-        background-color: var(--glass-bg-elevated);
-        color: var(--text-primary);
-        border: 1px solid var(--glass-border-subtle);
-        margin-left: 0.5rem;
-    }
 
-    .apply-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
 
-    .apply-btn:not(:disabled):hover {
-        opacity: 0.9;
-    }
 
     .grid-layout {
         display: grid;
@@ -287,7 +294,7 @@
 
     .page-card {
         background-color: var(--glass-bg-surface);
-        border-radius: 6px;
+        border-radius: var(--radius-xs);
         border: 2px solid transparent;
         position: relative;
         cursor: grab;
@@ -341,7 +348,7 @@
         justify-content: center;
         overflow: hidden;
         background-color: var(--glass-bg-input);
-        border-radius: 4px;
+        border-radius: var(--radius-xs);
     }
 
     .img-container img {
@@ -363,38 +370,17 @@
         background: var(--glass-bg-elevated);
         backdrop-filter: var(--glass-blur);
         padding: 0.25rem;
-        border-radius: 4px;
+        border-radius: var(--radius-xs);
     }
 
-    .page-card:hover .page-overlay {
+    .page-card:hover .page-overlay,
+    .page-card:focus-within .page-overlay {
         opacity: 1;
     }
 
-    .action-btn {
-        width: 30px;
-        height: 30px;
-        border: none;
-        border-radius: 4px;
-        background-color: var(--glass-bg-input);
-        color: var(--text-primary);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-    }
 
-    .action-btn:hover {
-        background-color: var(--glass-bg-hover);
-    }
 
-    .action-btn.danger {
-        color: var(--semantic-danger);
-    }
 
-    .action-btn.restore {
-        color: var(--semantic-success);
-    }
 
     .loading, .error, .empty {
         padding: 2rem;

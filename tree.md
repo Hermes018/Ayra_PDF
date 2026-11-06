@@ -492,7 +492,8 @@ master/
 │   │   ├── flow10_organize.py                                # Flow 10: reorder, rotate, delete, merge pages
 │   │   ├── flow11_save_reopen.py                             # Flow 11: save new file, original untouched, reopen in app/poppler/pdf.js
 │   │   ├── flow12_soak.py                                    # Flow 12: scripted soak, crash/memory/fd/temp checks
-│   │   └── flow13_gallery.py                                 # E2E flow 13: gallery screenshots light/dark at 1200x800 and 1600x1000 (default, focus, hover/disabled, dialog), no console errors
+│   │   ├── flow13_gallery.py                                 # E2E flow 13: gallery screenshots light/dark at 1200x800 and 1600x1000 (default, focus, hover/disabled, dialog), no console errors
+│   │   └── flow14_sweep_organize.py                          # E2E smoke (sweep): Organize screen opens, light/dark screenshots at 2 sizes, no console errors
 │   ├── .gitignore                                            # Ignores e2e/out/ (reports, screenshots, copied binary)
 │   ├── common.py                                             # Ground-truth helpers (poppler/qpdf/hashes), process sampling, isolation (private D-Bus/XDG)
 │   ├── pkg_smoke.py                                          # Clean-user install smoke test for rpm/deb/AppImage (flows 1-2 against the packaged binary, fresh HOME)

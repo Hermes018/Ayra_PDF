@@ -190,13 +190,13 @@ describe('Organize Grid Apply (BUG-014)', () => {
         await renderGrid();
         await fireEvent.click(screen.getAllByTestId('organize-rotate-btn')[0]);
         await fireEvent.click(screen.getByTestId('organize-apply-btn'));
-        await waitFor(() => expect(screen.getByTestId('organize-apply-btn')).toBeDisabled());
+        await waitFor(() => expect(screen.getByTestId('organize-apply-btn')).toHaveAttribute('aria-disabled', 'true'));
         await fireEvent.click(await screen.findByTestId('organize-cancel-btn'));
         const status = screen.getByTestId('organize-status');
         await waitFor(() => expect(status).toHaveAttribute('data-state', 'error'));
         expect(status).toHaveTextContent(/cancelled/i);
         expect(cancelled).toHaveLength(1);
-        expect(screen.getByTestId('organize-apply-btn')).toBeEnabled();
+        expect(screen.getByTestId('organize-apply-btn')).not.toHaveAttribute('aria-disabled');
     });
 
     test('leaving the Organize view while Apply runs cancels the job (no orphan work)', async () => {

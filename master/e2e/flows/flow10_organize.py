@@ -44,14 +44,14 @@ def _goto(app, label):
     return bool(btn)
 
 
-def _card_click(app, original_page, title):
+def _card_click(app, original_page, testid):
     return app.s.js("""
-        const [n, title] = arguments;
+        const [n, testid] = arguments;
         const card = [...document.querySelectorAll('.grid-layout .page-card')]
             .find(c => (c.querySelector('img') || {}).alt === 'Page ' + n);
-        const b = card && card.querySelector(`button[title="${title}"]`);
+        const b = card && card.querySelector(`button[data-testid="${testid}"]`);
         if (!b) return false; b.click(); return true;
-    """, original_page, title)
+    """, original_page, testid)
 
 
 def run(flow):
@@ -79,16 +79,16 @@ def run(flow):
     order = app.s.js("return [...document.querySelectorAll('.grid-layout .page-card img')].map(i => i.alt)")
     flow.check("drag page 1 onto position 3 reorders the grid", order[:3] == ["Page 2", "Page 3", "Page 1"],
                f"grid order {order}")
-    rot = _card_click(app, 3, "Rotate")
-    dele = _card_click(app, 4, "Delete/Restore")
+    rot = _card_click(app, 3, "organize-rotate-btn")
+    dele = _card_click(app, 4, "organize-delete-btn")
     time.sleep(0.2)
     state = app.s.js("return [...document.querySelectorAll('.grid-layout .page-card')].map(c => "
                      "[c.querySelector('img').alt, c.querySelector('img').style.transform, c.classList.contains('deleted')])")
     flow.check("rotate and delete controls on the page cards", rot and dele,
                f"rotate {rot}, delete {dele}; cards {state}")
     base = os.path.splitext(src)[0]
-    app.click_button("Apply Changes")
-    out = _wait_file(base + "_organized_rot*.pdf") or _wait_file(base + "_organized.pdf", 5)
+    app.click_button("Apply changes")
+    out = _wait_file(base + ".organized-*.pdf") or _wait_file(base + "_organized_rot*.pdf", 5) or _wait_file(base + "_organized.pdf", 5)
     flow.info("organize_alerts", app.alerts())
     flow.info("organize_toasts", _toasts(app))
     flow.info("organize_outputs", sorted(os.path.basename(p) for p in glob.glob(base + "_*.pdf")))
@@ -105,8 +105,8 @@ def run(flow):
                    len(rots) == 4 and rots[1] == 90 and rots[0] == 0 and rots[2] == 0,
                    f"rotations {rots} ({os.path.basename(out)})")
     # the sidebar "Rotate Pages" tool on its own (isolates the rotate job from the grid chaining)
-    app.set_input(".tool-section input.pages-input", "2", 2)
-    app.click_button("Rotate", ".tool-section button.action-button")
+    app.set_input("[data-testid=organize-rotate-pages-input]", "2")
+    app.click_button("Rotate pages", "[data-testid=organize-rotate-pages-btn]")
     rotated = _wait_file(base + "_rotated.pdf", 30)
     rots = common.page_rotations(rotated, n) if rotated else []
     flow.check("Rotate Pages tool: page 2 rotated 90 in pdfinfo -l", rotated and rots[1] == 90 and
@@ -121,7 +121,7 @@ def run(flow):
     app.s.wait("return document.querySelectorAll('.file-list li').length === 2", 10)
     files = app.s.js("return [...document.querySelectorAll('.file-list li')].map(l => l.textContent.trim())")
     flow.check("both files listed for merge", len(files) == 2, str(files))
-    app.click_button("Merge All")
+    app.click_button("Merge all")
     merged = _wait_file(base + "_merged.pdf")
     n2 = common.pdf_pages(other)
     if flow.check("Merge writes a new file", merged is not None,

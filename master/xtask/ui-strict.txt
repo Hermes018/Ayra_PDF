@@ -13,3 +13,7 @@ lib/components/ui/Select.svelte
 lib/components/ui/SidebarSection.svelte
 lib/components/ui/Toggle.svelte
 lib/components/ui/Tooltip.svelte
+# Sweep group 1: Organize
+lib/views/OrganizeView.svelte
+lib/components/GridEditor.svelte
+lib/components/Dropzone.svelte
