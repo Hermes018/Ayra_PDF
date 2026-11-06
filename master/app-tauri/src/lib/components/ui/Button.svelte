@@ -12,6 +12,10 @@
       /** Loading: shows progress dots, announces aria-busy and ignores clicks. */
       busy?: boolean;
       type?: 'button' | 'submit';
+      /** Navigation item: marks the current page (aria-current) and highlights it. */
+      current?: boolean;
+      /** Full width, label aligned to the start (sidebar items). */
+      block?: boolean;
     };
 
   let {
@@ -23,6 +27,8 @@
     disabledReason,
     busy = false,
     type = 'button',
+    current = false,
+    block = false,
     class: klass = '',
     'data-testid': testid,
   }: Props = $props();
@@ -41,12 +47,15 @@
   }
 </script>
 
-<span class="lp-tipwrap lp-btnwrap {klass}">
+<span class="lp-tipwrap lp-btnwrap {klass}" class:is-block={block}>
   <button
     {type}
     class="lp-btn lp-btn--{variant} lp-btn--{size}"
     class:is-disabled={disabled}
     class:is-busy={busy}
+    class:is-block={block}
+    class:is-current={current}
+    aria-current={current ? 'page' : undefined}
     aria-disabled={disabled || undefined}
     aria-busy={busy || undefined}
     aria-describedby={disabled ? tipId : undefined}
@@ -101,6 +110,10 @@
   .lp-btn:active:not(.is-disabled) { box-shadow: inset 0 0 0 999px var(--glass-bg-hover); }
   .lp-btn.is-disabled { cursor: not-allowed; opacity: 0.5; }
   .lp-btn.is-busy { cursor: progress; }
+  .lp-btnwrap.is-block { display: flex; width: 100%; }
+  .lp-btn.is-block { width: 100%; justify-content: flex-start; font-weight: 400; }
+  .lp-btn--plain.is-block { color: var(--text-primary); }
+  .lp-btn.is-current { background: var(--glass-bg-active); color: var(--accent-primary); font-weight: 600; }
 
   .lp-dots { display: inline-flex; gap: var(--space-1); }
   .lp-dots i {

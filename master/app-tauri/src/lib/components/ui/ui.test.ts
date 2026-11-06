@@ -55,6 +55,15 @@ describe('Button', () => {
     await fireEvent.click(b);
     expect(onclick).toHaveBeenCalledTimes(1);
   });
+  it('current + block (navigation item): aria-current="page", full-width class; absent when not current', () => {
+    const { unmount } = render(Button, { variant: 'plain', block: true, current: true, onclick: () => {}, children: text('Organize') });
+    const b = screen.getByRole('button', { name: 'Organize' });
+    expect(b).toHaveAttribute('aria-current', 'page');
+    expect(b).toHaveClass('is-block', 'is-current');
+    unmount();
+    render(Button, { variant: 'plain', block: true, onclick: () => {}, children: text('Convert') });
+    expect(screen.getByRole('button', { name: 'Convert' })).not.toHaveAttribute('aria-current');
+  });
   it('disabled: ignores clicks, stays focusable, exposes the reason via aria-describedby', async () => {
     const onclick = vi.fn();
     render(Button, { variant: 'primary', onclick, disabled: true, disabledReason: 'Open a PDF to enable Save', children: text('Save') });

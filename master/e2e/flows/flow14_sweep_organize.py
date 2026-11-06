@@ -43,6 +43,8 @@ def run(flow):
         cards = s.wait(GRID_JS, 30)
         flow.check(f"{key}: page grid shows pages", bool(cards) and cards == n, f"{cards} cards for {n} pages")
         flow.check(f"{key}: controls are ui/ components (no raw button/input/select)", s.js(RAW_JS) == 0, str(s.js(RAW_JS)))
+        # let the "Operation ..." toasts from the open/probe jobs expire (6 s) so the shot shows the screen
+        s.wait("return document.querySelectorAll('.toast').length === 0", 15)
         for size in SIZES:
             s.set_window(*size)
             time.sleep(0.5)

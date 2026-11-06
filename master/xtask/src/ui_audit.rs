@@ -470,10 +470,21 @@ fn px_literals(value: &str) -> Vec<String> {
             let end = chars.get(j).map_or(value.len(), |c| c.0);
             let num = &value[start..end];
             let tail = &value[end..];
-            if tail.starts_with("px") && !tail[2..].chars().next().is_some_and(is_word_char) {
-                let v: f64 = num.parse().unwrap_or(f64::NAN);
-                if !PX_EXCEPTIONS.contains(&v) {
-                    out.push(format!("{num}px"));
+            // px (0 and 1px allowed) and rem / em (only 0 allowed) are all raw sizes.
+            for unit in ["px", "rem", "em"] {
+                if tail.starts_with(unit)
+                    && !tail[unit.len()..].chars().next().is_some_and(is_word_char)
+                {
+                    let v: f64 = num.parse().unwrap_or(f64::NAN);
+                    let allowed = if unit == "px" {
+                        PX_EXCEPTIONS.contains(&v)
+                    } else {
+                        v == 0.0
+                    };
+                    if !allowed {
+                        out.push(format!("{num}{unit}"));
+                    }
+                    break;
                 }
             }
             i = j.max(i + 1);
@@ -1305,6 +1316,35 @@ mod tests {
                 Rule::RawPx
             ),
             1
+        );
+    }
+    // rem / em literals in spacing and font properties are raw sizes too (sweep rule).
+    #[test]
+    fn rem_em_positive() {
+        assert_eq!(
+            count("<style>\n.a { font-size: 0.85rem; }\n</style>", Rule::RawPx),
+            1
+        );
+        assert_eq!(
+            count(
+                "<style>\n.a { padding: 0.5rem 1rem; gap: 0.75em; }\n</style>",
+                Rule::RawPx
+            ),
+            3
+        );
+        assert_eq!(
+            count("<div style=\"margin-top: 1.25rem\"></div>", Rule::RawPx),
+            1
+        );
+    }
+    #[test]
+    fn rem_em_negative() {
+        assert_eq!(
+            count(
+                "<style>\n.a { padding: 0 0rem; font-size: var(--font-size-body); letter-spacing: -0.01em; width: 2rem; }\n</style>",
+                Rule::RawPx
+            ),
+            0
         );
     }
     #[test]

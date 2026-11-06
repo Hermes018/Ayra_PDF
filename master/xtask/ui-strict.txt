@@ -17,3 +17,7 @@ lib/components/ui/Tooltip.svelte
 lib/views/OrganizeView.svelte
 lib/components/GridEditor.svelte
 lib/components/Dropzone.svelte
+# Sweep group 2: App shell
+lib/components/Sidebar.svelte
+lib/components/StatusBar.svelte
+lib/components/MainLayout.svelte

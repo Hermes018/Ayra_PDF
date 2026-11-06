@@ -7,6 +7,8 @@
     import FaqModal from './FaqModal.svelte';
     import { faqStore } from '$lib/i18n/faqStore.svelte';
     import { appState } from '$lib/state.svelte';
+    import Button from '$lib/components/ui/Button.svelte';
+    import IconButton from '$lib/components/ui/IconButton.svelte';
 
     let { children, currentView = $bindable() } = $props<{
         children: Snippet;
@@ -18,16 +20,15 @@
 
 <div class="app-container app-shell" class:sidebar-collapsed={appState.sidebarCollapsed}>
     {#if appState.sidebarCollapsed}
-        <button
-            type="button"
-            class="sidebar-floating-toggle"
-            data-testid="sidebar-toggle-btn"
-            onclick={() => appState.toggleSidebar()}
-            aria-label="Expand Sidebar (Ctrl+B)"
-            title="Expand Sidebar (Ctrl+B)"
-        >
-            <span aria-hidden="true">☰</span>
-        </button>
+        <div class="sidebar-floating-toggle">
+            <IconButton
+                icon="chevron.right"
+                ariaLabel="Expand sidebar"
+                shortcutCmd="app.toggleSidebar"
+                data-testid="sidebar-toggle-btn"
+                onclick={() => appState.toggleSidebar()}
+            />
+        </div>
     {/if}
 
     <Sidebar bind:currentView />
@@ -47,15 +48,9 @@
         <StatusBar />
     </div>
     
-    <button
-        type="button"
-        class="faq-floating-trigger"
-        onclick={() => faqStore.toggle()}
-        aria-label="Frequently Asked Questions and Help"
-        title="Help & FAQ"
-    >
-        ?
-    </button>
+    <div class="faq-floating-trigger">
+        <Button variant="secondary" size="sm" onclick={() => faqStore.toggle()}>Help and FAQ</Button>
+    </div>
 
     <Dropzone />
     <ToastContainer />
@@ -87,7 +82,7 @@
         max-width: 100%;
         overflow-x: hidden;
         overflow-y: auto;
-        padding: clamp(1rem, 2.5vw, 2rem);
+        padding: clamp(var(--space-4), 2.5vw, var(--space-8));
         box-sizing: border-box;
         background-color: var(--glass-bg-canvas);
         backdrop-filter: blur(24px) saturate(180%);
@@ -120,7 +115,7 @@
         left: 1rem;
         background: var(--accent-primary);
         color: var(--text-on-accent);
-        padding: 0.5rem 1rem;
+        padding: var(--space-2) var(--space-4);
         font-weight: 600;
         border-radius: var(--radius-xs, 4px);
         z-index: 99999;
@@ -136,61 +131,22 @@
 
     .faq-floating-trigger {
         position: fixed;
-        bottom: calc(var(--statusbar-height, 28px) + 0.85rem);
-        right: 1.25rem;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background-color: var(--glass-bg-elevated);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid var(--glass-border-specular);
-        color: var(--text-primary);
-        font-size: 0.95rem;
-        font-weight: 700;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: var(--glass-shadow-sm);
+        bottom: calc(var(--statusbar-height, 28px) + var(--space-3));
+        right: var(--space-5);
         z-index: 9000;
-        transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
-    }
-
-    .faq-floating-trigger:hover {
-        background-color: var(--glass-bg-hover);
-        border-color: var(--accent-primary);
-        color: var(--accent-primary);
-        transform: scale(1.1);
+        box-shadow: var(--glass-shadow-sm);
+        border-radius: var(--radius-md);
     }
 
     .sidebar-floating-toggle {
         position: fixed;
-        top: 0.75rem;
-        left: 0.75rem;
-        width: 34px;
-        height: 34px;
-        border-radius: var(--radius-sm, 8px);
-        background-color: var(--glass-bg-elevated);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid var(--glass-border-specular);
-        color: var(--text-primary);
-        font-size: 1.1rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: var(--glass-shadow-sm);
+        top: var(--space-3);
+        left: var(--space-3);
         z-index: 9500;
-        transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
-    }
-
-    .sidebar-floating-toggle:hover {
-        background-color: var(--glass-bg-hover);
-        border-color: var(--accent-primary);
-        color: var(--accent-primary);
-        transform: scale(1.05);
+        background-color: var(--glass-bg-elevated);
+        border: 1px solid var(--glass-border-specular);
+        border-radius: var(--radius-md);
+        box-shadow: var(--glass-shadow-sm);
     }
 
     :global(.app-shell.sidebar-collapsed .sidebar) {

@@ -88,13 +88,13 @@ def run(flow):
                f"rotate {rot}, delete {dele}; cards {state}")
     base = os.path.splitext(src)[0]
     app.click_button("Apply changes")
-    out = _wait_file(base + ".organized-*.pdf") or _wait_file(base + "_organized_rot*.pdf", 5) or _wait_file(base + "_organized.pdf", 5)
+    out = _wait_file(base + ".organized-*.pdf")
     flow.info("organize_alerts", app.alerts())
     flow.info("organize_toasts", _toasts(app))
     flow.info("organize_outputs", sorted(os.path.basename(p) for p in glob.glob(base + "_*.pdf")))
     expected_order = [2, 3, 1, 5]
     if flow.check("Apply writes a new organized file", out is not None,
-                  os.path.basename(out) if out else f"no {os.path.basename(base)}_organized*.pdf; alerts {app.alerts()}"):
+                  os.path.basename(out) if out else f"no {os.path.basename(base)}.organized-*.pdf; alerts {app.alerts()}"):
         pages = common.pdf_pages(out)
         flow.check("organized page count (5 - 1 deleted = 4)", pages == 4, f"{pages} pages in {os.path.basename(out)}")
         got = _fingerprints(out, pages or 0)

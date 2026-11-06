@@ -296,8 +296,8 @@
         display: flex;
         flex-direction: column;
         height: 100%;
-        padding: 1rem;
-        gap: 1rem;
+        padding: var(--space-4);
+        gap: var(--space-4);
     }
 
     .header {
@@ -307,7 +307,7 @@
         background-color: var(--glass-bg-surface);
         -webkit-backdrop-filter: var(--glass-blur);
         backdrop-filter: var(--glass-blur);
-        padding: 1rem 1.5rem;
+        padding: var(--space-4) var(--space-6);
         border-radius: var(--radius-lg, 14px);
         border: 1px solid var(--glass-border-subtle);
         box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-sm);
@@ -315,27 +315,24 @@
 
     h2 {
         margin: 0;
-        font-size: 1.5rem;
+        font-size: var(--font-size-title1);
         color: var(--accent-primary);
     }
 
     .controls {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: var(--space-3);
         flex-wrap: wrap;
     }
 
-
-
-
     .active-file-path {
         background-color: var(--glass-bg-input);
-        padding: 0.5rem 1rem;
+        padding: var(--space-2) var(--space-4);
         border-radius: var(--radius-sm, 8px);
         color: var(--text-secondary);
         font-family: var(--font-mono, monospace);
-        font-size: 0.85rem;
+        font-size: var(--font-size-body);
         border: 1px solid var(--glass-border-subtle);
         word-break: break-all;
     }
@@ -343,7 +340,7 @@
     .viewer-layout {
         display: grid;
         grid-template-columns: minmax(min(100%, 260px), 280px) 1fr;
-        gap: 1.25rem;
+        gap: var(--space-5);
         flex: 1;
         min-height: 0;
         min-width: 0;
@@ -359,7 +356,7 @@
         backdrop-filter: var(--glass-blur);
         border: 1px solid var(--glass-border-subtle);
         border-radius: var(--radius-lg, 14px);
-        padding: 1.25rem;
+        padding: var(--space-5);
         box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-sm);
         height: fit-content;
     }
@@ -367,12 +364,12 @@
     .tools-sidebar h3 {
         margin-top: 0;
         color: var(--text-primary);
-        font-size: 1.1rem;
+        font-size: var(--font-size-title2);
     }
 
     .tools-sidebar p {
         color: var(--text-secondary);
-        font-size: 0.85rem;
+        font-size: var(--font-size-body);
     }
 
     .viewer-main {
@@ -391,42 +388,37 @@
     }
 
     .tool-section {
-        margin-top: 1.5rem;
-        padding-top: 1rem;
+        margin-top: var(--space-6);
+        padding-top: var(--space-4);
         border-top: 1px solid var(--glass-border-subtle);
     }
 
     .tool-section h4 {
         margin-top: 0;
-        margin-bottom: 0.5rem;
+        margin-bottom: var(--space-2);
         color: var(--accent-primary);
-        font-size: 0.95rem;
+        font-size: var(--font-size-title3);
     }
-
 
     .file-list {
         list-style: none;
         padding: 0;
-        margin: 0 0 1rem 0;
+        margin: 0 0 var(--space-4) 0;
         max-height: 150px;
         overflow-y: auto;
     }
 
     .file-list li {
-        padding: 0.35rem 0.6rem;
+        padding: var(--space-1) var(--space-2);
         background-color: var(--glass-bg-input);
-        margin-bottom: 0.25rem;
+        margin-bottom: var(--space-1);
         border-radius: var(--radius-xs, 6px);
-        font-size: 0.85rem;
+        font-size: var(--font-size-body);
         color: var(--text-secondary);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
-
-
-
-
 
     .progress-cancel {
         display: flex;
@@ -434,7 +426,7 @@
     }
 
     .empty-text {
-        font-size: 0.85rem;
+        font-size: var(--font-size-body);
         color: var(--text-tertiary);
         font-style: italic;
     }

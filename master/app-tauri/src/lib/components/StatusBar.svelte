@@ -5,9 +5,6 @@
     <div class="status-left">
         <span class="status-dot" aria-hidden="true"></span> <span>Ready</span>
     </div>
-    <div class="status-right" aria-live="polite">
-        <span>0 active jobs</span>
-    </div>
 </footer>
 
 <style>
@@ -20,17 +17,17 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0 1rem;
-        font-size: 11px;
+        padding: 0 var(--space-4);
+        font-size: var(--font-size-caption);
         border-top: 1px solid var(--glass-border-subtle);
         transition: background-color var(--dur-med, 0.2s) ease, border-color var(--dur-med, 0.2s) ease, color var(--dur-med, 0.2s) ease;
         box-sizing: border-box;
     }
 
-    .status-left, .status-right {
+    .status-left {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: var(--space-2);
     }
 
     .status-dot {

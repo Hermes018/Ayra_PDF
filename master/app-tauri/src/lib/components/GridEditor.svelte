@@ -236,7 +236,7 @@
         margin: 0 0 var(--space-3);
         padding: var(--space-2) var(--space-3);
         border-radius: var(--radius-xs);
-        font-size: 0.85rem;
+        font-size: var(--font-size-body);
         border: 1px solid var(--glass-border-subtle);
         background: var(--glass-bg-elevated);
         color: var(--text-primary);
@@ -262,7 +262,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 1rem;
+        padding: var(--space-4);
         background-color: var(--glass-bg-surface);
         border-bottom: 1px solid var(--glass-border-subtle);
     }
@@ -275,18 +275,14 @@
 
     .info {
         color: var(--text-secondary);
-        font-size: 0.9rem;
+        font-size: var(--font-size-body);
     }
-
-
-
-
 
     .grid-layout {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 1.5rem;
-        padding: 1.5rem;
+        gap: var(--space-6);
+        padding: var(--space-6);
         overflow-y: auto;
         flex: 1;
         align-content: flex-start;
@@ -301,7 +297,7 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 0.5rem;
+        padding: var(--space-2);
         transition: border-color 0.2s, opacity 0.2s;
     }
 
@@ -331,7 +327,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.8rem;
+        font-size: var(--font-size-footnote);
         font-weight: bold;
         z-index: 2;
     }
@@ -364,12 +360,12 @@
         left: 50%;
         transform: translateX(-50%);
         display: flex;
-        gap: 0.5rem;
+        gap: var(--space-2);
         opacity: 0;
         transition: opacity 0.2s;
         background: var(--glass-bg-elevated);
         backdrop-filter: var(--glass-blur);
-        padding: 0.25rem;
+        padding: var(--space-1);
         border-radius: var(--radius-xs);
     }
 
@@ -378,12 +374,8 @@
         opacity: 1;
     }
 
-
-
-
-
     .loading, .error, .empty {
-        padding: 2rem;
+        padding: var(--space-8);
         text-align: center;
         color: var(--text-secondary);
     }

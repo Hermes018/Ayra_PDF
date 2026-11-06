@@ -731,7 +731,9 @@ fn test_a11y_protocol_audit_and_svelte_landmarks() {
         if content.contains("class=\"skip-link\"") && content.contains("id=\"main-content\"") {
             found_skip_link = true;
         }
-        if content.contains("aria-label=\"Primary Navigation\"") && content.contains("aria-current")
+        // aria-current is set by ui/Button's `current` prop (asserted in ui.test.ts and A11yConformance).
+        if content.contains("aria-label=\"Primary Navigation\"")
+            && (content.contains("aria-current") || content.contains("current={"))
         {
             found_primary_nav = true;
         }

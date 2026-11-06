@@ -113,11 +113,11 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 1rem;
+        gap: var(--space-4);
         background-color: var(--glass-bg-elevated);
         -webkit-backdrop-filter: var(--glass-blur);
         backdrop-filter: var(--glass-blur);
-        padding: 3rem 4rem;
+        padding: var(--space-8) calc(var(--space-8) * 2);
         border-radius: var(--radius-xl, 20px);
         box-shadow: var(--glass-shadow-lg);
         border: 1px solid var(--glass-border-subtle);
@@ -128,8 +128,8 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 1rem;
-        padding: 2.5rem 1.5rem;
+        gap: var(--space-4);
+        padding: var(--space-8) var(--space-6);
         border: 1.5px dashed var(--glass-border-subtle);
         border-radius: var(--radius-lg, 14px);
         background: var(--glass-bg-surface);
@@ -137,7 +137,7 @@
         backdrop-filter: var(--glass-blur);
         transition: border-color var(--dur-fast, 120ms) ease, background-color var(--dur-fast, 120ms) ease;
         text-align: center;
-        margin: 1rem 0;
+        margin: var(--space-4) 0;
     }
 
     .inline-dropzone:hover {
@@ -146,22 +146,19 @@
     }
 
     .drop-text h3 {
-        margin: 0 0 0.25rem 0;
+        margin: 0 0 var(--space-1) 0;
         color: var(--text-primary);
-        font-size: 1.15rem;
+        font-size: var(--font-size-title2);
     }
 
     .drop-text p {
         margin: 0;
         color: var(--text-secondary);
-        font-size: 0.9rem;
+        font-size: var(--font-size-body);
     }
 
-
-
-
     .icon {
-        font-size: 3.5rem;
+        font-size: calc(var(--font-size-title1) * 2.5);
     }
 
     h2 {
