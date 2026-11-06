@@ -1514,3 +1514,21 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
   - Round 1: RED on tree-map only (lead's map step).
   - Round 2: `tools/verify.sh` GREEN (gate, feature-map, studio-audit, svelte-check, vitest 153/153, tree-map). One staging slip by the lead (regenerated maps not staged) was caught by the verifier; fixed by staging, so index = verified tree.
 - **Commit / tag:** 6c18734 (fast-forwarded to main), tag fixes-cp1-green.
+
+## [2026-11-06 06:50] Merge: wt/engines checkpoint 1 + cadcraft behind switch — DONE
+- **Change:** ADR-018 strangler steps 1–3.
+  - ENGINE_REUSE_MATRIX: 59 rows. ADOPT 23, ADOPT-WASM 7, KEEP-PORT 4, REJECT 25.
+  - Characterization goldens (Rust + TS).
+  - lpdf-geom adapter with a byte-identical legacy hatch, now with a work cap.
+  - cadcraft@df65974 vendored, plus a patched cadcraft-render re-export. `HatchEngine::Cadcraft` passes parity (inside the concave polygon; all patterns distinct).
+  - Default is still Legacy.
+  - UPSTREAM_MANIFEST.toml.
+- **Review:** round 1 FAIL (matrix gaps, unjustified KEEP-PORT); round 2 PASS with minors (now in CP2b).
+- **Verify:** verify.sh GREEN in its own target (nextest 173/173, vitest 165/165, deny ok). Offline build proven without a cadcraft git cache. Parity 12/12.
+- **Commit / tag:** 7dc56c8 (fast-forward to main), tag engines-cp1-green.
+- **Open:** owner decision on R3 licence wording (BSD-2/3, Unicode-3.0 transitive). The default switch is held until then.
+
+## [2026-11-06 06:50] Fixes P0 batch round 1 — review FAIL
+- **Fixed with red→green tests:** BUG-011, 012, 013, 014, 016, 017, 018 (UI), 019, 020, 021, 022 (vitest 191).
+- **Review FAIL:** blocker = tab close drops unsaved markups (F11); major = a GetInfo probe causes false success toasts; 6 minors (Organize names overwrite, no on-disk collision check, runJob has no timeout, a test that can't fail, a hidden error).
+- The verifier was stopped early (its result would be invalidated) to free the HEAVY slot. Round 2 is in progress.
