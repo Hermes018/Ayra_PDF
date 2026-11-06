@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 09:28 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 09:52 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -10,10 +10,10 @@ Updated 2026-11-06 09:28 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 ## Worktrees
 | Worktree | HEAD | State |
 |---|---|---|
-| main | 52b7a17 (tags fixes-err007-green, fixes-p0-green, …) | lead |
+| main | 0291a99 (tags release-bug031-green, fixes-err007-green, …) | lead |
 | wt/engines | 9919398 + CP3 uncommitted | PARKED; target dir deleted (owner 08:50) — rebuild needed before CP3 tests |
-| wt/fixes | 409f10e | RUNNING (fixes-builder, sonnet/high): UI workstream A2 — studio-audit over all .svelte + --strict + UI_CONSISTENCY_INVENTORY.md |
-| wt/release | a547ee0 (main + WIP 6fa23a8) | RUNNING (release-builder, sonnet/med): BUG-031 → gate; then real-world PDF dogfood run (DF-xx IDs, copies in ~/lpdf-dogfood-run, originals read-only) |
+| wt/fixes | 409f10e + A2 audit + triage staged (16 files) | review+verify (sonnet/med) RUNNING → merge → C0 component library |
+| wt/release | 0291a99 (merged: WIP follow-ups + BUG-031) | idle; next: Sat AM packaging (D) incl. KI-006, .rpm |
 | android | 644caf3 | paused until Sun |
 
 ## P0 (BUGS.md)

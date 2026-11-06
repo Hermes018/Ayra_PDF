@@ -29,4 +29,4 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 09:35 | review+verify | UI audit A2 (tooling) | sonnet/medium (agent file) | stopped | | lead stopped: owner triage changes the diff |
 | 2026-11-06 09:37 | fixes-build | audit triage: px allowlist, 7 key listeners→commandEngine, 6 icon labels, overclaim | sonnet/low (owner) | ok | | 1/7 moved, 6 deferred (role=button Enter/Space → fixed by shared Button in sweep); raw-px real 283 |
 | 2026-11-06 09:51 | review+verify | A2 audit + triage | sonnet/medium (agent file) | running | | |
-| 2026-11-06 09:51 | review+verify | release WIP + BUG-031 | sonnet/medium (agent file) | running | | |
+| 2026-11-06 09:51 | review+verify | release WIP + BUG-031 | sonnet/medium (agent file) | ok | | PASS, minors → BUG-041 |

@@ -137,7 +137,7 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 ## BUG-030 [P1] Every load reads the whole file into RAM (twice per RenderPage) — status: open
 - Found by: engines CP2b reviewer. engine-switcher lib.rs:83 calls `std::fs::read` before the guard, which contradicts the "cheap, bounded" doc. Fine for the 1k-page corpus (253 KB); bad for 100 MB+ scans. Fix: a fixed-buffer streaming scan. Owner: engines
 
-## BUG-031 [P1] E2E harness leaves its private dbus-daemon running after the run — status: open
+## BUG-031 [P1] E2E harness leaves its private dbus-daemon running after the run — status: fixed (0291a99, tag release-bug031-green)
 - Found by: lead (scope run-racc58…, dbus-daemon with /tmp/lpdf-bus-*/bus.conf alive 1h23m after pkg_smoke started at 06:24). reap() covers app/driver/WebKitWebDriver but not the private bus. Owner: release (paused by the throttle tier)
 - Raised to P1 (owner). Fix: run each harness run in its own process group/session and kill the whole group on exit, dbus included; add a post-run check that no harness processes remain. Assigned: release builder, after the session restart.
 
@@ -186,3 +186,6 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 
 ## BUG-040 [P2] 6 element-level Enter/Space handlers on role=button elements (local key listeners) — status: deferred (after release)
 - Dropzone ×2, AiSummarizeView ×2, PipelinesView ×1, FaqModal backdrop ×1; allowlisted in xtask/ui-px-allowlist.txt with reasons. They are activation handlers on clickable non-button elements, not app shortcuts: the shared Button component (component library batch) replaces them during the sweep, so the listeners go away instead of moving to commandEngine. Owner: fixes
+
+## BUG-041 [P2] BUG-031 follow-ups — status: open
+- run.py: on SIGTERM/SIGINT, SystemExit skips the post-finally LEAK message and report["leak"] (leftovers are still killed, and the exit code is 128+sig). test_leak_check.py:51-62: check 4 uses an inline child script, so run.py's real signal handler and setsid are not exercised. Found by: release review. Owner: release
