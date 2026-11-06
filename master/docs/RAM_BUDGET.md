@@ -66,3 +66,8 @@ The sccache server daemon inherited the flock file descriptor and held the singl
 - **Decision: 2 HEAVY slots.** PEAK_HEAVY_MIB 5,120 → 4,096 (the measured max rounded up; the 1.25 margin is dropped). The live rule is unchanged: slot 2 opens only when MemAvailable ≥ 2 × 4,096 + 6,144 = 14,336 MiB (it was 16,384, which never opened at ~16.0 GiB available). The per-job cgroup cap is unchanged.
 - E2E peak is still unmeasured, so `LPDF_PRIO=e2e` jobs take both slots (sched.sh) until it is measured.
 - Live test 08:04: two concurrent HEAVY jobs admitted on separate slots at 16,033 MiB available.
+
+## Release build LTO decision 2026-11-06
+- Measured with `tools/measure-ram.sh` (LPDF_EXCLUSIVE=1, LPDF_PRIO=e2e, CARGO_BUILD_JOBS=2, cold target, SB_RELEASE unset): `cargo build --locked --offline --release -p app-tauri -p lpdf-cli -p lpdf-worker` with `[profile.release] lto = true` (fat), `codegen-units = 1`.
+- Result: whole-cgroup `memory.peak` **5,863 MiB**, largest single process RSS 3,317 MiB, wall time **395.7 s**, exit 0 (not memory-killed, no re-queue).
+- Decision: the peak fits inside the scheduler cap (MemAvailable − 6 GiB reserve), so **`lto = true` (fat) stays** for rc1 packages. No fallback to `lto = "thin"` was needed.
