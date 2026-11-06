@@ -1,0 +1,140 @@
+# UPSTREAM_MANIFEST.toml — every upstream relationship (ADR-018 rev 3, R3). Supersedes
+# master/upstream/UPSTREAM.toml from ADR-018 rev 2. One [[upstream]] per adopted crate, local patch,
+# or KEEP-PORT source file. Read by `cargo xtask upstream-check` (offline: compares `rev` with the
+# ~/craft-ref clones after a manual `git fetch` there). Bump procedure: docs/UPGRADING.md.
+#
+# kind = "dependency" | "patch" | "port"
+# vendored = path of the vendored copy (cargo source replacement in .cargo/config.toml), if any
+
+[[upstream]]
+name = "pdfcraft"
+kind = "dependency"
+repo = "https://github.com/storytold/pdfcraft"
+rev = "75360d1d7db06fed974f48c914d4c04132757187"   # v0.15.0
+license = "MIT OR Apache-2.0"
+adapter = "crates/lpdf-engine-pdfcraft"          # behind lpdf-engine-port::PdfEngine; app-tauri studio.rs also uses pdfcraft_engine::Session directly (migration pending)
+vendored = "vendor/pdfcraft"                     # git submodule
+last_checked = "2026-11-06"
+
+[[upstream]]
+name = "winprint"
+kind = "patch"                                   # ADR-017: src/ byte-identical, Cargo.toml without build-deps
+repo = "https://github.com/storytold/winprint.rs"
+rev = "5f80b9baf6b58937c401656634e42d33f00ddf49"
+license = "BSD-3-Clause"
+local = "vendor/patches/winprint"
+paths = ["src", "Cargo.toml", "build.rs"]
+requested_by = "craft-print"                     # via pdfcraft's craft-libs pin
+notes = "vendor/patches/winprint/PATCH_NOTES.md"
+last_checked = "2026-11-06"
+
+[[upstream]]
+name = "craft-winprint-gdi"
+kind = "dependency"
+repo = "https://github.com/storytold/winprint.rs"
+rev = "417ac3c4d14d3da5485a99c7d5ce8f05664ec312"
+license = "BSD-3-Clause"
+requested_by = "craft-print"
+last_checked = "2026-11-06"
+
+# --- cadcraft (ERR-007 hatch; docs/ENGINE_REUSE_MATRIX.md R1/R2) -----------------------------------
+
+[[upstream]]
+name = "cadcraft-doc"
+kind = "dependency"
+repo = "https://github.com/storytold/cadcraft"
+rev = "df6597445803c3db1274412f403e2aba9d76626a"   # v0.17.0
+license = "MIT OR Apache-2.0"
+adapter = "crates/lpdf-geom"                     # HatchEngine::Cadcraft
+paths = ["crates/doc/src/library.rs", "crates/doc/src/entity/fill.rs"]
+vendored = "vendor/craft/cadcraft/cadcraft-doc-0.17.0"
+last_checked = "2026-11-06"
+
+[[upstream]]
+name = "cadcraft-geom"
+kind = "dependency"
+repo = "https://github.com/storytold/cadcraft"
+rev = "df6597445803c3db1274412f403e2aba9d76626a"
+license = "MIT OR Apache-2.0"
+adapter = "crates/lpdf-geom"
+paths = ["crates/geom/src/vec.rs"]
+vendored = "vendor/craft/cadcraft/cadcraft-geom-0.17.0"
+last_checked = "2026-11-06"
+
+[[upstream]]
+name = "cadcraft-color"                          # transitive (doc, render)
+kind = "dependency"
+repo = "https://github.com/storytold/cadcraft"
+rev = "df6597445803c3db1274412f403e2aba9d76626a"
+license = "MIT OR Apache-2.0"
+vendored = "vendor/craft/cadcraft/cadcraft-color-0.17.0"
+last_checked = "2026-11-06"
+
+[[upstream]]
+name = "cadcraft-fonts"                          # transitive (render); build.rs reads only CRAFT_FONTS_DIR, no network
+kind = "dependency"
+repo = "https://github.com/storytold/cadcraft"
+rev = "df6597445803c3db1274412f403e2aba9d76626a"
+license = "MIT OR Apache-2.0"
+vendored = "vendor/craft/cadcraft/cadcraft-fonts-0.17.0"
+last_checked = "2026-11-06"
+
+[[upstream]]
+name = "cadcraft-render"
+kind = "patch"                                   # one added re-export: pattern_lines
+repo = "https://github.com/storytold/cadcraft"
+rev = "df6597445803c3db1274412f403e2aba9d76626a"
+license = "MIT OR Apache-2.0"
+adapter = "crates/lpdf-geom"
+local = "vendor/patches/cadcraft-render"
+paths = ["crates/render/src/lib.rs", "crates/render/src/hatch.rs", "crates/render/Cargo.toml"]
+notes = "vendor/patches/cadcraft-render/PATCH_NOTES.md"
+upstream_request = "docs/upstream/cadcraft-render-reexport-pattern-lines.md (to draft)"
+last_checked = "2026-11-06"
+
+# --- KEEP-PORT sources (TS stays; provenance only) -------------------------------------------------
+
+[[upstream]]
+name = "cadcraft format_distance"                # matrix T11
+kind = "port"
+repo = "https://github.com/storytold/cadcraft"
+rev = "df6597445803c3db1274412f403e2aba9d76626a"
+license = "MIT OR Apache-2.0"
+paths = ["crates/engine/src/units.rs"]
+local = "app-tauri/src/lib/core/measureEngine.svelte.ts"
+status = "planned (not ported yet)"
+last_checked = "2026-11-06"
+
+[[upstream]]
+name = "vectorcraft width_outline"               # matrix T15
+kind = "port"
+repo = "https://github.com/storytold/vectorcraft"
+rev = "f6e3a44e42e6c05c1f8d7c283a443a97b356f652"
+license = "MIT OR Apache-2.0"
+paths = ["crates/effects/src/stroke/width.rs"]
+local = "app-tauri/src/lib/core/inkEngine.svelte.ts"
+status = "planned (not ported yet)"
+last_checked = "2026-11-06"
+
+[[upstream]]
+name = "cadcraft cloud_vertices"                 # matrix T19
+kind = "port"
+repo = "https://github.com/storytold/cadcraft"
+rev = "df6597445803c3db1274412f403e2aba9d76626a"
+license = "MIT OR Apache-2.0"
+paths = ["crates/engine/src/cmd/draw2/revcloud.rs"]
+local = "app-tauri/src/lib/core/shapeAndHatchEngine.svelte.ts"
+status = "planned (not ported yet)"
+last_checked = "2026-11-06"
+
+[[upstream]]
+name = "figcraft transform + designcraft gesture"   # matrix T24
+kind = "port"
+repo = "https://github.com/storytold/figcraft"
+rev = "01762dae332960ba0b3b81a7e0bafad57d139695"
+license = "MIT OR Apache-2.0"
+paths = ["crates/geom/src/transform.rs"]
+also = { repo = "https://github.com/storytold/designcraft", rev = "e16785ea506d5a5a34273cd77cb285e04a396baa", paths = ["crates/engine/src/tooling.rs"] }
+local = "app-tauri/src/lib/core/selectionEngine.svelte.ts"
+status = "planned (not ported yet)"
+last_checked = "2026-11-06"

@@ -12,3 +12,15 @@ SCCACHE_DIR = { value = "/home/rakib/.cache/sccache", force = false }
 
 [target.x86_64-unknown-linux-gnu]
 rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+
+# ADR-018 R3: storytold craft sources are vendored, so builds of them are offline and reproducible.
+# Only these git sources are replaced; crates.io still comes from the registry cache.
+# Refresh with the procedure in docs/UPGRADING.md (cargo vendor of a probe manifest, then copy only
+# the cadcraft-* directories). The patched cadcraft-render lives in vendor/patches/ (root [patch]).
+[source."git+https://github.com/storytold/cadcraft?rev=df6597445803c3db1274412f403e2aba9d76626a"]
+git = "https://github.com/storytold/cadcraft"
+rev = "df6597445803c3db1274412f403e2aba9d76626a"
+replace-with = "vendored-storytold-cadcraft"
+
+[source.vendored-storytold-cadcraft]
+directory = "vendor/craft/cadcraft"

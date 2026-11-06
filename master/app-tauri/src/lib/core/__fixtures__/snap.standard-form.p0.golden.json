@@ -1,0 +1,1932 @@
+{
+  "input": "snap-geometry.standard-form.p0.golden.json (Rust golden of studio_extract_snap_geometry)",
+  "segmentCount": 106,
+  "hits": 93,
+  "results": [
+    {
+      "query": {
+        "x": 116.7,
+        "y": 755.218,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 115.2,
+        "y": 756.218,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 115.7,
+        "y": 744.3425,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 115.2,
+        "y": 743.8425,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 497.8,
+        "y": 706.969,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 496.8,
+        "y": 707.469,
+        "distPt": 1.118033988749895
+      }
+    },
+    {
+      "query": {
+        "x": 536.775,
+        "y": 708.469,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 536.275,
+        "y": 707.969,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 498.3,
+        "y": 743.219,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 496.8,
+        "y": 743.7189999999999,
+        "distPt": 1.5811388300841538
+      }
+    },
+    {
+      "query": {
+        "x": 497.3,
+        "y": 726.344,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 496.8,
+        "y": 725.844,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 37.25,
+        "y": 706.966,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 35.75,
+        "y": 707.966,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 76.225,
+        "y": 708.466,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 75.725,
+        "y": 707.966,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 116.7,
+        "y": 731.217,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 115.2,
+        "y": 731.467,
+        "distPt": 1.5206906325745546
+      }
+    },
+    {
+      "query": {
+        "x": 115.7,
+        "y": 720.3415,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 115.2,
+        "y": 719.8415,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 116.45,
+        "y": 706.969,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 115.7,
+        "y": 707.966,
+        "distPt": 1.247601298492397
+      }
+    },
+    {
+      "query": {
+        "x": 306.5,
+        "y": 708.469,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 306,
+        "y": 707.969,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 497.8,
+        "y": 742.969,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 496.8,
+        "y": 743.7189999999999,
+        "distPt": 1.2499999999999318
+      }
+    },
+    {
+      "query": {
+        "x": 536.775,
+        "y": 744.469,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 536.275,
+        "y": 743.969,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 498.3,
+        "y": 755.218,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 496.8,
+        "y": 756.218,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 497.3,
+        "y": 750.4685,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 496.8,
+        "y": 756.218,
+        "distPt": 5.771200070176057
+      }
+    },
+    {
+      "query": {
+        "x": 94.85,
+        "y": 682.968,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 93.6,
+        "y": 683.7180000000001,
+        "distPt": 1.4577379737113836
+      }
+    },
+    {
+      "query": {
+        "x": 184.10000000000002,
+        "y": 684.468,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 183.60000000000002,
+        "y": 683.968,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 95.1,
+        "y": 707.219,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 93.6,
+        "y": 708.219,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 94.1,
+        "y": 696.4685000000001,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 93.6,
+        "y": 695.9685000000001,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 274.85,
+        "y": 682.968,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 273.85,
+        "y": 683.968,
+        "distPt": 1.4142135623730951
+      }
+    },
+    {
+      "query": {
+        "x": 374.90000000000003,
+        "y": 684.468,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 374.40000000000003,
+        "y": 683.968,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 275.1,
+        "y": 707.219,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 273.6,
+        "y": 708.219,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 274.1,
+        "y": 696.4685000000001,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 273.6,
+        "y": 695.9685000000001,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 94.85,
+        "y": 658.967,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 93.6,
+        "y": 659.717,
+        "distPt": 1.457737973711325
+      }
+    },
+    {
+      "query": {
+        "x": 284.90000000000003,
+        "y": 660.467,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 284.40000000000003,
+        "y": 659.967,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 476.7,
+        "y": 683.218,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 475.45000000000005,
+        "y": 683.968,
+        "distPt": 1.4577379737112763
+      }
+    },
+    {
+      "query": {
+        "x": 475.7,
+        "y": 672.4675,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 475.2,
+        "y": 671.9675,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 95.1,
+        "y": 683.218,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 93.6,
+        "y": 683.7180000000001,
+        "distPt": 1.5811388300842255
+      }
+    },
+    {
+      "query": {
+        "x": 94.1,
+        "y": 672.4675,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 93.6,
+        "y": 671.9675,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 94.85,
+        "y": 634.966,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 93.6,
+        "y": 635.716,
+        "distPt": 1.457737973711325
+      }
+    },
+    {
+      "query": {
+        "x": 284.90000000000003,
+        "y": 636.466,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 284.40000000000003,
+        "y": 635.966,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 476.7,
+        "y": 659.217,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 475.45000000000005,
+        "y": 659.967,
+        "distPt": 1.4577379737112763
+      }
+    },
+    {
+      "query": {
+        "x": 475.7,
+        "y": 648.4665,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 475.2,
+        "y": 647.9665,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 95.1,
+        "y": 659.217,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 93.6,
+        "y": 659.717,
+        "distPt": 1.5811388300841898
+      }
+    },
+    {
+      "query": {
+        "x": 94.1,
+        "y": 648.4665,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 93.6,
+        "y": 647.9665,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 476.45,
+        "y": 682.968,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 475.45000000000005,
+        "y": 683.968,
+        "distPt": 1.414213562373055
+      }
+    },
+    {
+      "query": {
+        "x": 526.1,
+        "y": 684.468,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 525.6,
+        "y": 683.968,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 476.7,
+        "y": 707.219,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 475.2,
+        "y": 708.219,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 475.7,
+        "y": 696.4685000000001,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 475.2,
+        "y": 695.9685000000001,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 476.45,
+        "y": 682.968,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 475.45000000000005,
+        "y": 683.968,
+        "distPt": 1.414213562373055
+      }
+    },
+    {
+      "query": {
+        "x": 526.1,
+        "y": 684.468,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 525.6,
+        "y": 683.968,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 476.45,
+        "y": 634.969,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 475.45000000000005,
+        "y": 635.966,
+        "distPt": 1.4120938354088943
+      }
+    },
+    {
+      "query": {
+        "x": 526.1,
+        "y": 636.469,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 525.6,
+        "y": 635.969,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 476.7,
+        "y": 683.218,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 475.45000000000005,
+        "y": 683.968,
+        "distPt": 1.4577379737112763
+      }
+    },
+    {
+      "query": {
+        "x": 475.7,
+        "y": 660.4685,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 475.2,
+        "y": 660.217,
+        "distPt": 0.559689422805168
+      }
+    },
+    {
+      "query": {
+        "x": 95.1,
+        "y": 635.219,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 93.6,
+        "y": 635.716,
+        "distPt": 1.5801927097667416
+      }
+    },
+    {
+      "query": {
+        "x": 94.1,
+        "y": 618.469,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 93.6,
+        "y": 617.969,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 116.7,
+        "y": 624.97,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 115.2,
+        "y": 625.97,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 119.7,
+        "y": 626.47,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 625.97,
+        "distPt": 3.5355339059327378
+      }
+    },
+    {
+      "query": {
+        "x": 124.7,
+        "y": 624.97,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 625.97,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 123.7,
+        "y": 630.47,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 633.97,
+        "distPt": 3.5355339059327378
+      }
+    },
+    {
+      "query": {
+        "x": 124.7,
+        "y": 632.97,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 633.97,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 119.7,
+        "y": 634.47,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 633.97,
+        "distPt": 3.5355339059327378
+      }
+    },
+    {
+      "query": {
+        "x": 116.7,
+        "y": 632.97,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 115.2,
+        "y": 633.97,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 115.7,
+        "y": 630.47,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 115.2,
+        "y": 633.97,
+        "distPt": 3.5355339059327378
+      }
+    },
+    {
+      "query": {
+        "x": 116.7,
+        "y": 612.968,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 115.2,
+        "y": 613.968,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 119.7,
+        "y": 614.468,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 613.968,
+        "distPt": 3.5355339059327378
+      }
+    },
+    {
+      "query": {
+        "x": 124.7,
+        "y": 612.968,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 613.968,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 123.7,
+        "y": 618.468,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 621.968,
+        "distPt": 3.5355339059327378
+      }
+    },
+    {
+      "query": {
+        "x": 124.7,
+        "y": 620.968,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 621.968,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 119.7,
+        "y": 622.468,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 621.968,
+        "distPt": 3.5355339059327378
+      }
+    },
+    {
+      "query": {
+        "x": 116.7,
+        "y": 620.968,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 115.2,
+        "y": 621.968,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 115.7,
+        "y": 618.468,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 115.2,
+        "y": 621.968,
+        "distPt": 3.5355339059327378
+      }
+    },
+    {
+      "query": {
+        "x": 116.7,
+        "y": 601.219,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 115.2,
+        "y": 602.219,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 119.7,
+        "y": 602.719,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 602.219,
+        "distPt": 3.5355339059327378
+      }
+    },
+    {
+      "query": {
+        "x": 124.7,
+        "y": 601.219,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 602.219,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 123.7,
+        "y": 606.719,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 610.219,
+        "distPt": 3.5355339059327378
+      }
+    },
+    {
+      "query": {
+        "x": 124.7,
+        "y": 609.219,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 610.219,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 119.7,
+        "y": 610.719,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 123.2,
+        "y": 610.219,
+        "distPt": 3.5355339059327378
+      }
+    },
+    {
+      "query": {
+        "x": 116.7,
+        "y": 609.219,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 115.2,
+        "y": 610.219,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 115.7,
+        "y": 606.719,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 115.2,
+        "y": 610.219,
+        "distPt": 3.5355339059327378
+      }
+    },
+    {
+      "query": {
+        "x": 94.85,
+        "y": 598.969,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 93.6,
+        "y": 599.719,
+        "distPt": 1.457737973711325
+      }
+    },
+    {
+      "query": {
+        "x": 335.3,
+        "y": 600.469,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 334.8,
+        "y": 599.969,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 95.1,
+        "y": 599.219,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 93.6,
+        "y": 599.719,
+        "distPt": 1.5811388300841898
+      }
+    },
+    {
+      "query": {
+        "x": 94.1,
+        "y": 589.9695,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 93.6,
+        "y": 589.4695,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 37.25,
+        "y": 577.967,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 35.75,
+        "y": 578.967,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 306.5,
+        "y": 579.467,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 306,
+        "y": 578.967,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 37.25,
+        "y": 490.966,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 35.75,
+        "y": 491.966,
+        "distPt": 1.8027756377319948
+      }
+    },
+    {
+      "query": {
+        "x": 306.5,
+        "y": 492.466,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 306,
+        "y": 491.966,
+        "distPt": 0.7071067811865476
+      }
+    },
+    {
+      "query": {
+        "x": 291.599,
+        "y": 624.414,
+        "zoom": 0.5,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": true
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 284.40000000000003,
+        "y": 635.966,
+        "distPt": 13.611550426016862
+      }
+    },
+    {
+      "query": {
+        "x": 12.104,
+        "y": 114.271,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 129.535,
+        "y": 7.513,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 559.104,
+        "y": 787.867,
+        "zoom": 4,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 147.486,
+        "y": 429.007,
+        "zoom": 0.5,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 488.997,
+        "y": 11.283,
+        "zoom": 1,
+        "anchor": null,
+        "grid": true
+      },
+      "hit": {
+        "kind": "grid",
+        "x": 486,
+        "y": 18,
+        "distPt": 7.355276881260154
+      }
+    },
+    {
+      "query": {
+        "x": 442.423,
+        "y": 537.19,
+        "zoom": 2,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 509.892,
+        "y": 628.343,
+        "zoom": 4,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 173.795,
+        "y": 332.658,
+        "zoom": 0.5,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 287.956,
+        "y": 66.829,
+        "zoom": 1,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 294.595,
+        "y": 561.624,
+        "zoom": 2,
+        "anchor": null,
+        "grid": true
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 213.007,
+        "y": 218.027,
+        "zoom": 4,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 347.338,
+        "y": 68.205,
+        "zoom": 0.5,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 102.437,
+        "y": 258.784,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 101.05,
+        "y": 263.967,
+        "distPt": 5.365375848903777
+      }
+    },
+    {
+      "query": {
+        "x": 464.826,
+        "y": 324.704,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 552.047,
+        "y": 345.35,
+        "zoom": 4,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": true
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 285.334,
+        "y": 421.914,
+        "zoom": 0.5,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 555.862,
+        "y": 747.981,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 108.315,
+        "y": 54.129,
+        "zoom": 2,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 469.385,
+        "y": 200.543,
+        "zoom": 4,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 590.094,
+        "y": 512.634,
+        "zoom": 0.5,
+        "anchor": null,
+        "grid": true
+      },
+      "hit": {
+        "kind": "grid",
+        "x": 594,
+        "y": 504,
+        "distPt": 9.476433506335589
+      }
+    },
+    {
+      "query": {
+        "x": 572.47,
+        "y": 605.186,
+        "zoom": 1,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 576.25,
+        "y": 599.969,
+        "distPt": 6.442475378299838
+      }
+    },
+    {
+      "query": {
+        "x": 491.878,
+        "y": 235.187,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 328.452,
+        "y": 87.207,
+        "zoom": 4,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 101.093,
+        "y": 664.231,
+        "zoom": 0.5,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 93.6,
+        "y": 660.217,
+        "distPt": 8.500426165787232
+      }
+    },
+    {
+      "query": {
+        "x": 529.232,
+        "y": 151.425,
+        "zoom": 1,
+        "anchor": null,
+        "grid": true
+      },
+      "hit": {
+        "kind": "grid",
+        "x": 522,
+        "y": 144,
+        "distPt": 10.364962566261383
+      }
+    },
+    {
+      "query": {
+        "x": 352.744,
+        "y": 350.109,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 265.468,
+        "y": 619.512,
+        "zoom": 4,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 70.042,
+        "y": 575.707,
+        "zoom": 0.5,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 93.6,
+        "y": 578.72,
+        "distPt": 23.749895431348744
+      }
+    },
+    {
+      "query": {
+        "x": 397.215,
+        "y": 575.92,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 16.235,
+        "y": 42.816,
+        "zoom": 2,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": true
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 262.351,
+        "y": 780.951,
+        "zoom": 4,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 571.502,
+        "y": 708.69,
+        "zoom": 0.5,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 576.25,
+        "y": 707.969,
+        "distPt": 4.802431155154695
+      }
+    },
+    {
+      "query": {
+        "x": 216.103,
+        "y": 39.669,
+        "zoom": 1,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 196.921,
+        "y": 333.166,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 104.883,
+        "y": 388.408,
+        "zoom": 4,
+        "anchor": null,
+        "grid": true
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 164.624,
+        "y": 556.552,
+        "zoom": 0.5,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 453.97,
+        "y": 520.093,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 379.032,
+        "y": 128.893,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 450.085,
+        "y": 625.814,
+        "zoom": 4,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 29.962,
+        "y": 130.895,
+        "zoom": 0.5,
+        "anchor": null,
+        "grid": true
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 35.75,
+        "y": 125.968,
+        "distPt": 7.601070516710134
+      }
+    },
+    {
+      "query": {
+        "x": 416.38,
+        "y": 53.769,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 447.996,
+        "y": 706.723,
+        "zoom": 2,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 106.981,
+        "y": 271.465,
+        "zoom": 4,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 341.843,
+        "y": 705.57,
+        "zoom": 0.5,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 212.605,
+        "y": 472.039,
+        "zoom": 1,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": true
+      },
+      "hit": {
+        "kind": "grid",
+        "x": 216,
+        "y": 468,
+        "distPt": 5.2763193610697945
+      }
+    },
+    {
+      "query": {
+        "x": 65.317,
+        "y": 739.372,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 546.343,
+        "y": 290.514,
+        "zoom": 4,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 503.837,
+        "y": 66.413,
+        "zoom": 0.5,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": {
+        "kind": "midpoint",
+        "x": 522,
+        "y": 77.969,
+        "distPt": 21.527556874852294
+      }
+    },
+    {
+      "query": {
+        "x": 159.181,
+        "y": 534.712,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 70.617,
+        "y": 83.689,
+        "zoom": 2,
+        "anchor": null,
+        "grid": true
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 504.062,
+        "y": 161.287,
+        "zoom": 4,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 187.438,
+        "y": 481.97,
+        "zoom": 0.5,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 68.727,
+        "y": 596.794,
+        "zoom": 1,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 403.075,
+        "y": 450.426,
+        "zoom": 2,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 261.395,
+        "y": 190.866,
+        "zoom": 4,
+        "anchor": null,
+        "grid": true
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 561.994,
+        "y": 92.395,
+        "zoom": 0.5,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": {
+        "kind": "endpoint",
+        "x": 576.25,
+        "y": 89.968,
+        "distPt": 14.461115620864081
+      }
+    },
+    {
+      "query": {
+        "x": 259.947,
+        "y": 592.996,
+        "zoom": 1,
+        "anchor": {
+          "x": 306,
+          "y": 396
+        },
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 50.027,
+        "y": 579.729,
+        "zoom": 2,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    },
+    {
+      "query": {
+        "x": 302.683,
+        "y": 316.302,
+        "zoom": 4,
+        "anchor": null,
+        "grid": false
+      },
+      "hit": null
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+[package]
+name = "lpdf-geom"
+description = "LocalPDF Studio geometry adapter (ADR-018 R2): hatching behind our own types, with a switchable implementation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+# The cadcraft-backed hatch engine (ADR-018 R2 step 3). On by default; `--no-default-features`
+# builds the legacy engine only.
+default = ["cadcraft"]
+cadcraft = ["dep:cadcraft-doc", "dep:cadcraft-geom", "dep:cadcraft-render"]
+
+[dependencies]
+thiserror = "2"
+# storytold/cadcraft, pinned rev, vendored in vendor/craft/cadcraft (source replacement in
+# .cargo/config.toml); cadcraft-render is the patched copy in vendor/patches/cadcraft-render.
+cadcraft-doc = { git = "https://github.com/storytold/cadcraft", rev = "df6597445803c3db1274412f403e2aba9d76626a", default-features = false, optional = true }
+cadcraft-geom = { git = "https://github.com/storytold/cadcraft", rev = "df6597445803c3db1274412f403e2aba9d76626a", default-features = false, optional = true }
+cadcraft-render = { git = "https://github.com/storytold/cadcraft", rev = "df6597445803c3db1274412f403e2aba9d76626a", default-features = false, optional = true }
+
+[dev-dependencies]
+serde_json = "1"

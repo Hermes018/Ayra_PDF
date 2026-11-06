@@ -1,0 +1,44 @@
+{
+  "after": [
+    {
+      "bboxPt": [
+        56.8,
+        755.1,
+        196.716,
+        13.799999999999955
+      ],
+      "fontSize": 12.0,
+      "id": "pdf-block-p0-0",
+      "pageIndex": 0,
+      "text": "LocalPDF golden replacement text"
+    }
+  ],
+  "before": [
+    {
+      "bboxPt": [
+        56.8,
+        754.075,
+        123.41130000000003,
+        18.595500000000015
+      ],
+      "fontSize": 16.1,
+      "id": "pdf-block-p0-0",
+      "pageIndex": 0,
+      "text": "Dummy PDF file"
+    }
+  ],
+  "edit": {
+    "bboxPt": [
+      56.8,
+      754.075,
+      123.41130000000003,
+      18.595500000000015
+    ],
+    "fontSize": 12.0,
+    "newText": "LocalPDF golden replacement text",
+    "pageCount": 1,
+    "savedCount": 1
+  },
+  "producer": "studio_extract_text_blocks / studio_edit_pdf_text_block @ 562e4f9 (pdfcraft text_blocks, EditTextBlock or AddText fallback)",
+  "source": "corpus/standard-text.pdf sha256 3df79d34abbca99308e79cb94461c1893582604d68329a41fd4bec1885e6adb4"
+}

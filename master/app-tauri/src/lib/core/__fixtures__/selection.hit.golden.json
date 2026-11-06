@@ -1,0 +1,26 @@
+{
+  "lPolygonPointInPolygonGrid": {
+    "x0": 95,
+    "y0": 95,
+    "step": 10,
+    "rows": ["0000000000000000", "0111111111111110", "0111111111111110", "0111111111111110", "0111111111111110", "0111110000000000", "0111110000000000", "0111110000000000", "0111110000000000", "0111110000000000", "0111110000000000", "0000000000000000"]
+  },
+  "rectsIntersect": [true, false],
+  "hitTestAtPoint": ["rect", "rect", null, "tri", "ink", null],
+  "groupClick": ["ink", "ink2"],
+  "shiftAdd": ["ink", "ink2", "rect"],
+  "shiftRemove": ["ink", "ink2"],
+  "marquee": ["rect", "tri"],
+  "marqueeClick": ["rect"],
+  "lasso": ["tri"],
+  "selectionBounds": {
+    "minX": 300,
+    "minY": 100,
+    "maxX": 360,
+    "maxY": 220,
+    "width": 60,
+    "height": 120,
+    "cx": 330,
+    "cy": 160
+  }
+}
