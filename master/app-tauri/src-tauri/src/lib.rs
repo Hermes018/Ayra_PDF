@@ -152,8 +152,24 @@ fn get_recent_logs(max_lines: Option<usize>) -> Result<Vec<String>, String> {
 
 /// Export a sanitized local diagnostics report atomically to the chosen output path.
 #[tauri::command]
-fn export_diagnostics(output_path: String) -> Result<String, String> {
+fn export_diagnostics(
+    output_path: String,
+    protected_paths: Option<Vec<String>>,
+    overwrite: Option<bool>,
+) -> Result<String, String> {
     let target = PathBuf::from(&output_path);
+    // Never an open document or input path; an existing file only when the UI confirmed the overwrite.
+    let protected: Vec<PathBuf> = protected_paths
+        .unwrap_or_default()
+        .iter()
+        .map(PathBuf::from)
+        .collect();
+    let guard = if overwrite == Some(true) {
+        lpdf_jobs::output_guard::check_output_path_confirmed(&protected, &target)
+    } else {
+        lpdf_jobs::output_guard::check_output_path(&protected, &target)
+    };
+    guard.map_err(|e| e.to_string())?;
     let hw = lpdf_hw::HardwareProfile::detect();
     let settings = get_settings().unwrap_or_default();
     let logs = get_recent_logs(Some(100)).unwrap_or_default();
@@ -602,6 +618,8 @@ fn convert_pdf(payload: ConvertPdfPayload) -> Result<String, String> {
     let native_only = payload.native_text_only.unwrap_or(false);
     let input = PathBuf::from(&payload.input_path);
     let output = PathBuf::from(&payload.output_path);
+    lpdf_jobs::output_guard::check_output_path(std::slice::from_ref(&input), &output)
+        .map_err(|e| e.to_string())?;
     let engine = lpdf_engine_pdfcraft::PdfcraftAdapter::new();
     let format = payload.format.as_deref().unwrap_or("text");
     match format {
@@ -634,6 +652,8 @@ fn extract_text(
     let _native_only = native_text_only.unwrap_or(false);
     let input = PathBuf::from(&input_path);
     let output = PathBuf::from(&output_path);
+    lpdf_jobs::output_guard::check_output_path(std::slice::from_ref(&input), &output)
+        .map_err(|e| e.to_string())?;
     let engine = lpdf_engine_pdfcraft::PdfcraftAdapter::new();
     engine
         .pdf_to_text(&input, &output)
@@ -769,4 +789,81 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod writer_guard_tests {
+    use super::*;
+
+    fn scratch(tag: &str) -> PathBuf {
+        let d = std::env::temp_dir().join(format!("lpdf_writers_{tag}_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    fn unsafe_err<T: std::fmt::Debug>(r: Result<T, String>) -> bool {
+        r.as_ref().is_err_and(|e| e.contains("OUTPUT_PATH_UNSAFE"))
+    }
+
+    // BUG-051 follow-up: every user-path writer refuses to overwrite an open document / input, and refuses an
+    // existing file unless the UI confirmed the overwrite. App-owned files (sidecars, settings) are exempt.
+    #[test]
+    fn export_diagnostics_refuses_open_documents_and_existing_files_unless_confirmed() {
+        let d = scratch("diag");
+        let doc = d.join("report"); // an open document without an extension
+        std::fs::write(&doc, b"document bytes").unwrap();
+        let p = doc.to_string_lossy().to_string();
+
+        // an open document is never overwritten, even when an overwrite was confirmed
+        assert!(unsafe_err(export_diagnostics(
+            p.clone(),
+            Some(vec![p.clone()]),
+            Some(true)
+        )));
+        assert_eq!(std::fs::read(&doc).unwrap(), b"document bytes");
+
+        // an existing file is refused without confirmation, replaced with it
+        let existing = d.join("diag.txt");
+        std::fs::write(&existing, b"old report").unwrap();
+        let e = existing.to_string_lossy().to_string();
+        assert!(unsafe_err(export_diagnostics(e.clone(), None, None)));
+        assert!(unsafe_err(export_diagnostics(e.clone(), None, Some(false))));
+        assert_eq!(std::fs::read(&existing).unwrap(), b"old report");
+        assert!(export_diagnostics(e, None, Some(true)).is_ok());
+        assert_ne!(std::fs::read(&existing).unwrap(), b"old report");
+
+        // a fresh name works
+        let fresh = d.join("fresh.txt").to_string_lossy().to_string();
+        assert!(export_diagnostics(fresh, None, None).is_ok());
+    }
+
+    #[test]
+    fn convert_pdf_and_extract_text_refuse_overwriting_input_or_existing_output() {
+        let d = scratch("convert");
+        let input = d.join("doc"); // no extension
+        std::fs::write(&input, b"original bytes").unwrap();
+        let p = input.to_string_lossy().to_string();
+        let r = convert_pdf(ConvertPdfPayload {
+            input_path: p.clone(),
+            output_path: p.clone(),
+            format: None,
+            native_text_only: None,
+        });
+        assert!(unsafe_err(r));
+        assert!(unsafe_err(extract_text(p.clone(), p.clone(), None)));
+        assert_eq!(std::fs::read(&input).unwrap(), b"original bytes");
+
+        let existing = d.join("out.txt");
+        std::fs::write(&existing, b"previous").unwrap();
+        let e = existing.to_string_lossy().to_string();
+        assert!(unsafe_err(extract_text(p.clone(), e.clone(), None)));
+        assert!(unsafe_err(convert_pdf(ConvertPdfPayload {
+            input_path: p,
+            output_path: e,
+            format: Some("docx".into()),
+            native_text_only: None,
+        })));
+        assert_eq!(std::fs::read(&existing).unwrap(), b"previous");
+    }
 }

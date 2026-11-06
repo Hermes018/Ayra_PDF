@@ -18,8 +18,12 @@ const defaultSettings: AppSettings = {
     ai_model_license: null,
 };
 
+import { resetIssuedOutputNamesForTests } from '$lib/views/studio/outputNames';
+const flushOutputNames = () => new Promise<void>((r) => setTimeout(r, 0));
+
 describe('AiSummarizeView', () => {
     beforeEach(() => {
+        resetIssuedOutputNamesForTests();
         appState.clear();
         vi.restoreAllMocks();
         vi.spyOn(IpcClient, 'getSettings').mockResolvedValue({ ...defaultSettings });
@@ -106,6 +110,8 @@ describe('AiSummarizeView', () => {
 
         // Click generate
         await fireEvent.click(generateBtn);
+
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
 
         expect(submitSpy).toHaveBeenCalledWith({
             op: 'SummarizeExtractive',
@@ -203,6 +209,8 @@ describe('AiSummarizeView', () => {
         const generateBtn = screen.getByTestId('generate-summary-btn');
         await fireEvent.click(generateBtn);
 
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
+
         expect(submitSpy).toHaveBeenCalledWith({
             op: 'SummarizeLlm',
             input_path: '/docs/complex_manual.pdf',
@@ -278,6 +286,8 @@ describe('AiSummarizeView', () => {
         // Submit
         const generateBtn = screen.getByTestId('generate-summary-btn');
         await fireEvent.click(generateBtn);
+
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
 
         expect(submitSpy).toHaveBeenCalledWith({
             op: 'TranslatePdf',

@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import { appState } from '$lib/state.svelte';
-    import { siblingOutputPath } from '$lib/views/studio/outputNames';
+    import { siblingOutputPath, swapExtension, resolveFreeOutput } from '$lib/views/studio/outputNames';
     import { IpcClient, pickFilesDialog, pickFolderDialog, saveFileDialog } from '$lib/ipc';
     import type { JobRequest } from '$lib/bindings/JobRequest';
 
@@ -36,7 +36,7 @@
         if (selectedMode === 'PdfToMarkdown') {
             return siblingOutputPath(activeSource, '.md');
         } else if (selectedMode === 'MarkdownToPdf') {
-            return activeSource.replace(/\.md$/i, '.pdf');
+            return swapExtension(activeSource, '.pdf');
         } else {
             return activeSource.replace(/\/?$/, '') + '_markdown_batch';
         }
@@ -99,7 +99,10 @@
         completedResult = null;
         failedResult = null;
 
-        const out = customOutputPath.trim() || computedOutputPath;
+        const wanted = customOutputPath.trim() || computedOutputPath;
+        // Never the input, never an existing file: next free name (BUG-051); the batch folder is left as chosen.
+        const out = selectedMode === 'BatchFolder' ? wanted : await resolveFreeOutput(wanted, activeSource);
+        if (out !== wanted) customOutputPath = out;
         let req: JobRequest;
 
         if (selectedMode === 'PdfToMarkdown') {

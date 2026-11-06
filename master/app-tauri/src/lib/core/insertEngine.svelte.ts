@@ -1083,7 +1083,7 @@ class InsertEngine {
    * Builds the Quantity Takeoff records from all active measurements and invokes
    * `studio_export_takeoff_csv` to write the construction takeoff spreadsheet.
    */
-  async exportTakeoffCsv(outputPath: string): Promise<TakeoffCsvRecordDto[]> {
+  async exportTakeoffCsv(outputPath: string, protectedPaths: string[] = [], overwrite = false): Promise<TakeoffCsvRecordDto[]> {
     const records: TakeoffCsvRecordDto[] = measureEngine.measurements.map((m, idx) => ({
       id: m.id || `M-${String(idx + 1).padStart(3, '0')}`,
       page_index: m.pageIndex,
@@ -1099,9 +1099,13 @@ class InsertEngine {
       await invoke('studio_export_takeoff_csv', {
         measurements: records,
         outputPath,
+        protectedPaths,
+        overwrite,
       });
-    } catch {
-      // Non-fatal in pure frontend unit tests
+    } catch (e) {
+      // A refused path must reach the user (never report an export that did not happen).
+      if (String(e instanceof Error ? e.message : e).includes('OUTPUT_PATH_UNSAFE')) throw e instanceof Error ? e : new Error(String(e));
+      // Any other error is non-fatal in pure frontend unit tests
     }
     return records;
   }

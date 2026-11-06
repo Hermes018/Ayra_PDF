@@ -103,3 +103,40 @@ export function siblingOutputPath(inputPath: string, suffix: string): string {
   const stem = /\.pdf$/i.test(inputPath) ? inputPath.slice(0, -4) : inputPath;
   return `${stem}${suffix}`;
 }
+
+/** Replace the last extension of a file name (`doc.md` + `.pdf` -> `doc.pdf`), or append one (`doc` -> `doc.pdf`). */
+export function swapExtension(path: string, ext: string): string {
+  const slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  const dot = path.lastIndexOf('.');
+  return (dot > slash + 1 ? path.slice(0, dot) : path) + ext;
+}
+
+/**
+ * The output name to submit for a name the screen derived or the user typed: `desired` when it is free, otherwise
+ * the next free `name-2.ext`, `name-3.ext`, ... Never the input, never a file that exists, never a name already
+ * issued in this run (so a second run, even before the first file exists, gets a different name).
+ */
+export async function resolveFreeOutput(
+  desired: string,
+  inputPath: string,
+  exists: (path: string) => Promise<boolean> = pathExistsOnDisk
+): Promise<string> {
+  const slash = Math.max(desired.lastIndexOf('/'), desired.lastIndexOf('\\'));
+  const dot = desired.lastIndexOf('.');
+  const hasExt = dot > slash + 1;
+  const base = hasExt ? desired.slice(0, dot) : desired;
+  const tail = hasExt ? desired.slice(dot) : '';
+  for (let n = 1; n <= MAX_CANDIDATES; n++) {
+    const c = n === 1 ? desired : `${base}-${n}${tail}`;
+    if (issued.has(c) || c === inputPath) continue;
+    issued.add(c);
+    if (await exists(c)) continue;
+    return c;
+  }
+  throw new Error(`Could not find a free output file name for ${desired}.`);
+}
+
+/** Test hook: forget the names issued in this run (each test starts with a fresh run). */
+export function resetIssuedOutputNamesForTests(): void {
+  issued.clear();
+}

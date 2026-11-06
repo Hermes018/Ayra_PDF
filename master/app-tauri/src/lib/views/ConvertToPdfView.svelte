@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import { appState } from '$lib/state.svelte';
+    import { resolveFreeOutput } from '$lib/views/studio/outputNames';
     import { IpcClient, pickFilesDialog, pickFolderDialog, saveFileDialog } from '$lib/ipc';
     import For from '$lib/components/For.svelte';
     import type { JobRequest } from '$lib/bindings/JobRequest';
@@ -283,11 +284,14 @@
             return;
         }
 
-        const out = computedOutputPath;
-        if (!out) {
+        const wanted = computedOutputPath;
+        if (!wanted) {
             statusMessage = 'Error: Invalid destination path.';
             return;
         }
+        // A name that is the input or already exists gets the next free name (BUG-051); folders are left as chosen.
+        const out = currentOption.id === 'BatchMarkdownConvert' ? wanted : await resolveFreeOutput(wanted, currentPath);
+        if (out !== wanted) customOutputPath = out;
 
         isSubmitting = true;
         statusMessage = null;

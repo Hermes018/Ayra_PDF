@@ -647,3 +647,6 @@ master/app-tauri/src/lib/views/__tests__/OutputPathsBug050.test.ts	Tests (BUG-05
 master/crates/lpdf-jobs/src/output_guard.rs	Output path guard (BUG-050/032): refuses outputs that canonicalize to the input or an existing file (typed OutputPathError)
 master/crates/lpdf-jobs/tests/bug050_tests.rs	Tests (BUG-050): a job whose output equals the input fails with OUTPUT_PATH_UNSAFE and leaves the original intact
 master/crates/lpdf-jobs/tests/output_guard_tests.rs	Tests: output_guard unit cases (same path, .., symlink, existing file, distinct new file)
+master/app-tauri/src/lib/components/studio/LedgerTakeoffExport.test.ts	Tests: ledger takeoff CSV export surfaces a refused (unsafe) output path instead of swallowing it
+master/app-tauri/src/lib/core/takeoffExport.test.ts	Tests: takeoff CSV output naming is collision-safe and never the input
+master/app-tauri/src/lib/views/__tests__/OutputPathsAllViews.test.ts	Tests (BUG-051): every writing view (Organize, Forms, Security x3, Batch, Pipelines, AiSummarize, Markdown, Convert x2) builds a distinct, non-existing output, with and without .pdf

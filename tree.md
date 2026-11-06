@@ -163,6 +163,7 @@ master/
 │   │   │   │   │   ├── HatchDefs.svelte                      # SVG pattern definitions for CAD hatching fills
 │   │   │   │   │   ├── HatchDefs.test.ts                     # Tests: hatch preview tiles are drawn from the same pattern parameters as the saved output
 │   │   │   │   │   ├── labs.svelte.ts                        # Labs gate: the one place that decides if Labs tools (math text, shape-to-character) are visible/selectable; honest copy
+│   │   │   │   │   ├── LedgerTakeoffExport.test.ts           # Tests: ledger takeoff CSV export surfaces a refused (unsafe) output path instead of swallowing it
 │   │   │   │   │   ├── MeasureOverlay.svelte                 # Draws measurement lines, labels, ruler/protractor
 │   │   │   │   │   ├── PillLayout.test.ts                    # Tests (BUG-045): property pill title on one line with tooltip; pill stacks above PINS and Help
 │   │   │   │   │   ├── PropertyPill.svelte                   # Floating style panel for the active tool (colour, width, line style)
@@ -239,6 +240,7 @@ master/
 │   │   │   │   ├── snapAndMeasure.test.ts                    # Tests: snapping and measurement
 │   │   │   │   ├── snapEngine.svelte.ts                      # CAD-style snapping to PDF vector geometry (endpoint, midpoint, intersection)
 │   │   │   │   ├── studioReactivity.test.ts                  # Tests: tool/preset reactivity and ink shape recognition
+│   │   │   │   ├── takeoffExport.test.ts                     # Tests: takeoff CSV output naming is collision-safe and never the input
 │   │   │   │   ├── themeContract.svelte.ts                   # Theme tokens (light/dark) used by every studio component
 │   │   │   │   ├── themeContract.test.ts                     # Tests: themeContract is the single token source (applyToRoot, NEW tokens, glass-blur parity with app.css)
 │   │   │   │   ├── toolEngine.svelte.ts                      # Active tool, tool presets and favourites
@@ -271,6 +273,7 @@ master/
 │   │   │   │   │   ├── MeasurePerimeter.test.ts              # Tests: perimeter closes the shape (BUG-022)
 │   │   │   │   │   ├── OrganizeApply.test.ts                 # Tests: Organize Apply keeps rotation, reports failures (BUG-014)
 │   │   │   │   │   ├── OrganizeView.test.ts                  # Tests: organize view
+│   │   │   │   │   ├── OutputPathsAllViews.test.ts           # Tests (BUG-051): every writing view (Organize, Forms, Security x3, Batch, Pipelines, AiSummarize, Markdown, Convert x2) builds a distinct, non-existing output, with and without .pdf
 │   │   │   │   │   ├── OutputPathsBug050.test.ts             # Tests (BUG-050): every view builds a collision-safe output path that is never the input or an existing file
 │   │   │   │   │   ├── PipelinesView.test.ts                 # Tests: pipelines view
 │   │   │   │   │   ├── SettingsView.test.ts                  # Tests: settings view

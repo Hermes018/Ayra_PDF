@@ -11,6 +11,7 @@
     type SignatureMode,
   } from '$lib/core/insertEngine.svelte';
   import StudioIcon from './StudioIcon.svelte';
+  import { freeOutputPath } from '$lib/views/studio/outputNames';
   import Button from '$lib/components/ui/Button.svelte';
   import IconButton from '$lib/components/ui/IconButton.svelte';
   import Input from '$lib/components/ui/Input.svelte';
@@ -133,10 +134,15 @@
   });
 
   async function handleExportTakeoffCsv() {
-    const base = activePdfPath ? activePdfPath.replace(/\.pdf$/i, '') : 'studio-takeoff';
-    const outPath = `${base}.takeoff.csv`;
-    const records = await inserts.exportTakeoffCsv(outPath);
-    onNotice?.(`Exported ${records.length} takeoff measurements to ${outPath}`);
+    // A new, collision-safe name each time (the backend refuses an existing file); never the PDF itself.
+    const outPath = await freeOutputPath(activePdfPath || 'studio-takeoff', 'takeoff', new Date(), undefined, 'csv');
+    try {
+      const records = await inserts.exportTakeoffCsv(outPath, activePdfPath ? [activePdfPath] : []);
+      onNotice?.(`Exported ${records.length} takeoff measurements to ${outPath}`);
+    } catch (e) {
+      console.error('takeoff export failed', e);
+      onNotice?.("Couldn't export the takeoff. The file was not written; choose another location and try again.");
+    }
   }
 
   async function handleSaveSelectedToLibrary() {

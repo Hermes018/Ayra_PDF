@@ -6,6 +6,7 @@ coordinates within 0.5 %. They appear in the Ledger. CSV export writes a file wh
 """
 import csv
 import math
+import glob
 import os
 import re
 import time
@@ -98,12 +99,16 @@ def run(flow):
                    f"ledger row {row}" if row else "missing")
 
     # --- CSV ------------------------------------------------------------------------------
-    csv_path = os.path.splitext(path)[0] + ".takeoff.csv"
-    if os.path.exists(csv_path):
-        os.remove(csv_path)
+    # collision-safe name: <stem>.takeoff-<stamp>.csv (the backend refuses an existing file)
+    csv_glob = os.path.splitext(path)[0] + ".takeoff-*.csv"
+    for old in glob.glob(csv_glob):
+        os.remove(old)
     clicked = app.click_button("Export takeoff (CSV)")
+    csv_path = csv_glob
     for _ in range(50):
-        if os.path.exists(csv_path):
+        hits = glob.glob(csv_glob)
+        if hits:
+            csv_path = hits[0]
             break
         time.sleep(0.1)
     if not flow.check("CSV export writes the takeoff file", clicked and os.path.exists(csv_path),

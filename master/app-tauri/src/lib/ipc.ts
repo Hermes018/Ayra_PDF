@@ -197,8 +197,8 @@ export class IpcClient {
     /**
      * Export sanitized local diagnostics report
      */
-    static async exportDiagnostics(outputPath: string): Promise<string> {
-        return await invoke<string>('export_diagnostics', { outputPath });
+    static async exportDiagnostics(outputPath: string, protectedPaths: string[] = [], overwrite = false): Promise<string> {
+        return await invoke<string>('export_diagnostics', { outputPath, protectedPaths, overwrite });
     }
 
     /**

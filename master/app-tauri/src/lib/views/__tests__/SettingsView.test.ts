@@ -100,13 +100,47 @@ describe('SettingsView', () => {
         expect(await screen.findByText('2026-10-12T18:05:00Z INFO New job finished')).toBeInTheDocument();
     });
 
+    // BUG-051 follow-up: an existing file is only replaced after the user confirms; open documents are protected.
+    test('an existing diagnostics file asks before it is replaced; Replace retries with overwrite, Cancel does not', async () => {
+        const spy = vi.spyOn(IpcClient, 'exportDiagnostics');
+        spy.mockRejectedValueOnce(new Error('OUTPUT_PATH_UNSAFE: a file already exists at the output path (/tmp/d.txt). Nothing was written.'));
+        render(SettingsView);
+        await fireEvent.click(screen.getByText('Export Diagnostics'));
+        const dialog = await screen.findByRole('alertdialog', { name: 'Replace the existing file?' });
+        expect(dialog).toBeInTheDocument();
+        expect(spy).toHaveBeenCalledTimes(1);
+        await fireEvent.click(screen.getByRole('button', { name: 'Replace file' }));
+        await vi.waitFor(() => expect(spy).toHaveBeenCalledTimes(2));
+        expect(spy).toHaveBeenLastCalledWith('localpdf-diagnostics.txt', [], true);
+    });
+
+    test('Cancel on the replace question exports nothing', async () => {
+        const spy = vi.spyOn(IpcClient, 'exportDiagnostics');
+        spy.mockRejectedValueOnce(new Error('OUTPUT_PATH_UNSAFE: a file already exists at the output path (/tmp/d.txt). Nothing was written.'));
+        render(SettingsView);
+        await fireEvent.click(screen.getByText('Export Diagnostics'));
+        await screen.findByRole('alertdialog', { name: 'Replace the existing file?' });
+        await fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+        expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    test('an open document path is refused with a plain message, no replace question', async () => {
+        const spy = vi.spyOn(IpcClient, 'exportDiagnostics');
+        spy.mockRejectedValueOnce(new Error('OUTPUT_PATH_UNSAFE: the output file would overwrite the original (/docs/a.pdf). Nothing was written.'));
+        render(SettingsView);
+        await fireEvent.click(screen.getByText('Export Diagnostics'));
+        expect(await screen.findByText(/would overwrite the original/)).toBeInTheDocument();
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+    });
+
     test('exports diagnostics report via IpcClient', async () => {
         render(SettingsView);
 
         const exportBtn = screen.getByText('Export Diagnostics');
         await fireEvent.click(exportBtn);
 
-        expect(IpcClient.exportDiagnostics).toHaveBeenCalledWith('localpdf-diagnostics.txt');
+        expect(IpcClient.exportDiagnostics).toHaveBeenCalledWith('localpdf-diagnostics.txt', [], false);
         expect(await screen.findByText('Diagnostics report exported to: /tmp/localpdf-diagnostics.txt')).toBeInTheDocument();
     });
 

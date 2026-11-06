@@ -5,8 +5,12 @@ import ConvertView from '../ConvertView.svelte';
 import { appState } from '$lib/state.svelte';
 import { IpcClient } from '$lib/ipc';
 
+import { resetIssuedOutputNamesForTests } from '$lib/views/studio/outputNames';
+const flushOutputNames = () => new Promise<void>((r) => setTimeout(r, 0));
+
 describe('ConvertFromPdfView', () => {
     beforeEach(() => {
+        resetIssuedOutputNamesForTests();
         appState.clear();
         vi.restoreAllMocks();
     });
@@ -40,6 +44,8 @@ describe('ConvertFromPdfView', () => {
         const btn = screen.getByRole('button', { name: /Convert Now/i });
         await fireEvent.click(btn);
 
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
+
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'PdfToDocx',
             input_path: '/path/to/my_document.pdf',
@@ -63,6 +69,8 @@ describe('ConvertFromPdfView', () => {
         // Submit default (PDF/A-2b)
         const btn = screen.getByRole('button', { name: /Convert Now/i });
         await fireEvent.click(btn);
+
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
 
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'PdfToPdfA',
@@ -89,6 +97,8 @@ describe('ConvertFromPdfView', () => {
         const btn = screen.getByRole('button', { name: /Convert Now/i });
         await fireEvent.click(btn);
 
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
+
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'PdfToPdfA',
             input_path: '/path/to/my_document.pdf',
@@ -107,6 +117,8 @@ describe('ConvertFromPdfView', () => {
 
         const btn = screen.getByRole('button', { name: /Convert Now/i });
         await fireEvent.click(btn);
+
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
 
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'PdfToOffice',
@@ -127,6 +139,8 @@ describe('ConvertFromPdfView', () => {
         const btn = screen.getByRole('button', { name: /Convert Now/i });
         await fireEvent.click(btn);
 
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
+
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'PdfToOffice',
             input_path: '/path/to/my_sheet.pdf',
@@ -145,6 +159,8 @@ describe('ConvertFromPdfView', () => {
 
         const btn = screen.getByRole('button', { name: /Convert Now/i });
         await fireEvent.click(btn);
+
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
 
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'PdfToOffice',
@@ -165,6 +181,8 @@ describe('ConvertFromPdfView', () => {
         const btn = screen.getByRole('button', { name: /Convert Now/i });
         await fireEvent.click(btn);
 
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
+
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'PdfToMarkdown',
             input_path: '/path/to/article.pdf',
@@ -182,6 +200,8 @@ describe('ConvertFromPdfView', () => {
 
         const btn = screen.getByRole('button', { name: /Convert Now/i });
         await fireEvent.click(btn);
+
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
 
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'BatchMarkdownConvert',
@@ -208,6 +228,8 @@ describe('ConvertFromPdfView', () => {
 
         const btn = screen.getByRole('button', { name: /Convert Now/i });
         await fireEvent.click(btn);
+
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
 
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'PdfToDocx',

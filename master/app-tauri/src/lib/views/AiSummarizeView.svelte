@@ -2,7 +2,7 @@
     import { onMount } from 'svelte';
     import { IpcClient } from '$lib/ipc';
     import { appState } from '$lib/state.svelte';
-    import { siblingOutputPath } from '$lib/views/studio/outputNames';
+    import { siblingOutputPath, resolveFreeOutput } from '$lib/views/studio/outputNames';
     import For from '$lib/components/For.svelte';
     import type { SummaryLength } from '$lib/bindings/SummaryLength';
     import type { JobRequest } from '$lib/bindings/JobRequest';
@@ -104,6 +104,9 @@
 
         isSubmitting = true;
         try {
+            // Never the input, never an existing file: next free name (BUG-051).
+            const outName = await resolveFreeOutput(outputPath.trim(), inputPath.trim());
+            if (outName !== outputPath.trim()) outputPath = outName;
             let req: JobRequest;
             if (activeMode === 'translate') {
                 if (!appSettings?.local_ai_model_path) {
@@ -120,7 +123,7 @@
                 req = {
                     op: 'TranslatePdf',
                     input_path: inputPath.trim(),
-                    output_path: outputPath.trim(),
+                    output_path: outName,
                     options: {
                         manifest: {
                             model_path: modelPath,
@@ -150,7 +153,7 @@
                 req = {
                     op: 'SummarizeLlm',
                     input_path: inputPath.trim(),
-                    output_path: outputPath.trim(),
+                    output_path: outName,
                     options: {
                         manifest: {
                             model_path: modelPath,
@@ -170,7 +173,7 @@
                 req = {
                     op: 'SummarizeExtractive',
                     input_path: inputPath.trim(),
-                    output_path: outputPath.trim(),
+                    output_path: outName,
                     length: selectedLength,
                 };
             }

@@ -4,8 +4,12 @@ import ConvertToPdfView from '../ConvertToPdfView.svelte';
 import { appState } from '$lib/state.svelte';
 import { IpcClient } from '$lib/ipc';
 
+import { resetIssuedOutputNamesForTests } from '$lib/views/studio/outputNames';
+const flushOutputNames = () => new Promise<void>((r) => setTimeout(r, 0));
+
 describe('ConvertToPdfView', () => {
     beforeEach(() => {
+        resetIssuedOutputNamesForTests();
         appState.clear();
         vi.restoreAllMocks();
     });
@@ -39,6 +43,8 @@ describe('ConvertToPdfView', () => {
         const btn = screen.getByRole('button', { name: /Convert to PDF/i });
         await fireEvent.click(btn);
 
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
+
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'OfficeToPdf',
             input_path: '/path/to/report.docx',
@@ -57,6 +63,8 @@ describe('ConvertToPdfView', () => {
 
         const btn = screen.getByRole('button', { name: /Convert to PDF/i });
         await fireEvent.click(btn);
+
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
 
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'OfficeToPdf',
@@ -77,6 +85,8 @@ describe('ConvertToPdfView', () => {
         const btn = screen.getByRole('button', { name: /Convert to PDF/i });
         await fireEvent.click(btn);
 
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
+
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'OfficeToPdf',
             input_path: '/path/to/slides.pptx',
@@ -96,6 +106,8 @@ describe('ConvertToPdfView', () => {
         const btn = screen.getByRole('button', { name: /Convert to PDF/i });
         await fireEvent.click(btn);
 
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
+
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'ImageToPdf',
             input_path: '/path/to/photo.png',
@@ -114,6 +126,8 @@ describe('ConvertToPdfView', () => {
         const btn = screen.getByRole('button', { name: /Convert to PDF/i });
         await fireEvent.click(btn);
 
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
+
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'MarkdownToPdf',
             input_path: '/path/to/notes.md',
@@ -131,6 +145,8 @@ describe('ConvertToPdfView', () => {
 
         const btn = screen.getByRole('button', { name: /Convert to PDF/i });
         await fireEvent.click(btn);
+
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
 
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'MarkdownToDoc',
@@ -151,6 +167,8 @@ describe('ConvertToPdfView', () => {
         const btn = screen.getByRole('button', { name: /Convert to PDF/i });
         await fireEvent.click(btn);
 
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
+
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'DocToMarkdown',
             input_path: '/path/to/document.docx',
@@ -169,6 +187,8 @@ describe('ConvertToPdfView', () => {
 
         const btn = screen.getByRole('button', { name: /Convert to PDF/i });
         await fireEvent.click(btn);
+
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
 
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'BatchMarkdownConvert',

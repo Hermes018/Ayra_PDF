@@ -3,6 +3,8 @@
     import { IpcClient, pickFilesDialog } from '$lib/ipc';
     import For from '$lib/components/For.svelte';
     import { appState } from '$lib/state.svelte';
+    import Dialog from '$lib/components/ui/Dialog.svelte';
+    import Button from '$lib/components/ui/Button.svelte';
     import type { AppSettings } from '$lib/bindings/AppSettings';
     import type { HardwareTier } from '$lib/bindings/HardwareTier';
     import type { OutputPolicy } from '$lib/bindings/OutputPolicy';
@@ -154,15 +156,28 @@
         }
     }
 
-    async function handleExportDiagnostics() {
+    // An existing file is replaced only after the user confirms; an open document is never a valid target.
+    let confirmReplaceDiag = $state(false);
+
+    async function handleExportDiagnostics(overwrite = false) {
         isExportingDiag = true;
         diagSuccessMessage = null;
         diagErrorMessage = null;
+        confirmReplaceDiag = false;
         try {
-            const savedPath = await IpcClient.exportDiagnostics(diagnosticsPath.trim() || 'localpdf-diagnostics.txt');
+            const savedPath = await IpcClient.exportDiagnostics(
+                diagnosticsPath.trim() || 'localpdf-diagnostics.txt',
+                [...appState.activeFiles],
+                overwrite
+            );
             diagSuccessMessage = `Diagnostics report exported to: ${savedPath}`;
         } catch (e: any) {
-            diagErrorMessage = `Failed to export diagnostics: ${e?.message ?? e}`;
+            const msg = String(e?.message ?? e);
+            if (!overwrite && msg.includes('OUTPUT_PATH_UNSAFE') && msg.includes('already exists')) {
+                confirmReplaceDiag = true;
+            } else {
+                diagErrorMessage = `Failed to export diagnostics: ${msg.replace(/^OUTPUT_PATH_UNSAFE:\s*/, '')}`;
+            }
         } finally {
             isExportingDiag = false;
         }
@@ -177,6 +192,19 @@
         appState.setTheme(theme);
     }
 </script>
+
+<Dialog
+    bind:open={confirmReplaceDiag}
+    variant="alert"
+    title="Replace the existing file?"
+    onclose={() => (confirmReplaceDiag = false)}
+>
+    <p>A file with that name already exists. Replacing it cannot be undone.</p>
+    {#snippet actions()}
+        <Button variant="secondary" onclick={() => (confirmReplaceDiag = false)}>Cancel</Button>
+        <Button variant="destructive" onclick={() => handleExportDiagnostics(true)}>Replace file</Button>
+    {/snippet}
+</Dialog>
 
 <div class="settings-view" data-testid={isLoaded ? 'settings-loaded' : 'settings-loading'}>
     <div class="header">
@@ -504,7 +532,7 @@
                     type="button"
                     class="btn primary"
                     disabled={isExportingDiag}
-                    onclick={handleExportDiagnostics}
+                    onclick={() => handleExportDiagnostics(false)}
                 >
                     {isExportingDiag ? 'Exporting...' : 'Export Diagnostics'}
                 </button>

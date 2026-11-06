@@ -1226,8 +1226,31 @@ pub fn studio_attach_audio(
 pub fn studio_export_takeoff_csv(
     measurements: Vec<MeasurementRecord>,
     output_path: String,
+    protected_paths: Option<Vec<String>>,
+    overwrite: Option<bool>,
 ) -> Result<(), String> {
     let out_path = PathBuf::from(&output_path);
+    // A takeoff CSV is never written to a PDF path or an open document, and never over an existing file unless
+    // the UI confirmed the overwrite (BUG-051 follow-up).
+    if out_path
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("pdf"))
+    {
+        return Err(format!(
+            "OUTPUT_PATH_UNSAFE: a takeoff CSV cannot be written to a PDF path ({output_path}). Nothing was written."
+        ));
+    }
+    let protected: Vec<PathBuf> = protected_paths
+        .unwrap_or_default()
+        .iter()
+        .map(PathBuf::from)
+        .collect();
+    let guard = if overwrite == Some(true) {
+        lpdf_jobs::output_guard::check_output_path_confirmed(&protected, &out_path)
+    } else {
+        lpdf_jobs::output_guard::check_output_path(&protected, &out_path)
+    };
+    guard.map_err(|e| e.to_string())?;
     let mut csv_out = String::with_capacity(measurements.len() * 96 + 256);
 
     csv_out.push_str(
@@ -1639,6 +1662,47 @@ mod tests {
         let _ = fs::remove_dir_all(&dir);
     }
 
+    #[test]
+    fn takeoff_csv_export_refuses_open_documents_pdf_paths_and_existing_files_unless_confirmed() {
+        let dir = std::env::temp_dir().join(format!("lpdf_csv_{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let doc = dir.join("plan.pdf");
+        fs::write(&doc, b"%PDF-1.4 original").unwrap();
+        let d = doc.to_string_lossy().to_string();
+        let unsafe_err =
+            |r: Result<(), String>| r.as_ref().is_err_and(|e| e.contains("OUTPUT_PATH_UNSAFE"));
+
+        // never the open document, never a .pdf path, even with a confirmed overwrite
+        assert!(unsafe_err(studio_export_takeoff_csv(
+            vec![],
+            d.clone(),
+            Some(vec![d.clone()]),
+            Some(true)
+        )));
+        assert!(unsafe_err(studio_export_takeoff_csv(
+            vec![],
+            d.clone(),
+            None,
+            Some(true)
+        )));
+        assert_eq!(fs::read(&doc).unwrap(), b"%PDF-1.4 original");
+
+        let csv = dir.join("plan.takeoff.csv");
+        fs::write(&csv, b"old rows").unwrap();
+        let c = csv.to_string_lossy().to_string();
+        assert!(unsafe_err(studio_export_takeoff_csv(
+            vec![],
+            c.clone(),
+            None,
+            None
+        )));
+        assert_eq!(fs::read(&csv).unwrap(), b"old rows");
+        assert!(studio_export_takeoff_csv(vec![], c, None, Some(true)).is_ok());
+        let fresh = dir.join("plan.takeoff-2.csv").to_string_lossy().to_string();
+        assert!(studio_export_takeoff_csv(vec![], fresh, None, None).is_ok());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
     // BUG-050 / BUG-032: the save entry points refuse an output that is the input (any spelling, no `.pdf`
     // extension needed) or an existing file, with a typed message, and write nothing.
     #[test]
@@ -1946,7 +2010,8 @@ startxref\n\
                 label: Some("North Wall".to_string()),
             },
         ];
-        let csv_res = studio_export_takeoff_csv(records, csv_path.to_string_lossy().to_string());
+        let csv_res =
+            studio_export_takeoff_csv(records, csv_path.to_string_lossy().to_string(), None, None);
         assert!(csv_res.is_ok(), "csv export failed: {:?}", csv_res);
         let csv_content = fs::read_to_string(&csv_path).unwrap();
         assert!(csv_content.contains("\"ID\",\"Page\",\"Type\""));
@@ -2183,7 +2248,8 @@ startxref\n\
         let tmp_dir = std::env::temp_dir().join(format!("lpdf_golden_csv_{}", std::process::id()));
         fs::create_dir_all(&tmp_dir).unwrap();
         let csv_path = tmp_dir.join("takeoff.csv");
-        studio_export_takeoff_csv(records, csv_path.to_string_lossy().to_string()).unwrap();
+        studio_export_takeoff_csv(records, csv_path.to_string_lossy().to_string(), None, None)
+            .unwrap();
         let csv = fs::read_to_string(&csv_path).unwrap();
         let _ = fs::remove_dir_all(&tmp_dir);
         let golden = serde_json::json!({

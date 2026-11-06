@@ -70,3 +70,33 @@ describe('views never submit output == input', () => {
         }
     });
 });
+
+// BUG-051: names that are not collision-safe made a SECOND run fail with OUTPUT_PATH_UNSAFE.
+import { resolveFreeOutput, swapExtension } from '../studio/outputNames';
+
+describe('resolveFreeOutput (editable and derived names)', () => {
+    test('a free name that is not the input is kept as is', async () => {
+        const out = await resolveFreeOutput('/docs/a_summary.md', '/docs/a.pdf', async () => false);
+        expect(out).toBe('/docs/a_summary.md');
+    });
+    test('the input itself is never returned (any extension, or none)', async () => {
+        expect(await resolveFreeOutput('/docs/doc', '/docs/doc', async () => false)).not.toBe('/docs/doc');
+        expect(await resolveFreeOutput('/docs/a.md', '/docs/a.md', async () => false)).not.toBe('/docs/a.md');
+    });
+    test('an existing file gives the next free name, keeping the extension', async () => {
+        const taken = new Set(['/docs/x_workflow.pdf', '/docs/x_workflow-2.pdf']);
+        const out = await resolveFreeOutput('/docs/x_workflow.pdf', '/docs/x.pdf', async (p) => taken.has(p));
+        expect(out).toBe('/docs/x_workflow-3.pdf');
+    });
+    test('running twice gives two distinct outputs even before the first file exists', async () => {
+        const a = await resolveFreeOutput('/docs/run_twice.md', '/docs/run_twice.pdf', async () => false);
+        const b = await resolveFreeOutput('/docs/run_twice.md', '/docs/run_twice.pdf', async () => false);
+        expect(a).not.toBe(b);
+        expect(b).toBe('/docs/run_twice-2.md');
+    });
+    test('swapExtension replaces the last extension, or appends one; "doc.md" -> "doc.pdf"', () => {
+        expect(swapExtension('/d/doc.md', '.pdf')).toBe('/d/doc.pdf');
+        expect(swapExtension('/d/doc', '.pdf')).toBe('/d/doc.pdf');
+        expect(swapExtension('/d.x/doc', '.pdf')).toBe('/d.x/doc.pdf');
+    });
+});

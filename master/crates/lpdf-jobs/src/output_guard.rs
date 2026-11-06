@@ -1,6 +1,16 @@
 //! BUG-050 / BUG-032: a job or save must never write over its own input or over an existing file.
 //!
 //! `check_output_path` is the one check, used by the job queue (every job) and by the Studio save command.
+//! # Scope
+//! Applies to every writer that takes a path the USER (or a screen) chose: job outputs, Studio saves, the takeoff
+//! CSV, the diagnostics report, `convert_pdf` and `extract_text`.
+//! Exempt on purpose: files the app owns and manages itself (the page-scales sidecar, settings, preferences, the
+//! markup library, workspace documents and the log). They are internal state, are rewritten atomically by design,
+//! and their paths never come from the user.
+//!
+//! `check_output_path_confirmed` is for a writer whose user explicitly confirmed replacing an existing FILE (the
+//! diagnostics report); it still refuses any protected path (an open document or an input).
+//!
 //! It compares canonical paths (symlinks and `..` resolved), so a different spelling of the input path is
 //! still refused. It never touches the disk beyond `canonicalize` / `metadata`.
 
@@ -51,6 +61,23 @@ fn canonical_target(path: &Path) -> PathBuf {
         }
         _ => path.to_path_buf(),
     }
+}
+
+/// Like `check_output_path`, but an existing file is allowed (the user confirmed replacing it). A protected path
+/// (an input or an open document) is still always refused.
+pub fn check_output_path_confirmed(
+    protected: &[PathBuf],
+    output: &Path,
+) -> Result<(), OutputPathError> {
+    let target = canonical_target(output);
+    for p in protected {
+        if canonical_target(p) == target {
+            return Err(OutputPathError::SameAsInput {
+                path: output.display().to_string(),
+            });
+        }
+    }
+    Ok(())
 }
 
 /// Refuse an output that is one of the inputs, or an existing file. An existing directory is not a collision

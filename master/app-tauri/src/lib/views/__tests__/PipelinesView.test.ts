@@ -29,8 +29,12 @@ const mockPresets: PipelinePreset[] = [
     }
 ];
 
+import { resetIssuedOutputNamesForTests } from '$lib/views/studio/outputNames';
+const flushOutputNames = () => new Promise<void>((r) => setTimeout(r, 0));
+
 describe('PipelinesView', () => {
     beforeEach(() => {
+        resetIssuedOutputNamesForTests();
         appState.clear();
         vi.restoreAllMocks();
         vi.spyOn(IpcClient, 'listPipelinePresets').mockResolvedValue([...mockPresets]);
@@ -106,6 +110,8 @@ describe('PipelinesView', () => {
 
         const runBtn = screen.getByTestId('btn-run-workflow');
         await fireEvent.click(runBtn);
+
+        await flushOutputNames(); // the output name is resolved (disk check) before the job is submitted
 
         expect(submitSpy).toHaveBeenCalledWith(expect.objectContaining({
             op: 'RunPipeline',

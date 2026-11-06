@@ -3,7 +3,7 @@
     import { IpcClient } from '$lib/ipc';
     import For from '$lib/components/For.svelte';
     import { appState } from '$lib/state.svelte';
-    import { siblingOutputPath } from '$lib/views/studio/outputNames';
+    import { siblingOutputPath, resolveFreeOutput } from '$lib/views/studio/outputNames';
     import type { PipelinePreset } from '$lib/bindings/PipelinePreset';
     import type { PipelineStep } from '$lib/bindings/PipelineStep';
     import type { JobRequest } from '$lib/bindings/JobRequest';
@@ -126,10 +126,13 @@
         }
 
         const preset = presets.find(p => p.id === selectedPresetId);
+        // Never the input, never an existing file: next free name (BUG-051).
+        const out = await resolveFreeOutput(outputPath.trim(), inputPath);
+        if (out !== outputPath.trim()) outputPath = out;
         const req: JobRequest = {
             op: 'RunPipeline',
             input_path: inputPath,
-            output_path: outputPath,
+            output_path: out,
             steps: activeSteps,
             preset_name: preset ? preset.name : null
         };
