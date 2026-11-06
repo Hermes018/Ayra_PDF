@@ -94,5 +94,6 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 13:46 | fixes-build | BUG-058 secrets redaction (+ wording, opacity limits, temp test) | sonnet/medium | ok | | encrypted-open password not listed → opus checks |
 | 2026-11-06 13:52 | review+verify (combined) | BUG-058 secrets (all password holders, log path, flow 2 grep) | opus/high | ok | | no leaks; owner logs clean |
 | 2026-11-06 13:57 | fixes-build | sweep group 14 (AiSummarize, Batch, Settings) — last | sonnet/medium | ok | | inventory 0 in 52 files |
-| 2026-11-06 14:06 | review+verify (combined) | g14 (Settings persistence, Batch/AI honesty, audit 0) | opus/high | running | | atomic writes |
-| 2026-11-06 14:06 | visual review | final sweep screenshots | sonnet/medium | running | | images only |
+| 2026-11-06 14:06 | review+verify (combined) | g14 (Settings persistence, Batch/AI honesty, audit 0) | opus/high | fail | | settings save after load error writes defaults; i18n overclaims |
+| 2026-11-06 14:06 | visual review | final sweep screenshots | sonnet/medium | fail | | Batch header/emoji, settings dark renders light, stuck tooltip |
+| 2026-11-06 14:11 | fixes-build | g14 fix round (BUG-059 settings fail-closed, i18n overclaims, visual) | sonnet/medium | running | | |
