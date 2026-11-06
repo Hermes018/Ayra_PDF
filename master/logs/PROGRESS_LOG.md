@@ -1544,3 +1544,12 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - Fixed: the blocker (per-document restored state; restore before drawing and rendering) and the major (merge, not replace). The 5 minors are fixed with timeouts and supersede handling; Save marks clean only what it wrote.
 - Builder verify.sh GREEN: vitest 216/216. Red→green logs in the worktree, logs/runs/r3-red*.log.
 - Staged 35 files. Fresh reviewer + verifier (Opus, high effort) launched.
+
+## [2026-11-06 07:17] Fixes P0 batch round 3 — review FAIL. Decision: structural round 4 + split view to Labs
+- **Blocker:** a new canvas instance (Studio→Organize→Studio, split change) merges a stale session over live engines, so erased strokes come back.
+- **Majors:** Save doesn't re-check restore after its await; scales and snap state leak between documents.
+- The fresh verifier was stopped while queued.
+- **Decision (lead, under the milestone rule "defer or move to Labs"):**
+  - documentSessions becomes the single owner of document state (activate(path), a global seq, a seq/livePath check after every await, one saver).
+  - Multi-pane split view goes behind Labs → KI-004.
+  - Timebox: if round 4 fails review, fall back to single-document mode and report flow 3's two-document check as a cut.
