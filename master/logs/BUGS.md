@@ -259,3 +259,5 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 
 ## BUG-063 [P0 until triaged] Real-PDF rerun on main 83fd51c regressed vs this morning: markup save (8/8 files), Edit Text (DF-01), redaction (DF-04: sentence not gone, qpdf --check fails) — status: triage running
 - Found by: the real-PDF rerun (~/lpdf-dogfood-run, IDs only). The same binary passes golden flows 4, 5, 7, 8, 9 and 11, and the dogfood driver predates the whole-app sweep (renamed labels, new testids), so driver drift is the leading hypothesis; the triage must prove it either way with evidence (output file identity, qpdf/pdftotext, app log, stale selectors, a one-file experiment with current selectors). Also noted: DF-05 open 6.25 s (> 5 s), DF-03 peak RSS 3,124 MB (BUG-037 open). Owner: release (triage), fixes (any app fix, Opus-high)
+
+> Owner rule (2026-11-06 16:2x) for BUG-061: if memory still grows with tabs closed, it is a P0 only if it would exceed ~1 GB in a normal 2-hour session; otherwise P1 + a KNOWN_ISSUES entry, and it does not block the RC. BUG-062: the counted-retry policy is approved.
