@@ -388,6 +388,7 @@ master/
 │   ├── APPLE_HIG_GLASS_SPEC.md                               # "Frosted glass" visual design system spec (all platforms)
 │   ├── ARCHITECTURE_AND_COMPLIANCE_AUDIT.md                  # Audit of studio phases D1/D2 against the plan
 │   ├── CRAFT_ECOSYSTEM_SURVEY.md                             # Survey of the 10 storytold *craft repos: licences, deps, unsafe, what to port/adopt (ADR-018 PROPOSED)
+│   ├── DESIGN_LANGUAGE.md                                    # App-wide design language: principles, tokens (themeContract + NEW), shared ui/ components (create vs reuse), patterns, wording guide, sweep "done" rules
 │   ├── DRAWBOARD_FEATURE_CHECKLIST.md                        # 119-item studio feature checklist with status (checked by `cargo xtask feature-map-check`)
 │   ├── DRAWBOARD_STUDIO_MASTER_PLAN.md                       # Plan for the spatial Studio editor (phases D1–D6)
 │   ├── ENGINE_REUSE_MATRIX.md                                # ADR-018 R1 matrix: each hand-written engine function → craft candidate → ADOPT/ADOPT-WASM/KEEP-PORT/REJECT
