@@ -3,6 +3,7 @@
     import { IpcClient } from '$lib/ipc';
     import For from '$lib/components/For.svelte';
     import { appState } from '$lib/state.svelte';
+    import { siblingOutputPath } from '$lib/views/studio/outputNames';
     import type { PipelinePreset } from '$lib/bindings/PipelinePreset';
     import type { PipelineStep } from '$lib/bindings/PipelineStep';
     import type { JobRequest } from '$lib/bindings/JobRequest';
@@ -21,7 +22,7 @@
     $effect(() => {
         if (!inputPath && appState.currentFile) {
             inputPath = appState.currentFile;
-            outputPath = inputPath.replace(/\.pdf$/i, '_workflow.pdf');
+            outputPath = siblingOutputPath(inputPath, '_workflow.pdf');
         }
     });
 

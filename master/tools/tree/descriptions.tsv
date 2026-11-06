@@ -633,3 +633,16 @@ master/e2e/flows/flow21_sweep_canvas_chrome.py	E2E smoke (sweep): Studio canvas 
 master/app-tauri/src/lib/components/ui/ColorSwatch.svelte	Colour swatch button: aria-label names the colour, aria-pressed + ring for the selected one
 master/e2e/flows/flow22_sweep_pill.py	E2E smoke (sweep): property pill (compact selects, swatches, presets), light/dark screenshots at 2 sizes, no console errors
 master/app-tauri/src/lib/views/__tests__/StudioUndoTooltip.test.ts	Tests: Studio Undo tooltip text follows commands.undoLabel; aria-label stays "Undo"
+master/app-tauri/src/lib/components/ViewShell.svelte	Shared tool-view frame: title, file bar, Progress (Cancel) and ErrorState (Retry)
+master/app-tauri/src/lib/components/studio/PillLayout.test.ts	Tests (BUG-045): property pill title on one line with tooltip; pill stacks above PINS and Help
+master/app-tauri/src/lib/core/jobRunner.svelte.ts	Runs one backend job for a tool view: progress, Cancel, Retry, error state (wraps IpcClient.runJob)
+master/app-tauri/src/lib/core/jobRunner.test.ts	Tests: jobRunner progress, cancel, retry and error states
+master/e2e/flows/flow23_sweep_views.py	E2E smoke (sweep): Convert tabs, Optimize and Edit views, light/dark screenshots at 2 sizes, no console errors
+master/app-tauri/src/lib/core/parseNumber.ts	parseNumberOr: explicit number parsing for inputs (empty -> default, 0 stays 0)
+master/app-tauri/src/lib/views/__tests__/ConvertTabsKeys.test.ts	Tests: Convert tabs roving tabindex; Arrow/Home/End via commandEngine key scope
+master/app-tauri/src/lib/views/__tests__/EditViewLabs.test.ts	Tests: sample highlight (demo) is hidden unless Labs is on
+master/app-tauri/src/lib/views/__tests__/EditViewNumbers.test.ts	Tests: Edit view number fields keep 0 and use defaults only when empty
+master/app-tauri/src/lib/views/__tests__/OutputPathsBug050.test.ts	Tests (BUG-050): every view builds a collision-safe output path that is never the input or an existing file
+master/crates/lpdf-jobs/src/output_guard.rs	Output path guard (BUG-050/032): refuses outputs that canonicalize to the input or an existing file (typed OutputPathError)
+master/crates/lpdf-jobs/tests/bug050_tests.rs	Tests (BUG-050): a job whose output equals the input fails with OUTPUT_PATH_UNSAFE and leaves the original intact
+master/crates/lpdf-jobs/tests/output_guard_tests.rs	Tests: output_guard unit cases (same path, .., symlink, existing file, distinct new file)

@@ -110,6 +110,12 @@ describe('Button', () => {
     expect(t).not.toHaveAttribute('aria-current');
     expect(t).toHaveAttribute('data-path', '/x'); // data-* still passes through
   });
+  it('id and controls (tab pattern): id attribute and aria-controls reach the native button', () => {
+    render(Button, { variant: 'plain', role: 'tab', selected: true, id: 'tab-a', controls: 'panel-a', onclick: () => {}, children: text('A') });
+    const t = screen.getByRole('tab', { name: 'A' });
+    expect(t).toHaveAttribute('id', 'tab-a');
+    expect(t).toHaveAttribute('aria-controls', 'panel-a');
+  });
   it('ariaLabel names a button whose content is decorated (badge) and wins over the text', () => {
     render(Button, { variant: 'secondary', ariaLabel: 'Guess text from ink (Labs)', onclick: () => {}, children: text('Guess text Labs') });
     expect(screen.getByRole('button', { name: 'Guess text from ink (Labs)' })).toBeInTheDocument();

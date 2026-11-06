@@ -1,5 +1,6 @@
 <script lang="ts">
     import { appState } from '$lib/state.svelte';
+    import { freeOutputPath } from '$lib/views/studio/outputNames';
     import { IpcClient } from '$lib/ipc';
     import PdfViewer from '$lib/components/PdfViewer.svelte';
     import type { JobRequest } from '$lib/bindings/JobRequest';
@@ -26,7 +27,7 @@
     async function handleProtect() {
         if (!currentPath || !protectPassword) return;
 
-        const outputPath = currentPath.replace(/\.pdf$/i, `_protected.pdf`);
+        const outputPath = await freeOutputPath(currentPath, 'protected');
         const permissions: Permissions = {
             allow_print: allowPrint,
             allow_copy: allowCopy,
@@ -53,7 +54,7 @@
     async function handleUnlock() {
         if (!currentPath || !unlockPassword) return;
 
-        const outputPath = currentPath.replace(/\.pdf$/i, `_unlocked.pdf`);
+        const outputPath = await freeOutputPath(currentPath, 'unlocked');
         
         const req: JobRequest = {
             op: "UnlockDocument",
@@ -74,7 +75,7 @@
     async function handleRedact() {
         if (!currentPath) return;
 
-        const outputPath = currentPath.replace(/\.pdf$/i, `_redacted.pdf`);
+        const outputPath = await freeOutputPath(currentPath, 'redacted');
         
         const req: JobRequest = {
             op: "RedactDocument",

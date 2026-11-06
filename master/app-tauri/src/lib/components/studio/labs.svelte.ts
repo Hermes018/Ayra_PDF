@@ -20,7 +20,16 @@ export const INK_GUESS_ID = 'labs.inkGuess';
 /** Feature id for the Studio split view (review r4: cut from the default UI). */
 export const SPLIT_VIEW_ID = 'studio.splitView';
 
-export const LABS_IDS: readonly string[] = ['insert.latex', INK_GUESS_ID, SPLIT_VIEW_ID];
+/** Edit view: adds a fixed example highlight (a demo, not a real highlighter). */
+export const SAMPLE_HIGHLIGHT_ID = 'labs.sampleHighlight';
+
+export const LABS_IDS: readonly string[] = ['insert.latex', INK_GUESS_ID, SPLIT_VIEW_ID, SAMPLE_HIGHLIGHT_ID];
+
+export const SAMPLE_HIGHLIGHT_LABS = {
+  name: 'Sample highlight',
+  label: 'Sample highlight (Labs)',
+  note: 'Adds a highlight in a fixed box near the top of page 1. It does not highlight real text; use Drawboard Studio for that.',
+} as const;
 
 /** Studio split view: two panes of the SAME document (a second document opens as a tab). */
 export const SPLIT_VIEW_LABS = {
@@ -65,6 +74,7 @@ export const INK_GUESS_LABS = {
 const LABS_TOOL_COPY: Record<string, { label: string; note: string }> = {
   'insert.latex': MATH_TEXT_LABS,
   [INK_GUESS_ID]: INK_GUESS_LABS,
+  [SAMPLE_HIGHLIGHT_ID]: SAMPLE_HIGHLIGHT_LABS,
 };
 
 /** Normalise preset ids (`preset.x`) and shortcut commands (`tool.x`) to the bare tool id. */

@@ -1142,6 +1142,21 @@ impl JobManager {
         Ok(child)
     }
 
+    /// Refuse a job whose output is its own input or an existing file (`output_guard`). Typed error text,
+    /// surfaced to the UI as a failed job; nothing is written.
+    fn guard_output(request: &JobRequest) -> lpdf_core_types::Result<()> {
+        let (_title, input, output) = request.summary();
+        let Some(output) = output else {
+            return Ok(());
+        };
+        let mut inputs: Vec<PathBuf> = input.iter().map(PathBuf::from).collect();
+        if let JobRequest::Merge { input_paths, .. } = request {
+            inputs = input_paths.iter().map(PathBuf::from).collect();
+        }
+        crate::output_guard::check_output_path(&inputs, &PathBuf::from(output))
+            .map_err(|e| LpdfError::InvalidInput(e.to_string()))
+    }
+
     /// Execute the actual PDF work (runs on a blocking thread).
     fn execute_job(
         job_id: &str,
@@ -1149,6 +1164,8 @@ impl JobManager {
         event_tx: &JobEventSender,
         cancel_token: &CancellationToken,
     ) -> lpdf_core_types::Result<JobOutput> {
+        // BUG-050: never write over an input or an existing file (checked before any work starts).
+        Self::guard_output(request)?;
         match request {
             JobRequest::GetInfo { input_path } => {
                 let _ = event_tx.send(JobEvent::Progress {

@@ -48,7 +48,7 @@ describe('A11y Conformance & Semantic Landmark Suite', () => {
     test('ConvertView implements WAI-ARIA tablist pattern with proper tab and tabpanel semantics', async () => {
         render(ConvertView);
 
-        const tablist = screen.getByRole('tablist', { name: 'Conversion Mode' });
+        const tablist = screen.getByRole('tablist', { name: 'Conversion mode' });
         expect(tablist).toBeInTheDocument();
 
         const tabs = screen.getAllByRole('tab');

@@ -3,6 +3,7 @@
     import { IpcClient, pickFilesDialog } from '$lib/ipc';
     import For from '$lib/components/For.svelte';
     import { appState } from '$lib/state.svelte';
+    import { freeOutputPath, siblingOutputPath } from '$lib/views/studio/outputNames';
     import type { JobRecord } from '$lib/bindings/JobRecord';
     import type { JobEvent } from '$lib/bindings/JobEvent';
     import type { JobPriority } from '$lib/bindings/JobPriority';
@@ -211,15 +212,13 @@
 
             appState.addFiles(files);
 
-            const requests: JobRequest[] = files.map(file => {
-                const out = file.replace(/\.pdf$/i, '_compressed.pdf');
-                return {
-                    op: 'Compress',
-                    input_path: file,
-                    output_path: out,
-                    profile: 'Medium'
-                };
-            });
+            // Collision-safe outputs (never the input, never an existing file; BUG-050).
+            const requests: JobRequest[] = await Promise.all(files.map(async (file): Promise<JobRequest> => ({
+                op: 'Compress',
+                input_path: file,
+                output_path: await freeOutputPath(file, 'compressed'),
+                profile: 'Medium'
+            })));
 
             const ids = await IpcClient.submitBatch(requests, 'Normal');
             actionMessage = `Enqueued ${ids.length} batch job(s) for selected files.`;

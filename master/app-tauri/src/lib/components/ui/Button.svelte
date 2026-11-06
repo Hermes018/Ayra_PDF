@@ -23,6 +23,11 @@
       /** Tab pattern: pass role="tab" with `selected` (aria-selected). */
       role?: 'tab';
       selected?: boolean;
+      /** Roving tabindex (tab pattern): 0 for the one tab stop, -1 for the others. */
+      tabindex?: number;
+      /** DOM id and the id of the controlled panel (tab pattern). */
+      id?: string;
+      controls?: string;
       /** Accessible name when the content is decorated (badges, glyphs). */
       ariaLabel?: string;
       /** Native tooltip text (use for extra detail; the accessible name still comes from the children). */
@@ -48,6 +53,9 @@
     selected,
     title,
     ariaLabel,
+    id,
+    controls,
+    tabindex,
     attrs,
     class: klass = '',
     'data-testid': testid,
@@ -87,6 +95,9 @@
     aria-selected={role === 'tab' ? !!selected : undefined}
     {title}
     aria-label={ariaLabel}
+    {id}
+    {tabindex}
+    aria-controls={controls}
     aria-disabled={disabled || undefined}
     aria-busy={busy || undefined}
     aria-describedby={disabled ? tipId : undefined}
@@ -146,6 +157,7 @@
   .lp-btn.is-block { width: 100%; justify-content: flex-start; font-weight: 400; }
   .lp-btn--plain.is-block { color: var(--text-primary); }
   .lp-btn[aria-pressed='true'],
+  .lp-btn[aria-selected='true'],
   .lp-btn.is-current { background: var(--glass-bg-active); color: var(--accent-primary); font-weight: 600; }
 
   .lp-dots { display: inline-flex; gap: var(--space-1); }

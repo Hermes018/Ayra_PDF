@@ -9,6 +9,7 @@
 #![forbid(unsafe_code)]
 
 pub mod events;
+pub mod output_guard;
 pub mod pipeline;
 pub mod queue;
 

@@ -71,7 +71,13 @@ impl Violation {
 pub const SHARED_COMPONENTS: &[(&str, &[&str])] = &[
     (
         "button",
-        &["Button", "IconButton", "Toggle", "SidebarSection"],
+        &[
+            "Button",
+            "IconButton",
+            "ColorSwatch",
+            "Toggle",
+            "SidebarSection",
+        ],
     ),
     (
         "input",

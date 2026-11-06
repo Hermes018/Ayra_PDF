@@ -3,6 +3,7 @@
     import For from '$lib/components/For.svelte';
     import { appState } from '$lib/state.svelte';
     import { IpcClient, pickFilesDialog } from '$lib/ipc';
+    import { freeOutputPath } from '$lib/views/studio/outputNames';
     import type { JobRequest } from '$lib/bindings/JobRequest';
     import Button from '$lib/components/ui/Button.svelte';
     import Input from '$lib/components/ui/Input.svelte';
@@ -91,7 +92,7 @@
         await runOp('Extracting pages', "Couldn't extract the pages.", {
             op: 'ExtractPages',
             input_path: currentPath,
-            output_path: currentPath.replace(/\.pdf$/i, '_extracted.pdf'),
+            output_path: await freeOutputPath(currentPath, 'extracted'),
             pages,
         });
     }
@@ -104,7 +105,7 @@
         await runOp('Deleting pages', "Couldn't delete the pages.", {
             op: 'DeletePages',
             input_path: currentPath,
-            output_path: currentPath.replace(/\.pdf$/i, '_deleted.pdf'),
+            output_path: await freeOutputPath(currentPath, 'deleted'),
             pages,
         });
     }
@@ -117,7 +118,7 @@
         await runOp('Rotating pages', "Couldn't rotate the pages.", {
             op: 'RotatePages',
             input_path: currentPath,
-            output_path: currentPath.replace(/\.pdf$/i, '_rotated.pdf'),
+            output_path: await freeOutputPath(currentPath, 'rotated'),
             pages,
             degrees: Number(rotateDegrees),
         });
@@ -128,7 +129,7 @@
         await runOp('Rotating the document', "Couldn't rotate the document.", {
             op: 'RotateDocument',
             input_path: currentPath,
-            output_path: currentPath.replace(/\.pdf$/i, `_rotdoc_${rotateDocDegrees}.pdf`),
+            output_path: await freeOutputPath(currentPath, `rotdoc-${rotateDocDegrees}`),
             degrees: Number(rotateDocDegrees),
         });
     }
@@ -138,7 +139,7 @@
         await runOp('Merging files', "Couldn't merge the files.", {
             op: 'Merge',
             input_paths: activeFiles,
-            output_path: activeFiles[0].replace(/\.pdf$/i, '_merged.pdf'),
+            output_path: await freeOutputPath(activeFiles[0], 'merged'),
         });
     }
 

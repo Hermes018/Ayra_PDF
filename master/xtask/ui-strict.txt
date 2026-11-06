@@ -39,3 +39,8 @@ lib/components/studio/MeasureOverlay.svelte
 lib/components/studio/AnnotationLedger.svelte
 lib/views/studio/SpatialCanvas.svelte
 lib/components/studio/PropertyPill.svelte
+# Sweep group 10: remaining views (small)
+lib/components/ViewShell.svelte
+lib/views/OptimizeView.svelte
+lib/views/EditView.svelte
+lib/views/ConvertView.svelte

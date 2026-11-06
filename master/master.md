@@ -110,6 +110,7 @@ master/
 │   │   │   │   │   ├── HatchDefs.test.ts                     # Tests: hatch preview tiles are drawn from the same pattern parameters as the saved output
 │   │   │   │   │   ├── labs.svelte.ts                        # Labs gate: the one place that decides if Labs tools (math text, shape-to-character) are visible/selectable; honest copy
 │   │   │   │   │   ├── MeasureOverlay.svelte                 # Draws measurement lines, labels, ruler/protractor
+│   │   │   │   │   ├── PillLayout.test.ts                    # Tests (BUG-045): property pill title on one line with tooltip; pill stacks above PINS and Help
 │   │   │   │   │   ├── PropertyPill.svelte                   # Floating style panel for the active tool (colour, width, line style)
 │   │   │   │   │   ├── RadialMenu.svelte                     # Circular quick-tool menu
 │   │   │   │   │   ├── ShortcutSettings.svelte               # Keyboard shortcut editor
@@ -142,7 +143,8 @@ master/
 │   │   │   │   ├── PdfViewer.svelte                          # Read-only page preview using pdf.js
 │   │   │   │   ├── Sidebar.svelte                            # Left navigation between tool groups
 │   │   │   │   ├── StatusBar.svelte                          # Bottom status line (engine, job state)
-│   │   │   │   └── ToastContainer.svelte                     # Toast notifications
+│   │   │   │   ├── ToastContainer.svelte                     # Toast notifications
+│   │   │   │   └── ViewShell.svelte                          # Shared tool-view frame: title, file bar, Progress (Cancel) and ErrorState (Retry)
 │   │   │   ├── core/                                         # Studio engines: state + logic (no DOM), each unit-tested
 │   │   │   │   ├── __fixtures__/                             # Characterization goldens of the current TS engines (regenerate: vitest -u)
 │   │   │   │   │   ├── ink.eraser.golden.json                # Golden: partial/whole eraser output
@@ -170,7 +172,10 @@ master/
 │   │   │   │   ├── inkEngine.svelte.ts                       # Freehand ink strokes, smoothing, shape recognition, laser pointer
 │   │   │   │   ├── insertAndTakeoff.test.ts                  # Tests: insert suite and takeoff CSV export
 │   │   │   │   ├── insertEngine.svelte.ts                    # Insert tools: images, stamps, signatures, audio, "LaTeX" (Unicode-only), workspace library
+│   │   │   │   ├── jobRunner.svelte.ts                       # Runs one backend job for a tool view: progress, Cancel, Retry, error state (wraps IpcClient.runJob)
+│   │   │   │   ├── jobRunner.test.ts                         # Tests: jobRunner progress, cancel, retry and error states
 │   │   │   │   ├── measureEngine.svelte.ts                   # Length/area/angle/volume measurement and scale maths
+│   │   │   │   ├── parseNumber.ts                            # parseNumberOr: explicit number parsing for inputs (empty -> default, 0 stays 0)
 │   │   │   │   ├── radialGeometry.test.ts                    # Tests: radial menu hit testing
 │   │   │   │   ├── radialGeometry.ts                         # Radial menu geometry (sector/ring hit testing)
 │   │   │   │   ├── radialLayout.json                         # Radial menu sectors and flyout tools
@@ -202,13 +207,17 @@ master/
 │   │   │   │   │   ├── AiSummarizeView.test.ts               # Tests: AI summarize view
 │   │   │   │   │   ├── BatchQueueView.test.ts                # Tests: batch queue view
 │   │   │   │   │   ├── ConvertFromPdfView.test.ts            # Tests: convert-from view
+│   │   │   │   │   ├── ConvertTabsKeys.test.ts               # Tests: Convert tabs roving tabindex; Arrow/Home/End via commandEngine key scope
 │   │   │   │   │   ├── ConvertToPdfView.test.ts              # Tests: convert-to view
+│   │   │   │   │   ├── EditViewLabs.test.ts                  # Tests: sample highlight (demo) is hidden unless Labs is on
+│   │   │   │   │   ├── EditViewNumbers.test.ts               # Tests: Edit view number fields keep 0 and use defaults only when empty
 │   │   │   │   │   ├── EngineReset.test.ts                   # Tests: every engine field is classified and reset on document switch (fails when a new field is unclassified)
 │   │   │   │   │   ├── IpcAndSessionTimeouts.test.ts         # Tests: whenDocumentLive/probe timeouts, stall timer starts at dequeue, listener cleanup
 │   │   │   │   │   ├── LabsGating.test.ts                    # Tests: Labs off by default, all Labs entry points hidden, honest labels derived from the classifier
 │   │   │   │   │   ├── MeasurePerimeter.test.ts              # Tests: perimeter closes the shape (BUG-022)
 │   │   │   │   │   ├── OrganizeApply.test.ts                 # Tests: Organize Apply keeps rotation, reports failures (BUG-014)
 │   │   │   │   │   ├── OrganizeView.test.ts                  # Tests: organize view
+│   │   │   │   │   ├── OutputPathsBug050.test.ts             # Tests (BUG-050): every view builds a collision-safe output path that is never the input or an existing file
 │   │   │   │   │   ├── PipelinesView.test.ts                 # Tests: pipelines view
 │   │   │   │   │   ├── SettingsView.test.ts                  # Tests: settings view
 │   │   │   │   │   ├── SignatureDraw.test.ts                 # Tests: drawn signature saved as ink, not text (BUG-017)
@@ -372,10 +381,13 @@ master/
 │   │   ├── src/                                              # Crate source
 │   │   │   ├── events.rs                                     # Job progress/done/error events
 │   │   │   ├── lib.rs                                        # Crate root + RAM budget / worker concurrency (sysinfo)
+│   │   │   ├── output_guard.rs                               # Output path guard (BUG-050/032): refuses outputs that canonicalize to the input or an existing file (typed OutputPathError)
 │   │   │   ├── pipeline.rs                                   # Workflow steps and built-in presets
 │   │   │   └── queue.rs                                      # JobManager and every job kind (runs in-process today; sandboxed worker not wired yet)
 │   │   ├── tests/                                            # Integration tests
 │   │   │   ├── bug018_tests.rs                               # Tests (BUG-018): GetInfo on hostile files ends Failed with F4 code; fallback opens report degraded
+│   │   │   ├── bug050_tests.rs                               # Tests (BUG-050): a job whose output equals the input fails with OUTPUT_PATH_UNSAFE and leaves the original intact
+│   │   │   ├── output_guard_tests.rs                         # Tests: output_guard unit cases (same path, .., symlink, existing file, distinct new file)
 │   │   │   └── queue_tests.rs                                # Tests: queue behaviour
 │   │   └── Cargo.toml                                        # Crate manifest
 │   ├── lpdf-tools-convert/                                   # Thin convert wrappers over PdfEngine (currently unused by other crates)
@@ -453,7 +465,8 @@ master/
 │   │   ├── flow19_sweep_toolbar.py                           # E2E smoke (sweep): dockable toolbar, radial menu and measure overlay, light/dark screenshots at 2 sizes, no console errors
 │   │   ├── flow20_sweep_ledger.py                            # E2E smoke (sweep): annotation ledger and its dialogs, light/dark screenshots at 2 sizes, no console errors
 │   │   ├── flow21_sweep_canvas_chrome.py                     # E2E smoke (sweep): Studio canvas chrome (toolbars, banners, overlays), light/dark screenshots at 2 sizes, no console errors
-│   │   └── flow22_sweep_pill.py                              # E2E smoke (sweep): property pill (compact selects, swatches, presets), light/dark screenshots at 2 sizes, no console errors
+│   │   ├── flow22_sweep_pill.py                              # E2E smoke (sweep): property pill (compact selects, swatches, presets), light/dark screenshots at 2 sizes, no console errors
+│   │   └── flow23_sweep_views.py                             # E2E smoke (sweep): Convert tabs, Optimize and Edit views, light/dark screenshots at 2 sizes, no console errors
 │   ├── .gitignore                                            # Ignores e2e/out/ (reports, screenshots, copied binary)
 │   ├── common.py                                             # Ground-truth helpers (poppler/qpdf/hashes), process sampling, isolation (private D-Bus/XDG)
 │   ├── ink_match.py                                          # Matcher for content-less annotations (drawn signature): one /Ink or /Stamp with non-empty InkList or AP, /Rect on page and covering the drawn stroke, enough points (BUG-046)

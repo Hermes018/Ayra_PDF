@@ -1,375 +1,206 @@
 <script lang="ts">
     import { appState } from '$lib/state.svelte';
-    import { IpcClient } from '$lib/ipc';
     import PdfViewer from '$lib/components/PdfViewer.svelte';
-    import type { JobRequest } from '$lib/bindings/JobRequest';
+    import ViewShell from '$lib/components/ViewShell.svelte';
+    import Button from '$lib/components/ui/Button.svelte';
+    import Input from '$lib/components/ui/Input.svelte';
+    import EmptyState from '$lib/components/ui/EmptyState.svelte';
+    import { SAMPLE_HIGHLIGHT_ID, SAMPLE_HIGHLIGHT_LABS, LABS_BADGE, labsVisible } from '$lib/components/studio/labs.svelte';
+    import { parseNumberOr } from '$lib/core/parseNumber';
+    import { freeOutputPath } from '$lib/views/studio/outputNames';
+    import { JobRunner } from '$lib/core/jobRunner.svelte';
     import type { WatermarkSettings } from '$lib/bindings/WatermarkSettings';
     import type { AnnotationDef } from '$lib/bindings/AnnotationDef';
     import type { AnnotationShape } from '$lib/bindings/AnnotationShape';
 
     let currentPath = $derived(appState.currentFile);
 
-    // Watermark State
-    let watermarkText = $state("CONFIDENTIAL");
-    let watermarkOpacity = $state(0.5);
-    let watermarkRotation = $state(45.0); // degrees
-    
-    // Annotation State
-    let stickyNoteText = $state("Please review this section.");
-    let annotX = $state(100.0);
-    let annotY = $state(100.0);
-    let authorName = $state("Admin");
+    // Watermark state (ui/Input works with strings; converted when the job is built)
+    let watermarkText = $state('CONFIDENTIAL');
+    let watermarkOpacity = $state('0.5');
+    let watermarkRotation = $state('45');
 
-    async function handleWatermark() {
+    // Annotation state
+    let stickyNoteText = $state('Please review this section.');
+    let annotX = $state('100');
+    let annotY = $state('100');
+    const authorName = 'Admin';
+
+    const NEXT = 'Check that the file is still there and not open elsewhere, then try again. The original file is unchanged.';
+    const jobs = new JobRunner();
+    const busyReason = 'Wait for the current job to finish, or cancel it';
+
+    async function watermark() {
         if (!currentPath || !watermarkText) return;
-
-        const outputPath = currentPath.replace(/\.pdf$/i, `_watermarked.pdf`);
+        const out = await freeOutputPath(currentPath, 'watermarked');
         const settings: WatermarkSettings = {
             text: watermarkText,
-            opacity: watermarkOpacity,
-            rotation: watermarkRotation,
-            color: [0.8, 0.2, 0.2] // Red-ish watermark
+            opacity: parseNumberOr(watermarkOpacity, 0.5),
+            rotation: parseNumberOr(watermarkRotation, 45),
+            color: [0.8, 0.2, 0.2], // Red-ish watermark
         };
-
-        const req: JobRequest = {
-            op: "WatermarkDocument",
+        void jobs.run('Adding the watermark', "Couldn't add the watermark.", NEXT, {
+            op: 'WatermarkDocument',
             input_path: currentPath,
-            output_path: outputPath,
-            settings
-        };
-
-        try {
-            const jobId = await IpcClient.submitJob(req);
-            console.log("Watermark job submitted with ID:", jobId);
-        } catch (e) {
-            console.error("Failed to submit watermark job:", e);
-        }
+            output_path: out,
+            settings,
+        });
     }
 
-    async function handleStickyNote() {
-        if (!currentPath || !stickyNoteText) return;
-
-        const outputPath = currentPath.replace(/\.pdf$/i, `_annotated.pdf`);
-        
-        const shape: AnnotationShape = {
-            StickyNote: {
-                x: annotX,
-                y: annotY,
-                text: stickyNoteText
-            }
-        };
-
-        const annotation: AnnotationDef = {
-            page: 0,
-            shape,
-            author: authorName
-        };
-
-        const req: JobRequest = {
-            op: "AnnotateDocument",
-            input_path: currentPath,
-            output_path: outputPath,
-            annotation
-        };
-
-        try {
-            const jobId = await IpcClient.submitJob(req);
-            console.log("Sticky note job submitted with ID:", jobId);
-        } catch (e) {
-            console.error("Failed to submit sticky note job:", e);
-        }
-    }
-
-    async function handleHighlight() {
+    async function annotate(label: string, what: string, tag: string, shape: AnnotationShape) {
         if (!currentPath) return;
-
-        const outputPath = currentPath.replace(/\.pdf$/i, `_highlighted.pdf`);
-        
-        // Example quads for a highlight box (top-left, top-right, bottom-left, bottom-right)
-        const shape: AnnotationShape = {
-            Highlight: {
-                quads: [[100.0, 200.0, 300.0, 200.0, 100.0, 180.0, 300.0, 180.0]]
-            }
-        };
-
-        const annotation: AnnotationDef = {
-            page: 0,
-            shape,
-            author: authorName
-        };
-
-        const req: JobRequest = {
-            op: "AnnotateDocument",
+        const out = await freeOutputPath(currentPath, tag);
+        const annotation: AnnotationDef = { page: 0, shape, author: authorName };
+        void jobs.run(label, what, NEXT, {
+            op: 'AnnotateDocument',
             input_path: currentPath,
-            output_path: outputPath,
-            annotation
-        };
-
-        try {
-            const jobId = await IpcClient.submitJob(req);
-            console.log("Highlight job submitted with ID:", jobId);
-        } catch (e) {
-            console.error("Failed to submit highlight job:", e);
-        }
+            output_path: out,
+            annotation,
+        });
     }
 
-    async function handleFlatten() {
+    function stickyNote() {
+        if (!stickyNoteText) return;
+        annotate('Adding the sticky note', "Couldn't add the sticky note.", 'annotated', {
+            StickyNote: { x: parseNumberOr(annotX, 100), y: parseNumberOr(annotY, 100), text: stickyNoteText },
+        });
+    }
+
+    function highlight() {
+        // Labs demo: a fixed example box on page 1 (the real highlight tool is in Drawboard Studio).
+        annotate('Adding the highlight', "Couldn't add the highlight.", 'highlighted', {
+            Highlight: { quads: [[100.0, 200.0, 300.0, 200.0, 100.0, 180.0, 300.0, 180.0]] },
+        });
+    }
+
+    async function flatten() {
         if (!currentPath) return;
-
-        const outputPath = currentPath.replace(/\.pdf$/i, `_flattened.pdf`);
-        
-        const req: JobRequest = {
-            op: "FlattenComments",
+        const out = await freeOutputPath(currentPath, 'flattened');
+        void jobs.run('Flattening comments', "Couldn't flatten the comments.", NEXT, {
+            op: 'FlattenComments',
             input_path: currentPath,
-            output_path: outputPath
-        };
-
-        try {
-            const jobId = await IpcClient.submitJob(req);
-            console.log("Flatten comments job submitted with ID:", jobId);
-        } catch (e) {
-            console.error("Failed to submit flatten job:", e);
-        }
+            output_path: out,
+        });
     }
 </script>
 
-<div class="view-container">
-    <div class="header">
-        <h2>Edit & Annotate PDF</h2>
-    </div>
-
-    <div class="content">
-        <div class="sidebar">
-            <div class="tool-section">
-                <h4>Watermark</h4>
-                {#if currentPath}
-                    <div class="form-group">
-                        <label for="watermarkText">Text</label>
-                        <input id="watermarkText" type="text" bind:value={watermarkText} placeholder="CONFIDENTIAL" />
-                    </div>
-                    <div class="form-group row-group">
-                        <div class="sub-group">
-                            <label for="watermarkOpacity">Opacity</label>
-                            <input id="watermarkOpacity" type="number" step="0.1" min="0.1" max="1.0" bind:value={watermarkOpacity} />
-                        </div>
-                        <div class="sub-group">
-                            <label for="watermarkRotation">Angle</label>
-                            <input id="watermarkRotation" type="number" bind:value={watermarkRotation} />
-                        </div>
-                    </div>
-                    <button class="action-button" onclick={handleWatermark}>
-                        Add Watermark
-                    </button>
-                {:else}
-                    <p class="empty-text">Select or drag a file to add a watermark.</p>
-                {/if}
-            </div>
-
-            <div class="tool-section">
-                <h4>Sticky Note</h4>
-                {#if currentPath}
-                    <div class="form-group">
-                        <label for="stickyText">Note Content</label>
-                        <input id="stickyText" type="text" bind:value={stickyNoteText} placeholder="Enter note text..." />
-                    </div>
-                    <div class="form-group row-group">
-                        <div class="sub-group">
-                            <label for="annotX">X Position</label>
-                            <input id="annotX" type="number" bind:value={annotX} />
-                        </div>
-                        <div class="sub-group">
-                            <label for="annotY">Y Position</label>
-                            <input id="annotY" type="number" bind:value={annotY} />
-                        </div>
-                    </div>
-                    <button class="action-button secondary-button" onclick={handleStickyNote}>
-                        Add Sticky Note
-                    </button>
-                {:else}
-                    <p class="empty-text">Select or drag a file to annotate.</p>
-                {/if}
-            </div>
-
-            <div class="tool-section">
-                <h4>Quick Tools</h4>
-                {#if currentPath}
-                    <p class="help-text">Foundation tools for text markup and finalizing.</p>
-                    <div class="button-row">
-                        <button class="action-button tertiary-button" onclick={handleHighlight}>
-                            Highlight Text (Demo)
-                        </button>
-                        <button class="action-button danger-button" onclick={handleFlatten}>
-                            Flatten Comments
-                        </button>
-                    </div>
-                {:else}
-                    <p class="empty-text">Select or drag a file to access quick tools.</p>
-                {/if}
-            </div>
-        </div>
-        
-        <div class="viewer-main">
+<ViewShell title="Edit and annotate PDF" showFileBar={false} busyLabel={jobs.busyLabel} oncancel={() => jobs.cancel()} error={jobs.error}>
+    {#snippet tools()}
+        <div class="tool-section">
+            <h4>Watermark</h4>
             {#if currentPath}
-                <PdfViewer filePath={currentPath} />
-            {:else}
-                <div class="empty-state">
-                    <p>No file selected.</p>
+                <Input label="Text" bind:value={watermarkText} placeholder="CONFIDENTIAL" />
+                <div class="row-group">
+                    <Input type="number" label="Opacity" bind:value={watermarkOpacity} />
+                    <Input type="number" label="Angle" bind:value={watermarkRotation} />
                 </div>
+                <Button variant="primary" onclick={watermark} disabled={!watermarkText || !!jobs.busyLabel} disabledReason={jobs.busyLabel ? busyReason : 'Enter the watermark text'}>
+                    Add watermark
+                </Button>
+            {:else}
+                <p class="empty-text">Select or drag a file to add a watermark.</p>
             {/if}
         </div>
-    </div>
-</div>
+
+        <div class="tool-section">
+            <h4>Sticky note</h4>
+            {#if currentPath}
+                <Input label="Note content" bind:value={stickyNoteText} placeholder="Enter note text..." />
+                <div class="row-group">
+                    <Input type="number" label="X position" bind:value={annotX} />
+                    <Input type="number" label="Y position" bind:value={annotY} />
+                </div>
+                <Button variant="secondary" onclick={stickyNote} disabled={!stickyNoteText || !!jobs.busyLabel} disabledReason={jobs.busyLabel ? busyReason : 'Enter the note text'}>
+                    Add sticky note
+                </Button>
+            {:else}
+                <p class="empty-text">Select or drag a file to annotate.</p>
+            {/if}
+        </div>
+
+        <div class="tool-section">
+            <h4>Quick tools</h4>
+            {#if currentPath}
+                <p class="help-text">Simple tools for marking up and finalizing.</p>
+                <div class="button-row">
+                    {#if labsVisible(SAMPLE_HIGHLIGHT_ID)}
+                        <Button variant="secondary" ariaLabel={SAMPLE_HIGHLIGHT_LABS.label} title={`${SAMPLE_HIGHLIGHT_LABS.label}: ${SAMPLE_HIGHLIGHT_LABS.note}`} onclick={highlight} disabled={!!jobs.busyLabel} disabledReason={busyReason}>
+                            {SAMPLE_HIGHLIGHT_LABS.name} <span class="labs-badge">{LABS_BADGE}</span>
+                        </Button>
+                    {/if}
+                    <Button variant="destructive" onclick={flatten} disabled={!!jobs.busyLabel} disabledReason={busyReason}>Flatten comments</Button>
+                </div>
+            {:else}
+                <p class="empty-text">Select or drag a file to access quick tools.</p>
+            {/if}
+        </div>
+    {/snippet}
+    {#snippet main()}
+        {#if currentPath}
+            <PdfViewer filePath={currentPath} />
+        {:else}
+            <EmptyState title="No file selected" body="Open or drag in a PDF to add a watermark, a note or a highlight." />
+        {/if}
+    {/snippet}
+</ViewShell>
 
 <style>
-    .view-container {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        padding: 1rem;
-        gap: 1rem;
-    }
-
-    .header h2 {
-        margin: 0;
-        font-size: 1.5rem;
-        color: var(--text-color);
-    }
-
-    .content {
-        display: flex;
-        flex: 1;
-        gap: 1.5rem;
-        min-height: 0;
-    }
-
-    .sidebar {
-        width: 320px;
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-        overflow-y: auto;
-    }
-
     .tool-section {
-        background: var(--surface-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        padding: 1rem;
+        background-color: var(--glass-bg-input);
+        padding: var(--space-4);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--glass-border-subtle);
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
+        gap: var(--space-3);
     }
 
     .tool-section h4 {
         margin: 0;
-        color: var(--text-color);
-        font-size: 1.1rem;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.4rem;
+        color: var(--text-primary);
+        font-size: var(--font-size-title3);
     }
 
     .row-group {
-        flex-direction: row;
-        gap: 1rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-3);
     }
 
-    .sub-group {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        gap: 0.4rem;
+    /* Two number fields side by side must fit the 300px tools column (they were clipped at 1200x800). */
+    .row-group :global(.lp-field) {
+        min-width: 0;
     }
 
-    .form-group label, .sub-group label {
-        font-size: 0.85rem;
-        color: var(--text-muted);
-    }
-
-    .form-group input, .sub-group input {
-        padding: 0.5rem;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        background: var(--bg-color);
-        color: var(--text-color);
+    .row-group :global(.lp-input) {
         width: 100%;
+        min-width: 0;
         box-sizing: border-box;
-    }
-
-    .action-button {
-        background: var(--primary-color);
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 0.75rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: opacity 0.2s;
-        margin-top: 0.5rem;
-        width: 100%;
-    }
-    
-    .action-button:hover {
-        opacity: 0.9;
-    }
-
-    .secondary-button {
-        background: var(--accent-primary);
-        color: var(--text-on-accent);
-    }
-    
-    .tertiary-button {
-        background: var(--semantic-success);
-        color: var(--text-on-accent);
-        margin-top: 0;
-    }
-
-    .danger-button {
-        background: var(--semantic-danger);
-        color: var(--text-on-accent);
-        margin-top: 0;
     }
 
     .button-row {
         display: flex;
-        gap: 0.5rem;
         flex-direction: column;
+        gap: var(--space-2);
+    }
+
+    .labs-badge {
+        margin-left: var(--space-1);
+        font-size: var(--font-size-caption);
+        font-weight: 700;
+        text-transform: uppercase;
     }
 
     .help-text {
-        font-size: 0.8rem;
-        color: var(--text-muted);
         margin: 0;
-        line-height: 1.4;
+        color: var(--text-secondary);
+        font-size: var(--font-size-footnote);
     }
 
     .empty-text {
-        color: var(--text-muted);
-        font-style: italic;
         margin: 0;
-        font-size: 0.9rem;
-    }
-
-    .viewer-main {
-        flex: 1;
-        background: var(--surface-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-    }
-
-    .empty-state {
-        color: var(--text-muted);
-        text-align: center;
-        padding: 2rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
+        color: var(--text-tertiary);
+        font-size: var(--font-size-footnote);
+        font-style: italic;
     }
 </style>

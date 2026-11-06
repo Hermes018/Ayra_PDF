@@ -72,6 +72,7 @@ export class CommandBusAndShortcutEngine {
   readonly journal: ControlMessage[] = []; // headless replay/verification trace (cleared per session)
 
   #escapeHandlers = new Set<() => boolean>();
+  #keyScopes = new Set<(e: KeyboardEvent) => boolean>();
 
   /**
    * Register an Escape handler (e.g. a modal). Runs before the typing-target guard, so Escape works
@@ -81,6 +82,18 @@ export class CommandBusAndShortcutEngine {
     this.#escapeHandlers.add(h);
     return () => {
       this.#escapeHandlers.delete(h);
+    };
+  }
+
+  /**
+   * Scoped key handling for a widget that owns some keys while it has focus (e.g. the arrow keys of a tablist).
+   * Register on focus-in, unregister on focus-out. Handlers see the key before shortcut dispatch; returning true
+   * consumes it (preventDefault, no shortcut runs). Local keydown listeners stay banned; this is the one entry point.
+   */
+  registerKeyScope(h: (e: KeyboardEvent) => boolean): () => void {
+    this.#keyScopes.add(h);
+    return () => {
+      this.#keyScopes.delete(h);
     };
   }
 
@@ -256,6 +269,12 @@ export class CommandBusAndShortcutEngine {
       }
       if (e.key === 'Escape') {
         for (const h of this.#escapeHandlers) h();
+      }
+      for (const scope of this.#keyScopes) {
+        if (scope(e)) {
+          e.preventDefault();
+          return;
+        }
       }
       const el = e.target as HTMLElement | null;
       if (el && (el.isContentEditable || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;

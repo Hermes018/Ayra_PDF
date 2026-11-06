@@ -190,7 +190,7 @@
 >
   <!-- Active Tool Badge -->
   <div class="pill-section tool-badge-section">
-    <span class="tool-label" data-testid="active-tool-label">{studioToolLabel(tools.currentToolId, tools.activeToolLabel)}</span>
+    <span class="tool-label" data-testid="active-tool-label" title={studioToolLabel(tools.currentToolId, tools.activeToolLabel)}>{studioToolLabel(tools.currentToolId, tools.activeToolLabel)}</span>
   </div>
 
   {#if tools.supportsStrokeProperties && tools.activePreset}
@@ -454,7 +454,8 @@
 <style>
   .property-pill {
     position: absolute;
-    bottom: var(--space-6);
+    /* Above the favourites bar row (bottom-left) and the Help button (bottom-right). */
+    bottom: calc(var(--space-4) + var(--control-height-lg) + var(--space-6));
     left: 50%;
     transform: translateX(-50%);
     z-index: 150;
@@ -479,9 +480,11 @@
 
   .tool-label {
     font-weight: 600;
-    font-size: var(--font-size-caption);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    font-size: var(--font-size-footnote);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 11em;
   }
 
   .status-hint {

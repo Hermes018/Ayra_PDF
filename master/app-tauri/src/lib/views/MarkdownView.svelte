@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import { appState } from '$lib/state.svelte';
+    import { siblingOutputPath } from '$lib/views/studio/outputNames';
     import { IpcClient, pickFilesDialog, pickFolderDialog, saveFileDialog } from '$lib/ipc';
     import type { JobRequest } from '$lib/bindings/JobRequest';
 
@@ -33,7 +34,7 @@
                 : 'markdown_batch_output';
         }
         if (selectedMode === 'PdfToMarkdown') {
-            return activeSource.replace(/\.pdf$/i, '.md');
+            return siblingOutputPath(activeSource, '.md');
         } else if (selectedMode === 'MarkdownToPdf') {
             return activeSource.replace(/\.md$/i, '.pdf');
         } else {

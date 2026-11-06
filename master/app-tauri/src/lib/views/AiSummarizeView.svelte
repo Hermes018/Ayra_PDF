@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
     import { IpcClient } from '$lib/ipc';
     import { appState } from '$lib/state.svelte';
+    import { siblingOutputPath } from '$lib/views/studio/outputNames';
     import For from '$lib/components/For.svelte';
     import type { SummaryLength } from '$lib/bindings/SummaryLength';
     import type { JobRequest } from '$lib/bindings/JobRequest';
@@ -42,7 +43,7 @@
     $effect(() => {
         if (!inputPath && appState.currentFile) {
             inputPath = appState.currentFile;
-            outputPath = inputPath.replace(/\.pdf$/i, '_summary.md');
+            outputPath = siblingOutputPath(inputPath, '_summary.md');
         }
     });
 
@@ -51,9 +52,9 @@
         inputPath = newInput;
         if (!outputPath || outputPath.endsWith('_summary.md') || outputPath.includes('_translated_')) {
             if (activeMode === 'translate') {
-                outputPath = newInput.replace(/\.pdf$/i, `_translated_${targetLang}.pdf`);
+                outputPath = siblingOutputPath(newInput, `_translated_${targetLang}.pdf`);
             } else {
-                outputPath = newInput.replace(/\.pdf$/i, '_summary.md');
+                outputPath = siblingOutputPath(newInput, '_summary.md');
             }
         }
     }
@@ -62,9 +63,9 @@
         activeMode = mode;
         if (inputPath && (!outputPath || outputPath.endsWith('_summary.md') || outputPath.includes('_translated_'))) {
             if (mode === 'translate') {
-                outputPath = inputPath.replace(/\.pdf$/i, `_translated_${targetLang}.pdf`);
+                outputPath = siblingOutputPath(inputPath, `_translated_${targetLang}.pdf`);
             } else {
-                outputPath = inputPath.replace(/\.pdf$/i, '_summary.md');
+                outputPath = siblingOutputPath(inputPath, '_summary.md');
             }
         }
     }
@@ -357,7 +358,7 @@
                                 bind:value={targetLang}
                                 onchange={() => {
                                     if (inputPath && (outputPath.includes('_translated_') || !outputPath)) {
-                                        outputPath = inputPath.replace(/\.pdf$/i, `_translated_${targetLang}.pdf`);
+                                        outputPath = siblingOutputPath(inputPath, `_translated_${targetLang}.pdf`);
                                     }
                                 }}
                                 data-testid="target-lang-select"

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { appState } from '$lib/state.svelte';
+    import { freeOutputPath } from '$lib/views/studio/outputNames';
     import { IpcClient } from '$lib/ipc';
     import type { JobRequest } from '$lib/bindings/JobRequest';
     import { open } from '@tauri-apps/plugin-dialog';
@@ -17,7 +18,7 @@
     async function handleFlattenForms() {
         if (!currentPath) return;
 
-        const outputPath = currentPath.replace(/\.pdf$/i, `_forms_flattened.pdf`);
+        const outputPath = await freeOutputPath(currentPath, 'forms-flattened');
         const req: JobRequest = {
             op: "FlattenForms",
             input_path: currentPath,
@@ -36,7 +37,7 @@
         if (!currentPath) return;
         if (!formFieldName.trim()) return;
 
-        const outputPath = currentPath.replace(/\.pdf$/i, `_filled.pdf`);
+        const outputPath = await freeOutputPath(currentPath, 'filled');
         const fields: Record<string, string> = {};
         fields[formFieldName] = formFieldValue;
 
@@ -75,7 +76,7 @@
     async function handleSign() {
         if (!currentPath || !p12Path || !signPassword) return;
 
-        const outputPath = currentPath.replace(/\.pdf$/i, `_signed.pdf`);
+        const outputPath = await freeOutputPath(currentPath, 'signed');
         const req: JobRequest = {
             op: "SignDocument",
             input_path: currentPath,

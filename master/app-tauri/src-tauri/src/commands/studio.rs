@@ -350,6 +350,13 @@ pub fn control_validate(msg: ControlMessage) -> Result<bool, String> {
     msg.validate().map(|()| true).map_err(|e| e.to_string())
 }
 
+/// BUG-050 / BUG-032: refuse an output that is the input (any spelling) or an existing file, before anything is
+/// read or written. Typed `OutputPathError` text, `OUTPUT_PATH_UNSAFE: ...`.
+fn guard_save_output(input_path: &str, output_path: &str) -> Result<(), String> {
+    lpdf_jobs::output_guard::check_output_path(&[PathBuf::from(input_path)], Path::new(output_path))
+        .map_err(|e| e.to_string())
+}
+
 /// Persist studio annotations (ink, shapes, polylines, clouds, hatch regions, text boxes,
 /// review markups, and cryptographic redactions) onto the target PDF via `pdfcraft`.
 #[tauri::command]
@@ -359,6 +366,7 @@ pub fn studio_save_annotations(
     annotations: Vec<StudioAnnotationDto>,
     flatten: bool,
 ) -> Result<StudioSaveResult, String> {
+    guard_save_output(&input_path, &output_path)?;
     let in_path = PathBuf::from(&input_path);
     let out_path = PathBuf::from(&output_path);
 
@@ -933,6 +941,7 @@ pub fn studio_edit_pdf_text_block(
     font_size: f64,
     color_rgb: [u8; 3],
 ) -> Result<StudioSaveResult, String> {
+    guard_save_output(&input_path, &output_path)?;
     if new_text.trim().is_empty() {
         return Err("Replacement text cannot be empty".to_string());
     }
@@ -1106,6 +1115,7 @@ pub fn studio_attach_audio(
     y_pt: f64,
     audio_bytes: Vec<u8>,
 ) -> Result<StudioSaveResult, String> {
+    guard_save_output(&input_path, &output_path)?;
     if audio_bytes.is_empty() {
         return Err("Audio payload cannot be empty".to_string());
     }
@@ -1626,6 +1636,52 @@ mod tests {
             before,
             "the check does not modify the file"
         );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // BUG-050 / BUG-032: the save entry points refuse an output that is the input (any spelling, no `.pdf`
+    // extension needed) or an existing file, with a typed message, and write nothing.
+    #[test]
+    fn save_entry_points_refuse_overwriting_the_input_or_an_existing_file() {
+        let dir = std::env::temp_dir().join(format!("lpdf_bug050_{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let input = dir.join("doc"); // no .pdf extension
+        fs::write(&input, b"original bytes").unwrap();
+        let p = input.to_string_lossy().to_string();
+
+        let r = studio_save_annotations(p.clone(), p.clone(), vec![], false);
+        assert!(
+            r.as_ref().is_err_and(|e| e.contains("OUTPUT_PATH_UNSAFE")),
+            "{r:?}"
+        );
+        let r = studio_edit_pdf_text_block(
+            p.clone(),
+            p.clone(),
+            0,
+            [0.0; 4],
+            "x".into(),
+            12.0,
+            [0, 0, 0],
+        );
+        assert!(
+            r.as_ref().is_err_and(|e| e.contains("OUTPUT_PATH_UNSAFE")),
+            "{r:?}"
+        );
+        let r = studio_attach_audio(p.clone(), p.clone(), 0, 0.0, 0.0, vec![1, 2, 3]);
+        assert!(
+            r.as_ref().is_err_and(|e| e.contains("OUTPUT_PATH_UNSAFE")),
+            "{r:?}"
+        );
+        assert_eq!(fs::read(&input).unwrap(), b"original bytes");
+
+        let existing = dir.join("out.pdf");
+        fs::write(&existing, b"previous").unwrap();
+        let r = studio_save_annotations(p, existing.to_string_lossy().to_string(), vec![], false);
+        assert!(
+            r.as_ref().is_err_and(|e| e.contains("OUTPUT_PATH_UNSAFE")),
+            "{r:?}"
+        );
+        assert_eq!(fs::read(&existing).unwrap(), b"previous");
         let _ = fs::remove_dir_all(&dir);
     }
 

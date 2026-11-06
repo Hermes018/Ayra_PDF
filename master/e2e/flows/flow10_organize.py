@@ -107,10 +107,10 @@ def run(flow):
     # the sidebar "Rotate Pages" tool on its own (isolates the rotate job from the grid chaining)
     app.set_input("[data-testid=organize-rotate-pages-input]", "2")
     app.click_button("Rotate pages", "[data-testid=organize-rotate-pages-btn]")
-    rotated = _wait_file(base + "_rotated.pdf", 30)
+    rotated = _wait_file(base + ".rotated-*.pdf", 30)
     rots = common.page_rotations(rotated, n) if rotated else []
     flow.check("Rotate Pages tool: page 2 rotated 90 in pdfinfo -l", rotated and rots[1] == 90 and
-               rots.count(0) == n - 1, f"{os.path.basename(rotated) if rotated else 'no _rotated.pdf'} "
+               rots.count(0) == n - 1, f"{os.path.basename(rotated) if rotated else 'no .rotated-*.pdf'} "
                f"rotations {rots}; toasts {_toasts(app)[:3]}")
     flow.check("original unchanged after organize", flow.original_unchanged(src), "")
     app.quit()
@@ -122,10 +122,10 @@ def run(flow):
     files = app.s.js("return [...document.querySelectorAll('.file-list li')].map(l => l.textContent.trim())")
     flow.check("both files listed for merge", len(files) == 2, str(files))
     app.click_button("Merge all")
-    merged = _wait_file(base + "_merged.pdf")
+    merged = _wait_file(base + ".merged-*.pdf")
     n2 = common.pdf_pages(other)
     if flow.check("Merge writes a new file", merged is not None,
-                  os.path.basename(merged) if merged else f"no {os.path.basename(base)}_merged.pdf"):
+                  os.path.basename(merged) if merged else f"no {os.path.basename(base)}.merged-*.pdf"):
         pages = common.pdf_pages(merged)
         flow.check(f"merged page count {n}+{n2}", pages == n + n2, f"{pages} pages")
         got = _fingerprints(merged, pages or 0)

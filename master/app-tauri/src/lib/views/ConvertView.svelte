@@ -1,40 +1,70 @@
 <script lang="ts">
     import ConvertFromPdfView from './ConvertFromPdfView.svelte';
     import ConvertToPdfView from './ConvertToPdfView.svelte';
+    import Button from '$lib/components/ui/Button.svelte';
 
-    let activeTab = $state<'from-pdf' | 'to-pdf'>('from-pdf');
+    import { onDestroy } from 'svelte';
+    import { commands } from '$lib/core/commandEngine.svelte';
+
+    type Tab = 'from-pdf' | 'to-pdf';
+    const TABS: Tab[] = ['from-pdf', 'to-pdf'];
+    let activeTab = $state<Tab>('from-pdf');
+
+    // Tabs keyboard pattern: ArrowLeft/Right (wrapping), Home, End. The keys are routed through commandEngine
+    // while a tab has focus (registered on focus-in, removed on focus-out); no local keydown listener.
+    let offScope: (() => void) | null = null;
+    function onTabKey(e: KeyboardEvent): boolean {
+        const i = TABS.indexOf(activeTab);
+        let next = i;
+        if (e.key === 'ArrowRight') next = (i + 1) % TABS.length;
+        else if (e.key === 'ArrowLeft') next = (i - 1 + TABS.length) % TABS.length;
+        else if (e.key === 'Home') next = 0;
+        else if (e.key === 'End') next = TABS.length - 1;
+        else return false;
+        activeTab = TABS[next];
+        document.getElementById(`tab-${TABS[next]}`)?.focus();
+        return true;
+    }
+    // Leaving the view while a tab has focus must not leave the scope registered.
+    onDestroy(() => offScope?.());
+    function tabsFocusIn() {
+        offScope ??= commands.registerKeyScope(onTabKey);
+    }
+    function tabsFocusOut(e: FocusEvent) {
+        // Moving focus between the tabs keeps the scope; leaving the tablist removes it.
+        if ((e.currentTarget as HTMLElement).contains(e.relatedTarget as Node | null)) return;
+        offScope?.();
+        offScope = null;
+    }
 </script>
 
 <div class="convert-container">
-    <div class="tab-bar" role="tablist" aria-label="Conversion Mode">
-        <button
-            type="button"
-            id="tab-from-pdf"
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div class="tab-bar" role="tablist" aria-label="Conversion mode" onfocusin={tabsFocusIn} onfocusout={tabsFocusOut}>
+        <Button
+            variant="secondary"
             role="tab"
-            aria-selected={activeTab === 'from-pdf'}
-            aria-controls="panel-from-pdf"
+            id="tab-from-pdf"
+            controls="panel-from-pdf"
+            selected={activeTab === 'from-pdf'}
             tabindex={activeTab === 'from-pdf' ? 0 : -1}
-            class="tab-btn"
-            class:active={activeTab === 'from-pdf'}
             onclick={() => { activeTab = 'from-pdf'; }}
         >
-            <span class="tab-icon" aria-hidden="true">📤</span>
-            <span class="tab-text">Convert from PDF</span>
-        </button>
-        <button
-            type="button"
-            id="tab-to-pdf"
+            <span aria-hidden="true">📤</span>
+            <span>Convert from PDF</span>
+        </Button>
+        <Button
+            variant="secondary"
             role="tab"
-            aria-selected={activeTab === 'to-pdf'}
-            aria-controls="panel-to-pdf"
+            id="tab-to-pdf"
+            controls="panel-to-pdf"
+            selected={activeTab === 'to-pdf'}
             tabindex={activeTab === 'to-pdf' ? 0 : -1}
-            class="tab-btn"
-            class:active={activeTab === 'to-pdf'}
             onclick={() => { activeTab = 'to-pdf'; }}
         >
-            <span class="tab-icon" aria-hidden="true">📥</span>
-            <span class="tab-text">Convert to PDF</span>
-        </button>
+            <span aria-hidden="true">📥</span>
+            <span>Convert to PDF</span>
+        </Button>
     </div>
 
     {#if activeTab === 'from-pdf'}
@@ -61,48 +91,10 @@
 
     .tab-bar {
         display: flex;
-        gap: 0.5rem;
-        padding: 0.75rem 1.5rem 0.5rem;
+        gap: var(--space-2);
+        padding: var(--space-3) var(--space-6) var(--space-2);
         background: transparent;
         border-bottom: 1px solid var(--glass-border-subtle);
-    }
-
-    .tab-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1.25rem;
-        background: var(--glass-bg-surface);
-        border: 1px solid var(--glass-border-subtle);
-        color: var(--text-secondary);
-        font-size: 0.95rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all var(--dur-fast, 120ms) ease;
-        border-radius: var(--radius-md, 10px);
-        box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-sm);
-    }
-
-    .tab-btn:hover {
-        color: var(--text-primary);
-        background: var(--glass-bg-hover);
-        transform: translateY(-1px);
-    }
-
-    .tab-btn:focus-visible {
-        outline: 2px solid var(--accent-ring);
-        outline-offset: 2px;
-    }
-
-    .tab-btn.active {
-        color: var(--text-on-accent);
-        background: var(--accent-primary);
-        border-color: var(--accent-primary);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    }
-
-    .tab-icon {
-        font-size: 1.1rem;
     }
 
     .tab-content {
@@ -111,4 +103,3 @@
         overflow-y: auto;
     }
 </style>
-

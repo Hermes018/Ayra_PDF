@@ -8,7 +8,8 @@
  */
 import { invoke } from '@tauri-apps/api/core';
 
-export type OutputTag = 'annotated' | 'flattened' | 'edited' | 'organized' | 'organizing';
+/** Any short lowercase word naming what the output is (annotated, organized, rotated, compressed, ...). */
+export type OutputTag = string;
 
 const SUFFIX_CHAIN = /(\.(annotated|flattened|edited|organized|organizing)(-\d{8}-\d{6}-\d{3}(-\d+)?)?)+$/i;
 const issued = new Set<string>();
@@ -26,18 +27,19 @@ function stamp(d: Date): string {
   );
 }
 
-function candidates(inputPath: string, tag: OutputTag, now: Date): string[] {
+function candidates(inputPath: string, tag: OutputTag, now: Date, ext = 'pdf'): string[] {
   const hasPdfExt = /\.pdf$/i.test(inputPath);
+  // An input without a .pdf extension keeps its whole name as the stem (the output is never the input).
   const stem = (hasPdfExt ? inputPath.slice(0, -4) : inputPath).replace(SUFFIX_CHAIN, '');
   const base = `${stem}.${tag}-${stamp(now)}`;
-  const out = [`${base}.pdf`];
-  for (let n = 2; n <= MAX_CANDIDATES; n++) out.push(`${base}-${n}.pdf`);
+  const out = [`${base}.${ext}`];
+  for (let n = 2; n <= MAX_CANDIDATES; n++) out.push(`${base}-${n}.${ext}`);
   return out;
 }
 
 /** Name only (no disk check). Prefer `freeOutputPath` before writing. */
-export function newOutputPath(inputPath: string, tag: OutputTag, now: Date = new Date()): string {
-  for (const c of candidates(inputPath, tag, now)) {
+export function newOutputPath(inputPath: string, tag: OutputTag, now: Date = new Date(), ext = 'pdf'): string {
+  for (const c of candidates(inputPath, tag, now, ext)) {
     if (!issued.has(c) && c !== inputPath) {
       issued.add(c);
       return c;
@@ -80,13 +82,24 @@ export async function freeOutputPath(
   inputPath: string,
   tag: OutputTag,
   now: Date = new Date(),
-  exists: (path: string) => Promise<boolean> = pathExistsOnDisk
+  exists: (path: string) => Promise<boolean> = pathExistsOnDisk,
+  ext = 'pdf'
 ): Promise<string> {
-  for (const c of candidates(inputPath, tag, now)) {
+  for (const c of candidates(inputPath, tag, now, ext)) {
     if (issued.has(c) || c === inputPath) continue;
     issued.add(c); // reserve
     if (await exists(c)) continue; // taken on disk: stays reserved, never offered again
     return c;
   }
   throw new Error(`Could not find a free output file name next to ${inputPath}.`);
+}
+
+/**
+ * A readable sibling name for fields the user can edit (summary, translation, workflow output): `x.pdf` +
+ * `_summary.md` → `x_summary.md`; an input without `.pdf` keeps its whole name (`doc` → `doc_summary.md`), so the
+ * result is never the input. The backend also refuses an output that is the input or an existing file.
+ */
+export function siblingOutputPath(inputPath: string, suffix: string): string {
+  const stem = /\.pdf$/i.test(inputPath) ? inputPath.slice(0, -4) : inputPath;
+  return `${stem}${suffix}`;
 }
