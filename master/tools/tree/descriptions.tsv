@@ -670,3 +670,18 @@ master/docs/ARGON_TASKS.md	Low-risk task list for the weaker Argon agent: rules,
 master/app-tauri/src/lib/versionConsistency.test.ts	Tests: package.json, tauri.conf.json and the Cargo workspace version are identical
 master/app-tauri/src/lib/views/AboutView.svelte	About screen: version, build hash, bundled licences (THIRD_PARTY_NOTICES), offline statement, data locations, Reset preferences
 master/app-tauri/src/lib/views/__tests__/AboutView.test.ts	Tests: About screen shows version/hash/licences/offline statement; notices load error shows ErrorState + Retry
+LOCALPDF_MASTER_HANDOVER.md	High-level project handover document and status map
+master/AGENTS.md	Operational constitution and multi-agent coordination protocol
+master/CLAUDE.md	Operational instructions and developer guidelines
+master/app-tauri/src/lib/views/__tests__/OrganizeNoDelete.test.ts	Unit tests proving single-step and failed Organize applies invoke 0 deletion IPC calls
+master/docs/CHANGELOG.md	Release notes and version history for LocalPDF Studio
+master/docs/FLASH_AND_ARGON_EXECUTION_PLAN.md	Multi-tier execution plan for Flash and Argon models
+master/docs/KNOWN_ISSUES.md	Known limitations, tracked issues, and workarounds for v0.2.0-rc1
+master/docs/LOCALPDF_MASTER_HANDOVER.md	Comprehensive architecture and operational handover reference
+master/docs/QUICKSTART.md	Quickstart walkthrough covering the 12 Golden End-to-End User Workflows
+master/docs/README.md	Installation, running, and system requirements documentation
+master/docs/SBOM-v0.2.0.json	CycloneDX 1.5 Software Bill of Materials for release v0.2.0
+master/docs/SHA256SUMS.txt	Cryptographic SHA256 verification checksums for release bundles
+master/e2e/soak_retry.py	Counted driver reconnect and retry logic for E2E soak testing (BUG-062)
+master/e2e/test_soak_retry.py	Unit test suite for the E2E soak retry mechanism
+master/tools/sbom_npm.py	Offline CycloneDX SBOM generator resolving all transitive npm dependencies
