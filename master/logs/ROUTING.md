@@ -74,4 +74,6 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 12:07 | fixes-build | g10 fix round (P0 BUG-050 first) | sonnet/medium | ok | | backend guard + collision-safe names app-wide |
 | 2026-11-06 12:21 | merge-verify | BUG-050 + g10 (backend guard, security naming, flows 2,8,10,11) | opus/high | ok | | GREEN 233/233; flows PASS; found unguarded writers + 2nd-run regression |
 | 2026-11-06 12:21 | reviewer (read-only) | g10 fix round frontend + visual | sonnet/medium | fail | | naming test covers 2 of 9 views |
-| 2026-11-06 12:27 | fixes-build | BUG-051 (2nd-run naming, all-view tests, remaining writers, weak test) | sonnet/medium | running | | backend → opus |
+| 2026-11-06 12:27 | fixes-build | BUG-051 (2nd-run naming, all-view tests, remaining writers, weak test) | sonnet/medium | ok | | |
+| 2026-11-06 12:37 | merge-verify | BUG-051 (writers, naming, flows 2,6,8,10,11) | opus/high | running | | sole runner |
+| 2026-11-06 12:37 | reviewer (read-only) | BUG-051 frontend naming | sonnet/medium | running | | |
