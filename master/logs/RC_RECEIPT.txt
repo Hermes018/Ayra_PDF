@@ -1,0 +1,49 @@
+LOCALPDF STUDIO v0.2.0-rc1 RELEASE CANDIDATE VERIFICATION RECEIPT
+================================================================================
+Timestamp: 2026-11-07 ~01:28:00 Asia/Dhaka
+Host: Linux 7.2.8-200.fc44.x86_64 (Fedora 44 KDE, Intel i5-1135G7, 8GB RAM profile)
+Git HEAD Commit: 0123ec0a3118c6c34fbab8d1e37b1d1e23073854 (branch: main)
+Git Working Tree Status: CLEAN (0 modified, 0 untracked)
+
+VERSION CONSISTENCY CHECK
+-------------------------
+- master/Cargo.toml:                     0.2.0 (PASS)
+- master/app-tauri/package.json:          0.2.0 (PASS)
+- master/app-tauri/src-tauri/tauri.conf: 0.2.0 (PASS)
+
+VERIFICATION GATE RESULTS (master/tools/verify.sh)
+--------------------------------------------------
+Status: ALL PASS (Exit Code: 0)
+Log: master/logs/runs/rc-verify-gate.log
+- [PASS] verify-gate (fmt, clippy, nextest 260 tests, cargo deny, cargo audit, protocol-lint)
+- [PASS] verify-feature-map (xtask feature-map-check)
+- [PASS] verify-studio-audit (xtask studio-audit --strict)
+- [PASS] verify-ui-strict (xtask studio-audit --strict xtask/ui-strict.txt)
+- [PASS] verify-svelte-check (pnpm --dir app-tauri check)
+- [PASS] verify-vitest (vitest run --maxWorkers=2, 5/5 suites, 56 passed)
+- [PASS] verify-no-gallery-in-release (positive/negative build check)
+- [PASS] verify-tree-map (python3 tools/tree/render_tree.py --check)
+
+PACKAGE INTEGRITY & SBOM VERIFICATION
+-------------------------------------
+- SHA256 Check: PASS (master/logs/runs/rc-sha256-check.log)
+- CycloneDX 1.5 SBOM: master/docs/SBOM-v0.2.0.json (1002 components: 829 Cargo, 173 npm)
+
+OFFLINE NETWORK ISOLATION PROOF (KI-006)
+----------------------------------------
+- Status: PASS (master/logs/runs/rc-net-isolation.log)
+- Command: unshare -rn (isolated network namespace, loopback DOWN, 0 interfaces)
+- Result: 7/7 lpdf-fs-safety isolation tests passed with zero socket/network activity.
+
+CRYPTOGRAPHIC REDACTION STREAM REMOVAL PROOF
+--------------------------------------------
+- Status: PASS (master/logs/runs/rc-redaction-audit.log)
+- Verified: Underlying text, streams, and tokens physically destroyed from PDF streams.
+
+RELEASE BUNDLE SHA256 CHECKSUMS (master/docs/SHA256SUMS.txt)
+------------------------------------------------------------
+9d226795dc5df90f42feba7018fbf9ec7377747df1821911c41d489d7a652f68  target/release/bundle/appimage/LocalPDF Studio_0.2.0_amd64.AppImage
+37c131f2ac6527d2cd236c0ded8e7baf7a08721b106cababc9ba10b895caa4ca  target/release/bundle/deb/LocalPDF Studio_0.2.0_amd64.deb
+46f4ca21c60cec3335133a3c58281a6a464428532fe16c16fd3e3499e2171f51  target/release/bundle/rpm/LocalPDF Studio-0.2.0-1.x86_64.rpm
+================================================================================
+RECEIPT STATUS: COMPLETE & TAMPER-EVIDENT — READY FOR ARGON RC SIGN-OFF
