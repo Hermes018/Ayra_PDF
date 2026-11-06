@@ -1,0 +1,93 @@
+{
+  "unitsPerPt": [
+    {
+      "id": "1:1",
+      "ratio": 0.35277777777777775
+    },
+    {
+      "id": "1:10",
+      "ratio": 0.35277777777777775
+    },
+    {
+      "id": "1:50",
+      "ratio": 0.017638888888888888
+    },
+    {
+      "id": "1:100",
+      "ratio": 0.035277777777777776
+    },
+    {
+      "id": "1:200",
+      "ratio": 0.07055555555555555
+    },
+    {
+      "id": "1:500",
+      "ratio": 0.17638888888888887
+    },
+    {
+      "id": "1/4\"=1'-0\"",
+      "ratio": 0.05555555555555555
+    },
+    {
+      "id": "1/8\"=1'-0\"",
+      "ratio": 0.1111111111111111
+    }
+  ],
+  "unknownPreset": {
+    "pageIndex": 3,
+    "ptDistance": 72,
+    "realDistance": 25.4,
+    "unit": "mm",
+    "precision": 2,
+    "scalePresetLabel": "1:1 (Default)",
+    "depthValue": 0
+  },
+  "polylineLength": {
+    "open": 380,
+    "closed": 480,
+    "single": 0
+  },
+  "polygonArea": {
+    "lPolygon": 8600,
+    "lPolygonFarFromOrigin": 8600,
+    "twoPointRect": 600,
+    "clockwise": 100,
+    "selfIntersectingBowtie": 0
+  },
+  "angleDeg": {
+    "right": 90,
+    "acute": 16.69924423399364,
+    "straight": 180,
+    "reflexReportedAsInterior": 5.710593137499633,
+    "degenerate": 0
+  },
+  "volume": [37.5, 0],
+  "ruler": [
+    {
+      "x": 150,
+      "y": 220,
+      "snapped": true
+    },
+    {
+      "x": 150,
+      "y": 250,
+      "snapped": false
+    },
+    {
+      "x": 180,
+      "y": 300,
+      "snapped": true
+    },
+    {
+      "x": 90,
+      "y": 220,
+      "snapped": true
+    },
+    {
+      "x": 150,
+      "y": 221,
+      "snapped": false
+    }
+  ],
+  "areaLabels": ["12.35 m² (Perim: 14.20 m)", "12.3 ft² (Perim: 14.2 ft, Vol: 30.9 ft³)", "0.001 mm² (Perim: 0.100 mm)"]
+}

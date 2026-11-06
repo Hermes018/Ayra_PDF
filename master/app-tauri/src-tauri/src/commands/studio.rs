@@ -250,51 +250,54 @@ fn rgb_to_f64(rgb: [u8; 3]) -> [f64; 3] {
     ]
 }
 
-/// Generate procedural hatch lines inside `[x0, y0, x1, y1]` so flattened/standard PDF annotations
-/// preserve procedural hatch appearances inside PDF viewers.
-fn generate_hatch_strokes(rect: [f64; 4], pattern: &str, scale: f64) -> Vec<Vec<[f64; 2]>> {
-    let [x0, y0, x1, y1] = normalize_rect(rect);
-    let step = (8.0 * scale.clamp(0.25, 4.0)).max(3.0);
-    let mut strokes = Vec::new();
-
-    match pattern {
-        "diagonal-steel" | "steel" => {
-            let w = x1 - x0;
-            let h = y1 - y0;
-            let span = w + h;
-            let mut d = 0.0;
-            while d <= span {
-                let sx = (x0 + d - h).clamp(x0, x1);
-                let sy = (y0 + (d - (sx - x0))).clamp(y0, y1);
-                let ex = (x0 + d).clamp(x0, x1);
-                let ey = (y0 + (d - (ex - x0))).clamp(y0, y1);
-                strokes.push(vec![[sx, sy], [ex, ey]]);
-                d += step;
-            }
-        }
-        "crosshatch" | "tiling" | "masonry" => {
-            let mut x = x0;
-            while x <= x1 {
-                strokes.push(vec![[x, y0], [x, y1]]);
-                x += step;
-            }
-            let mut y = y0;
-            while y <= y1 {
-                strokes.push(vec![[x0, y], [x1, y]]);
-                y += step;
-            }
-        }
-        "timber" | "earth" | "insulation" | "concrete" => {
-            let mut y = y0;
-            while y <= y1 {
-                strokes.push(vec![[x0, y], [x1, y]]);
-                y += step;
-            }
-        }
-        _ => {}
+/// The boundary loop handed to the hatch adapter (`lpdf-geom`, ADR-018): the annotation's own
+/// vertices when it has a finite one, else the corners of its (normalised) rectangle. The legacy
+/// engine hatches the bounding box of this loop, which equals `rect` (ERR-007); the cadcraft
+/// engine (ADR-018 checkpoint 2) clips to the loop itself.
+fn hatch_loops(points: &[StudioPointDto], rect: [f64; 4]) -> Vec<lpdf_geom::Loop> {
+    if points.iter().any(|p| p.x.is_finite() && p.y.is_finite()) {
+        vec![lpdf_geom::Loop::new(
+            points
+                .iter()
+                .map(|p| lpdf_geom::PdfPt::new(p.x, p.y))
+                .collect(),
+        )]
+    } else {
+        vec![lpdf_geom::Loop::from_rect(rect)]
     }
+}
 
-    strokes
+/// Procedural hatch lines for an annotation, as two-point ink strokes, so flattened/standard PDF
+/// annotations preserve the hatch appearance in other PDF viewers. `None` for fills (`solid`,
+/// `none`) and unknown pattern ids.
+fn hatch_strokes_for(
+    pattern: &str,
+    points: &[StudioPointDto],
+    rect: [f64; 4],
+    scale: f64,
+) -> Result<Option<Vec<Vec<[f64; 2]>>>, lpdf_geom::GeomError> {
+    let Some(pattern) = lpdf_geom::HatchPatternId::from_id(pattern) else {
+        return Ok(None);
+    };
+    let segments = match lpdf_geom::hatch_segments(pattern, &hatch_loops(points, rect), scale) {
+        Ok(segments) => segments,
+        // Only reachable with a non-finite `bbox_pt` and no finite points (JSON cannot carry
+        // NaN/inf, so not over IPC). The pre-adapter code drew no hatch here, so keep that, logged.
+        Err(lpdf_geom::GeomError::NoFiniteGeometry) => {
+            tracing::warn!(
+                code = "GEOM_NO_FINITE_GEOMETRY",
+                "hatch skipped: region has no finite points"
+            );
+            return Ok(None);
+        }
+        Err(e) => return Err(e),
+    };
+    Ok(Some(
+        segments
+            .into_iter()
+            .map(|s| vec![[s.a.x, s.a.y], [s.b.x, s.b.y]])
+            .collect(),
+    ))
 }
 
 fn verify_written_pdf(path: &Path) -> Result<usize, String> {
@@ -525,8 +528,21 @@ pub fn studio_save_annotations(
             // standard PDF viewers and flattened streams display the architectural hatching.
             if let Some(ref pat) = annot.hatch_pattern {
                 if pat != "none" && pat != "solid" {
-                    let hatch_strokes =
-                        generate_hatch_strokes(rect, pat, annot.hatch_scale.unwrap_or(1.0));
+                    let hatch_strokes = hatch_strokes_for(
+                        pat,
+                        &annot.points,
+                        rect,
+                        annot.hatch_scale.unwrap_or(1.0),
+                    )
+                    .map_err(|e| {
+                        format!(
+                            "Failed to generate hatch for annotation '{}' ({}): {}",
+                            annot.id,
+                            e.code(),
+                            e
+                        )
+                    })?
+                    .unwrap_or_default();
                     if !hatch_strokes.is_empty() {
                         let hatch_annot = NewAnnotation {
                             page,
@@ -542,7 +558,15 @@ pub fn studio_save_annotations(
                             contents: String::new(),
                             author: "LocalPDF Studio Hatch".to_string(),
                         };
-                        let _ = session.apply(doc_id, Edit::AddAnnotation(hatch_annot));
+                        // BUG-024: a failed hatch annotation fails the save (no silent loss).
+                        session
+                            .apply(doc_id, Edit::AddAnnotation(hatch_annot))
+                            .map_err(|e| {
+                                format!(
+                                    "Failed to apply hatch for annotation '{}': {}",
+                                    annot.id, e
+                                )
+                            })?;
                     }
                 }
             }
@@ -1444,8 +1468,8 @@ pub struct DetectedRegionDto {
 }
 
 /// Phase D6.1 Auto Table / Form Field Detection (`8.12`):
-/// Inspects page vector geometry and text blocks via `pdfcraft` to detect tabular grid structures
-/// and fillable form lines/boxes in flat PDFs.
+/// Detects tabular grid structures from page vector geometry, and fillable form fields with
+/// pdfcraft's field detection (`Session::detect_fields`). Returns only what was found.
 #[tauri::command]
 pub fn studio_detect_tables_and_fields(
     input_path: String,
@@ -1520,56 +1544,86 @@ pub fn studio_detect_tables_and_fields(
         }
     }
 
-    // 2. Inspect text blocks for colon/underscore fillable field prompts or tabular rows
-    let blocks = doc.text_blocks(page);
-    for (idx, b) in blocks.iter().enumerate() {
-        let txt = b.text.trim();
-        let rect = normalize_rect(b.rect);
-        if txt.contains("___") || txt.ends_with(':') || txt.contains("Name") || txt.contains("Date")
-        {
-            detected.push(DetectedRegionDto {
-                id: format!("fld-p{}-{}", page + 1, idx + 1),
-                kind: "form_field".to_string(),
-                page_index,
-                bbox_pt: [
-                    rect[0],
-                    rect[1],
-                    (rect[2] + 120.0).min(580.0),
-                    rect[3] + 4.0,
-                ],
-                rows: 1,
-                cols: 1,
-                label: format!("Fillable Field: {}", txt),
-            });
-        }
-    }
-
-    // Ensure at least one deterministic fillable region is returned on sample flat pages with text
-    if detected.is_empty() && !blocks.is_empty() {
-        let b0 = &blocks[0];
-        let r = normalize_rect(b0.rect);
+    // 2. Form fields: pdfcraft's own detection (DO-25 "Detect fields"; matrix R8), which reads
+    //    labels, boxes, rules and combs (or pixels on scanned pages) and skips existing widgets.
+    //    BUG-023: nothing is invented when nothing is found; an empty result means "none found".
+    for (idx, (_, c)) in session
+        .detect_fields(doc_id, &[page])
+        .into_iter()
+        .enumerate()
+    {
+        let kind_label = match c.kind {
+            pdfcraft_engine::detect::Kind::Text => "Text field".to_string(),
+            pdfcraft_engine::detect::Kind::CheckBox => "Checkbox".to_string(),
+            pdfcraft_engine::detect::Kind::Comb { cells } => format!("Comb field ({cells} cells)"),
+        };
         detected.push(DetectedRegionDto {
-            id: format!("fld-p{}-auto", page + 1),
+            id: format!("fld-p{}-{}", page + 1, idx + 1),
             kind: "form_field".to_string(),
             page_index,
-            bbox_pt: [
-                r[0],
-                r[1],
-                (r[2] + 96.0).min(580.0),
-                (r[3] + 18.0).min(760.0),
-            ],
+            bbox_pt: normalize_rect(c.rect),
             rows: 1,
             cols: 1,
-            label: format!("Auto-Detected Field ({})", b0.text.trim()),
+            label: format!("{kind_label}: {}", c.name),
         });
     }
 
     Ok(detected)
 }
 
+/// BUG-018 (b): read-only existence check for an absolute local path (no read, no network).
+/// Relative paths and paths that cannot be checked (permissions, I/O error) report `false`.
+#[tauri::command]
+pub fn path_exists(path: String) -> bool {
+    path_exists_at(Path::new(&path))
+}
+
+fn path_exists_at(path: &Path) -> bool {
+    path.is_absolute() && path.try_exists().unwrap_or(false)
+}
+
+/// BUG-018 (c): delete an Organize intermediate `<stem>.organizing-<token>.pdf` that a job of this
+/// app session wrote. Anything else (originals, other names, files this session did not create,
+/// symlinks, relative paths) is refused and left untouched.
+#[tauri::command]
+pub(crate) fn delete_organize_intermediate(
+    state: tauri::State<'_, crate::AppState>,
+    path: String,
+) -> Result<(), String> {
+    state
+        .job_manager
+        .delete_session_intermediate(Path::new(&path))
+        .map_err(|e| e.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn path_exists_is_absolute_only_and_read_only() {
+        let dir = std::env::temp_dir().join(format!("lpdf_path_exists_{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("present.pdf");
+        fs::write(&file, b"%PDF-1.4\n").unwrap();
+        let before = fs::read(&file).unwrap();
+        assert!(path_exists(file.to_string_lossy().to_string()));
+        assert!(path_exists(dir.to_string_lossy().to_string()));
+        assert!(!path_exists(
+            dir.join("absent.pdf").to_string_lossy().to_string()
+        ));
+        assert!(
+            !path_exists("present.pdf".to_string()),
+            "relative paths are never resolved"
+        );
+        assert!(!path_exists(String::new()));
+        assert_eq!(
+            fs::read(&file).unwrap(),
+            before,
+            "the check does not modify the file"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
 
     fn create_sample_pdf(path: &Path) {
         let pdf_bytes = b"%PDF-1.4\n\
@@ -1879,10 +1933,307 @@ startxref\n\
         let scanned = studio_scan_watch_folder(tmp_dir.to_string_lossy().to_string()).unwrap();
         assert!(scanned.iter().any(|p| p.ends_with("input_d6.pdf")));
 
+        // BUG-023: the one-line sample page has no table and no field, so nothing is reported
+        // (it used to return a fabricated "auto" field).
         let detected =
             studio_detect_tables_and_fields(input_pdf.to_string_lossy().to_string(), 0).unwrap();
-        assert!(!detected.is_empty());
+        assert!(
+            detected.iter().all(|d| !d.id.ends_with("-auto")),
+            "no fabricated regions: {detected:?}"
+        );
 
         let _ = fs::remove_dir_all(&tmp_dir);
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // ADR-018 R2 step 1: characterization goldens of CURRENT behaviour (before any engine swap).
+    // Regenerate only for an intended, explained change: `LPDF_UPDATE_GOLDENS=1 cargo nextest run -p app-tauri golden_`.
+    // ---------------------------------------------------------------------------------------
+
+    fn manifest_path(rel: &str) -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join(rel)
+    }
+
+    fn corpus_pdf(name: &str) -> PathBuf {
+        let p = manifest_path("../../corpus").join(name);
+        assert!(
+            p.exists(),
+            "corpus file {} missing: run corpus/fetch.sh",
+            p.display()
+        );
+        p
+    }
+
+    /// Compare `actual` with the golden file at `rel` (relative to this crate), or write it when
+    /// `LPDF_UPDATE_GOLDENS` is set. Numbers are written by serde_json (shortest round-trip), so
+    /// equal text means bit-equal values.
+    fn check_golden(rel: &str, actual: &str) {
+        let path = manifest_path(rel);
+        if std::env::var_os("LPDF_UPDATE_GOLDENS").is_some() {
+            if let Some(dir) = path.parent() {
+                fs::create_dir_all(dir).unwrap();
+            }
+            fs::write(&path, actual).unwrap();
+        }
+        let expected = fs::read_to_string(&path).unwrap_or_else(|e| {
+            panic!(
+                "missing golden {} ({e}); run with LPDF_UPDATE_GOLDENS=1",
+                path.display()
+            )
+        });
+        assert!(
+            expected == actual,
+            "output drifted from golden {} (diff it after LPDF_UPDATE_GOLDENS=1 to review)",
+            path.display()
+        );
+    }
+
+    fn num(v: f64) -> String {
+        serde_json::to_string(&v).unwrap()
+    }
+
+    /// Snap geometry extracted from corpus/standard-form.pdf (IRS W-4) page 1. Also the input of
+    /// the TypeScript snap goldens (`src/lib/core/__fixtures__`).
+    #[test]
+    fn golden_snap_geometry_standard_form_p0() {
+        let pdf = corpus_pdf("standard-form.pdf");
+        let geom = studio_extract_snap_geometry(pdf.to_string_lossy().to_string(), 0).unwrap();
+        let mut out = String::new();
+        out.push_str("{\n");
+        out.push_str("  \"source\": \"corpus/standard-form.pdf sha256 92444d8856ce55d9e25dca8b6d1420634fc68b11e1ab1f760916ea29ddd312b2\",\n");
+        out.push_str("  \"producer\": \"studio_extract_snap_geometry(page 0) @ 562e4f9 (pdfcraft-measure measurement_paths, 4096 cap)\",\n");
+        out.push_str(&format!("  \"pageIndex\": {},\n", geom.page_index));
+        out.push_str(&format!("  \"widthPt\": {},\n", num(geom.width_pt)));
+        out.push_str(&format!("  \"heightPt\": {},\n", num(geom.height_pt)));
+        out.push_str(&format!("  \"segmentCount\": {},\n", geom.segments.len()));
+        out.push_str("  \"segments\": [\n");
+        for (i, s) in geom.segments.iter().enumerate() {
+            let comma = if i + 1 < geom.segments.len() { "," } else { "" };
+            out.push_str(&format!(
+                "    [{}, {}, {}, {}]{}\n",
+                num(s.x1),
+                num(s.y1),
+                num(s.x2),
+                num(s.y2),
+                comma
+            ));
+        }
+        out.push_str("  ]\n}\n");
+        check_golden(
+            "../src/lib/core/__fixtures__/snap-geometry.standard-form.p0.golden.json",
+            &out,
+        );
+    }
+
+    /// Text blocks of corpus/standard-text.pdf page 1, and the blocks after an in-place edit of
+    /// the first block (`studio_edit_pdf_text_block`).
+    #[test]
+    fn golden_text_blocks_extract_and_edit_standard_text() {
+        let pdf = corpus_pdf("standard-text.pdf");
+        let before = studio_extract_text_blocks(pdf.to_string_lossy().to_string(), 0).unwrap();
+        assert!(!before.is_empty(), "standard-text.pdf page 1 has text");
+
+        let tmp_dir = std::env::temp_dir().join(format!("lpdf_golden_text_{}", std::process::id()));
+        fs::create_dir_all(&tmp_dir).unwrap();
+        let out_pdf = tmp_dir.join("edited.pdf");
+        let edit = studio_edit_pdf_text_block(
+            pdf.to_string_lossy().to_string(),
+            out_pdf.to_string_lossy().to_string(),
+            0,
+            before[0].bbox_pt,
+            "LocalPDF golden replacement text".to_string(),
+            12.0,
+            [0, 0, 0],
+        )
+        .unwrap();
+        let after = studio_extract_text_blocks(out_pdf.to_string_lossy().to_string(), 0).unwrap();
+        let _ = fs::remove_dir_all(&tmp_dir);
+
+        let golden = serde_json::json!({
+            "source": "corpus/standard-text.pdf sha256 3df79d34abbca99308e79cb94461c1893582604d68329a41fd4bec1885e6adb4",
+            "producer": "studio_extract_text_blocks / studio_edit_pdf_text_block @ 562e4f9 (pdfcraft text_blocks, EditTextBlock or AddText fallback)",
+            "before": before,
+            "edit": { "bboxPt": before[0].bbox_pt, "newText": "LocalPDF golden replacement text", "fontSize": 12.0, "pageCount": edit.page_count, "savedCount": edit.saved_count },
+            "after": after,
+        });
+        let text = format!("{}\n", serde_json::to_string_pretty(&golden).unwrap());
+        check_golden(
+            "tests/goldens/text-blocks.standard-text.p0.golden.json",
+            &text,
+        );
+    }
+
+    /// Quantity takeoff CSV bytes (header, rows, formula-injection guard, per-unit totals).
+    #[test]
+    fn golden_takeoff_csv() {
+        let rec =
+            |id: &str, page: u32, t: &str, raw: f64, cal: f64, unit: &str, label: Option<&str>| {
+                MeasurementRecord {
+                    id: id.to_string(),
+                    page_index: page,
+                    measurement_type: t.to_string(),
+                    raw_pt: raw,
+                    calibrated_value: cal,
+                    unit: unit.to_string(),
+                    color: "var(--measure-line)".to_string(),
+                    label: label.map(str::to_string),
+                }
+            };
+        let records = vec![
+            rec("M-001", 0, "length", 144.0, 2.0, "m", Some("North wall")),
+            rec(
+                "",
+                0,
+                "length",
+                216.123456,
+                3.0017146,
+                "m",
+                Some("=SUM(A1:A2)"),
+            ),
+            rec(
+                "A-1",
+                1,
+                "area.polygon",
+                7200.5,
+                1.3889853395061728,
+                "m²",
+                Some("Slab \"B\""),
+            ),
+            rec("A-2", 1, "area.rect", 5184.0, 1.0, "m²", None),
+            rec(
+                "P-1",
+                2,
+                "perimeter",
+                360.0,
+                5.0,
+                "ft",
+                Some("+cmd|' /C calc'!A0"),
+            ),
+            rec("D-1", 2, "protractor", 90.0, 90.0, "deg", Some("@angle")),
+            rec(
+                "X-1",
+                3,
+                "length",
+                f64::NAN,
+                f64::NAN,
+                "m",
+                Some("-not a number"),
+            ),
+        ];
+        let tmp_dir = std::env::temp_dir().join(format!("lpdf_golden_csv_{}", std::process::id()));
+        fs::create_dir_all(&tmp_dir).unwrap();
+        let csv_path = tmp_dir.join("takeoff.csv");
+        studio_export_takeoff_csv(records, csv_path.to_string_lossy().to_string()).unwrap();
+        let csv = fs::read_to_string(&csv_path).unwrap();
+        let _ = fs::remove_dir_all(&tmp_dir);
+        let golden = serde_json::json!({
+            "producer": "studio_export_takeoff_csv @ 562e4f9",
+            "csv": csv,
+        });
+        let text = format!("{}\n", serde_json::to_string_pretty(&golden).unwrap());
+        check_golden("tests/goldens/takeoff.golden.json", &text);
+    }
+
+    /// `studio_save_annotations` hatches through the lpdf-geom adapter, byte-identical to the
+    /// legacy golden (ERR-007 bbox hatching of the concave L is still the current behaviour).
+    #[test]
+    fn golden_studio_hatch_goes_through_adapter() {
+        let raw = fs::read_to_string(manifest_path(
+            "../../crates/lpdf-geom/tests/goldens/hatch_legacy.golden.json",
+        ))
+        .unwrap();
+        let golden: serde_json::Value = serde_json::from_str(&raw).unwrap();
+        let cases = golden["cases"].as_array().unwrap();
+        assert!(!cases.is_empty());
+        for case in cases {
+            let name = case["name"].as_str().unwrap();
+            let pts: Vec<StudioPointDto> = case["loop"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|p| StudioPointDto {
+                    x: p[0].as_f64().unwrap(),
+                    y: p[1].as_f64().unwrap(),
+                    p: 0.5,
+                    t: None,
+                })
+                .collect();
+            let rect = bbox_from_points_or_rect(&pts, [0.0; 4]);
+            let strokes = hatch_strokes_for(
+                case["pattern"].as_str().unwrap(),
+                &pts,
+                rect,
+                case["scale"].as_f64().unwrap(),
+            )
+            .unwrap()
+            .unwrap();
+            let got: Vec<String> = strokes
+                .iter()
+                .map(|s| {
+                    format!(
+                        "[{}, {}, {}, {}]",
+                        num(s[0][0]),
+                        num(s[0][1]),
+                        num(s[1][0]),
+                        num(s[1][1])
+                    )
+                })
+                .collect();
+            let want: Vec<String> = case["segments"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|s| {
+                    format!(
+                        "[{}, {}, {}, {}]",
+                        num(s[0].as_f64().unwrap()),
+                        num(s[1].as_f64().unwrap()),
+                        num(s[2].as_f64().unwrap()),
+                        num(s[3].as_f64().unwrap())
+                    )
+                })
+                .collect();
+            assert_eq!(got, want, "{name}");
+        }
+        // Rect-only annotations (no points) hatch their normalised bbox_pt, as before.
+        let rect = bbox_from_points_or_rect(&[], [100.0, 100.0, 240.0, 200.0]);
+        let from_rect = hatch_strokes_for("timber", &[], rect, 1.0)
+            .unwrap()
+            .unwrap();
+        assert_eq!(from_rect.len(), 13);
+        assert_eq!(from_rect[0], vec![[100.0, 100.0], [240.0, 100.0]]);
+        // Fills and unknown ids draw no line hatch.
+        assert_eq!(hatch_strokes_for("solid", &[], rect, 1.0).unwrap(), None);
+        assert_eq!(hatch_strokes_for("ANSI31", &[], rect, 1.0).unwrap(), None);
+    }
+
+    /// GEOM_NO_FINITE_GEOMETRY: a region without one finite point draws no hatch, as the
+    /// pre-adapter code did (it hatched a NaN rect, which emitted no lines); save does not fail.
+    #[test]
+    fn hatch_without_finite_geometry_draws_nothing() {
+        let nan_pts = vec![StudioPointDto {
+            x: f64::NAN,
+            y: 1.0,
+            p: 0.5,
+            t: None,
+        }];
+        let nan_rect = [f64::NAN; 4];
+        assert_eq!(
+            hatch_strokes_for("timber", &nan_pts, nan_rect, 1.0),
+            Ok(None)
+        );
+        assert_eq!(
+            hatch_strokes_for("crosshatch", &[], nan_rect, 1.0),
+            Ok(None)
+        );
+    }
+
+    /// GEOM_WORK_LIMIT: a region too large to hatch fails the save with a coded message instead
+    /// of hanging (the pre-adapter code looped without bound).
+    #[test]
+    fn hatch_work_limit_is_an_error_with_code() {
+        let rect = [0.0, 0.0, 1.0e9, 1.0e9];
+        let err = hatch_strokes_for("timber", &[], rect, 1.0).unwrap_err();
+        assert_eq!(err.code(), "GEOM_WORK_LIMIT");
     }
 }

@@ -15,7 +15,8 @@ pub mod queue;
 pub use events::{JobEvent, JobEventSender};
 pub use pipeline::{builtin_pipeline_presets, PipelinePreset, PipelineStep};
 pub use queue::{
-    spawn_sandboxed_worker, JobId, JobManager, JobPriority, JobRecord, JobRequest, JobStatus,
+    is_organizing_intermediate, spawn_sandboxed_worker, JobId, JobManager, JobPriority, JobRecord,
+    JobRequest, JobStatus,
 };
 
 /// Phase W3: Hardware-adaptive memory budget detection. Uses `sysinfo` (safe, cross-platform:

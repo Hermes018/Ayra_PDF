@@ -1,0 +1,581 @@
+{
+  "calibration": {
+    "measuredPt": 144,
+    "scale": {
+      "pageIndex": 0,
+      "ptDistance": 144,
+      "realDistance": 8.2,
+      "unit": "ft",
+      "precision": 1,
+      "depthValue": 3
+    }
+  },
+  "committed": [
+    {
+      "pageIndex": 0,
+      "kind": "length",
+      "points": [
+        {
+          "x": 100,
+          "y": 100
+        },
+        {
+          "x": 244,
+          "y": 100
+        }
+      ],
+      "rawPtValue": 144,
+      "calibratedValue": 2.5,
+      "unitLabel": "m",
+      "formattedLabel": "2.50 m",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "length",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 30,
+          "y": 40
+        }
+      ],
+      "rawPtValue": 50,
+      "calibratedValue": 0.8680555555555556,
+      "unitLabel": "m",
+      "formattedLabel": "0.87 m",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "polylength",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 72,
+          "y": 0
+        },
+        {
+          "x": 72,
+          "y": 72
+        }
+      ],
+      "rawPtValue": 144,
+      "calibratedValue": 2.5,
+      "unitLabel": "m",
+      "formattedLabel": "2.50 m",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "perimeter",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 72,
+          "y": 0
+        },
+        {
+          "x": 72,
+          "y": 72
+        },
+        {
+          "x": 0,
+          "y": 72
+        }
+      ],
+      "rawPtValue": 216,
+      "calibratedValue": 3.75,
+      "perimeterCalibrated": 3.75,
+      "unitLabel": "m",
+      "formattedLabel": "Perim: 3.75 m",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "area.rect",
+      "points": [
+        {
+          "x": 10,
+          "y": 10
+        },
+        {
+          "x": 154,
+          "y": 10
+        },
+        {
+          "x": 154,
+          "y": 82
+        },
+        {
+          "x": 10,
+          "y": 82
+        }
+      ],
+      "rawPtValue": 10368,
+      "calibratedValue": 3.125,
+      "perimeterCalibrated": 7.5,
+      "volumeCalibrated": 9.375,
+      "unitLabel": "m²",
+      "formattedLabel": "3.13 m² (Perim: 7.50 m, Vol: 9.38 m³)",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "area.polygon",
+      "points": [
+        {
+          "x": 100,
+          "y": 100
+        },
+        {
+          "x": 240,
+          "y": 100
+        },
+        {
+          "x": 240,
+          "y": 140
+        },
+        {
+          "x": 150,
+          "y": 140
+        },
+        {
+          "x": 150,
+          "y": 200
+        },
+        {
+          "x": 100,
+          "y": 200
+        }
+      ],
+      "rawPtValue": 8600,
+      "calibratedValue": 2.5921103395061733,
+      "perimeterCalibrated": 8.333333333333334,
+      "volumeCalibrated": 7.77633101851852,
+      "unitLabel": "m²",
+      "formattedLabel": "2.59 m² (Perim: 8.33 m, Vol: 7.78 m³)",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "protractor",
+      "points": [
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 10
+        }
+      ],
+      "rawPtValue": 90,
+      "calibratedValue": 90,
+      "unitLabel": "deg",
+      "formattedLabel": "90.00°",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    null
+  ],
+  "stored": [
+    {
+      "pageIndex": 0,
+      "kind": "length",
+      "points": [
+        {
+          "x": 100,
+          "y": 100
+        },
+        {
+          "x": 244,
+          "y": 100
+        }
+      ],
+      "rawPtValue": 144,
+      "calibratedValue": 2.5,
+      "unitLabel": "m",
+      "formattedLabel": "2.50 m",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "length",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 30,
+          "y": 40
+        }
+      ],
+      "rawPtValue": 50,
+      "calibratedValue": 0.8680555555555556,
+      "unitLabel": "m",
+      "formattedLabel": "0.87 m",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "polylength",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 72,
+          "y": 0
+        },
+        {
+          "x": 72,
+          "y": 72
+        }
+      ],
+      "rawPtValue": 144,
+      "calibratedValue": 2.5,
+      "unitLabel": "m",
+      "formattedLabel": "2.50 m",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "perimeter",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 72,
+          "y": 0
+        },
+        {
+          "x": 72,
+          "y": 72
+        },
+        {
+          "x": 0,
+          "y": 72
+        }
+      ],
+      "rawPtValue": 216,
+      "calibratedValue": 3.75,
+      "perimeterCalibrated": 3.75,
+      "unitLabel": "m",
+      "formattedLabel": "Perim: 3.75 m",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "area.rect",
+      "points": [
+        {
+          "x": 10,
+          "y": 10
+        },
+        {
+          "x": 154,
+          "y": 10
+        },
+        {
+          "x": 154,
+          "y": 82
+        },
+        {
+          "x": 10,
+          "y": 82
+        }
+      ],
+      "rawPtValue": 10368,
+      "calibratedValue": 3.125,
+      "perimeterCalibrated": 7.5,
+      "volumeCalibrated": 9.375,
+      "unitLabel": "m²",
+      "formattedLabel": "3.13 m² (Perim: 7.50 m, Vol: 9.38 m³)",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "area.polygon",
+      "points": [
+        {
+          "x": 100,
+          "y": 100
+        },
+        {
+          "x": 240,
+          "y": 100
+        },
+        {
+          "x": 240,
+          "y": 140
+        },
+        {
+          "x": 150,
+          "y": 140
+        },
+        {
+          "x": 150,
+          "y": 200
+        },
+        {
+          "x": 100,
+          "y": 200
+        }
+      ],
+      "rawPtValue": 8600,
+      "calibratedValue": 2.5921103395061733,
+      "perimeterCalibrated": 8.333333333333334,
+      "volumeCalibrated": 7.77633101851852,
+      "unitLabel": "m²",
+      "formattedLabel": "2.59 m² (Perim: 8.33 m, Vol: 7.78 m³)",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "protractor",
+      "points": [
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 10
+        }
+      ],
+      "rawPtValue": 90,
+      "calibratedValue": 90,
+      "unitLabel": "deg",
+      "formattedLabel": "90.00°",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    }
+  ],
+  "afterRescale": [
+    {
+      "pageIndex": 0,
+      "kind": "length",
+      "points": [
+        {
+          "x": 100,
+          "y": 100
+        },
+        {
+          "x": 244,
+          "y": 100
+        }
+      ],
+      "rawPtValue": 144,
+      "calibratedValue": 8.2,
+      "unitLabel": "ft",
+      "formattedLabel": "8.2 ft",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "length",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 30,
+          "y": 40
+        }
+      ],
+      "rawPtValue": 50,
+      "calibratedValue": 2.847222222222222,
+      "unitLabel": "ft",
+      "formattedLabel": "2.8 ft",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "polylength",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 72,
+          "y": 0
+        },
+        {
+          "x": 72,
+          "y": 72
+        }
+      ],
+      "rawPtValue": 144,
+      "calibratedValue": 8.2,
+      "unitLabel": "ft",
+      "formattedLabel": "8.2 ft",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "perimeter",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 72,
+          "y": 0
+        },
+        {
+          "x": 72,
+          "y": 72
+        },
+        {
+          "x": 0,
+          "y": 72
+        }
+      ],
+      "rawPtValue": 216,
+      "calibratedValue": 12.299999999999999,
+      "perimeterCalibrated": 12.299999999999999,
+      "unitLabel": "ft",
+      "formattedLabel": "Perim: 12.3 ft",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "area.rect",
+      "points": [
+        {
+          "x": 10,
+          "y": 10
+        },
+        {
+          "x": 10,
+          "y": 10
+        },
+        {
+          "x": 10,
+          "y": 82
+        },
+        {
+          "x": 10,
+          "y": 82
+        }
+      ],
+      "rawPtValue": 0,
+      "calibratedValue": 0,
+      "perimeterCalibrated": 8.2,
+      "volumeCalibrated": 0,
+      "unitLabel": "ft²",
+      "formattedLabel": "0.0 ft² (Perim: 8.2 ft, Vol: 0.0 ft³)",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "area.polygon",
+      "points": [
+        {
+          "x": 100,
+          "y": 100
+        },
+        {
+          "x": 240,
+          "y": 100
+        },
+        {
+          "x": 240,
+          "y": 140
+        },
+        {
+          "x": 150,
+          "y": 140
+        },
+        {
+          "x": 150,
+          "y": 200
+        },
+        {
+          "x": 100,
+          "y": 200
+        }
+      ],
+      "rawPtValue": 8600,
+      "calibratedValue": 27.8869598765432,
+      "perimeterCalibrated": 27.33333333333333,
+      "volumeCalibrated": 83.6608796296296,
+      "unitLabel": "ft²",
+      "formattedLabel": "27.9 ft² (Perim: 27.3 ft, Vol: 83.7 ft³)",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    },
+    {
+      "pageIndex": 0,
+      "kind": "protractor",
+      "points": [
+        {
+          "x": 10,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 10
+        }
+      ],
+      "rawPtValue": 90,
+      "calibratedValue": 90,
+      "unitLabel": "deg",
+      "formattedLabel": "90.0°",
+      "strokeWidthPt": 1.5,
+      "endpointStyle": "tick"
+    }
+  ],
+  "totalsAfterRescale": {
+    "ft": 31.547222222222217,
+    "ft²": 27.8869598765432,
+    "ft³": 83.6608796296296,
+    "deg": 90
+  }
+}

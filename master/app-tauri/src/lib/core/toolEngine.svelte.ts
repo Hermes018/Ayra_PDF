@@ -128,7 +128,7 @@ export const TOOL_LABELS: Record<ToolId, string> = {
   'insert.stamp': 'Stamp Markup',
   'insert.signature': 'Signature Pad',
   'insert.image': 'Insert Image',
-  'insert.latex': 'LaTeX Math Block',
+  'insert.latex': 'Math text (Labs)',
   'snapshot': 'Snapshot Region'
 };
 

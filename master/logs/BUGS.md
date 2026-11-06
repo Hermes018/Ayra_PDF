@@ -124,3 +124,6 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 
 ## BUG-027 [P2] Reopening a saved PDF without its .studio.json sidecar loses editable markups — status: open
 - Flow 11 warning. Found by: e2e. Owner: engines (save format), after the release
+
+## BUG-028 [P1] Voice note with an empty recording saves a made-up 440 Hz tone instead of failing (DON'T-5) — status: open
+- Found by: engines builder (matrix row T42). `buildOfflineWavBytes` (insertEngine.svelte.ts:~412) substitutes a synthetic tone when the recording yields no bytes. It must refuse with a clear "Nothing was recorded" error instead. Owner: fixes (after the P0 merge)

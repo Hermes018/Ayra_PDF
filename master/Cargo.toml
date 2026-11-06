@@ -39,3 +39,8 @@ egui-wgpu = { path = "vendor/pdfcraft/vendor/egui-wgpu" }
 # ADR-017 / ERR-006: winprint (Windows-only, via pdfcraft -> craft-print) without its network build-dependencies.
 [patch."https://github.com/storytold/winprint.rs"]
 winprint = { path = "vendor/patches/winprint" }
+
+# ADR-018 checkpoint 2 / ERR-007: cadcraft-render with one added re-export (`pattern_lines`);
+# see vendor/patches/cadcraft-render/PATCH_NOTES.md. Dropped when upstream re-exports it.
+[patch."https://github.com/storytold/cadcraft"]
+cadcraft-render = { path = "vendor/patches/cadcraft-render" }

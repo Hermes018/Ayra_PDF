@@ -750,6 +750,8 @@ pub fn run() {
             commands::studio::studio_workspace_library,
             commands::studio::studio_scan_watch_folder,
             commands::studio::studio_detect_tables_and_fields,
+            commands::studio::path_exists,
+            commands::studio::delete_organize_intermediate,
             set_window_vibrancy_theme,
             show_main_window
         ])

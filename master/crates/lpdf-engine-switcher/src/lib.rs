@@ -14,6 +14,7 @@ use std::path::{Path, PathBuf};
 
 #[cfg(any(test, feature = "test-utils"))]
 pub mod fuzz;
+pub mod guard;
 #[cfg(any(test, feature = "test-utils"))]
 pub mod hostile;
 #[cfg(any(test, feature = "test-utils"))]
@@ -77,6 +78,15 @@ impl EngineSwitcher {
 impl PdfEngine for EngineSwitcher {
     fn load(&mut self, path: &Path) -> Result<()> {
         self.loaded_path = Some(path.to_path_buf());
+        self.active = None;
+
+        // F4 preflight: refuse structurally hostile files before either engine parses them.
+        let bytes = std::fs::read(path).map_err(LpdfError::Io)?;
+        if let Err(trip) = guard::preflight(&bytes) {
+            tracing::warn!("EngineSwitcher: {}", trip);
+            return Err(LpdfError::ResourceLimit(trip.to_string()));
+        }
+        drop(bytes);
 
         // Try primary first
         match self.primary.load(path) {

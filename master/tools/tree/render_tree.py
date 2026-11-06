@@ -25,7 +25,8 @@ tracked = subprocess.run(["git", "-C", ROOT, "ls-files"], capture_output=True, t
 # generated maps are tracked once written; make sure they are always present in the listing
 tracked = set(tracked) | {"tree.md"} | {f"{f}/{f}.md" for f in FOLDERS}
 # Third-party trees mapped as ONE entry (their contents are upstream code, described in that entry).
-COLLAPSED = ["master/vendor/pdfcraft/", "master/vendor/patches/winprint/src/"]
+COLLAPSED = ["master/vendor/pdfcraft/", "master/vendor/patches/winprint/src/",
+             "master/vendor/craft/cadcraft/", "master/vendor/patches/cadcraft-render/src/"]
 tracked = {t for t in tracked if not any(t.startswith(c) for c in COLLAPSED)}
 
 files = set(tracked)
@@ -35,8 +36,11 @@ for f in files:
     for i in range(1, len(parts)):
         dirs.add("/".join(parts[:i]) + "/")
 for c in COLLAPSED:
-    if c.rstrip("/") + "/" != "master/vendor/pdfcraft/":
+    if c.rstrip("/") + "/" != "master/vendor/pdfcraft/" and os.path.exists(os.path.join(ROOT, c)):
         dirs.add(c)
+        parts = c.rstrip("/").split("/")
+        for i in range(1, len(parts)):
+            dirs.add("/".join(parts[:i]) + "/")
 dirs.discard("master/vendor/pdfcraft/")
 dirs = {d for d in dirs if not any(d.startswith(c) and d != c for c in COLLAPSED)}
 

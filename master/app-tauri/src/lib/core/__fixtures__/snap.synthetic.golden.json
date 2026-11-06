@@ -1,0 +1,194 @@
+{
+  "cases": [
+    {
+      "name": "intersection 0.7pt away vs endpoint 9.3pt away (known weakness: endpoint wins by kind priority)",
+      "x": 50.5,
+      "y": 50.5,
+      "zoom": 1,
+      "hit": {
+        "kind": "endpoint",
+        "x": 58,
+        "y": 45,
+        "distPt": 9.300537618869136,
+        "tokenVar": "--snap-indicator-endpoint"
+      }
+    },
+    {
+      "name": "exact intersection, endpoint outside 3pt radius",
+      "x": 50,
+      "y": 50,
+      "zoom": 4,
+      "hit": {
+        "kind": "intersection",
+        "x": 50,
+        "y": 50,
+        "distPt": 0,
+        "tokenVar": "--snap-indicator-intersection"
+      }
+    },
+    {
+      "name": "midpoint of the oblique segment",
+      "x": 74.6,
+      "y": 27.4,
+      "zoom": 1,
+      "hit": {
+        "kind": "midpoint",
+        "x": 74,
+        "y": 27.5,
+        "distPt": 0.6082762530298165,
+        "tokenVar": "--snap-indicator-midpoint"
+      }
+    },
+    {
+      "name": "line 4pt away, outside 3pt radius at zoom 4, no anchor",
+      "x": 25,
+      "y": 46,
+      "zoom": 4,
+      "hit": null
+    },
+    {
+      "name": "endpoint at radius edge (12pt / zoom)",
+      "x": 0,
+      "y": 62,
+      "zoom": 1,
+      "hit": {
+        "kind": "endpoint",
+        "x": 0,
+        "y": 50,
+        "distPt": 12,
+        "tokenVar": "--snap-indicator-endpoint"
+      }
+    }
+  ],
+  "perpendicular": {
+    "x": 80,
+    "y": 50,
+    "kind": "perpendicular",
+    "distPt": 1,
+    "tokenVar": "--snap-indicator-perpendicular"
+  },
+  "gridOnly": {
+    "x": 396,
+    "y": 396,
+    "kind": "grid",
+    "distPt": 6.519202405202639,
+    "tokenVar": "--snap-indicator-grid"
+  },
+  "disabled": null,
+  "strokeSegmentsPage0": [
+    {
+      "x1": 10,
+      "y1": 10,
+      "x2": 60,
+      "y2": 10
+    },
+    {
+      "x1": 60,
+      "y1": 10,
+      "x2": 60,
+      "y2": 40
+    },
+    {
+      "x1": 60,
+      "y1": 40,
+      "x2": 10,
+      "y2": 40
+    },
+    {
+      "x1": 10,
+      "y1": 40,
+      "x2": 10,
+      "y2": 10
+    },
+    {
+      "x1": 0,
+      "y1": 0,
+      "x2": 30,
+      "y2": 0
+    },
+    {
+      "x1": 30,
+      "y1": 0,
+      "x2": 30,
+      "y2": 30
+    },
+    {
+      "x1": 30,
+      "y1": 30,
+      "x2": 0,
+      "y2": 0
+    },
+    {
+      "x1": 100,
+      "y1": 100,
+      "x2": 240,
+      "y2": 100
+    },
+    {
+      "x1": 240,
+      "y1": 100,
+      "x2": 240,
+      "y2": 140
+    },
+    {
+      "x1": 240,
+      "y1": 140,
+      "x2": 150,
+      "y2": 140
+    },
+    {
+      "x1": 150,
+      "y1": 140,
+      "x2": 150,
+      "y2": 200
+    },
+    {
+      "x1": 150,
+      "y1": 200,
+      "x2": 100,
+      "y2": 200
+    },
+    {
+      "x1": 100,
+      "y1": 200,
+      "x2": 100,
+      "y2": 100
+    },
+    {
+      "x1": 5,
+      "y1": 5,
+      "x2": 9,
+      "y2": 9
+    }
+  ],
+  "segmentIntersection": {
+    "crossing": {
+      "x": 5,
+      "y": 5
+    },
+    "touchingEnd": {
+      "x": 10,
+      "y": 0
+    },
+    "parallel": null,
+    "smallTouchingAtOriginMissedByAbsoluteCutoff": null,
+    "farFromOrigin": {
+      "x": 10000005,
+      "y": 10000005
+    }
+  },
+  "perpendicularFoot": {
+    "inside": {
+      "x": 5,
+      "y": 0
+    },
+    "beyondEnd": null,
+    "degenerate": null
+  },
+  "gridIndexQuery": {
+    "near0": [0],
+    "near1": [1],
+    "negative": [2],
+    "sanity": true
+  }
+}

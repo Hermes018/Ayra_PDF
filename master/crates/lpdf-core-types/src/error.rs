@@ -25,6 +25,10 @@ pub enum LpdfError {
 
     #[error("External Dependency Error: {0}")]
     ExternalDependencyError(String),
+
+    /// A protocol F4 resource guard refused the file before parsing (message names the guard).
+    #[error("Resource Guard: {0}")]
+    ResourceLimit(String),
 }
 
 pub type Result<T> = std::result::Result<T, LpdfError>;

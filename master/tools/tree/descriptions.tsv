@@ -479,3 +479,58 @@ master/CHANGELOG.md	Release notes for v0.2.0-prototype (draft; finalised by the 
 master/e2e/pkg_smoke.py	Clean-user install smoke test for rpm/deb/AppImage (flows 1-2 against the packaged binary, fresh HOME)
 ubuntu/packaging/build-appimage.sh	Builds the AppImage from master/ with the AppImage overlay (linuxdeploy fetched at build time only)
 ubuntu/packaging/tauri.appimage.conf.json	Tauri config overlay: AppImage target plus the CLI and worker binaries
+master/docs/RAM_BUDGET.md	Measured RAM per job class, training budget, scheduler + cgroup protection rules
+master/tools/sched.sh	RAM-aware scheduler: LIGHT/HEAVY admission from live MemAvailable, priority FIFO, slots, logging
+master/tools/protect.sh	Wraps each agent job: cgroup MemoryMax/High from live MemAvailable, OOM preference, nice/ionice
+master/tools/ram-budget.env	Measured peak inputs for the scheduler (HEAVY/LIGHT MiB)
+master/tools/measure-ram.sh	Measures a job's whole-cgroup peak and largest-process RSS into logs/runs/ram-measure.tsv
+master/tools/sample-training.sh	Read-only sampler of the training job's total RSS every 30 s
+master/app-tauri/src-tauri/tests/	Integration tests for the desktop shell crate
+master/app-tauri/src-tauri/tests/goldens/	Characterization goldens for Rust studio commands (ADR-018 strangler step 1)
+master/app-tauri/src-tauri/tests/goldens/takeoff.golden.json	Golden: takeoff CSV export bytes
+master/app-tauri/src-tauri/tests/goldens/text-blocks.standard-text.p0.golden.json	Golden: text-block extract/edit on corpus standard-text.pdf page 1
+master/app-tauri/src/lib/core/__fixtures__/	Characterization goldens of the current TS engines (regenerate: vitest -u)
+master/app-tauri/src/lib/core/__fixtures__/ink.eraser.golden.json	Golden: partial/whole eraser output
+master/app-tauri/src/lib/core/__fixtures__/ink.rdp-and-outline.golden.json	Golden: ink RDP simplification and stroke outline
+master/app-tauri/src/lib/core/__fixtures__/ink.recognize.golden.json	Golden: smart-shape recognition results
+master/app-tauri/src/lib/core/__fixtures__/insert.signature-threshold.golden.json	Golden: signature background threshold output
+master/app-tauri/src/lib/core/__fixtures__/measure.math.golden.json	Golden: length/area/angle/perimeter math
+master/app-tauri/src/lib/core/__fixtures__/measure.session.golden.json	Golden: calibrated measurement session
+master/app-tauri/src/lib/core/__fixtures__/selection.hit.golden.json	Golden: selection hit-testing
+master/app-tauri/src/lib/core/__fixtures__/selection.transforms.golden.json	Golden: move/resize/rotate/align/flip transforms
+master/app-tauri/src/lib/core/__fixtures__/shapes.created.golden.json	Golden: created shapes and revision clouds
+master/app-tauri/src/lib/core/__fixtures__/shapes.paths.golden.json	Golden: shape/cloud SVG path strings
+master/app-tauri/src/lib/core/__fixtures__/snap-geometry.standard-form.p0.golden.json	Golden: snap segments extracted from corpus standard-form.pdf page 1
+master/app-tauri/src/lib/core/__fixtures__/snap.standard-form.p0.golden.json	Golden: snap results on corpus geometry
+master/app-tauri/src/lib/core/__fixtures__/snap.synthetic.golden.json	Golden: snap results on synthetic geometry
+master/app-tauri/src/lib/core/engineGoldens.test.ts	Tests: compare current TS engine outputs with the goldens
+master/crates/lpdf-geom/	Geometry adapter crate (ADR-018): hatching behind our own API; legacy impl now, cadcraft next
+master/crates/lpdf-geom/Cargo.toml	Crate manifest
+master/crates/lpdf-geom/src/	Crate source
+master/crates/lpdf-geom/src/lib.rs	Adapter API: hatch_segments, HatchEngine switch, GeomError codes
+master/crates/lpdf-geom/src/legacy.rs	Legacy hatch implementation moved from studio.rs (byte-identical)
+master/crates/lpdf-geom/tests/	Integration tests
+master/crates/lpdf-geom/tests/hatch_golden.rs	Tests: hatch output vs goldens (ERR-007 cases marked known-wrong)
+master/crates/lpdf-geom/tests/goldens/	Hatch goldens
+master/crates/lpdf-geom/tests/goldens/hatch_legacy.golden.json	Golden: legacy hatch segments per pattern (rect + concave L)
+master/docs/ENGINE_REUSE_MATRIX.md	ADR-018 R1 matrix: each hand-written engine function → craft candidate → ADOPT/ADOPT-WASM/KEEP-PORT/REJECT
+master/logs/checkpoints/engines.md	Engines builder state: task, files, tests, next step, blockers
+master/vendor/craft/	Vendored storytold craft crates (offline builds, ADR-018 R3), pinned revs in docs/UPSTREAM_MANIFEST.toml
+master/vendor/craft/cadcraft/	cadcraft@df65974 crates (doc, geom, color, fonts, render) vendored unmodified via cargo vendor (not listed individually)
+master/vendor/patches/cadcraft-render/	cadcraft-render with a one-line re-export of pattern_lines + de-workspaced Cargo.toml (ADR-018)
+master/vendor/patches/cadcraft-render/Cargo.toml	Manifest with inherited workspace fields made explicit; siblings pinned to the vendored rev
+master/vendor/patches/cadcraft-render/PATCH_NOTES.md	Exact diff vs upstream and how to re-sync
+master/vendor/patches/cadcraft-render/src/	Upstream src/ except lib.rs re-export line (not listed individually)
+master/docs/UPSTREAM_MANIFEST.toml	Every adopted craft crate, patch and KEEP-PORT source: repo, rev, licence, adapter, last-checked
+master/crates/lpdf-geom/src/cadcraft.rs	Cadcraft-backed hatch implementation (HatchEngine::Cadcraft): real polygon clipping (ERR-007)
+master/crates/lpdf-geom/tests/cadcraft_parity.rs	Tests: cadcraft hatch inside concave polygons, all patterns distinct, parity notes vs legacy
+master/THIRD_PARTY_NOTICES.md	Licences and notices of every shipped dependency (generated by `cargo xtask notices`; bundled as a Tauri resource)
+master/crates/lpdf-engine-switcher/src/guard.rs	F4 resource guard: refuses hostile files (e.g. declared stream length larger than the file) before any engine parses them
+master/crates/lpdf-engine-switcher/tests/guard_tests.rs	Tests: F4 guard trips on hostile corpus files and passes normal ones
+master/crates/lpdf-geom/tests/goldens/hatch_cadcraft.golden.json	Golden: cadcraft hatch segments per pattern (rect + concave L), all inside the loop
+master/crates/lpdf-jobs/tests/bug018_tests.rs	Tests (BUG-018): GetInfo on hostile files ends Failed with F4 code; fallback opens report degraded
+master/vendor/patches/cadcraft-render/LICENSE-APACHE	Upstream cadcraft-render Apache-2.0 licence (kept with the patched copy)
+master/vendor/patches/cadcraft-render/LICENSE-MIT	Upstream cadcraft-render MIT licence (kept with the patched copy)
+master/vendor/patches/cadcraft-render/NOTICE	Upstream NOTICE file, reproduced in THIRD_PARTY_NOTICES.md (Apache-2.0 §4(d))
+master/xtask/src/notices.rs	xtask notices: generates THIRD_PARTY_NOTICES.md from cargo metadata (Linux graph) + npm licences
+master/KNOWN_ISSUES.md	Cuts and known limitations shipped in v0.2.0-prototype, with workarounds (KI-xxx)

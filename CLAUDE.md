@@ -25,6 +25,12 @@ Offline, local-only PDF markup / CAD studio. Tauri v2 + Svelte 5 + Rust. **All s
 - **Blocked by the PreToolUse guard:** `cargo clean`, `git push`, `git reset --hard`, `rm -rf` outside `target/` or `logs/runs/`, and cargo/pnpm/gradle builds outside `run.sh`.
 - **Edits are auto-formatted** (rustfmt; prettier only for files already prettier-clean). Stop/SubagentStop events are logged to `master/logs/AGENT_ACTIVITY.md`.
 
+## RAM: model training has absolute priority (docs/RAM_BUDGET.md)
+- `run.sh` admits jobs by live MemAvailable: LIGHT runs in parallel; HEAVY waits in a priority FIFO (`LPDF_PRIO=verifier|p0|e2e|other`). It wraps every job in a cgroup capped at MemAvailable − 6 GiB, plus `choom 800`, `nice 10` and `ionice idle`.
+- Iterate with `cargo check -p` / `clippy -p` / vitest on one file (LIGHT). Full builds and tests run only at the gate.
+- E2E: one app instance at a time; kill the app, WebKitWebDriver and tauri-driver after each flow.
+- A memory-killed job is re-queued once, then reported. Never loop.
+
 ## Git and agents (ADR-020)
 - **The lead** owns `main`, all commits, logs, tree maps and merges. Order: verify → log → commit → tag. Commit locally; the owner pushes.
 - **Builders** (≤3) work in `~/Desktop/Ayra_PDF-wt/<name>` worktrees with no file overlap. They never commit or edit `master/logs/`, `master/protocol/` or tree maps.

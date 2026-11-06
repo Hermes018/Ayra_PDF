@@ -1514,3 +1514,66 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
   - Round 1: RED on tree-map only (lead's map step).
   - Round 2: `tools/verify.sh` GREEN (gate, feature-map, studio-audit, svelte-check, vitest 153/153, tree-map). One staging slip by the lead (regenerated maps not staged) was caught by the verifier; fixed by staging, so index = verified tree.
 - **Commit / tag:** 6c18734 (fast-forwarded to main), tag fixes-cp1-green.
+
+## [2026-11-06 06:50] Merge: wt/engines checkpoint 1 + cadcraft behind switch — DONE
+- **Change:** ADR-018 strangler steps 1–3.
+  - ENGINE_REUSE_MATRIX: 59 rows. ADOPT 23, ADOPT-WASM 7, KEEP-PORT 4, REJECT 25.
+  - Characterization goldens (Rust + TS).
+  - lpdf-geom adapter with a byte-identical legacy hatch, now with a work cap.
+  - cadcraft@df65974 vendored, plus a patched cadcraft-render re-export. `HatchEngine::Cadcraft` passes parity (inside the concave polygon; all patterns distinct).
+  - Default is still Legacy.
+  - UPSTREAM_MANIFEST.toml.
+- **Review:** round 1 FAIL (matrix gaps, unjustified KEEP-PORT); round 2 PASS with minors (now in CP2b).
+- **Verify:** verify.sh GREEN in its own target (nextest 173/173, vitest 165/165, deny ok). Offline build proven without a cadcraft git cache. Parity 12/12.
+- **Commit / tag:** 7dc56c8 (fast-forward to main), tag engines-cp1-green.
+- **Open:** owner decision on R3 licence wording (BSD-2/3, Unicode-3.0 transitive). The default switch is held until then.
+
+## [2026-11-06 06:50] Fixes P0 batch round 1 — review FAIL
+- **Fixed with red→green tests:** BUG-011, 012, 013, 014, 016, 017, 018 (UI), 019, 020, 021, 022 (vitest 191).
+- **Review FAIL:** blocker = tab close drops unsaved markups (F11); major = a GetInfo probe causes false success toasts; 6 minors (Organize names overwrite, no on-disk collision check, runJob has no timeout, a test that can't fail, a hidden error).
+- The verifier was stopped early (its result would be invalidated) to free the HEAVY slot. Round 2 is in progress.
+
+## [2026-11-06 07:03] Fixes P0 batch round 2 — review FAIL, round 3 started
+- **Fixed per reviewer:** claims 3–8 (silent probe skips encrypted files; Organize collision-safe names and on-disk check; Cancel + 120 s stall timeout; render-error logging; undo tooltip). The CSP change is only `img-src data: blob:` (BUG-012); `connect-src` is still IPC only.
+- **Blocker:** a tab switch or close while a document is still rendering stashes empty engines over the session, losing markups and skipping the prompt (SpatialCanvas.svelte:739/902, documentSessions.ts:117).
+- **Major:** strokes drawn during the first load are replaced by the restored ones (SpatialCanvas.svelte:403).
+- **Minors (6):** no timeout on whenDocumentLive; probe leak; stall timer counts queue time; GridEditor onDestroy doesn't abort; mark-clean after await; intermediate file left (→ KI-002, engines cleanup IPC).
+- The fresh verifier was stopped while queued; it never ran.
+
+## [2026-11-06 07:12] Fixes P0 batch round 3 — builder GREEN, fresh review + verify running
+- Fixed: the blocker (per-document restored state; restore before drawing and rendering) and the major (merge, not replace). The 5 minors are fixed with timeouts and supersede handling; Save marks clean only what it wrote.
+- Builder verify.sh GREEN: vitest 216/216. Red→green logs in the worktree, logs/runs/r3-red*.log.
+- Staged 35 files. Fresh reviewer + verifier (Opus, high effort) launched.
+
+## [2026-11-06 07:15] Fixes P0 batch round 3 — review FAIL. Decision: structural round 4 + split view to Labs
+- **Blocker:** a new canvas instance (Studio→Organize→Studio, split change) merges a stale session over live engines, so erased strokes come back.
+- **Majors:** Save doesn't re-check restore after its await; scales and snap state leak between documents.
+- The fresh verifier was stopped while queued.
+- **Decision (lead, under the milestone rule "defer or move to Labs"):**
+  - documentSessions becomes the single owner of document state (activate(path), a global seq, a seq/livePath check after every await, one saver).
+  - Multi-pane split view goes behind Labs → KI-004.
+  - Timebox: if round 4 fails review, fall back to single-document mode and report flow 3's two-document check as a cut.
+
+## [2026-11-06 07:20] Release checkpoints 1+2 delivered — fresh review + verify running
+- All 11 harness review fixes landed. Packages built: rpm, deb and AppImage (LTO off, version 0.1.0 → KI-005).
+- Offline E2E run (release binary from the RPM, loopback-only netns): 3 PASS (6, 8, 11), 1 SHORT-PASS (12, 5-min soak), 7 FAIL (all product bugs BUG-011..020), 1 BLOCKED (1: rpm/deb system install needs sudo). The AppImage passes flow 1 as a user-level install.
+- FLAKY: 2 entries added (flow 2 fixed, flow 12 open). Staged 27 files on wt/release.
+
+## [2026-11-06 07:26] Three checkpoints in review at once
+- **Fixes round 4 (structural):**
+  - documentSessions is the sole owner of state; one saver (studioSave.ts); token checks after every await.
+  - Split view is Labs-only (KI-004).
+  - Builder verify.sh GREEN code-wise (vitest 222/222). The lead added 5 tree descriptions. Staged 40 files; fresh reviewer + verifier running.
+- **Engines CP2b:**
+  - Parity test hardened (edge crossing); THIRD_PARTY_NOTICES via `cargo xtask notices`; deny allow-git for cadcraft.
+  - BUG-010/023/024 fixed.
+  - BUG-018 backend: F4 guard `declared-stream-length` → `Failed{F4_RESOURCE_GUARD}`, `Completed{degraded:true}`.
+  - New IPC: `path_exists`, `delete_organize_intermediate`.
+  - Default switch prepared as a patch (logs/runs/hatch-default-switch.patch in the engines worktree), NOT applied; it waits on the R3 licence decision.
+  - The lead added 9 tree descriptions. Staged 31 files; fresh reviewer + verifier running.
+- **Release CP1+2 review FAIL (4 majors):**
+  - pkg_smoke ignores rc / partial reports, and tauri-driver survives a timeout;
+  - linuxdeploy is unpinned with no hash; pnpm install needs network;
+  - CHANGELOG claims features with open P0s.
+  - Verifier: tree-map RED; the lead's descriptions were missing (fixed by the lead). Round 3 sent.
+- **BUG-028 (P1) logged:** empty voice recording → synthetic tone.
