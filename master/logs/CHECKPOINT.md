@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (overwrite; keep < 150 lines; history in CHECKPOINT_HISTORY.md)
-Updated: 2026-11-06 07:27 Asia/Dhaka by the lead. If this disagrees with logs/STATE_AUTO.md (git/process facts), trust STATE_AUTO.md and fix this file.
+Updated: 2026-11-06 07:26 Asia/Dhaka by the lead. If this disagrees with logs/STATE_AUTO.md (git/process facts), trust STATE_AUTO.md and fix this file.
 
 ## Sprint
 - **Goal:** fully working Linux prototype **v0.2.0-prototype**, tag by **Sat 2026-11-07 23:59 Asia/Dhaka**. Scope and 12 E2E flows: `docs/PROTOTYPE_SCOPE.md`. Feature freeze; Labs holds the partial features.

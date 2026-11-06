@@ -1559,7 +1559,7 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - Offline E2E run (release binary from the RPM, loopback-only netns): 3 PASS (6, 8, 11), 1 SHORT-PASS (12, 5-min soak), 7 FAIL (all product bugs BUG-011..020), 1 BLOCKED (1: rpm/deb system install needs sudo). The AppImage passes flow 1 as a user-level install.
 - FLAKY: 2 entries added (flow 2 fixed, flow 12 open). Staged 27 files on wt/release.
 
-## [2026-11-06 07:27] Three checkpoints in review at once
+## [2026-11-06 07:26] Three checkpoints in review at once
 - **Fixes round 4 (structural):**
   - documentSessions is the sole owner of state; one saver (studioSave.ts); token checks after every await.
   - Split view is Labs-only (KI-004).
