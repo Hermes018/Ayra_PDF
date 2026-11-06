@@ -98,3 +98,8 @@ Rule: 3 distinct failed fixes => status escalated-to-user, stop, ask.
 - Fix: restore-context.sh caps output at ~9k chars (CHECKPOINT 5,600, STATE_AUTO 2,600, with a truncation note that points to the real file); snapshot-state.sh prints a compact worktree status; CHECKPOINT ≤ 5,000 chars (CLAUDE.md).
 - Tested: restore output is now 6,500 chars.
 - Status: fixed
+
+## ERR-010 [2026-11-06 11:05] Lead ran a file-mutating check concurrently with a gate in the same worktree
+- **What:** for sweep group 5, the lead launched in parallel (a) a Sonnet review that ran verify.sh in wt/fixes and (b) a narrow Opus check that temporarily reverted a guard in DocumentTabs.svelte in the same worktree to prove a test fails. The gate's vitest step ran during the revert and went RED on the two close-dialog tests. The result was invalid, not a product bug.
+- **Fix:** the Opus check restored the file (hashes verified); the gate is re-run on its own.
+- **Rule:** never run a check that edits files (red/green reverts, probes) at the same time as any gate or test run in the same worktree. Run them in sequence, or use a separate worktree or copy.
