@@ -141,6 +141,7 @@ master/
 │   │   │   │   │   ├── AnnotationLedger.svelte               # Side drawer: annotation list, takeoff CSV, markup library, LaTeX/signature/audio dialogs
 │   │   │   │   │   ├── CalibrationModal.svelte               # Set a page's drawing scale for measurements
 │   │   │   │   │   ├── DockableToolbar.svelte                # Main tool rail with grouped tool drawers, shortcuts, favourites
+│   │   │   │   │   ├── DocumentTabs.svelte                   # Document tabs for multiple open PDFs in Studio (BUG-016)
 │   │   │   │   │   ├── FavoritesBar.svelte                   # Pinned favourite tools/presets
 │   │   │   │   │   ├── HatchDefs.svelte                      # SVG pattern definitions for CAD hatching fills
 │   │   │   │   │   ├── labs.svelte.ts                        # Labs gate: the one place that decides if Labs tools (math text, shape-to-character) are visible/selectable; honest copy
@@ -154,6 +155,7 @@ master/
 │   │   │   │   ├── For.svelte                                # Tiny generic keyed list helper component
 │   │   │   │   ├── GridEditor.svelte                         # Page-thumbnail grid for organizing pages (reorder, rotate, delete)
 │   │   │   │   ├── MainLayout.svelte                         # App frame: sidebar + content + status bar, sidebar collapse
+│   │   │   │   ├── organizeApply.ts                          # Organize Apply: runs reorder/delete/rotate jobs in sequence and reports the true result (BUG-014)
 │   │   │   │   ├── PdfViewer.svelte                          # Read-only page preview using pdf.js
 │   │   │   │   ├── Sidebar.svelte                            # Left navigation between tool groups
 │   │   │   │   ├── StatusBar.svelte                          # Bottom status line (engine, job state)
@@ -210,14 +212,34 @@ master/
 │   │   │   │   │   ├── BatchQueueView.test.ts                # Tests: batch queue view
 │   │   │   │   │   ├── ConvertFromPdfView.test.ts            # Tests: convert-from view
 │   │   │   │   │   ├── ConvertToPdfView.test.ts              # Tests: convert-to view
+│   │   │   │   │   ├── EngineReset.test.ts                   # Tests: every engine field is classified and reset on document switch (fails when a new field is unclassified)
+│   │   │   │   │   ├── IpcAndSessionTimeouts.test.ts         # Tests: whenDocumentLive/probe timeouts, stall timer starts at dequeue, listener cleanup
 │   │   │   │   │   ├── LabsGating.test.ts                    # Tests: Labs off by default, all Labs entry points hidden, honest labels derived from the classifier
+│   │   │   │   │   ├── MeasurePerimeter.test.ts              # Tests: perimeter closes the shape (BUG-022)
+│   │   │   │   │   ├── OrganizeApply.test.ts                 # Tests: Organize Apply keeps rotation, reports failures (BUG-014)
 │   │   │   │   │   ├── OrganizeView.test.ts                  # Tests: organize view
 │   │   │   │   │   ├── PipelinesView.test.ts                 # Tests: pipelines view
 │   │   │   │   │   ├── SettingsView.test.ts                  # Tests: settings view
-│   │   │   │   │   └── StudioEmptyState.test.ts              # Tests: Studio empty state, no phantom pages, document-only actions disabled (UI-BUG-006)
+│   │   │   │   │   ├── SignatureDraw.test.ts                 # Tests: drawn signature saved as ink, not text (BUG-017)
+│   │   │   │   │   ├── StudioDamagedPdf.test.ts              # Tests: malformed PDFs show an error/degraded notice (BUG-018)
+│   │   │   │   │   ├── StudioDocumentStore.test.ts           # Tests: document store activate(), Organize round trip, save refuses on switch, per-document scales, split view Labs-only
+│   │   │   │   │   ├── StudioEditText.test.ts                # Tests: Edit Text hotspots reachable by pointer (BUG-013)
+│   │   │   │   │   ├── StudioEmptyState.test.ts              # Tests: Studio empty state, no phantom pages, document-only actions disabled (UI-BUG-006)
+│   │   │   │   │   ├── StudioEraserUndo.test.ts              # Tests: erasers are undoable, undo restores the right stroke (BUG-019)
+│   │   │   │   │   ├── StudioLoadRaces.test.ts               # Tests: tab switch/close mid-render keeps markups and still prompts; draw-during-load merge
+│   │   │   │   │   ├── StudioPassword.test.ts                # Tests: encrypted PDFs prompt for a password (BUG-011)
+│   │   │   │   │   ├── StudioRound5.test.ts                  # Tests (P0 round 5): close via store leaves no session, inserts blocked until restored, save refuses without page geometry, one save in flight
+│   │   │   │   │   ├── StudioSaveNames.test.ts               # Tests: repeated saves use new collision-safe names (BUG-021)
+│   │   │   │   │   ├── StudioTabs.test.ts                    # Tests: second document opens in a tab, view state kept per tab (BUG-016)
+│   │   │   │   │   ├── TauriCsp.test.ts                      # Tests: CSP allows data:/blob: images, connect-src still IPC-only (BUG-012)
+│   │   │   │   │   └── ViewportFit.test.ts                   # Tests: Fit Width/Page use real page size and offset (BUG-020)
 │   │   │   │   ├── studio/                                   # The spatial Studio editor (default view)
+│   │   │   │   │   ├── documentSessions.ts                   # Per-document Studio session state (view, page) for tab switching
+│   │   │   │   │   ├── outputNames.ts                        # Collision-safe output file names, never overwrite previous outputs (BUG-021)
+│   │   │   │   │   ├── pageGeometry.ts                       # Page geometry shared by the canvas and the saver: world (laid-out CSS px) to PDF user space (pt, y up) conversion
 │   │   │   │   │   ├── SpatialCanvas.svelte                  # Studio canvas: page rendering, pointer input, layers, responsive top bar, empty state (largest file)
-│   │   │   │   │   └── SplitLayout.svelte                    # Side-by-side document panes with draggable divider
+│   │   │   │   │   ├── SplitLayout.svelte                    # Side-by-side document panes with draggable divider
+│   │   │   │   │   └── studioSave.ts                         # The single Studio saver: snapshots path/seq/revision, refuses ("Nothing was written") if the document changed or is still loading
 │   │   │   │   ├── AiSummarizeView.svelte                    # PDF Intelligence: summarize / translate (basic mode + optional local model)
 │   │   │   │   ├── BatchQueueView.svelte                     # Batch job queue
 │   │   │   │   ├── ConvertFromPdfView.svelte                 # PDF → images/Word/HTML/text/Office/PDF-A
@@ -415,7 +437,8 @@ master/
 │   └── Cargo.toml                                            # Fuzz crate manifest
 ├── logs/                                                     # Project logs (append-only, except CHECKPOINT which is overwritten)
 │   ├── checkpoints/                                          # Per-worktree builder checkpoints (each builder keeps its own current)
-│   │   └── engines.md                                        # Engines builder state: task, files, tests, next step, blockers
+│   │   ├── engines.md                                        # Engines builder state: task, files, tests, next step, blockers
+│   │   └── fixes.md                                          # Fixes builder state: task, files, tests, next step, blockers
 │   ├── ADR-008-sveltekit-spa.md                              # Detail for the SvelteKit SPA exception (registered as ADR-011 in DECISIONS_ADR)
 │   ├── ADR-009-vendored-pdfjs.md                             # Detail for the vendored pdf.js exception (registered as ADR-012 in DECISIONS_ADR)
 │   ├── AGENT_ACTIVITY.md                                     # One line per agent stop (written by hooks)

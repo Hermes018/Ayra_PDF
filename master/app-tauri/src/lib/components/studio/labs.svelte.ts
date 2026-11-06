@@ -17,7 +17,17 @@ import { inserts } from '$lib/core/insertEngine.svelte';
 export const INK_GUESS_ID = 'labs.inkGuess';
 
 /** Tool ids (and feature ids) that only exist when Labs is on. */
-export const LABS_IDS: readonly string[] = ['insert.latex', INK_GUESS_ID];
+/** Feature id for the Studio split view (review r4: cut from the default UI). */
+export const SPLIT_VIEW_ID = 'studio.splitView';
+
+export const LABS_IDS: readonly string[] = ['insert.latex', INK_GUESS_ID, SPLIT_VIEW_ID];
+
+/** Studio split view: two panes of the SAME document (a second document opens as a tab). */
+export const SPLIT_VIEW_LABS = {
+  name: 'Split view',
+  label: 'Split view (experimental)',
+  note: 'Shows the current document in two panes side by side. Draw in the left pane; the right pane repaints the same document. Other documents open as tabs.',
+} as const;
 
 export const LABS_BADGE = 'Labs';
 

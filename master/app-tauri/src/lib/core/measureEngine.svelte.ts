@@ -316,6 +316,15 @@ export class MeasureEngine {
     computeTakeoffTotals(this.measurements)
   );
 
+  /** Per-document state back to defaults (review r4: B must never inherit A's scales). */
+  resetDocumentState(): void {
+    this.measurements = [];
+    this.scales = { 0: createDefaultPageScale(0) };
+    this.activeDraft = null;
+    this.calibrationModal = null;
+    this.ruler = { visible: false, xPt: 100, yPt: 220, angleDeg: 0, lengthPt: 360 };
+  }
+
   getScaleForPage(pageIndex: number): PageScaleConfig {
     return this.scales[pageIndex] ?? createDefaultPageScale(pageIndex);
   }
@@ -458,7 +467,8 @@ export class MeasureEngine {
       };
     }
 
-    const closed = false;
+    // BUG-022: a perimeter is a closed shape (last vertex back to the first); polylength is open.
+    const closed = kind === 'perimeter' && points.length >= 3;
     const lenPt = computePolylineLengthPt(points, closed);
     const lenCal = lenPt * ratio;
     const prefix = kind === 'perimeter' ? 'Perim: ' : '';

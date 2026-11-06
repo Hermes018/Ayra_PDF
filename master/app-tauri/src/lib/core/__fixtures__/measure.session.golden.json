@@ -96,11 +96,11 @@
           "y": 72
         }
       ],
-      "rawPtValue": 216,
-      "calibratedValue": 3.75,
-      "perimeterCalibrated": 3.75,
+      "rawPtValue": 288,
+      "calibratedValue": 5,
+      "perimeterCalibrated": 5,
       "unitLabel": "m",
-      "formattedLabel": "Perim: 3.75 m",
+      "formattedLabel": "Perim: 5.00 m",
       "strokeWidthPt": 1.5,
       "endpointStyle": "tick"
     },
@@ -284,11 +284,11 @@
           "y": 72
         }
       ],
-      "rawPtValue": 216,
-      "calibratedValue": 3.75,
-      "perimeterCalibrated": 3.75,
+      "rawPtValue": 288,
+      "calibratedValue": 5,
+      "perimeterCalibrated": 5,
       "unitLabel": "m",
-      "formattedLabel": "Perim: 3.75 m",
+      "formattedLabel": "Perim: 5.00 m",
       "strokeWidthPt": 1.5,
       "endpointStyle": "tick"
     },
@@ -471,11 +471,11 @@
           "y": 72
         }
       ],
-      "rawPtValue": 216,
-      "calibratedValue": 12.299999999999999,
-      "perimeterCalibrated": 12.299999999999999,
+      "rawPtValue": 288,
+      "calibratedValue": 16.4,
+      "perimeterCalibrated": 16.4,
       "unitLabel": "ft",
-      "formattedLabel": "Perim: 12.3 ft",
+      "formattedLabel": "Perim: 16.4 ft",
       "strokeWidthPt": 1.5,
       "endpointStyle": "tick"
     },
@@ -573,7 +573,7 @@
     }
   ],
   "totalsAfterRescale": {
-    "ft": 31.547222222222217,
+    "ft": 35.64722222222222,
     "ft²": 27.8869598765432,
     "ft³": 83.6608796296296,
     "deg": 90

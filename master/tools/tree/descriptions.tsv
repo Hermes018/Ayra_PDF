@@ -510,3 +510,26 @@ master/vendor/patches/cadcraft-render/LICENSE-MIT	Upstream cadcraft-render MIT l
 master/vendor/patches/cadcraft-render/NOTICE	Upstream NOTICE file, reproduced in THIRD_PARTY_NOTICES.md (Apache-2.0 §4(d))
 master/xtask/src/notices.rs	xtask notices: generates THIRD_PARTY_NOTICES.md from cargo metadata (Linux graph) + npm licences
 master/KNOWN_ISSUES.md	Cuts and known limitations shipped in v0.2.0-prototype, with workarounds (KI-xxx)
+master/app-tauri/src/lib/components/organizeApply.ts	Organize Apply: runs reorder/delete/rotate jobs in sequence and reports the true result (BUG-014)
+master/app-tauri/src/lib/components/studio/DocumentTabs.svelte	Document tabs for multiple open PDFs in Studio (BUG-016)
+master/app-tauri/src/lib/views/studio/documentSessions.ts	Per-document Studio session state (view, page) for tab switching
+master/app-tauri/src/lib/views/studio/outputNames.ts	Collision-safe output file names, never overwrite previous outputs (BUG-021)
+master/app-tauri/src/lib/views/__tests__/MeasurePerimeter.test.ts	Tests: perimeter closes the shape (BUG-022)
+master/app-tauri/src/lib/views/__tests__/OrganizeApply.test.ts	Tests: Organize Apply keeps rotation, reports failures (BUG-014)
+master/app-tauri/src/lib/views/__tests__/SignatureDraw.test.ts	Tests: drawn signature saved as ink, not text (BUG-017)
+master/app-tauri/src/lib/views/__tests__/StudioDamagedPdf.test.ts	Tests: malformed PDFs show an error/degraded notice (BUG-018)
+master/app-tauri/src/lib/views/__tests__/StudioEditText.test.ts	Tests: Edit Text hotspots reachable by pointer (BUG-013)
+master/app-tauri/src/lib/views/__tests__/StudioEraserUndo.test.ts	Tests: erasers are undoable, undo restores the right stroke (BUG-019)
+master/app-tauri/src/lib/views/__tests__/StudioPassword.test.ts	Tests: encrypted PDFs prompt for a password (BUG-011)
+master/app-tauri/src/lib/views/__tests__/StudioSaveNames.test.ts	Tests: repeated saves use new collision-safe names (BUG-021)
+master/app-tauri/src/lib/views/__tests__/StudioTabs.test.ts	Tests: second document opens in a tab, view state kept per tab (BUG-016)
+master/app-tauri/src/lib/views/__tests__/TauriCsp.test.ts	Tests: CSP allows data:/blob: images, connect-src still IPC-only (BUG-012)
+master/app-tauri/src/lib/views/__tests__/ViewportFit.test.ts	Tests: Fit Width/Page use real page size and offset (BUG-020)
+master/logs/checkpoints/fixes.md	Fixes builder state: task, files, tests, next step, blockers
+master/app-tauri/src/lib/views/__tests__/IpcAndSessionTimeouts.test.ts	Tests: whenDocumentLive/probe timeouts, stall timer starts at dequeue, listener cleanup
+master/app-tauri/src/lib/views/__tests__/StudioLoadRaces.test.ts	Tests: tab switch/close mid-render keeps markups and still prompts; draw-during-load merge
+master/app-tauri/src/lib/views/__tests__/StudioDocumentStore.test.ts	Tests: document store activate(), Organize round trip, save refuses on switch, per-document scales, split view Labs-only
+master/app-tauri/src/lib/views/studio/studioSave.ts	The single Studio saver: snapshots path/seq/revision, refuses ("Nothing was written") if the document changed or is still loading
+master/app-tauri/src/lib/views/studio/pageGeometry.ts	Page geometry shared by the canvas and the saver: world (laid-out CSS px) to PDF user space (pt, y up) conversion
+master/app-tauri/src/lib/views/__tests__/StudioRound5.test.ts	Tests (P0 round 5): close via store leaves no session, inserts blocked until restored, save refuses without page geometry, one save in flight
+master/app-tauri/src/lib/views/__tests__/EngineReset.test.ts	Tests: every engine field is classified and reset on document switch (fails when a new field is unclassified)

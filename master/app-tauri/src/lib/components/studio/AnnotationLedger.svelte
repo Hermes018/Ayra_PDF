@@ -30,7 +30,9 @@
   let docFolderInput = $state<string>('Project Blueprints');
 
   // Signature draw points for Draw mode
-  let sigDrawPoints = $state<Array<{ x: number; y: number; p: number }>>([]);
+  // BUG-017: every pen-down → pen-up on the pad is kept (the old code kept only the last stroke).
+  let sigStrokes = $state<Array<Array<{ x: number; y: number; p: number }>>>([]);
+  let sigNotice = $state<string | null>(null);
   let isDrawingSig = $state(false);
   let webcamPreviewDataUrl = $state<string | null>(null);
 
@@ -110,21 +112,49 @@
 
   function handleSigPointerDown(e: PointerEvent) {
     isDrawingSig = true;
+    sigNotice = null;
     const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
-    sigDrawPoints = [{ x: e.clientX - rect.left, y: e.clientY - rect.top, p: e.pressure || 0.6 }];
+    try {
+      (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId);
+    } catch {
+      // pointer capture unsupported: drawing still works inside the pad
+    }
+    sigStrokes = [...sigStrokes, [{ x: e.clientX - rect.left, y: e.clientY - rect.top, p: e.pressure || 0.6 }]];
   }
 
   function handleSigPointerMove(e: PointerEvent) {
     if (!isDrawingSig) return;
     const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
-    sigDrawPoints = [
-      ...sigDrawPoints,
-      { x: e.clientX - rect.left, y: e.clientY - rect.top, p: e.pressure || 0.6 },
-    ];
+    const last = sigStrokes.length - 1;
+    if (last < 0) return;
+    const pt = { x: e.clientX - rect.left, y: e.clientY - rect.top, p: e.pressure || 0.6 };
+    sigStrokes = sigStrokes.map((st, i) => (i === last ? [...st, pt] : st));
   }
 
   function handleSigPointerUp() {
     isDrawingSig = false;
+  }
+
+  function sigPathD(st: Array<{ x: number; y: number }>): string {
+    return st.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+  }
+
+  function handleStampSignature() {
+    if (inserts.signatureMode === 'draw') {
+      const placed = inserts.stampDrawnSignature(sigStrokes);
+      if (placed.length === 0) {
+        sigNotice = 'Draw your signature in the box first.';
+        return;
+      }
+      sigStrokes = [];
+      sigNotice = null;
+      return;
+    }
+    inserts.stampSignature({
+      mode: inserts.signatureMode,
+      typedName: inserts.signatureTypedName,
+      dataUrl: webcamPreviewDataUrl ?? undefined,
+    });
   }
 
   function runThresholdScanSimulation() {
@@ -290,6 +320,11 @@
               {#each ledgerRows as row (row.id)}
                 <tr
                   class="ledger-row"
+                  data-testid="ledger-row"
+                  data-row-id={row.id}
+                  data-category={row.category}
+                  data-type={row.typeLabel}
+                  data-page={row.pageIndex + 1}
                   onclick={() => {
                     if (row.category === 'annotation') {
                       selection.selectedIds = [row.id];
@@ -354,6 +389,10 @@
               type="button"
               class="ledger-action-btn"
               onclick={() => {
+                if (!inserts.insertGuard()) {
+                  onNotice?.('The document is still loading its markups. Try again in a moment.');
+                  return;
+                }
                 inserts.stampFromMarkupLibrary(item, 200, 220, 0);
                 onNotice?.(`Stamped "${item.title}" onto canvas.`);
               }}
@@ -525,6 +564,8 @@
           type="button"
           class="tab-btn"
           class:active={inserts.signatureMode === mode}
+          aria-pressed={inserts.signatureMode === mode}
+          data-testid="signature-tab-{mode}"
           onclick={() => (inserts.signatureMode = mode as SignatureMode)}
         >
           {mode.toUpperCase()}
@@ -537,24 +578,43 @@
         class="sig-pad"
         width="260"
         height="76"
+        data-testid="signature-pad"
         onpointerdown={handleSigPointerDown}
         onpointermove={handleSigPointerMove}
         onpointerup={handleSigPointerUp}
+        onpointercancel={handleSigPointerUp}
         role="img"
         aria-label="Freehand Signature Pad"
       >
-        {#if sigDrawPoints.length > 1}
-          <path
-            d={sigDrawPoints
-              .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-              .join(' ')}
-            fill="none"
-            stroke="var(--accent)"
-            stroke-width="2.2"
-            stroke-linecap="round"
-          />
-        {/if}
+        {#each sigStrokes as st, i (i)}
+          {#if st.length > 1}
+            <path
+              d={sigPathD(st)}
+              fill="none"
+              stroke="var(--accent)"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          {/if}
+        {/each}
       </svg>
+      <div class="sig-pad-row">
+        <span class="sig-hint" data-testid="signature-draw-hint" role={sigNotice ? 'alert' : undefined}>
+          {sigNotice ?? 'Draw your signature in the box.'}
+        </span>
+        <button
+          type="button"
+          class="ledger-action-btn"
+          data-testid="signature-clear-btn"
+          onclick={() => {
+            sigStrokes = [];
+            sigNotice = null;
+          }}
+        >
+          Clear
+        </button>
+      </div>
     {:else if inserts.signatureMode === 'type'}
       <input
         type="text"
@@ -598,13 +658,8 @@
       <button
         type="button"
         class="ledger-action-btn primary"
-        onclick={() =>
-          inserts.stampSignature({
-            mode: inserts.signatureMode,
-            typedName: inserts.signatureTypedName,
-            drawnPoints: sigDrawPoints,
-            dataUrl: webcamPreviewDataUrl ?? undefined,
-          })}
+        data-testid="signature-stamp-btn"
+        onclick={handleStampSignature}
       >
         Stamp Signature
       </button>
@@ -964,6 +1019,18 @@
     align-items: center;
     justify-content: center;
     padding: 6px;
+  }
+
+  .sig-pad-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .sig-hint {
+    opacity: 0.8;
   }
 
   .webcam-controls {

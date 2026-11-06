@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { onMount, onDestroy, tick } from 'svelte';
+  import { onMount, onDestroy, tick, untrack } from 'svelte';
   import { invoke } from '@tauri-apps/api/core';
   import { appState } from '$lib/state.svelte';
-  import { pickFilesDialog } from '$lib/ipc';
+  import { IpcClient, pickFilesDialog } from '$lib/ipc';
   import { viewport, type Pt } from '$lib/core/viewportEngine.svelte';
   import { tools, type ToolPreset, type ToolId } from '$lib/core/toolEngine.svelte';
   import { commands } from '$lib/core/commandEngine.svelte';
@@ -41,9 +41,30 @@
   import CalibrationModal from '$lib/components/studio/CalibrationModal.svelte';
   import AnnotationLedger from '$lib/components/studio/AnnotationLedger.svelte';
   import { inserts, type PageOverlayTemplate } from '$lib/core/insertEngine.svelte';
+  import { freeOutputPath } from './outputNames';
+  import { findPageForWorldPoint, parseCssColorToRgb, pdfPagePtToWorld, worldToPdfPagePt } from './pageGeometry';
+  import { saveLiveDocument } from './studioSave';
+  import {
+    activate,
+    FOLLOWER_WAIT,
+    areScalesLoaded,
+    completeRestore,
+    markScalesLoaded,
+    currentToken,
+    whenDocumentLive,
+    deactivate,
+    documentSession,
+    failLoad,
+    isCurrent,
+    isDocumentRestored,
+    shouldProbeDocument,
+    type LoadToken,
+  } from './documentSessions';
   import { enforceLabsGate, labsVisible, shortcutsForSave, studioToolLabel } from '$lib/components/studio/labs.svelte';
 
-  let { viewId = 'main-canvas' } = $props<{ viewId?: string }>();
+  // `follower`: a second pane (Labs split view). It never activates or loads documents; it waits
+  // for the store's live document and only paints it.
+  let { viewId = 'main-canvas', follower = false } = $props<{ viewId?: string; follower?: boolean }>();
 
   let canvasContainer: HTMLDivElement | null = $state(null);
   let isPanning = $state(false);
@@ -102,6 +123,25 @@
       pageTextBlocks = [];
     }
   });
+
+  /** BUG-013: the text block under a world point (smallest wins), using the same box as its hotspot. */
+  function hitTestTextBlock(worldPt: Pt): PdfTextBlockDto | null {
+    let best: PdfTextBlockDto | null = null;
+    let bestArea = Infinity;
+    for (const block of pageTextBlocks) {
+      if (!viewport.pages[block.pageIndex]) continue;
+      const topLeft = pdfPagePtToWorld({ x: block.bboxPt[0], y: block.bboxPt[1] + block.bboxPt[3] }, block.pageIndex);
+      const w = Math.max(block.bboxPt[2] * PT_TO_CSS, 20);
+      const h = Math.max(block.bboxPt[3] * PT_TO_CSS, 12);
+      if (worldPt.x >= topLeft.x && worldPt.x <= topLeft.x + w && worldPt.y >= topLeft.y && worldPt.y <= topLeft.y + h) {
+        if (w * h < bestArea) {
+          best = block;
+          bestArea = w * h;
+        }
+      }
+    }
+    return best;
+  }
 
   function handleEditTextBlock(block: PdfTextBlockDto) {
     const pageIdx = block.pageIndex;
@@ -200,10 +240,10 @@
     const val = (e.target as HTMLSelectElement).value;
     const w = canvasContainer ? canvasContainer.clientWidth : 800;
     const h = canvasContainer ? canvasContainer.clientHeight : 600;
-    if (val === 'fit-width') {
-      viewport.fitToWidth(w, 595.28, viewId);
-    } else if (val === 'fit-page') {
-      viewport.fitToPage(w, h, 595.28, 841.89, viewId);
+    if (val === 'fit-width' || val === 'fit-page') {
+      // BUG-020: fit the active page's real size and world offset, not an assumed A4 page at 0,0.
+      const pageIdx = Math.min(Math.max(0, activePageNumber - 1), Math.max(0, viewport.pages.length - 1));
+      viewport.fitPageInView(viewId, w, h, pageIdx, val === 'fit-width' ? 'width' : 'page');
     } else {
       const pct = parseFloat(val);
       if (Number.isFinite(pct) && pct > 0) {
@@ -238,71 +278,8 @@
     ink.completedStrokes.some((s) => s.tool === 'review.redact')
   );
 
-  function parseCssColorToRgb(colorStr: string): [number, number, number] {
-    const cleaned = colorStr.trim();
-    if (cleaned.startsWith('rgb')) {
-      const nums = cleaned.match(/\d+/g);
-      if (nums && nums.length >= 3) {
-        return [
-          Math.min(255, parseInt(nums[0], 10) || 0),
-          Math.min(255, parseInt(nums[1], 10) || 0),
-          Math.min(255, parseInt(nums[2], 10) || 0),
-        ];
-      }
-    }
-    const hexIdx = cleaned.indexOf('\x23');
-    if (hexIdx === 0 && cleaned.length >= 7) {
-      const r = parseInt(cleaned.slice(1, 3), 16) || 0;
-      const g = parseInt(cleaned.slice(3, 5), 16) || 0;
-      const b = parseInt(cleaned.slice(5, 7), 16) || 0;
-      return [r, g, b];
-    }
-    return [30, 41, 59];
-  }
-
-  function findPageForWorldPoint(pt: Pt): number {
-    for (let i = 0; i < viewport.pages.length; i++) {
-      const p = viewport.pages[i];
-      const w = p.widthPt * PT_TO_CSS;
-      const h = p.heightPt * PT_TO_CSS;
-      if (pt.x >= p.worldX && pt.x <= p.worldX + w && pt.y >= p.worldY && pt.y <= p.worldY + h) {
-        return i;
-      }
-    }
-    return 0;
-  }
-
-  function worldToPdfPagePt(worldPt: Pt, pageIndex: number): Pt {
-    const g = viewport.pages[pageIndex] ?? {
-      widthPt: 595.28,
-      heightPt: 841.89,
-      worldX: 32,
-      worldY: 32,
-      rotation: 0,
-    };
-    const relX = (worldPt.x - g.worldX) / PT_TO_CSS;
-    const relY = (worldPt.y - g.worldY) / PT_TO_CSS;
-    return {
-      x: relX,
-      y: Math.max(0, g.heightPt - relY),
-    };
-  }
-
-  function pdfPagePtToWorld(pdfPt: Pt, pageIndex: number): Pt {
-    const g = viewport.pages[pageIndex] ?? {
-      widthPt: 595.28,
-      heightPt: 841.89,
-      worldX: 32,
-      worldY: 32,
-      rotation: 0,
-    };
-    return {
-      x: g.worldX + pdfPt.x * PT_TO_CSS,
-      y: g.worldY + (g.heightPt - pdfPt.y) * PT_TO_CSS,
-    };
-  }
-
-  async function loadPersistedAnnotations(path: string) {
+  /** Reads the document's saved markups (world coords of the current layout). Never touches the engines. */
+  async function loadPersistedAnnotations(path: string): Promise<ActiveStroke[]> {
     try {
       const loaded = await invoke<
         Array<{
@@ -363,148 +340,19 @@
             snapshotDataUrl: dto.snapshotDataUrl,
           };
         });
-        ink.completedStrokes = restored;
+        return restored;
       }
     } catch {
       // Safe fallback when no sidecar exists or in unit tests
     }
+    return [];
   }
 
-  async function saveAnnotationsToPdf(flatten: boolean) {
-    const inputPath = loadedFilePath ?? appState.currentFile;
-    if (!inputPath) {
-      statusNotice = 'Open a PDF file first to save or flatten annotations.';
-      return;
-    }
-    const suffix = flatten ? '.flattened.pdf' : '.annotated.pdf';
-    const outputPath = inputPath.endsWith('.pdf')
-      ? inputPath.slice(0, -4) + suffix
-      : inputPath + suffix;
-
-    try {
-      const dtos = ink.completedStrokes.map((s) => {
-        const b = computeStrokeBBox(s);
-        const pageIndex = s.pageIndex ?? findPageForWorldPoint({ x: b.cx, y: b.cy });
-        const pdfPts = s.points.map((pt) => {
-          const conv = worldToPdfPagePt({ x: pt.x, y: pt.y }, pageIndex);
-          return { x: conv.x, y: conv.y, p: pt.p, t: pt.t ?? null };
-        });
-        const minPt = worldToPdfPagePt({ x: b.minX, y: b.maxY }, pageIndex);
-        const maxPt = worldToPdfPagePt({ x: b.maxX, y: b.minY }, pageIndex);
-        const rgb = parseCssColorToRgb(s.color);
-        return {
-          id: s.id,
-          kind: s.tool,
-          pageIndex,
-          points: pdfPts,
-          bboxPt: [
-            Math.min(minPt.x, maxPt.x),
-            Math.min(minPt.y, maxPt.y),
-            Math.max(minPt.x, maxPt.x),
-            Math.max(minPt.y, maxPt.y),
-          ],
-          colorRgb: rgb,
-          fillRgb: s.fillColor ? parseCssColorToRgb(s.fillColor) : null,
-          widthPt: s.widthPt,
-          opacity: s.opacity,
-          lineStyle: s.lineStyle ?? 'solid',
-          startEnding: s.startEnding ?? 'none',
-          endEnding: s.endEnding ?? 'none',
-          hatchPattern: s.hatchPattern ?? 'none',
-          hatchScale: s.hatchScale ?? 1.0,
-          text: s.text ?? null,
-          fontSize: s.fontSize ?? null,
-          groupId: s.groupId ?? null,
-          rotationDeg: s.rotationDeg ?? 0,
-          snapshotDataUrl: s.snapshotDataUrl ?? null,
-          author: s.author ?? inserts.activeAuthor,
-          measurementKind: null,
-          calibratedValue: null,
-          unitLabel: null,
-          perimeterValue: null,
-          volumeValue: null,
-          pageScale: measureEngine.getScaleForPage(pageIndex)
-            ? {
-                pageIndex,
-                ptDistance: measureEngine.getScaleForPage(pageIndex).ptDistance,
-                realDistance: measureEngine.getScaleForPage(pageIndex).realDistance,
-                unit: measureEngine.getScaleForPage(pageIndex).unit,
-                precision: measureEngine.getScaleForPage(pageIndex).precision,
-                defaultDepth: measureEngine.getScaleForPage(pageIndex).depthValue,
-              }
-            : null,
-        };
-      });
-
-      const measureDtos = measureEngine.measurements.map((m) => {
-        const pdfPts = m.points.map((pt) => {
-          const conv = worldToPdfPagePt({ x: pt.x, y: pt.y }, m.pageIndex);
-          return { x: conv.x, y: conv.y, p: 0.5, t: null };
-        });
-        const xs = pdfPts.map((p) => p.x);
-        const ys = pdfPts.map((p) => p.y);
-        const minX = xs.length ? Math.min(...xs) : 0;
-        const minY = ys.length ? Math.min(...ys) : 0;
-        const maxX = xs.length ? Math.max(...xs) : 10;
-        const maxY = ys.length ? Math.max(...ys) : 10;
-        const sc = measureEngine.getScaleForPage(m.pageIndex);
-        return {
-          id: m.id,
-          kind: `measure.${m.kind}`,
-          pageIndex: m.pageIndex,
-          points: pdfPts,
-          bboxPt: [minX, minY, maxX, maxY],
-          colorRgb: parseCssColorToRgb(m.strokeColor),
-          fillRgb: null,
-          widthPt: m.strokeWidthPt,
-          opacity: 1.0,
-          lineStyle: 'solid',
-          startEnding: m.endpointStyle === 'open-arrow' ? 'open-arrow' : 'slash',
-          endEnding: m.endpointStyle === 'open-arrow' ? 'open-arrow' : 'slash',
-          hatchPattern:
-            m.kind === 'area.rect' || m.kind === 'area.polygon' ? 'diagonal-steel' : 'none',
-          hatchScale: 1.0,
-          text: m.formattedLabel,
-          fontSize: 10,
-          groupId: null,
-          rotationDeg: 0,
-          snapshotDataUrl: null,
-          author: inserts.activeAuthor,
-          measurementKind: m.kind,
-          calibratedValue: m.calibratedValue,
-          unitLabel: m.unitLabel,
-          perimeterValue: m.perimeterCalibrated ?? null,
-          volumeValue: m.volumeCalibrated ?? null,
-          pageScale: {
-            pageIndex: sc.pageIndex,
-            ptDistance: sc.ptDistance,
-            realDistance: sc.realDistance,
-            unit: sc.unit,
-            precision: sc.precision,
-            defaultDepth: sc.depthValue,
-          },
-        };
-      });
-
-      const res = await invoke<{
-        outputPath: string;
-        savedCount: number;
-        flattened: boolean;
-        pageCount: number;
-      }>('studio_save_annotations', {
-        inputPath,
-        outputPath,
-        annotations: [...dtos, ...measureDtos],
-        flatten,
-      });
-
-      statusNotice = flatten
-        ? `Flattened ${res.savedCount} annotations to ${res.outputPath}`
-        : `Saved ${res.savedCount} editable annotations to ${res.outputPath}`;
-      await loadPdfIntoCanvas(res.outputPath);
-    } catch (err) {
-      statusNotice = `Save failed: ${String(err)}`;
-    }
+  /** Returns true when a new file was written (the store's saver does the work). */
+  async function saveAnnotationsToPdf(flatten: boolean): Promise<boolean> {
+    const r = await saveLiveDocument(flatten);
+    statusNotice = r.message;
+    return r.ok;
   }
 
   async function commitStructuralTextOrAnnotation() {
@@ -516,10 +364,6 @@
       statusNotice = 'Open a PDF file first to commit structural text edits.';
       return;
     }
-    const outputPath = inputPath.endsWith('.pdf')
-      ? inputPath.slice(0, -4) + '.edited.pdf'
-      : inputPath + '.edited.pdf';
-
     const edit = result.structuralEdit;
     const p0 = worldToPdfPagePt({ x: edit.bboxPt[0], y: edit.bboxPt[3] }, edit.pageIndex);
     const p1 = worldToPdfPagePt({ x: edit.bboxPt[2], y: edit.bboxPt[1] }, edit.pageIndex);
@@ -531,6 +375,7 @@
     ];
 
     try {
+      const outputPath = await freeOutputPath(inputPath, 'edited');
       const res = await invoke<{ outputPath: string }>('studio_edit_pdf_text_block', {
         inputPath,
         outputPath,
@@ -541,7 +386,7 @@
         colorRgb: parseCssColorToRgb(edit.color),
       });
       statusNotice = `Structural text saved to ${res.outputPath}`;
-      await loadPdfIntoCanvas(res.outputPath);
+      appState.addFiles([res.outputPath]);
     } catch (err) {
       statusNotice = `Structural text edit failed: ${String(err)}`;
     }
@@ -586,36 +431,177 @@
     return 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"><rect width="120" height="80" fill="none" stroke="currentColor" stroke-dasharray="4 2"/></svg>';
   }
 
-  async function loadPdfIntoCanvas(path: string) {
+  // BUG-011: encrypted PDFs. pdf.js rejects with PasswordException (code 1 = password needed,
+  // 2 = incorrect). We ask, retry with the password, and never store it (DO-15: cleared after use).
+  let passwordPrompt = $state<{ fileName: string; incorrect: boolean; resolve: (pw: string | null) => void } | null>(null);
+  let passwordValue = $state('');
+
+  function isPasswordError(err: unknown): err is { code?: number } {
+    return typeof err === 'object' && err !== null && (err as { name?: string }).name === 'PasswordException';
+  }
+
+  function askPdfPassword(path: string, incorrect: boolean): Promise<string | null> {
+    return new Promise((resolve) => {
+      passwordValue = '';
+      passwordPrompt = { fileName: path.split(/[\\/]/).pop() || path, incorrect, resolve };
+    });
+  }
+
+  function finishPasswordPrompt(submit: boolean) {
+    const prompt = passwordPrompt;
+    if (!prompt) return;
+    const pw = submit ? passwordValue : null;
+    passwordValue = '';
+    passwordPrompt = null;
+    prompt.resolve(pw);
+  }
+
+  /** Set by openPdfDocument: the last opened document needed a password. */
+  let lastOpenWasEncrypted = false;
+
+  /** Opens the document, prompting for a password as often as needed. `null` = user cancelled. */
+  async function openPdfDocument(pdfjs: any, bytes: number[], path: string): Promise<any | null> {
+    lastOpenWasEncrypted = false;
+    let password: string | undefined;
+    for (;;) {
+      try {
+        // pdf.js transfers (detaches) the buffer, so every attempt gets a fresh copy.
+        const src: { data: Uint8Array; password?: string } = { data: new Uint8Array(bytes) };
+        if (password !== undefined) src.password = password;
+        return await pdfjs.getDocument(src).promise;
+      } catch (err) {
+        if (!isPasswordError(err)) throw err;
+        lastOpenWasEncrypted = true;
+        const next = await askPdfPassword(path, err.code === 2);
+        if (next === null) {
+          statusNotice = `"${path.split(/[\\/]/).pop() || path}" is password-protected and was not opened. Close its tab and open it again to enter the password.`;
+          return null;
+        }
+        password = next;
+      }
+    }
+  }
+
+  function baseName(path: string): string {
+    return path.split(/[\\/]/).pop() || path;
+  }
+
+  /**
+   * BUG-018: the viewer (pdf.js) can show something for a damaged file while the engine can only
+   * open it in fallback (degraded) mode or not at all. Ask the engine and say so.
+   */
+  async function reportDocumentHealth(path: string, token: LoadToken) {
+    let res: Awaited<ReturnType<typeof IpcClient.probeDocument>>;
+    try {
+      res = await IpcClient.probeDocument(path);
+    } catch {
+      return; // backend unreachable (browser preview / unit tests without a mock)
+    }
+    if (!isCurrent(token)) return;
+    if (!res.ok && res.errorCode === 'F4_RESOURCE_GUARD') {
+      // Engines contract: a resource guard tripped. The file is not opened (no markups, no pages).
+      failLoad(token, 'hostile');
+      viewport.pages = [];
+      if (currentPdfDoc) {
+        await currentPdfDoc.destroy();
+        currentPdfDoc = null;
+      }
+      statusNotice = `"${baseName(path)}" looks damaged or hostile and was not opened (${res.error}).`;
+      return;
+    }
+    if (!res.ok) {
+      statusNotice = `"${baseName(path)}" is damaged: ${res.error}. What you see may be incomplete, and saving or editing may fail.`;
+    } else if (res.degraded) {
+      statusNotice = `"${baseName(path)}": Opened in repair mode (degraded). The file is damaged; some content may be missing.`;
+    }
+  }
+
+  /**
+   * Load (or, in 'render' mode, only repaint) `path` for the store token `token`. Every await is
+   * followed by an isCurrent check: a stale continuation never touches engines or the layout.
+   * 'load': layout → read saved markups → store.completeRestore (drawing allowed) → paint → snap/scales.
+   * 'render': the engines already hold the restored document (e.g. after Studio → Organize → Studio).
+   */
+  async function loadPdfIntoCanvas(path: string, token: LoadToken, mode: 'load' | 'render') {
     if (!path || typeof window === 'undefined') return;
+    const live = () => isCurrent(token);
     try {
       const pdfjs = (window as any)['pdfjs-dist/build/pdf'] || (window as any).pdfjsLib;
-      if (!pdfjs) return;
+      if (!pdfjs) {
+        documentBusy = false;
+        failLoad(token, 'failed');
+        return;
+      }
       pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
       const bytes: number[] = await invoke('read_file_bytes', { path });
-      const uint8Array = new Uint8Array(bytes);
+      if (!live()) return;
 
       if (currentPdfDoc) {
         await currentPdfDoc.destroy();
+        currentPdfDoc = null;
       }
-      const loadingTask = pdfjs.getDocument({ data: uint8Array });
-      const pdf = await loadingTask.promise;
+      if (!live()) return;
+      const pdf = await openPdfDocument(pdfjs, bytes, path);
+      if (!live()) {
+        await pdf?.destroy?.();
+        return;
+      }
+      if (!pdf) {
+        viewport.pages = []; // never leave the previous document on screen under this tab
+        loadedFilePath = path;
+        documentBusy = false;
+        failLoad(token, 'locked'); // password prompt cancelled
+        return;
+      }
+      const encrypted = lastOpenWasEncrypted;
       currentPdfDoc = pdf;
       loadedFilePath = path;
 
-      const pageSizes: Array<{ widthPt: number; heightPt: number }> = [];
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const vp = page.getViewport({ scale: 1.0 });
-        pageSizes.push({ widthPt: vp.width, heightPt: vp.height });
+      if (mode === 'load') {
+        const pageSizes: Array<{ widthPt: number; heightPt: number }> = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const vp = page.getViewport({ scale: 1.0 });
+          pageSizes.push({ widthPt: vp.width, heightPt: vp.height });
+        }
+        if (!live()) return;
+        viewport.layoutPages(pageSizes);
+        seedPageBorderSnap(); // replaced by the extracted geometry once it loads
+        await tick();
+        if (!live()) return;
+
+        // Restore markups BEFORE drawing is allowed and before the slow page renders. The store
+        // merges the session (or the saved markups) with anything added while loading.
+        const fromDisk = documentSession(path) ? null : await loadPersistedAnnotations(path);
+        if (!completeRestore(token, fromDisk, pdf.numPages)) return;
+        documentBusy = false;
+
+        if (pdf.numPages === 0) {
+          statusNotice = `"${baseName(path)}" has no pages to show.`;
+        }
+        // Probe once per document per run, silently, and never for password-protected files.
+        if (!encrypted && shouldProbeDocument(path)) void reportDocumentHealth(path, token);
+      } else {
+        // Engines already hold this restored document; only make sure the page layout matches
+        // (deterministic from page sizes, never touches markups).
+        if (viewport.pages.length !== pdf.numPages) {
+          const sizes: Array<{ widthPt: number; heightPt: number }> = [];
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const vp = (await pdf.getPage(i)).getViewport({ scale: 1.0 });
+            sizes.push({ widthPt: vp.width, heightPt: vp.height });
+          }
+          if (!live()) return;
+          viewport.layoutPages(sizes);
+        }
+        await tick();
+        if (!live()) return;
       }
-      viewport.layoutPages(pageSizes);
-      await tick();
 
       const baseScale = (96 / 72) * (window.devicePixelRatio || 1);
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
+        if (!live()) return;
         const canvasEl = pageCanvases[i - 1];
         if (!canvasEl) continue;
         const vp = page.getViewport({ scale: baseScale });
@@ -625,20 +611,49 @@
         if (ctx) {
           await page.render({ canvasContext: ctx, viewport: vp }).promise;
         }
+        if (!live()) return;
       }
 
-      await loadPersistedAnnotations(path);
-      await loadSnapGeometryAndScales(path, pdf.numPages);
+      if (mode === 'load') {
+        await loadSnapGeometryAndScales(path, pdf.numPages, live, !areScalesLoaded(path));
+        if (live()) markScalesLoaded(token);
+        if (!live()) return;
+      }
       if (editMode === 'structural') {
         await loadPageTextBlocks();
       }
     } catch (err) {
+      // A newer load cancels in-flight renders: expected, logged at debug level only.
+      if ((err as { name?: string } | null)?.name === 'RenderingCancelledException') {
+        console.debug('SpatialCanvas: render cancelled (RenderingCancelledException) for', path);
+        return;
+      }
       console.error('Failed to render PDF in SpatialCanvas:', err);
+      if (!live() || unmounted) return; // the user already switched to another document
+      const msg = err instanceof Error ? err.message : String(err);
+      if (isDocumentRestored(path)) {
+        // Painting failed after the markups were restored: the layout belongs to this document,
+        // keep it (Save stays correct) and say what failed.
+        statusNotice = `Some pages of "${baseName(path)}" could not be drawn (${msg}). Your markups are safe.`;
+        return;
+      }
+      documentBusy = false;
+      failLoad(token, 'failed');
+      statusNotice = `Could not open "${baseName(path)}": the file is damaged or not a PDF (${msg}).`;
+      viewport.pages = []; // never leave the previous document on screen under this tab
+      loadedFilePath = path;
     }
   }
 
-  async function loadSnapGeometryAndScales(path: string, pageCount: number) {
-    try {
+  /** Scales (only when there is no session: a session's scales win) and snap geometry, with a
+   *  liveness check after every await so a slow reply never lands on another document. */
+  async function loadSnapGeometryAndScales(
+    path: string,
+    pageCount: number,
+    live: () => boolean = () => true,
+    loadScales = true
+  ) {
+    if (loadScales) try {
       const scales = await invoke<
         Array<{
           pageIndex: number;
@@ -649,6 +664,7 @@
           defaultDepth?: number;
         }>
       >('studio_load_page_scales', { inputPath: path });
+      if (!live()) return;
       if (Array.isArray(scales) && scales.length > 0) {
         const nextScales: Record<number, PageScaleConfig> = { ...measureEngine.scales };
         for (const sc of scales) {
@@ -677,6 +693,7 @@
           heightPt: number;
           segments: Array<{ x1: number; y1: number; x2: number; y2: number }>;
         }>('studio_extract_snap_geometry', { inputPath: path, pageIndex: p });
+        if (!live()) return;
         if (geom && Array.isArray(geom.segments)) {
           const worldSegs = geom.segments.map((s) => {
             const p1 = pdfPagePtToWorld({ x: s.x1, y: s.y1 }, p);
@@ -711,11 +728,71 @@
     }
   }
 
+  // BUG-016: the selected document tab. Switching stashes the outgoing document (view, markups,
+  // measurements) and clears the engines + undo history before the next document is loaded.
+  // Only the selected file and the loaded file drive this effect; the switch itself reads and
+  // writes engine state, which must not re-trigger it (that would re-stash an emptied session).
+  let requestedFile: string | null = null;
+  /** The store token of the document this canvas shows (review r4: the store owns all state). */
+  let activeToken: LoadToken | null = null;
+  let unmounted = false;
+  /** True while the shown document's markups are being restored: tools and inserts are blocked. */
+  let documentBusy = $state(false);
+
+  /** Page-border snap segments for a fresh layout (the extracted geometry replaces them later). */
+  /** Follower pane: wait for the primary pane to restore `file`, then paint it; retry on timeout. */
+  async function followLiveDocument(file: string) {
+    while (!unmounted && requestedFile === file) {
+      const ok = await whenDocumentLive(file, FOLLOWER_WAIT.ms);
+      const t = currentToken();
+      if (ok && !unmounted && t && t.path === file && requestedFile === file) {
+        loadPdfIntoCanvas(file, t, 'render');
+        return;
+      }
+      if (t && t.path !== file) return; // another document became live: a new request will follow
+    }
+  }
+
+  function seedPageBorderSnap() {
+    viewport.pages.forEach((pg, idx) => {
+      const w = pg.widthPt * PT_TO_CSS;
+      const h = pg.heightPt * PT_TO_CSS;
+      const x0 = pg.worldX;
+      const y0 = pg.worldY;
+      snapEngine.setPageSegments(idx, [
+        { x1: x0, y1: y0, x2: x0 + w, y2: y0 },
+        { x1: x0 + w, y1: y0, x2: x0 + w, y2: y0 + h },
+        { x1: x0 + w, y1: y0 + h, x2: x0, y2: y0 + h },
+        { x1: x0, y1: y0 + h, x2: x0, y2: y0 },
+      ]);
+    });
+  }
   $effect(() => {
     const file = appState.currentFile;
-    if (file && file !== loadedFilePath) {
-      loadPdfIntoCanvas(file);
-    }
+    untrack(() => {
+      if (follower) {
+        if (file && file !== requestedFile) {
+          requestedFile = file;
+          void followLiveDocument(file);
+        }
+        return;
+      }
+      if (file && file !== requestedFile) {
+        if (requestedFile !== null && editMode === 'structural') editMode = 'markup';
+        requestedFile = file;
+        eraseGestureBefore = null; // never commit an erase gesture into another document
+        const token = activate(file, viewId);
+        activeToken = token;
+        documentBusy = token.mode === 'load';
+        loadPdfIntoCanvas(file, token, token.mode);
+      } else if (!file && requestedFile) {
+        requestedFile = null;
+        activeToken = null;
+        deactivate();
+        loadedFilePath = null;
+        viewport.pages = [];
+      }
+    });
   });
 
   async function loadStudioPrefs() {
@@ -781,20 +858,12 @@
       ]);
     }
 
-    // Seed page-border vector snap segments for any pages already laid out
-    // (no placeholder pages: an empty canvas shows the "Open a PDF" state instead).
-    viewport.pages.forEach((pg, idx) => {
-      const w = pg.widthPt * PT_TO_CSS;
-      const h = pg.heightPt * PT_TO_CSS;
-      const x0 = pg.worldX;
-      const y0 = pg.worldY;
-      snapEngine.setPageSegments(idx, [
-        { x1: x0, y1: y0, x2: x0 + w, y2: y0 },
-        { x1: x0 + w, y1: y0, x2: x0 + w, y2: y0 + h },
-        { x1: x0 + w, y1: y0 + h, x2: x0, y2: y0 + h },
-        { x1: x0, y1: y0 + h, x2: x0, y2: y0 },
-      ]);
-    });
+    // A follower pane (Labs split view) never registers handlers or the keyboard: one owner only.
+    if (follower) {
+      return () => {
+        viewport.closeView(viewId);
+      };
+    }
 
     commands.onRadialToggle = () => {
       toggleRadialAt();
@@ -847,6 +916,8 @@
   });
 
   onDestroy(() => {
+    // The engines stay live in the document store: a canvas never resets or stashes them.
+    unmounted = true;
     if (currentPdfDoc) {
       currentPdfDoc.destroy();
     }
@@ -936,6 +1007,20 @@
     }
   }
 
+  // BUG-019: one eraser gesture (pointer down → up) = one undo step.
+  let eraseGestureBefore: ActiveStroke[] | null = null;
+
+  function finishEraseGesture() {
+    const before = eraseGestureBefore;
+    eraseGestureBefore = null;
+    if (!before) return;
+    const after = ink.completedStrokes;
+    const changed = before.length !== after.length || before.some((st, i) => st !== after[i]);
+    if (changed) {
+      shapes.recordStrokeHistory(before, [...after], 'Erase');
+    }
+  }
+
   function handlePointerDown(e: PointerEvent) {
     if (!canvasContainer) return;
 
@@ -961,7 +1046,20 @@
       }
     }
 
+    // BUG-013: #wet-layer sits above the text-block hotspots, so in Edit Text mode a primary click
+    // on a block edits it here, whatever the active tool (Pan used to take the click).
+    if (editMode === 'structural' && e.button === 0 && !commands.spaceSpringActive) {
+      const block = hitTestTextBlock(getWorldPoint(e.clientX, e.clientY));
+      if (block) {
+        handleEditTextBlock(block);
+        return;
+      }
+    }
+
     const isPanAction = e.button === 1 || commands.spaceSpringActive || tools.activeTool === 'pan';
+
+    // Review r3: no markups while a document's saved markups are still being restored.
+    if (activeToken && !isDocumentRestored(activeToken.path) && !isPanAction) return;
 
     if (isPanAction) {
       isPanning = true;
@@ -1093,13 +1191,14 @@
       return;
     }
 
-    if (activeTool === 'eraser.whole') {
-      ink.eraseWhole(worldPt, 18);
-      return;
-    }
-
-    if (activeTool === 'eraser.partial') {
-      ink.erasePartial(worldPt, 12);
+    if (activeTool === 'eraser.whole' || activeTool === 'eraser.partial') {
+      finishEraseGesture();
+      eraseGestureBefore = [...ink.completedStrokes];
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      } catch {}
+      if (activeTool === 'eraser.whole') ink.eraseWhole(worldPt, 18);
+      else ink.erasePartial(worldPt, 12);
       return;
     }
 
@@ -1124,6 +1223,9 @@
   }
 
   function handlePointerMove(e: PointerEvent) {
+    if (editMode === 'structural' && e.pointerType !== 'touch') {
+      hoveredBlockId = hitTestTextBlock(getWorldPoint(e.clientX, e.clientY))?.id ?? null;
+    }
     if (e.pointerType === 'touch' && activeTouchPoints.has(e.pointerId)) {
       activeTouchPoints.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (activeTouchPoints.size === 2) {
@@ -1316,6 +1418,8 @@
       return;
     }
 
+    finishEraseGesture();
+
     if (ink.isDrawing) {
       const before = [...ink.completedStrokes];
       const committed = ink.endStroke();
@@ -1359,6 +1463,7 @@
     if (isPanning) {
       isPanning = false;
     }
+    finishEraseGesture();
     selectionDragMode = 'none';
     if (ink.isDrawing) {
       ink.cancelStroke();
@@ -1596,6 +1701,7 @@
         type="button"
         class="top-action-btn"
         disabled={!hasDocument}
+        data-testid="save-pdf-btn"
         onclick={() => saveAnnotationsToPdf(false)}
         title={hasDocument ? 'Save markups as editable annotations (writes a new file atomically)' : NEEDS_DOC}
       >
@@ -1605,6 +1711,7 @@
         type="button"
         class="top-action-btn"
         disabled={!hasDocument}
+        data-testid="flatten-pdf-btn"
         onclick={() => saveAnnotationsToPdf(true)}
         title={hasDocument ? 'Flatten markups permanently into the page content' : NEEDS_DOC}
       >
@@ -1614,6 +1721,7 @@
         <button
           type="button"
           class="top-action-btn danger-btn"
+          data-testid="commit-redactions-btn"
           onclick={() => saveAnnotationsToPdf(true)}
           title="Permanently Sanitize & Strip Underlying Content in Redacted Regions"
         >
@@ -1647,8 +1755,45 @@
     </div>
   {/if}
 
+  {#if passwordPrompt}
+    <div class="modal-backdrop" role="presentation">
+      <form
+        class="pdf-password-dialog glass-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Password required"
+        data-testid="pdf-password-dialog"
+        onsubmit={(e) => {
+          e.preventDefault();
+          finishPasswordPrompt(true);
+        }}
+      >
+        <strong>Password required</strong>
+        <span>"{passwordPrompt.fileName}" is encrypted. Enter its password to open it.</span>
+        <!-- svelte-ignore a11y_autofocus -->
+        <input
+          type="password"
+          autocomplete="off"
+          autofocus
+          aria-label="Document password"
+          data-testid="pdf-password-input"
+          bind:value={passwordValue}
+        />
+        {#if passwordPrompt.incorrect}
+          <span class="pdf-password-error" role="alert" data-testid="pdf-password-error">Incorrect password. Try again.</span>
+        {/if}
+        <div class="pdf-password-actions">
+          <button type="button" class="top-btn" data-testid="pdf-password-cancel" onclick={() => finishPasswordPrompt(false)}>
+            Cancel
+          </button>
+          <button type="submit" class="top-btn primary-btn" data-testid="pdf-password-submit">Open</button>
+        </div>
+      </form>
+    </div>
+  {/if}
+
   {#if statusNotice}
-    <div class="studio-status-banner glass-panel" role="status">
+    <div class="studio-status-banner glass-panel" role="status" data-testid="studio-status-banner">
       <span>{statusNotice}</span>
       <button type="button" class="banner-close" onclick={() => { statusNotice = null; }} aria-label="Dismiss Notice">
         <StudioIcon name="close" size={12} />
@@ -2115,6 +2260,7 @@
     class:cursor-pen={tools.activeToolId.startsWith('pen') || tools.activeToolId === 'highlighter'}
     class:cursor-eraser={tools.activeToolId.startsWith('eraser')}
     class:cursor-laser={tools.activeToolId === 'laser'}
+    class:cursor-busy={documentBusy}
     onpointerdown={handlePointerDown}
     onpointermove={handlePointerMove}
     onpointerup={handlePointerUp}
@@ -2370,6 +2516,43 @@
     z-index: 5;
   }
 
+  .pdf-password-dialog {
+    position: absolute;
+    top: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    width: 340px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--glass-text);
+    pointer-events: auto;
+  }
+
+  .pdf-password-dialog input {
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--glass-border);
+    background: var(--canvas-bg);
+    color: var(--glass-text);
+  }
+
+  .pdf-password-error {
+    color: var(--danger);
+    font-size: 12px;
+  }
+
+  .pdf-password-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
   .wet-layer {
     position: absolute;
     inset: 0;
@@ -2385,6 +2568,10 @@
   .wet-layer g {
     transform-origin: 0 0;
     will-change: transform;
+  }
+
+  .wet-layer.cursor-busy {
+    cursor: progress;
   }
 
   .cursor-pan {

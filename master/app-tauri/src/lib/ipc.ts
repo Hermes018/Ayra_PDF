@@ -32,6 +32,99 @@ export class IpcClient {
     }
 
     /**
+     * Submit a job and wait until it reaches a terminal state (BUG-014). `submit_job` returns as
+     * soon as the job is queued, so a caller that chains jobs (output of one = input of the next)
+     * or reports success must wait. Resolves with the job id on `Completed`; rejects with the
+     * job's error message on `Failed` / `Cancelled` / unknown job.
+     *
+     * Never waits forever (review r2): `signal` cancels the job (cancel_job) and rejects with
+     * "cancelled"; if neither status nor progress changes for `stallMs` the job is cancelled and
+     * the promise rejects with a "no progress" error. Long jobs that keep reporting progress are
+     * not cut off (DON'T-7: no caps). `silent` keeps the global "Operation …" toasts away.
+     */
+    static async runJob(
+        request: JobRequest,
+        opts: { pollMs?: number; stallMs?: number; signal?: AbortSignal; silent?: boolean } = {}
+    ): Promise<string> {
+        const pollMs = opts.pollMs ?? 100;
+        const stallMs = opts.stallMs ?? 120_000;
+        const jobId = opts.silent ? await IpcClient.submitSilentJob(request) : await IpcClient.submitJob(request);
+        // The no-progress timer starts when the job leaves the queue (review r3): time spent
+        // waiting behind other jobs is not "no progress".
+        let lastChange: number | null = null;
+        let lastKey = '';
+        for (;;) {
+            if (opts.signal?.aborted) {
+                await IpcClient.cancelJob(jobId).catch(() => false);
+                throw new Error('Cancelled by you; no file was written by the unfinished step.');
+            }
+            const status = await IpcClient.getJobStatus(jobId);
+            if (status === 'Completed') return jobId;
+            if (status === 'Failed' || status === 'Cancelled' || status === null) {
+                let detail = status === null ? 'job not found' : status.toLowerCase();
+                try {
+                    const rec = (await IpcClient.listJobs()).find((j) => j.job_id === jobId);
+                    if (rec?.error_message) detail = rec.error_message;
+                    else if (rec?.error_code) detail = rec.error_code;
+                } catch {
+                    // keep the status-based detail
+                }
+                throw new Error(detail);
+            }
+            let progress = '';
+            try {
+                const rec = (await IpcClient.listJobs()).find((j) => j.job_id === jobId);
+                progress = rec ? String(rec.progress) : '';
+            } catch {
+                // progress is optional
+            }
+            const key = `${status}:${progress}`;
+            if (status === 'Queued') {
+                lastChange = null;
+            } else if (key !== lastKey || lastChange === null) {
+                lastKey = key;
+                lastChange = Date.now();
+            } else if (Date.now() - lastChange >= stallMs) {
+                await IpcClient.cancelJob(jobId).catch(() => false);
+                throw new Error(
+                    `The job made no progress for ${stallMs / 1000} s and was stopped. Try again, or check the file.`
+                );
+            }
+            await new Promise((resolve) => setTimeout(resolve, pollMs));
+        }
+    }
+
+    /* ---------- Internal (silent) jobs: no global "Operation …" toasts (review r2) ---------- */
+    static #silentJobs = new Set<string>();
+    static #silentSubmitsInFlight = 0;
+    static #settledWaiters: Array<() => void> = [];
+
+    /** Submit a job the user did not start (e.g. the open-time GetInfo probe). */
+    static async submitSilentJob(request: JobRequest): Promise<string> {
+        IpcClient.#silentSubmitsInFlight++;
+        try {
+            const id = await IpcClient.submitJob(request);
+            IpcClient.#silentJobs.add(id);
+            return id;
+        } finally {
+            IpcClient.#silentSubmitsInFlight--;
+            if (IpcClient.#silentSubmitsInFlight === 0) {
+                IpcClient.#settledWaiters.splice(0).forEach((w) => w());
+            }
+        }
+    }
+
+    /** Resolves once no silent submission is in flight (an event may arrive before its id is known). */
+    static silentSubmitsSettled(): Promise<void> {
+        if (IpcClient.#silentSubmitsInFlight === 0) return Promise.resolve();
+        return new Promise((resolve) => IpcClient.#settledWaiters.push(resolve));
+    }
+
+    static isSilentJob(jobId: string): boolean {
+        return IpcClient.#silentJobs.has(jobId);
+    }
+
+    /**
      * Submit a batch of jobs with optional priority
      */
     static async submitBatch(requests: JobRequest[], priority?: JobPriority): Promise<string[]> {
@@ -130,6 +223,64 @@ export class IpcClient {
         return await listen<JobEvent>('job-event', (event) => {
             handler(event.payload);
         });
+    }
+
+    /**
+     * BUG-018: ask the backend engine (pdfcraft, lopdf fallback = F7 degraded mode) whether a
+     * document opens cleanly. Runs a GetInfo job; the job's Completed event carries `degraded`.
+     */
+    static async probeDocument(
+        path: string,
+        opts: { pollMs?: number; timeoutMs?: number } = {}
+    ): Promise<{ ok: true; degraded: boolean; timedOut?: boolean } | { ok: false; error: string; errorCode: string | null }> {
+        const pollMs = opts.pollMs ?? 100;
+        const timeoutMs = opts.timeoutMs ?? 60_000;
+        // Held in an object: TypeScript does not track assignments made inside the listener.
+        const seen: { degraded: boolean | null; failure: string | null; code: string | null } = {
+            degraded: null,
+            failure: null,
+            code: null,
+        };
+        let jobId: string | null = null;
+        const early: JobEvent[] = [];
+        const take = (ev: JobEvent) => {
+            if (ev.data.job_id !== jobId) return;
+            if (ev.kind === 'Completed') seen.degraded = ev.data.degraded;
+            if (ev.kind === 'Failed') {
+                seen.failure = ev.data.error_message || ev.data.error_code;
+                seen.code = ev.data.error_code || null;
+            }
+        };
+        const unlisten = await IpcClient.onJobEvent((ev) => (jobId === null ? early.push(ev) : take(ev)));
+        const started = Date.now();
+        try {
+            jobId = await IpcClient.submitSilentJob({ op: 'GetInfo', input_path: path });
+            early.splice(0).forEach(take);
+            for (;;) {
+                const status = await IpcClient.getJobStatus(jobId);
+                if (status === 'Completed') {
+                    // The Completed event may land just after the status flips.
+                    if (seen.degraded === null) await new Promise((r) => setTimeout(r, pollMs));
+                    return { ok: true, degraded: seen.degraded === true };
+                }
+                if (status === 'Failed' || status === 'Cancelled' || status === null) {
+                    if (!seen.failure || !seen.code) {
+                        const rec = (await IpcClient.listJobs()).find((j) => j.job_id === jobId);
+                        seen.failure = seen.failure || rec?.error_message || rec?.error_code || (status ? status.toLowerCase() : 'job not found');
+                        seen.code = seen.code || rec?.error_code || null;
+                    }
+                    return { ok: false, error: seen.failure ?? 'unknown error', errorCode: seen.code };
+                }
+                if (Date.now() - started >= timeoutMs) {
+                    // Review r3: never hang. Give up quietly (no false "damaged" notice) and stop the job.
+                    await IpcClient.cancelJob(jobId).catch(() => false);
+                    return { ok: true, degraded: false, timedOut: true };
+                }
+                await new Promise((r) => setTimeout(r, pollMs));
+            }
+        } finally {
+            unlisten();
+        }
     }
 
     /**

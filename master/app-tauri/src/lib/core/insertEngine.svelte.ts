@@ -541,6 +541,34 @@ class InsertEngine {
     },
   ]);
 
+  /**
+   * Review r5: set by the document store. False while a document's saved markups are still being
+   * restored, so no insert can land before them (its undo entry would wipe the restored strokes).
+   */
+  insertGuard: () => boolean = () => true;
+
+  /** Per-document state back to defaults (document store, review r5). Stops a running recording. */
+  resetDocumentState(): void {
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      try {
+        this.mediaRecorder.stop();
+      } catch {
+        // already stopped
+      }
+    }
+    this.mediaRecorder = null;
+    this.recordedChunks = [];
+    this.latexModalOpen = false;
+    this.pendingInsertPt = { x: 180, y: 220, pageIndex: 0 };
+    this.signatureModalOpen = false;
+    this.audioModalOpen = false;
+    this.isRecordingAudio = false;
+    this.audioDurationSec = 0;
+    this.audioNotes = [];
+    this.pastePagesModalOpen = false;
+    this.detectedRegions = [];
+  }
+
   private mediaRecorder: MediaRecorder | null = null;
   private recordedChunks: Blob[] = [];
   private recordStartMs = 0;
@@ -621,6 +649,43 @@ class InsertEngine {
   /**
    * Stamps a signature (Draw path, Typed script, or Webcam thresholded PNG dataURL) onto the canvas.
    */
+  /**
+   * BUG-017: a drawn signature is placed as the user's actual strokes: one ink stroke (`pen.a`, saved
+   * as a PDF Ink annotation) per pen-down → pen-up, sharing one `groupId`, in a single undo step.
+   * Returns the strokes placed (empty when nothing was drawn).
+   */
+  stampDrawnSignature(
+    drawnStrokes: Point[][],
+    xPt = this.pendingInsertPt.x,
+    yPt = this.pendingInsertPt.y,
+    pageIndex = this.pendingInsertPt.pageIndex
+  ): ActiveStroke[] {
+    const usable = drawnStrokes.filter((st) => st.length >= 2);
+    if (usable.length === 0) return [];
+    const groupId = `sig-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const preset = getFallbackPreset();
+    const color = theme.token('--glass-text');
+    const placed: ActiveStroke[] = usable.map((st, idx) => ({
+      id: `${groupId}-${idx}`,
+      tool: 'pen.a',
+      pageIndex,
+      points: st.map((pt) => ({ x: xPt + pt.x, y: yPt + pt.y, p: pt.p ?? 0.6 })),
+      preset,
+      color,
+      widthPt: 1.6,
+      opacity: 1.0,
+      groupId,
+      author: this.activeAuthor,
+    }));
+    if (!this.insertGuard()) return [];
+    const before = [...ink.completedStrokes];
+    const after = [...before, ...placed];
+    ink.completedStrokes = after;
+    shapes.recordStrokeHistory(before, after, 'Insert signature (drawn)');
+    this.signatureModalOpen = false;
+    return placed;
+  }
+
   stampSignature(options: {
     mode: SignatureMode;
     typedName?: string;
@@ -643,12 +708,10 @@ class InsertEngine {
     let text: string | undefined;
 
     if (options.mode === 'draw' && options.drawnPoints && options.drawnPoints.length >= 2) {
-      points = options.drawnPoints.map((pt) => ({
-        x: x0 + pt.x,
-        y: y0 + pt.y,
-        p: pt.p ?? 0.6,
-      }));
-      text = `Signed: ${options.typedName || this.signatureTypedName}`;
+      // Drawn signatures go through stampDrawnSignature (real ink, BUG-017); kept for callers
+      // that pass a single stroke.
+      const placed = this.stampDrawnSignature([options.drawnPoints], x0, y0, options.pageIndex ?? this.pendingInsertPt.pageIndex);
+      if (placed.length > 0) return placed[0];
     } else if (options.mode === 'type') {
       text = `Signed: ${options.typedName || this.signatureTypedName}`;
     } else if (options.mode === 'webcam') {
@@ -899,7 +962,7 @@ class InsertEngine {
       }
     }
 
-    if (createdStrokes.length > 0) {
+    if (createdStrokes.length > 0 && this.insertGuard()) {
       const before = [...ink.completedStrokes];
       const after = [...ink.completedStrokes, ...createdStrokes];
       ink.completedStrokes = after;
@@ -1022,6 +1085,7 @@ class InsertEngine {
   }
 
   private commitInsertedStroke(stroke: ActiveStroke): void {
+    if (!this.insertGuard()) return; // document still loading: nothing is inserted
     stroke.author = stroke.author ?? this.activeAuthor;
     const withAuthor: ActiveStroke = {
       ...stroke,
@@ -1097,6 +1161,7 @@ class InsertEngine {
       author: this.activeAuthor,
     };
 
+    if (!this.insertGuard()) return null;
     const targetIds = new Set(targets.map((t) => t.id));
     const before = [...ink.completedStrokes];
     const remaining = ink.completedStrokes.filter((s) => !targetIds.has(s.id));
@@ -1258,7 +1323,7 @@ class InsertEngine {
       };
     });
 
-    if (createdStrokes.length > 0) {
+    if (createdStrokes.length > 0 && this.insertGuard()) {
       const before = [...ink.completedStrokes];
       const after = [...ink.completedStrokes, ...createdStrokes];
       ink.completedStrokes = after;
