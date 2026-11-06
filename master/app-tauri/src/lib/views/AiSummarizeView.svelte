@@ -1,8 +1,14 @@
 <script lang="ts">
+    import StudioIcon from '$lib/components/studio/StudioIcon.svelte';
     import { onMount } from 'svelte';
     import { IpcClient } from '$lib/ipc';
     import { friendlyJobError } from '$lib/core/jobError';
     import ErrorState from '$lib/components/ui/ErrorState.svelte';
+    import Button from '$lib/components/ui/Button.svelte';
+    import Input from '$lib/components/ui/Input.svelte';
+    import Select from '$lib/components/ui/Select.svelte';
+    import Toggle from '$lib/components/ui/Toggle.svelte';
+    import { parseNumberOr } from '$lib/core/parseNumber';
     import { appState } from '$lib/state.svelte';
     import { siblingOutputPath, resolveFreeOutput } from '$lib/views/studio/outputNames';
     import For from '$lib/components/For.svelte';
@@ -69,6 +75,22 @@
             } else {
                 outputPath = siblingOutputPath(inputPath, '_summary.md');
             }
+        }
+    }
+
+    const LANG_OPTIONS = [
+        { value: 'es', label: 'Spanish (es)' },
+        { value: 'en', label: 'English (en)' },
+        { value: 'fr', label: 'French (fr)' },
+        { value: 'de', label: 'German (de)' },
+        { value: 'bn', label: 'Bengali (bn)' },
+    ];
+    const SOURCE_LANG_OPTIONS = [{ value: 'Auto', label: 'Auto-detect' }, ...LANG_OPTIONS];
+
+    function setTargetLang(v: string) {
+        targetLang = v;
+        if (inputPath && (outputPath.includes('_translated_') || !outputPath)) {
+            outputPath = siblingOutputPath(inputPath, `_translated_${targetLang}.pdf`);
         }
     }
 
@@ -209,58 +231,63 @@
 <div class="summarize-view">
     <header class="view-header">
         <div class="header-content">
-            <h1>AI Document Summarizer</h1>
-            <p class="subtitle">Extract executive takeaways, key topics, and structured summaries offline with zero cloud dependency.</p>
+            <h1>AI document summarizer</h1>
+            <p class="subtitle">Extract key takeaways, topics, and structured summaries on this computer, with no cloud service.</p>
         </div>
-        <div class="privacy-badge">
-            <span class="badge-dot"></span>
-            100% Offline & Private
-        </div>
+        <div class="privacy-badge">Works offline</div>
     </header>
 
-    <!-- Mode Selector Cards -->
+    <!-- Mode cards -->
     <div class="modes-grid">
-        <button
-            type="button"
-            class="mode-card"
-            class:active={activeMode === 'extractive'}
-            onclick={() => selectMode('extractive')}
-            data-testid="mode-extractive"
-        >
-            <div class="mode-header">
-                <span class="mode-icon">⚡</span>
-                <span class="mode-badge active-badge">Default Mode</span>
-            </div>
-            <h3>Basic Extractive</h3>
-            <p class="mode-desc">Instant, zero-model summarization. Uses deterministic TF-IDF centrality and position weighting to select the most informative sentences natively.</p>
-            <ul class="mode-features">
-                <li>Zero model download required</li>
-                <li>Instant execution (&lt;100ms)</li>
-                <li>Zero RAM/VRAM memory spikes</li>
-            </ul>
-        </button>
+        <div class="mode-card" class:active={activeMode === 'extractive'}>
+            <Button
+                variant="secondary"
+                block
+                class="mode-select"
+                pressed={activeMode === 'extractive'}
+                data-testid="mode-extractive"
+                onclick={() => selectMode('extractive')}
+            >
+                <span class="mode-body">
+                    <span class="mode-header">
+                        <span class="mode-icon" aria-hidden="true"><StudioIcon name="bolt" size={24} /></span>
+                        <span class="mode-badge">Default mode</span>
+                    </span>
+                    <span class="mode-title">Basic extractive</span>
+                    <span class="mode-desc">Fast, no model needed. Picks the most informative sentences using TF-IDF centrality and position weighting.</span>
+                    <span class="mode-features">
+                        <span>No model download required</span>
+                        <span>Runs on the CPU, no GPU needed</span>
+                        <span>Low memory use</span>
+                    </span>
+                </span>
+            </Button>
+        </div>
 
-        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-        <div
-            role={isLlmReady ? 'button' : undefined}
-            tabindex={isLlmReady ? 0 : undefined}
-            class="mode-card"
-            class:gated-mode={!isLlmReady}
-            class:active={activeMode === 'llm'}
-            onclick={() => { if (isLlmReady) selectMode('llm'); }}
-            onkeydown={(e) => { if (isLlmReady && (e.key === 'Enter' || e.key === ' ')) selectMode('llm'); }}
-            data-testid="mode-local-llm"
-        >
-            <div class="mode-header">
-                <span class="mode-icon">🧠</span>
-                {#if isLlmReady}
-                    <span class="mode-badge ready-badge" data-testid="llm-status-badge">Model Ready</span>
-                {:else}
-                    <span class="mode-badge gated-badge" data-testid="llm-status-badge">Gated Opt-In</span>
-                {/if}
-            </div>
-            <h3>Local LLM Mode (Map-Reduce)</h3>
-            <p class="mode-desc">Abstractive neural summarization with local quantized GGUF models via llama.cpp or Candle. Completely private and runs locally on your hardware.</p>
+        <div class="mode-card" class:gated-mode={!isLlmReady} class:active={activeMode === 'llm'}>
+            <Button
+                variant="secondary"
+                block
+                class="mode-select"
+                pressed={activeMode === 'llm'}
+                disabled={!isLlmReady}
+                disabledReason="Set up a local model in Settings to enable this mode"
+                data-testid="mode-local-llm"
+                onclick={() => selectMode('llm')}
+            >
+                <span class="mode-body">
+                    <span class="mode-header">
+                        <span class="mode-icon" aria-hidden="true"><StudioIcon name="chip" size={24} /></span>
+                        {#if isLlmReady}
+                            <span class="mode-badge" data-testid="llm-status-badge">Model ready</span>
+                        {:else}
+                            <span class="mode-badge" data-testid="llm-status-badge">Gated opt-in</span>
+                        {/if}
+                    </span>
+                    <span class="mode-title">Local LLM mode (map-reduce)</span>
+                    <span class="mode-desc">Abstractive summaries from a local quantized GGUF model via llama.cpp or Candle. Runs on your hardware; nothing is sent anywhere.</span>
+                </span>
+            </Button>
 
             {#if isLlmReady}
                 <div class="llm-ready-info" data-testid="llm-ready-info">
@@ -274,47 +301,42 @@
                             <code class="info-hash" data-testid="llm-model-hash">{appSettings.ai_model_sha256.slice(0, 16)}...</code>
                         </div>
                     {/if}
-                    <div class="info-row status-success">
-                        <span>✓ Licence Acknowledged ({appSettings?.ai_model_license || 'SPDX'})</span>
+                    <div class="info-row">
+                        <span><StudioIcon name="check" size={14} /> Licence acknowledged ({appSettings?.ai_model_license || 'SPDX'})</span>
                     </div>
                 </div>
             {:else}
                 <div class="gate-notice">
-                    <span>Requires <code>ai-local</code> feature, local model import, SHA-256 checksum, and licence acknowledgement.</span>
-                    <button
-                        type="button"
-                        class="settings-link-btn"
-                        onclick={(e) => { e.stopPropagation(); onNavigate('Settings'); }}
-                        data-testid="settings-link"
-                    >
-                        Configure in Settings &rarr;
-                    </button>
+                    <span>Requires the <code>ai-local</code> feature, a local model import with its SHA-256 checksum, and licence acknowledgement.</span>
+                    <Button variant="plain" size="sm" data-testid="settings-link" onclick={() => onNavigate('Settings')}>Configure in Settings →</Button>
                 </div>
             {/if}
         </div>
 
-        <!-- Translate PDF (Experimental) Mode Card -->
-        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-        <div
-            role={isLlmReady ? 'button' : undefined}
-            tabindex={isLlmReady ? 0 : undefined}
-            class="mode-card"
-            class:gated-mode={!isLlmReady}
-            class:active={activeMode === 'translate'}
-            onclick={() => { if (isLlmReady) selectMode('translate'); }}
-            onkeydown={(e) => { if (isLlmReady && (e.key === 'Enter' || e.key === ' ')) selectMode('translate'); }}
-            data-testid="mode-translate"
-        >
-            <div class="mode-header">
-                <span class="mode-icon">🌐</span>
-                {#if isLlmReady}
-                    <span class="mode-badge experimental-badge" data-testid="translate-status-badge">Experimental</span>
-                {:else}
-                    <span class="mode-badge gated-badge" data-testid="translate-status-badge">Gated Opt-In</span>
-                {/if}
-            </div>
-            <h3>Translate PDF (Experimental)</h3>
-            <p class="mode-desc">Block-level neural translation and re-typesetting. Generates a new PDF alongside an exhaustive Markdown companion report.</p>
+        <div class="mode-card" class:gated-mode={!isLlmReady} class:active={activeMode === 'translate'}>
+            <Button
+                variant="secondary"
+                block
+                class="mode-select"
+                pressed={activeMode === 'translate'}
+                disabled={!isLlmReady}
+                disabledReason="Set up a local model in Settings to enable this mode"
+                data-testid="mode-translate"
+                onclick={() => selectMode('translate')}
+            >
+                <span class="mode-body">
+                    <span class="mode-header">
+                        <span class="mode-icon" aria-hidden="true"><StudioIcon name="globe" size={24} /></span>
+                        {#if isLlmReady}
+                            <span class="mode-badge" data-testid="translate-status-badge">Experimental</span>
+                        {:else}
+                            <span class="mode-badge" data-testid="translate-status-badge">Gated opt-in</span>
+                        {/if}
+                    </span>
+                    <span class="mode-title">Translate PDF (experimental)</span>
+                    <span class="mode-desc">Block-level translation and re-typesetting. Writes a new PDF and a Markdown companion report.</span>
+                </span>
+            </Button>
 
             {#if isLlmReady}
                 <div class="llm-ready-info" data-testid="translate-ready-info">
@@ -322,107 +344,55 @@
                         <span class="info-label">Model:</span>
                         <span class="info-val">{appSettings?.local_ai_model_path}</span>
                     </div>
-                    <div class="info-row status-success">
-                        <span>✓ Block-level re-typesetting &amp; report</span>
+                    <div class="info-row">
+                        <span><StudioIcon name="check" size={14} /> Block-level re-typesetting and report</span>
                     </div>
                 </div>
             {:else}
                 <div class="gate-notice">
-                    <span>Requires <code>ai-local</code> feature, local model import, and licence acknowledgement.</span>
-                    <button
-                        type="button"
-                        class="settings-link-btn"
-                        onclick={(e) => { e.stopPropagation(); onNavigate('Settings'); }}
-                        data-testid="translate-settings-link"
-                    >
-                        Configure in Settings &rarr;
-                    </button>
+                    <span>Requires the <code>ai-local</code> feature, a local model import, and licence acknowledgement.</span>
+                    <Button variant="plain" size="sm" data-testid="translate-settings-link" onclick={() => onNavigate('Settings')}>Configure in Settings →</Button>
                 </div>
             {/if}
         </div>
     </div>
 
-    <!-- Configuration Panel -->
+    <!-- Configuration -->
     <section class="config-panel" data-testid="config-panel">
         {#if activeMode === 'translate'}
             <div class="panel-section" data-testid="translate-config-section">
                 <div class="section-header-row">
-                    <h2>1. Translation Configuration</h2>
+                    <h2>1. Translation configuration</h2>
                     <span class="badge-experimental">Experimental (ADR-006)</span>
                 </div>
                 <div class="info-callout">
-                    <span>⚠️ Block-level re-typesetting replaces document paragraphs and generates an atomic companion report (<code>.report.md</code>) recording block mappings and layout warnings.</span>
+                    <span><StudioIcon name="warning" size={14} /> Block-level re-typesetting replaces document paragraphs and writes a companion report (<code>.report.md</code>) listing block mappings and layout warnings.</span>
                 </div>
-                <div class="form-grid">
-                    <div class="form-row-2">
-                        <div class="form-group">
-                            <label for="source-lang-select">Source Language</label>
-                            <select
-                                id="source-lang-select"
-                                bind:value={sourceLang}
-                                data-testid="source-lang-select"
-                            >
-                                <option value="Auto">Auto-Detect</option>
-                                <option value="en">English (en)</option>
-                                <option value="es">Spanish (es)</option>
-                                <option value="fr">French (fr)</option>
-                                <option value="de">German (de)</option>
-                                <option value="bn">Bengali (bn)</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="target-lang-select">Target Language</label>
-                            <select
-                                id="target-lang-select"
-                                bind:value={targetLang}
-                                onchange={() => {
-                                    if (inputPath && (outputPath.includes('_translated_') || !outputPath)) {
-                                        outputPath = siblingOutputPath(inputPath, `_translated_${targetLang}.pdf`);
-                                    }
-                                }}
-                                data-testid="target-lang-select"
-                            >
-                                <option value="es">Spanish (es)</option>
-                                <option value="en">English (en)</option>
-                                <option value="fr">French (fr)</option>
-                                <option value="de">German (de)</option>
-                                <option value="bn">Bengali (bn)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="toggle-checkbox-label">
-                            <input
-                                type="checkbox"
-                                bind:checked={preserveLayoutBlocks}
-                                data-testid="preserve-layout-checkbox"
-                            />
-                            <span>
-                                <strong>Preserve Block-Level Layout</strong>
-                                <span class="help-text">(Extracts per-page text blocks and re-typesets paragraphs into valid PDF)</span>
-                            </span>
-                        </label>
-                    </div>
+                <div class="form-row-2">
+                    <Select label="Source language" bind:value={sourceLang} options={SOURCE_LANG_OPTIONS} data-testid="source-lang-select" />
+                    <Select label="Target language" bind:value={() => targetLang, setTargetLang} options={LANG_OPTIONS} data-testid="target-lang-select" />
                 </div>
+                <Toggle label="Preserve block-level layout (extracts per-page text blocks and re-typesets paragraphs into a valid PDF)" bind:checked={preserveLayoutBlocks} data-testid="preserve-layout-checkbox" />
             </div>
         {:else}
             <div class="panel-section">
-                <h2>1. Summary Length</h2>
+                <h2>1. Summary length</h2>
                 <div class="length-selector">
                     <For items={lengthOptions}>
                         {#snippet children(opt)}
-                            <button
-                                type="button"
+                            <Button
+                                variant="secondary"
+                                block
                                 class="length-btn"
-                                class:selected={selectedLength === opt.id}
-                                onclick={() => { selectedLength = opt.id; }}
+                                pressed={selectedLength === opt.id}
                                 data-testid={`length-${opt.id.toLowerCase()}`}
+                                onclick={() => { selectedLength = opt.id; }}
                             >
-                                <span class="length-label">{opt.label}</span>
-                                <span class="length-desc">{opt.desc}</span>
-                            </button>
+                                <span class="length-body">
+                                    <span class="length-label">{opt.label}</span>
+                                    <span class="length-desc">{opt.desc}</span>
+                                </span>
+                            </Button>
                         {/snippet}
                     </For>
                 </div>
@@ -431,94 +401,69 @@
 
         {#if activeMode === 'llm'}
             <div class="panel-section" data-testid="map-reduce-section">
-                <h2>2. Map-Reduce Parameters</h2>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="chunk-words-input">
-                            Chunk Word Limit: <strong>{chunkWordLimit} words</strong>
-                            <span class="help-text">(Partitions input into bounded semantic chunks)</span>
-                        </label>
-                        <div class="range-with-number">
-                            <input
-                                id="chunk-words-range"
-                                type="range"
-                                min="100"
-                                max="2000"
-                                step="50"
-                                bind:value={chunkWordLimit}
-                                data-testid="chunk-words-slider"
-                            />
-                            <input
-                                id="chunk-words-input"
-                                type="number"
-                                min="50"
-                                max="5000"
-                                step="50"
-                                bind:value={chunkWordLimit}
-                                data-testid="chunk-words-input"
-                            />
-                        </div>
+                <h2>2. Map-reduce parameters</h2>
+                <div class="form-row-2">
+                    <div class="range-group">
+                        <Input
+                            type="range"
+                            min={100}
+                            max={2000}
+                            step={50}
+                            label="Chunk word limit: {chunkWordLimit} words (splits the input into bounded chunks)"
+                            data-testid="chunk-words-slider"
+                            bind:value={() => String(chunkWordLimit), (v) => (chunkWordLimit = parseNumberOr(v, 400))}
+                        />
+                        <Input
+                            type="number"
+                            min={50}
+                            max={5000}
+                            step={50}
+                            label="Chunk word limit (number)"
+                            hideLabel
+                            data-testid="chunk-words-input"
+                            bind:value={() => String(chunkWordLimit), (v) => (chunkWordLimit = parseNumberOr(v, 400))}
+                        />
                     </div>
-
-                    <div class="form-group">
-                        <label for="temperature-input">
-                            Temperature: <strong>{temperature}</strong>
-                            <span class="help-text">(Deterministic inference ≤ 0.3 recommended)</span>
-                        </label>
-                        <div class="range-with-number">
-                            <input
-                                id="temperature-range"
-                                type="range"
-                                min="0.0"
-                                max="1.0"
-                                step="0.05"
-                                bind:value={temperature}
-                                data-testid="temperature-slider"
-                            />
-                            <input
-                                id="temperature-input"
-                                type="number"
-                                min="0.0"
-                                max="1.0"
-                                step="0.05"
-                                bind:value={temperature}
-                                data-testid="temperature-input"
-                            />
-                        </div>
+                    <div class="range-group">
+                        <Input
+                            type="range"
+                            min={0}
+                            max={1}
+                            step={0.05}
+                            label="Temperature: {temperature} (0.3 or lower is more deterministic)"
+                            data-testid="temperature-slider"
+                            bind:value={() => String(temperature), (v) => (temperature = parseNumberOr(v, 0.2))}
+                        />
+                        <Input
+                            type="number"
+                            min={0}
+                            max={1}
+                            step={0.05}
+                            label="Temperature (number)"
+                            hideLabel
+                            data-testid="temperature-input"
+                            bind:value={() => String(temperature), (v) => (temperature = parseNumberOr(v, 0.2))}
+                        />
                     </div>
                 </div>
             </div>
         {/if}
 
         <div class="panel-section">
-            <h2>{activeMode === 'llm' ? '3. File Selection' : '2. File Selection'}</h2>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="input-pdf-path">Input PDF Document</label>
-                    <div class="input-with-button">
-                        <input
-                            id="input-pdf-path"
-                            type="text"
-                            placeholder="/path/to/document.pdf"
-                            value={inputPath}
-                            oninput={(e) => handleInputChange(e.currentTarget.value)}
-                            data-testid="input-path"
-                        />
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="output-md-path">{activeMode === 'translate' ? 'Output PDF Destination (.pdf)' : 'Output Summary Destination (.md or .txt)'}</label>
-                    <div class="input-with-button">
-                        <input
-                            id="output-md-path"
-                            type="text"
-                            placeholder={activeMode === 'translate' ? '/path/to/document_translated.pdf' : '/path/to/document_summary.md'}
-                            bind:value={outputPath}
-                            data-testid="output-path"
-                        />
-                    </div>
-                </div>
+            <h2>{activeMode === 'llm' ? '3. File selection' : '2. File selection'}</h2>
+            <div class="form-row-2">
+                <Input
+                    label="Input PDF document"
+                    placeholder="/path/to/document.pdf"
+                    data-testid="input-path"
+                    bind:value={() => inputPath, handleInputChange}
+                />
+                <Input
+                    label={activeMode === 'translate' ? 'Output PDF destination (.pdf)' : 'Output summary destination (.md or .txt)'}
+                    placeholder={activeMode === 'translate' ? '/path/to/document_translated.pdf' : '/path/to/document_summary.md'}
+                    data-testid="output-path"
+                    bind:value={outputPath}
+                />
             </div>
         </div>
 
@@ -527,263 +472,150 @@
         {/if}
 
         {#if errorMessage}
-            <div class="status-box error" role="alert" aria-live="assertive" data-testid="error-message">
-                <span class="status-icon" aria-hidden="true">⚠️</span>
-                <span>{errorMessage}</span>
-            </div>
+            <ErrorState what={errorMessage} next="Fix the entry above and try again." data-testid="error-message" />
         {/if}
 
         {#if submissionStatus}
-            <div class="status-box success" role="status" aria-live="polite" data-testid="submission-status">
-                <span class="status-icon" aria-hidden="true">✅</span>
+            <div class="status-box" role="status" aria-live="polite" data-testid="submission-status">
                 <span>{submissionStatus}</span>
             </div>
         {/if}
 
         <div class="panel-actions">
-            <button
-                type="button"
-                id="btn-generate-summary"
-                class="primary-btn"
-                disabled={isSubmitting}
-                onclick={handleGenerateSummary}
-                data-testid="generate-summary-btn"
-            >
+            <Button variant="primary" size="lg" busy={isSubmitting} data-testid="generate-summary-btn" onclick={handleGenerateSummary}>
                 {#if isSubmitting}
-                    <span class="spinner"></span>
-                    Queueing Job...
+                    Queueing job…
                 {:else if activeMode === 'translate'}
-                    <span>🌐 Translate Document (Experimental)</span>
+                    Translate document (experimental)
                 {:else if activeMode === 'llm'}
-                    <span>🧠 Generate Map-Reduce Summary</span>
+                    Generate map-reduce summary
                 {:else}
-                    <span>✨ Generate Extractive Summary</span>
+                    Generate extractive summary
                 {/if}
-            </button>
+            </Button>
         </div>
     </section>
 </div>
 
 <style>
     .summarize-view {
-        padding: 2rem;
-        max-width: 1000px;
-        margin: 0 auto;
-        color: var(--text-primary);
         display: flex;
         flex-direction: column;
-        gap: 2rem;
+        gap: var(--space-4);
+        padding: var(--space-4);
+        color: var(--text-primary);
     }
 
     .view-header {
         display: flex;
+        align-items: center;
         justify-content: space-between;
-        align-items: flex-start;
-        border-bottom: 1px solid var(--glass-border-subtle);
-        padding-bottom: 1.5rem;
-        gap: 1rem;
+        gap: var(--space-4);
+        padding: var(--space-4) var(--space-6);
+        background: var(--glass-bg-surface);
+        border: 1px solid var(--glass-border-subtle);
+        border-radius: var(--radius-lg);
     }
 
-    h1 {
-        font-size: 1.75rem;
-        font-weight: 700;
+    .view-header h1 {
+        margin: 0;
+        font-size: var(--font-size-title1);
         color: var(--accent-primary);
-        margin: 0 0 0.5rem 0;
     }
 
     .subtitle {
+        margin: var(--space-1) 0 0;
         color: var(--text-secondary);
-        font-size: 0.95rem;
-        margin: 0;
+        font-size: var(--font-size-footnote);
     }
 
-    .privacy-badge {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        background-color: var(--glass-bg-surface);
-        border: 1px solid var(--semantic-success);
-        color: var(--semantic-success);
-        padding: 0.4rem 0.8rem;
-        border-radius: 9999px;
-        font-size: 0.85rem;
-        font-weight: 500;
+    .privacy-badge,
+    .mode-badge,
+    .badge-experimental {
+        font-size: var(--font-size-caption);
+        padding: 0 var(--space-2);
+        border-radius: var(--radius-pill);
+        background: var(--glass-bg-active);
         white-space: nowrap;
-    }
-
-    .badge-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background-color: var(--semantic-success);
-        box-shadow: 0 0 6px var(--semantic-success);
     }
 
     .modes-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: var(--space-4);
     }
 
     .mode-card {
-        background-color: var(--glass-bg-surface);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: 12px;
-        padding: 1.5rem;
-        text-align: left;
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        color: inherit;
+        gap: var(--space-2);
+        min-width: 0;
     }
 
-    .mode-card:hover {
-        border-color: var(--accent-primary);
-        background-color: var(--glass-bg-hover);
+    .mode-card :global(.mode-select .lp-btn),
+    .length-selector :global(.length-btn .lp-btn) {
+        height: auto;
+        min-height: 0;
+        justify-content: flex-start;
+        text-align: left;
+        padding: var(--space-3);
+        font-weight: 400;
     }
 
-    .mode-card.active {
-        border-color: var(--accent-primary);
-        background-color: var(--glass-bg-active);
-        box-shadow: var(--glass-shadow-sm);
+    .mode-body,
+    .length-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+        white-space: normal;
+        align-items: flex-start;
     }
 
     .mode-header {
         display: flex;
-        justify-content: space-between;
         align-items: center;
+        gap: var(--space-2);
     }
 
-    .mode-icon {
-        font-size: 1.5rem;
-    }
-
-    .mode-badge {
-        font-size: 0.75rem;
-        padding: 0.2rem 0.6rem;
-        border-radius: 6px;
+    .mode-title,
+    .length-label {
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
+        font-size: var(--font-size-body);
     }
 
-    .active-badge {
-        background-color: var(--glass-bg-hover);
-        color: var(--semantic-success);
-        border: 1px solid var(--semantic-success);
+    .mode-desc,
+    .length-desc {
+        color: var(--text-secondary);
+        font-size: var(--font-size-footnote);
+        line-height: 1.4;
     }
 
-    .gated-badge {
-        background-color: var(--glass-bg-hover);
-        color: var(--semantic-warning);
-        border: 1px solid var(--semantic-warning);
-    }
-
-    .ready-badge {
-        background-color: var(--glass-bg-hover);
-        color: var(--accent-primary);
-        border: 1px solid var(--accent-primary);
-    }
-
-    .experimental-badge {
-        background-color: var(--glass-bg-hover);
-        color: var(--semantic-warning);
-        border: 1px solid var(--semantic-warning);
-    }
-
-    .badge-experimental {
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        background-color: var(--glass-bg-hover);
-        color: var(--semantic-warning);
-        padding: 0.2rem 0.5rem;
-        border-radius: 6px;
-        border: 1px solid var(--semantic-warning);
-    }
-
-    .section-header-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 0.75rem;
-    }
-
-    .section-header-row h2 {
-        margin: 0;
-    }
-
-    .info-callout {
-        background-color: var(--glass-bg-input);
-        border: 1px solid var(--semantic-warning);
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        font-size: 0.85rem;
-        color: var(--semantic-warning);
-        margin-bottom: 1rem;
-    }
-
-    .form-row-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.25rem;
-    }
-
-    select {
-        background-color: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        color: var(--text-primary);
-        font-size: 0.92rem;
-        outline: none;
-        transition: border-color 0.2s ease;
-        box-sizing: border-box;
-    }
-
-    select:focus {
-        border-color: var(--accent-primary);
-    }
-
-    .toggle-checkbox-label {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.75rem;
-        cursor: pointer;
-        user-select: none;
-    }
-
-    .toggle-checkbox-label input[type="checkbox"] {
-        margin-top: 0.2rem;
-        accent-color: var(--accent-primary);
-        cursor: pointer;
-        width: 1.1rem;
-        height: 1.1rem;
-    }
-
-    .llm-ready-info {
-        margin-top: 0.5rem;
-        padding: 0.75rem;
-        background-color: var(--glass-bg-surface);
-        border-radius: 8px;
-        border: 1px solid var(--glass-border-subtle);
+    .mode-features {
         display: flex;
         flex-direction: column;
-        gap: 0.4rem;
-        font-size: 0.82rem;
+        gap: var(--space-1);
+        font-size: var(--font-size-caption);
+        color: var(--text-secondary);
+    }
+
+    .llm-ready-info,
+    .gate-notice {
+        padding: var(--space-3);
+        border-radius: var(--radius-md);
+        background: var(--glass-bg-input);
+        font-size: var(--font-size-footnote);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
     }
 
     .info-row {
         display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--text-primary);
+        gap: var(--space-2);
+        flex-wrap: wrap;
     }
 
     .info-label {
-        font-weight: 600;
         color: var(--text-secondary);
     }
 
@@ -791,282 +623,69 @@
         word-break: break-all;
     }
 
-    .info-hash {
-        background-color: var(--glass-bg-input);
-        padding: 0.1rem 0.3rem;
-        border-radius: 4px;
-        color: var(--semantic-success);
-        font-size: 0.78rem;
-    }
-
-    .status-success {
-        color: var(--semantic-success);
-        font-weight: 500;
-    }
-
-    .mode-card h3 {
-        margin: 0;
-        font-size: 1.2rem;
-        color: var(--text-primary);
-    }
-
-    .mode-desc {
-        font-size: 0.88rem;
-        color: var(--text-secondary);
-        line-height: 1.4;
-        margin: 0;
-    }
-
-    .mode-features {
-        list-style: none;
-        padding: 0;
-        margin: 0.5rem 0 0 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-        font-size: 0.82rem;
-        color: var(--text-secondary);
-    }
-
-    .mode-features li::before {
-        content: "✓ ";
-        color: var(--semantic-success);
-        font-weight: bold;
-    }
-
-    .gated-mode {
-        cursor: default;
-        opacity: 0.85;
-    }
-
-    .gate-notice {
-        margin-top: 0.5rem;
-        padding: 0.75rem;
-        background-color: var(--glass-bg-surface);
-        border-radius: 8px;
-        border: 1px dashed var(--glass-border-subtle);
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        font-size: 0.82rem;
-        color: var(--text-secondary);
-    }
-
-    .gate-notice code {
-        background-color: var(--glass-bg-input);
-        padding: 0.15rem 0.35rem;
-        border-radius: 4px;
-        color: var(--semantic-warning);
-    }
-
-    .settings-link-btn {
-        background: transparent;
-        border: none;
-        color: var(--accent-primary);
-        cursor: pointer;
-        font-size: 0.82rem;
-        font-weight: 600;
-        padding: 0;
-        text-align: left;
-        text-decoration: underline;
-    }
-
-    .settings-link-btn:hover {
-        color: var(--accent-primary-hover);
-    }
-
     .config-panel {
-        background-color: var(--glass-bg-surface);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: 12px;
-        padding: 1.75rem;
         display: flex;
         flex-direction: column;
-        gap: 1.75rem;
+        gap: var(--space-4);
+    }
+
+    .panel-section {
+        background: var(--glass-bg-surface);
+        border: 1px solid var(--glass-border-subtle);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
     }
 
     .panel-section h2 {
-        font-size: 1.05rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin: 0 0 0.85rem 0;
+        margin: 0;
+        font-size: var(--font-size-title3);
+    }
+
+    .section-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-3);
+    }
+
+    .info-callout {
+        padding: var(--space-3);
+        border-radius: var(--radius-md);
+        background: var(--glass-bg-input);
+        font-size: var(--font-size-footnote);
+    }
+
+    .form-row-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-4);
     }
 
     .length-selector {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-3);
     }
 
-    .length-btn {
-        background-color: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: 10px;
-        padding: 1rem;
-        text-align: left;
-        cursor: pointer;
+    .range-group {
         display: flex;
         flex-direction: column;
-        gap: 0.35rem;
-        color: var(--text-primary);
-        transition: all 0.2s ease;
-    }
-
-    .length-btn:hover {
-        border-color: var(--accent-primary);
-        background-color: var(--glass-bg-hover);
-    }
-
-    .length-btn.selected {
-        border-color: var(--accent-primary);
-        background-color: var(--glass-bg-active);
-    }
-
-    .length-label {
-        font-size: 1rem;
-        font-weight: 700;
-        color: var(--accent-primary);
-    }
-
-    .length-desc {
-        font-size: 0.78rem;
-        color: var(--text-secondary);
-        line-height: 1.35;
-    }
-
-    .form-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.45rem;
-    }
-
-    .form-group label {
-        font-size: 0.88rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-    }
-
-    .help-text {
-        font-size: 0.78rem;
-        color: var(--text-tertiary);
-        font-weight: normal;
-        margin-left: 0.4rem;
-    }
-
-    .range-with-number {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .range-with-number input[type="range"] {
-        flex: 1;
-        accent-color: var(--accent-primary);
-        cursor: pointer;
-    }
-
-    .range-with-number input[type="number"] {
-        width: 90px;
-        background-color: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: 8px;
-        padding: 0.5rem 0.75rem;
-        color: var(--text-primary);
-        font-size: 0.9rem;
-        text-align: right;
-    }
-
-    .range-with-number input[type="number"]:focus {
-        border-color: var(--accent-primary);
-        outline: none;
-    }
-
-    .input-with-button input {
-        width: 100%;
-        background-color: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        color: var(--text-primary);
-        font-size: 0.92rem;
-        outline: none;
-        transition: border-color 0.2s ease;
-        box-sizing: border-box;
-    }
-
-    .input-with-button input:focus {
-        border-color: var(--accent-primary);
+        gap: var(--space-2);
     }
 
     .status-box {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.85rem 1rem;
-        border-radius: 8px;
-        font-size: 0.9rem;
-    }
-
-    .status-box.error {
-        background-color: var(--glass-bg-input);
-        border: 1px solid var(--semantic-danger);
-        color: var(--semantic-danger);
-    }
-
-    .status-box.success {
-        background-color: var(--glass-bg-input);
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-md);
+        background: var(--glass-bg-input);
         border: 1px solid var(--semantic-success);
-        color: var(--semantic-success);
+        font-size: var(--font-size-footnote);
     }
 
     .panel-actions {
         display: flex;
         justify-content: flex-end;
-    }
-
-    .primary-btn {
-        background-color: var(--accent-primary);
-        color: var(--text-on-accent);
-        font-weight: 600;
-        font-size: 0.95rem;
-        padding: 0.8rem 1.6rem;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: all 0.2s ease;
-    }
-
-    .primary-btn:hover:not(:disabled) {
-        background-color: var(--accent-primary-hover);
-        transform: translateY(-1px);
-    }
-
-    .primary-btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-    .spinner {
-        width: 1rem;
-        height: 1rem;
-        border: 2px solid var(--text-on-accent);
-        border-top-color: transparent;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
     }
 </style>

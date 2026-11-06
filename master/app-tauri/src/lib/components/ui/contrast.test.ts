@@ -127,3 +127,13 @@ describe('Tooltip visibility rules', () => {
     expect(tooltipSource).not.toMatch(/focus-within/);
   });
 });
+
+// A disabled destructive button must stay legible (no 50 % fade of white text on red).
+import buttonSource from './Button.svelte?raw';
+describe('Button disabled destructive', () => {
+  it('is not faded and uses the secondary text colour on a neutral fill', () => {
+    const body = ruleBody(buttonSource, '.lp-btn--destructive.is-disabled');
+    expect(body).toContain('opacity: 1');
+    expect(body).toContain('var(--text-secondary)');
+  });
+});

@@ -52,3 +52,7 @@ lib/views/ConvertFromPdfView.svelte
 lib/views/ConvertToPdfView.svelte
 lib/views/MarkdownView.svelte
 lib/views/PipelinesView.svelte
+lib/views/AiSummarizeView.svelte
+lib/views/BatchQueueView.svelte
+lib/views/SettingsView.svelte
+lib/i18n/faq/*.json

@@ -272,7 +272,7 @@
             ext: '.html',
             targetExt: '.pdf',
             icon: '🌐',
-            desc: 'Renders local HTML documents to PDF with zero network access and scripts disabled.',
+            desc: 'Renders local HTML documents to PDF on your device, with scripts disabled and no network requests.',
             badge: 'Native Offline',
             engine: 'Pure Rust Native (`pdfcraft`)',
             kind: 'native',

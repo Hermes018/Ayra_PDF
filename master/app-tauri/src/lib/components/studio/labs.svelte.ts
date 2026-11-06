@@ -23,7 +23,16 @@ export const SPLIT_VIEW_ID = 'studio.splitView';
 /** Edit view: adds a fixed example highlight (a demo, not a real highlighter). */
 export const SAMPLE_HIGHLIGHT_ID = 'labs.sampleHighlight';
 
-export const LABS_IDS: readonly string[] = ['insert.latex', INK_GUESS_ID, SPLIT_VIEW_ID, SAMPLE_HIGHLIGHT_ID];
+/** Batch queue: submits fixed sample jobs on made-up file paths (a demo, not a feature). */
+export const SAMPLE_BATCH_ID = 'labs.sampleBatch';
+
+export const LABS_IDS: readonly string[] = ['insert.latex', INK_GUESS_ID, SPLIT_VIEW_ID, SAMPLE_HIGHLIGHT_ID, SAMPLE_BATCH_ID];
+
+export const SAMPLE_BATCH_LABS = {
+  name: 'Sample batch',
+  label: 'Sample batch (Labs)',
+  note: 'Queues three example jobs on made-up file paths so the queue has something to show. They will fail because the files do not exist.',
+} as const;
 
 export const SAMPLE_HIGHLIGHT_LABS = {
   name: 'Sample highlight',
@@ -75,6 +84,7 @@ const LABS_TOOL_COPY: Record<string, { label: string; note: string }> = {
   'insert.latex': MATH_TEXT_LABS,
   [INK_GUESS_ID]: INK_GUESS_LABS,
   [SAMPLE_HIGHLIGHT_ID]: SAMPLE_HIGHLIGHT_LABS,
+  [SAMPLE_BATCH_ID]: SAMPLE_BATCH_LABS,
 };
 
 /** Normalise preset ids (`preset.x`) and shortcut commands (`tool.x`) to the bare tool id. */

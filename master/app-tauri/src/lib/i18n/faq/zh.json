@@ -36,7 +36,7 @@
       "id": "security",
       "feature": "安全与数字签名 (Security)",
       "question": "LocalPDF Studio 的加密与数字签名安全性如何？",
-      "answer": "采用军用级 AES-256 及 AES-128 加密体系，结合 fail-closed 密码学完整性检查与 PKCS#12 签名。",
+      "answer": "使用 AES-256（Acrobat X 及更高版本）加密 PDF，并使用 PKCS#12 证书签名；完整性检查失败时会拒绝操作。",
       "usage": "设定用户/所有者密码，精细化配置打印与复制权限，或导入 PKCS#12 (.p12/.pfx) 证书执行数字签署。",
       "outputs": "生成符合 ISO 标准的加密 PDF 或具备防篡改校验特征的 PAdES 数字签名文档。",
       "offlineBoundaries": "密码与私钥使用完毕后在内存中立即归零清空 (Zeroize)，不进行远程时间戳服务器轮询。"
@@ -93,7 +93,7 @@
       "answer": "工作流可将多道工序（如：OCR -> 文本脱敏 -> 压缩 -> 签名）无缝拼接为一键自动化流程。",
       "usage": "选用内置预设工作流（合规归档、极速脱敏、网络优化）或根据业务需要组装自定义流水线。",
       "outputs": "经过流水线逐级严密处理并完成各阶段原子完整性校验的最终 PDF 文档。",
-      "offlineBoundaries": "流水线阶段之间使用本地 WAL 轻量日志传递临时文件，零网络云端交互。"
+      "offlineBoundaries": "流水线阶段之间使用本地 WAL 轻量日志传递临时文件，不使用云端服务。"
     }
   ]
 }

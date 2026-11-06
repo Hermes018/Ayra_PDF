@@ -152,6 +152,8 @@
   .lp-btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
   .lp-btn:active:not(.is-disabled) { box-shadow: inset 0 0 0 999px var(--glass-bg-hover); }
   .lp-btn.is-disabled { cursor: not-allowed; opacity: 0.5; }
+  /* A faded red button with white text is unreadable; a disabled destructive action reads as a neutral, legible control. */
+  .lp-btn--destructive.is-disabled { opacity: 1; background: var(--glass-bg-input); color: var(--text-secondary); }
   .lp-btn.is-busy { cursor: progress; }
   .lp-btnwrap.is-block { display: flex; width: 100%; }
   .lp-btn.is-block { width: 100%; justify-content: flex-start; font-weight: 400; }

@@ -48,9 +48,11 @@
         <StatusBar />
     </div>
     
-    <div class="faq-floating-trigger">
-        <Button variant="secondary" size="sm" onclick={() => faqStore.toggle()}>Help and FAQ</Button>
-    </div>
+    {#if appState.sidebarCollapsed}
+        <div class="faq-floating-trigger">
+            <Button variant="secondary" size="sm" onclick={() => faqStore.toggle()}>Help and FAQ</Button>
+        </div>
+    {/if}
 
     <Dropzone />
     <ToastContainer />

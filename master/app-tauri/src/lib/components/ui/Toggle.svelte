@@ -56,9 +56,11 @@
     color: var(--text-primary);
     font: inherit;
     font-size: var(--font-size-body);
+    text-align: left;
     cursor: pointer;
   }
   .lp-track {
+    flex-shrink: 0;
     position: relative;
     display: inline-block;
     width: var(--control-height-lg);

@@ -36,7 +36,7 @@
       "id": "security",
       "feature": "Sécurité et Signatures",
       "question": "Quel est le niveau de sécurité du chiffrement et de la signature numérique ?",
-      "answer": "La sécurité s'appuie sur le chiffrement AES-256 et AES-128 de niveau militaire et des signatures numériques PKCS#12 vérifiables.",
+      "answer": "La sécurité chiffre les PDF en AES-256 (Acrobat X et versions ultérieures) et signe avec des certificats PKCS#12 ; les contrôles d'intégrité échouent de façon sûre.",
       "usage": "Définissez les mots de passe utilisateur et propriétaire, configurez les permissions ou signez avec un certificat PKCS#12 (.p12/.pfx).",
       "outputs": "Document PDF chiffré conforme aux normes ISO ou document signé numériquement au standard PAdES.",
       "offlineBoundaries": "Les mots de passe et clés privées sont purgés (zeroized) de la mémoire vive immédiatement après leur utilisation."
@@ -64,7 +64,7 @@
       "feature": "Markdown",
       "question": "Puis-je convertir des documents Markdown vers PDF et inversement ?",
       "answer": "Oui. Une chaîne de traitement bidirectionnelle haute fidélité prend en charge la coloration syntaxique et les tableaux.",
-      "usage": "Rédigez ou collez du Markdown dans l'éditeur avec aperçu instantané, ou importez un PDF pour en extraire du Markdown sémantique.",
+      "usage": "Rédigez ou collez du Markdown dans l'éditeur avec aperçu en direct, ou importez un PDF pour en extraire du Markdown sémantique.",
       "outputs": "PDF vectoriel élégamment composé ou fichier CommonMark structuré.",
       "offlineBoundaries": "Le rendu est calculé intégralement par des algorithmes de composition typographique locaux."
     },

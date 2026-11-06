@@ -1,10 +1,16 @@
 <script lang="ts">
+    import StudioIcon from '$lib/components/studio/StudioIcon.svelte';
     import { onMount } from 'svelte';
     import { IpcClient, pickFilesDialog } from '$lib/ipc';
     import For from '$lib/components/For.svelte';
     import { appState } from '$lib/state.svelte';
     import Dialog from '$lib/components/ui/Dialog.svelte';
     import Button from '$lib/components/ui/Button.svelte';
+    import Input from '$lib/components/ui/Input.svelte';
+    import Select from '$lib/components/ui/Select.svelte';
+    import Toggle from '$lib/components/ui/Toggle.svelte';
+    import ErrorState from '$lib/components/ui/ErrorState.svelte';
+    import { friendlyJobError } from '$lib/core/jobError';
     import type { AppSettings } from '$lib/bindings/AppSettings';
     import type { HardwareTier } from '$lib/bindings/HardwareTier';
     import type { OutputPolicy } from '$lib/bindings/OutputPolicy';
@@ -33,30 +39,30 @@
     let modelPathInput = $state('');
     let importedModelInfo = $state<AiModelInfo | null>(null);
     let isImportingModel = $state(false);
-    let modelError = $state<string | null>(null);
+    let modelError = $state<{ what: string; next: string } | null>(null);
     let modelLicense = $state('Apache-2.0');
     let licenseAcknowledged = $state(false);
 
     let diagnosticsPath = $state('localpdf-diagnostics.txt');
     let isExportingDiag = $state(false);
     let diagSuccessMessage = $state<string | null>(null);
-    let diagErrorMessage = $state<string | null>(null);
+    let diagErrorMessage = $state<{ what: string; next: string } | null>(null);
 
+    let loadFailed = $state(false);
     let saveMessage = $state<string | null>(null);
     let saveError = $state<string | null>(null);
     let isSaving = $state(false);
     let isLoaded = $state(false);
 
-    onMount(async () => {
+    async function loadSettings() {
+        loadFailed = false;
         try {
             const fetched = await IpcClient.getSettings();
             if (fetched) {
                 settings = fetched;
-                if (settings.theme) {
-                    appState.setTheme(settings.theme);
-                } else if (appState.themePreference) {
-                    settings.theme = appState.themePreference;
-                }
+                // The theme the user is using right now wins: opening Settings must not snap the app back
+                // to a stale saved value. Saving writes the current choice.
+                settings.theme = appState.themePreference;
                 if (settings.local_ai_model_path) {
                     modelPathInput = settings.local_ai_model_path;
                 }
@@ -67,11 +73,14 @@
             }
         } catch (e: any) {
             console.error('Failed to load settings:', e);
-            saveError = `Failed to load settings: ${e?.message ?? e}`;
+            loadFailed = true;
         } finally {
             isLoaded = true;
         }
+    }
 
+    onMount(async () => {
+        await loadSettings();
         await refreshLogs();
     });
 
@@ -81,13 +90,17 @@
         try {
             recentLogs = await IpcClient.getRecentLogs(150);
         } catch (e: any) {
-            logError = `Failed to read logs: ${e?.message ?? e}`;
+            console.error('Failed to read logs:', e);
+            logError = 'read';
         } finally {
             isLoadingLogs = false;
         }
     }
 
-    async function handleSaveSettings() {
+    // Exported so tests can call the handler directly (the guard must hold even without the disabled button).
+    export async function handleSaveSettings() {
+        // Fail closed: never write the on-screen defaults over the user's real settings.
+        if (loadFailed || !isLoaded) return;
         isSaving = true;
         saveMessage = null;
         saveError = null;
@@ -99,12 +112,13 @@
             }
             const saved = await IpcClient.saveSettings(settings);
             settings = saved;
-            saveMessage = 'Settings saved successfully!';
+            saveMessage = 'Settings saved.';
             setTimeout(() => {
                 saveMessage = null;
             }, 3000);
         } catch (e: any) {
-            saveError = `Failed to save settings: ${e?.message ?? e}`;
+            console.error('Failed to save settings:', e);
+            saveError = 'save';
         } finally {
             isSaving = false;
         }
@@ -129,9 +143,11 @@
         }
     }
 
-    async function handleImportModel() {
+    export async function handleImportModel() {
+        // Fail closed: the backend also refuses, but never ask it to rewrite settings we could not read.
+        if (loadFailed || !isLoaded) return;
         if (!modelPathInput.trim()) {
-            modelError = 'Please specify a local model file path (.gguf or .onnx).';
+            modelError = { what: 'No model file is chosen.', next: 'Enter or browse to a local model file (.gguf or .onnx), then import it.' };
             return;
         }
         isImportingModel = true;
@@ -148,9 +164,10 @@
             settings.ai_model_license = modelLicense.trim();
             settings.ai_license_acknowledged = licenseAcknowledged;
             settings.ai_local_enabled = licenseAcknowledged;
-            saveMessage = `Imported model: ${info.file_name} (${info.format})`;
+            saveMessage = `Imported model: ${info.file_name} (${info.format}).`;
         } catch (e: any) {
-            modelError = `Failed to import model: ${e?.message ?? e}`;
+            console.error('Failed to import model:', e);
+            modelError = { what: "Couldn't import the model.", next: 'Check that the file is a valid model, the licence is set and acknowledged, then try again.' };
         } finally {
             isImportingModel = false;
         }
@@ -176,12 +193,40 @@
             if (!overwrite && msg.includes('OUTPUT_PATH_UNSAFE') && msg.includes('already exists')) {
                 confirmReplaceDiag = true;
             } else {
-                diagErrorMessage = `Failed to export diagnostics: ${msg.replace(/^OUTPUT_PATH_UNSAFE:\s*/, '')}`;
+                console.error('Failed to export diagnostics:', e);
+                diagErrorMessage = friendlyJobError(msg, {
+                    what: "Couldn't export the diagnostics report.",
+                    next: 'Choose another file name or location, then try again.',
+                }, false);
             }
         } finally {
             isExportingDiag = false;
         }
     }
+
+    const POLICY_OPTIONS = [
+        { value: 'SuffixNewFile', label: 'Suffix new file (doc_1.pdf, doc_2.pdf)' },
+        { value: 'Subfolder', label: 'Save to a dedicated subfolder' },
+        { value: 'OverwriteWithBackup', label: 'Overwrite original with automatic backup (F8)' },
+    ];
+    const LANGUAGE_OPTIONS = [
+        { value: 'en', label: 'English (en)' },
+        { value: 'de', label: 'Deutsch (de)' },
+        { value: 'fr', label: 'Français (fr)' },
+        { value: 'es', label: 'Español (es)' },
+    ];
+    const LICENSE_OPTIONS = ['Apache-2.0', 'MIT', 'Llama-3-Community', 'OpenRAIL-M'].map((v) => ({ value: v, label: v })).concat([{ value: 'Custom', label: 'Custom / proprietary' }]);
+    const TIERS: { id: string; value: HardwareTier | null; name: string; desc: string }[] = [
+        { id: 'auto', value: null, name: 'Auto-detect', desc: 'Adapts to system CPU & RAM' },
+        { id: 'Low', value: 'Low', name: 'Tier Low (L)', desc: '1 job · 64MB cache · ≤4GB RAM' },
+        { id: 'Medium', value: 'Medium', name: 'Tier Medium (M)', desc: '2 jobs · 256MB cache · Balanced' },
+        { id: 'High', value: 'High', name: 'Tier High (H)', desc: 'Parallel jobs · 512MB cache · 16GB+' },
+    ];
+    const THEMES: { value: ThemePreference; label: string }[] = [
+        { value: 'System', label: 'System' },
+        { value: 'Light', label: 'Light' },
+        { value: 'Dark', label: 'Dark' },
+    ];
 
     function setTier(tier: HardwareTier | null) {
         settings.tier_override = tier;
@@ -212,158 +257,73 @@
         <p class="subtitle">Hardware tiers, collision safety rules, local AI models, and offline system diagnostics</p>
     </div>
 
+    {#if loadFailed}
+        <ErrorState what="Couldn't load your settings." next="The defaults are shown. Try again." retry={loadSettings} />
+    {/if}
     {#if saveMessage}
-        <div class="banner success">{saveMessage}</div>
+        <div class="banner success" role="status">{saveMessage}</div>
     {/if}
     {#if saveError}
-        <div class="banner error">{saveError}</div>
+        <ErrorState what="Couldn't save your settings." next="Nothing was changed on disk. Try again." retry={handleSaveSettings} />
     {/if}
 
     <div class="settings-grid">
-        <!-- 1. Performance & Hardware Tier -->
+        <!-- Performance & hardware tier -->
         <section class="card" aria-labelledby="hw-title">
-            <h3 id="hw-title">⚡ Performance & Hardware Tier</h3>
+            <h3 id="hw-title">Performance & hardware tier</h3>
             <p class="description">Control CPU core allocation, worker concurrency, and tile memory cache limits.</p>
 
             <div class="tier-options">
-                <button
-                    type="button"
-                    class="tier-btn"
-                    data-testid="tier-btn-auto"
-                    class:active={settings.tier_override === null}
-                    onclick={() => setTier(null)}
-                >
-                    <div class="tier-name">Auto-Detect</div>
-                    <div class="tier-desc">Adapts to system CPU & RAM</div>
-                </button>
-                <button
-                    type="button"
-                    class="tier-btn"
-                    data-testid="tier-btn-Low"
-                    class:active={settings.tier_override === 'Low'}
-                    onclick={() => setTier('Low')}
-                >
-                    <div class="tier-name">Tier Low (L)</div>
-                    <div class="tier-desc">1 job · 64MB cache · &le;4GB RAM</div>
-                </button>
-                <button
-                    type="button"
-                    class="tier-btn"
-                    data-testid="tier-btn-Medium"
-                    class:active={settings.tier_override === 'Medium'}
-                    onclick={() => setTier('Medium')}
-                >
-                    <div class="tier-name">Tier Medium (M)</div>
-                    <div class="tier-desc">2 jobs · 256MB cache · Balanced</div>
-                </button>
-                <button
-                    type="button"
-                    class="tier-btn"
-                    data-testid="tier-btn-High"
-                    class:active={settings.tier_override === 'High'}
-                    onclick={() => setTier('High')}
-                >
-                    <div class="tier-name">Tier High (H)</div>
-                    <div class="tier-desc">Parallel jobs · 512MB cache · 16GB+</div>
-                </button>
+                {#each TIERS as t (t.id)}
+                    <Button
+                        variant="secondary"
+                        block
+                        class="tier-btn"
+                        pressed={settings.tier_override === t.value}
+                        data-testid={`tier-btn-${t.id}`}
+                        onclick={() => setTier(t.value)}
+                    >
+                        <span class="tier-body">
+                            <span class="tier-name">{t.name}</span>
+                            <span class="tier-desc">{t.desc}</span>
+                        </span>
+                    </Button>
+                {/each}
             </div>
         </section>
 
-        <!-- 2. Output Policy & Backups -->
+        <!-- Output policy & backups -->
         <section class="card" aria-labelledby="policy-title">
-            <h3 id="policy-title">🛡️ Output Policy & Collision Safety</h3>
-            <p class="description">Guarantees atomic file writes and safeguards originals against accidental overwrite.</p>
-
-            <div class="form-group">
-                <label for="output-policy-select">Output Collision Rule</label>
-                <select
-                    id="output-policy-select"
-                    bind:value={settings.output_policy}
-                >
-                    <option value="SuffixNewFile">Suffix New File (doc_1.pdf, doc_2.pdf)</option>
-                    <option value="Subfolder">Save to dedicated subfolder</option>
-                    <option value="OverwriteWithBackup">Overwrite original with automatic backup (F8)</option>
-                </select>
-            </div>
-
-            <div class="checkbox-row">
-                <input
-                    type="checkbox"
-                    id="backups-toggle"
-                    bind:checked={settings.backups_enabled}
-                />
-                <label for="backups-toggle">
-                    <strong>Enable Automatic Backups (F8)</strong>
-                    <span class="subtext">Retains original versions before overwrite transformations</span>
-                </label>
-            </div>
+            <h3 id="policy-title">Output policy & collision safety</h3>
+            <p class="description">Writes files atomically and protects originals from accidental overwrite.</p>
+            <Select label="Output collision rule" bind:value={() => settings.output_policy, (v) => (settings.output_policy = v as OutputPolicy)} options={POLICY_OPTIONS} />
+            <Toggle label="Enable automatic backups (F8): keeps the original before overwrite transformations" bind:checked={settings.backups_enabled} />
         </section>
 
-        <!-- 3. Appearance & Language -->
+        <!-- Appearance & language -->
         <section class="card" aria-labelledby="appearance-title">
-            <h3 id="appearance-title">🎨 Appearance & Language</h3>
-            <p class="description">Configure interface color theme and localization options.</p>
-
-            <div class="form-group">
-                <span class="field-label">Interface Theme</span>
+            <h3 id="appearance-title">Appearance & language</h3>
+            <p class="description">Choose the interface color theme and language.</p>
+            <div class="theme-group" role="group" aria-label="Interface theme">
+                <span class="field-label">Interface theme</span>
                 <div class="theme-buttons">
-                    <button
-                        type="button"
-                        class="theme-btn"
-                        class:active={settings.theme === 'System'}
-                        onclick={() => setTheme('System')}
-                    >
-                        🖥️ System
-                    </button>
-                    <button
-                        type="button"
-                        class="theme-btn"
-                        class:active={settings.theme === 'Light'}
-                        onclick={() => setTheme('Light')}
-                    >
-                        ☀️ Light
-                    </button>
-                    <button
-                        type="button"
-                        class="theme-btn"
-                        class:active={settings.theme === 'Dark'}
-                        onclick={() => setTheme('Dark')}
-                    >
-                        🌙 Dark
-                    </button>
+                    {#each THEMES as th (th.value)}
+                        <Button variant="secondary" size="sm" pressed={settings.theme === th.value} onclick={() => setTheme(th.value)}>{th.label}</Button>
+                    {/each}
                 </div>
             </div>
-
-            <div class="form-group">
-                <label for="language-select">Interface Language</label>
-                <select id="language-select" bind:value={settings.language}>
-                    <option value="en">English (en)</option>
-                    <option value="de">Deutsch (de)</option>
-                    <option value="fr">Français (fr)</option>
-                    <option value="es">Español (es)</option>
-                </select>
-            </div>
+            <Select label="Interface language" bind:value={settings.language} options={LANGUAGE_OPTIONS} />
         </section>
 
-        <!-- Labs: experimental Studio tools, OFF by default (PROTOTYPE_SCOPE.md). Applies immediately. -->
+        <!-- Labs -->
         <section class="card" aria-labelledby="labs-title">
-            <h3 id="labs-title">🧪 Labs (Experimental)</h3>
+            <h3 id="labs-title">Labs (experimental)</h3>
             <p class="description">Unfinished Studio tools. They stay hidden unless you turn this on, and may change or be removed.</p>
-
-            <div class="checkbox-row">
-                <input
-                    type="checkbox"
-                    id="labs-toggle"
-                    data-testid="labs-toggle"
-                    checked={isLabsOn()}
-                    onchange={(e) => setLabs((e.target as HTMLInputElement).checked)}
-                />
-                <label for="labs-toggle">
-                    <strong>Show Labs tools</strong>
-                    <span class="subtext">Off by default. Saved on this device as soon as you change it.</span>
-                </label>
-            </div>
-
+            <Toggle
+                label="Show Labs tools (off by default; saved on this device as soon as you change it)"
+                data-testid="labs-toggle"
+                bind:checked={() => isLabsOn(), (v) => setLabs(v)}
+            />
             <ul class="labs-list" data-testid="labs-feature-list">
                 <li><strong>{MATH_TEXT_LABS.label}</strong> — {MATH_TEXT_LABS.note}</li>
                 <li><strong>{INK_GUESS_LABS.label}</strong> — {INK_GUESS_LABS.note}</li>
@@ -371,47 +331,33 @@
             </ul>
         </section>
 
-        <!-- 4. Local AI Model Registry -->
+        <!-- Local AI model registry -->
         <section class="card" aria-labelledby="ai-title">
-            <h3 id="ai-title">🧠 Local AI Model Import (Offline)</h3>
-            <p class="description">Import a local LLM weights file (.gguf or .onnx). Strictly local execution, zero network access.</p>
+            <h3 id="ai-title">Local AI model import (offline)</h3>
+            <p class="description">Import a local model weights file (.gguf or .onnx). It runs on this computer with no network access.</p>
 
-            <div class="form-group">
-                <label for="model-path-input">Local Model File Path</label>
-                <div class="input-action-row">
-                    <input
-                        type="text"
-                        id="model-path-input"
-                        placeholder="/path/to/model.gguf or model.onnx"
-                        bind:value={modelPathInput}
-                    />
-                    <button
-                        type="button"
-                        class="btn secondary"
-                        onclick={handleBrowseModel}
-                        title="Browse local storage for model file"
-                    >
-                        📁 Browse...
-                    </button>
-                    <button
-                        type="button"
-                        class="btn secondary"
-                        disabled={isImportingModel}
-                        onclick={handleImportModel}
-                    >
-                        {isImportingModel ? 'Verifying...' : 'Import Model'}
-                    </button>
-                </div>
+            <div class="input-action-row">
+                <Input label="Local model file path" placeholder="/path/to/model.gguf or model.onnx" bind:value={modelPathInput} />
+                <Button variant="secondary" title="Browse local storage for a model file" onclick={handleBrowseModel}>Browse…</Button>
+                <Button
+                    variant="secondary"
+                    busy={isImportingModel}
+                    disabled={loadFailed || !isLoaded}
+                    disabledReason={loadFailed ? "Settings couldn't be loaded. Retry first." : 'Your settings are still loading'}
+                    onclick={handleImportModel}
+                >
+                    {isImportingModel ? 'Verifying…' : 'Import model'}
+                </Button>
             </div>
 
             {#if modelError}
-                <div class="banner error">{modelError}</div>
+                <ErrorState what={modelError.what} next={modelError.next} />
             {/if}
 
             {#if importedModelInfo}
                 <div class="model-badge-card">
                     <div class="badge-row">
-                        <span class="model-name">📄 {importedModelInfo.file_name}</span>
+                        <span class="model-name"><StudioIcon name="file" size={14} /> {importedModelInfo.file_name}</span>
                         <span class="format-pill">{importedModelInfo.format}</span>
                         <span class="size-pill">{(Number(importedModelInfo.size_bytes) / (1024 * 1024)).toFixed(1)} MB</span>
                     </div>
@@ -423,7 +369,7 @@
             {:else if settings.local_ai_model_path}
                 <div class="model-badge-card">
                     <div class="badge-row">
-                        <span class="model-name">📄 {settings.local_ai_model_path}</span>
+                        <span class="model-name"><StudioIcon name="file" size={14} /> {settings.local_ai_model_path}</span>
                         <span class="format-pill">Configured</span>
                     </div>
                     {#if settings.ai_model_sha256}
@@ -435,79 +381,43 @@
                 </div>
             {/if}
 
-            <!-- Model Licence & Checksum Verification panel -->
             <div class="license-panel" data-testid="license-verification-panel">
-                <h4>📜 Model Licence & Verification</h4>
-                <div class="form-group">
-                    <label for="model-license-select">Model Licence (SPDX)</label>
-                    <select
-                        id="model-license-select"
-                        data-testid="model-license-select"
-                        bind:value={modelLicense}
-                    >
-                        <option value="Apache-2.0">Apache-2.0</option>
-                        <option value="MIT">MIT</option>
-                        <option value="Llama-3-Community">Llama-3-Community</option>
-                        <option value="OpenRAIL-M">OpenRAIL-M</option>
-                        <option value="Custom">Custom / Proprietary</option>
-                    </select>
-                </div>
-
-                <div class="checkbox-row">
-                    <input
-                        type="checkbox"
-                        id="license-acknowledge-checkbox"
-                        data-testid="license-acknowledge-checkbox"
-                        checked={licenseAcknowledged}
-                        onchange={(e) => handleLicenseAckChange((e.target as HTMLInputElement).checked)}
-                    />
-                    <label for="license-acknowledge-checkbox">
-                        <strong>I acknowledge the model licence terms and verify the SHA-256 hash for offline local execution</strong>
-                        <span class="subtext">Required by Failsafe F19 before local LLM execution can be enabled</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="checkbox-row">
-                <input
-                    type="checkbox"
-                    id="ai-toggle"
-                    data-testid="ai-local-toggle"
-                    disabled={!licenseAcknowledged}
-                    bind:checked={settings.ai_local_enabled}
+                <h4>Model licence & verification</h4>
+                <Select label="Model licence (SPDX)" bind:value={modelLicense} options={LICENSE_OPTIONS} data-testid="model-license-select" />
+                <Toggle
+                    label="I acknowledge the model licence terms and verify the SHA-256 hash for offline local execution (required by Failsafe F19 before local LLM execution can be enabled)"
+                    data-testid="license-acknowledge-checkbox"
+                    bind:checked={() => licenseAcknowledged, handleLicenseAckChange}
                 />
-                <label for="ai-toggle">
-                    <strong>Enable AI Features (ai-local)</strong>
-                    <span class="subtext">{licenseAcknowledged ? 'Offline summarization and translation using local weights' : 'Disabled: Acknowledge model licence terms and verify SHA-256 to enable'}</span>
-                </label>
             </div>
+
+            <Toggle
+                label={`Enable AI features (ai-local): ${licenseAcknowledged ? 'offline summarization and translation using local weights' : 'acknowledge the model licence and verify the SHA-256 first'}`}
+                data-testid="ai-local-toggle"
+                disabled={!licenseAcknowledged}
+                disabledReason="Acknowledge the model licence terms first"
+                bind:checked={settings.ai_local_enabled}
+            />
         </section>
     </div>
 
-    <!-- 5. Local Log Viewer & Diagnostics Export -->
+    <!-- Log viewer & diagnostics export -->
     <section class="card full-width" aria-labelledby="diag-title">
         <div class="card-header-actions">
             <div>
-                <h3 id="diag-title">📋 Local Log Viewer & Diagnostics</h3>
-                <p class="description">Inspect active system logs or export a sanitized local diagnostics report.</p>
+                <h3 id="diag-title">Local log viewer & diagnostics</h3>
+                <p class="description">Inspect recent logs or export a sanitized local diagnostics report.</p>
             </div>
-            <div class="actions">
-                <button
-                    type="button"
-                    class="btn secondary"
-                    disabled={isLoadingLogs}
-                    onclick={refreshLogs}
-                >
-                    {isLoadingLogs ? 'Loading...' : '🔄 Refresh Logs'}
-                </button>
-            </div>
+            <Button variant="secondary" busy={isLoadingLogs} onclick={refreshLogs}>
+                {isLoadingLogs ? 'Loading…' : 'Refresh logs'}
+            </Button>
         </div>
 
         {#if logError}
-            <div class="banner error">{logError}</div>
+            <ErrorState what="Couldn't read the logs." next="Try again." retry={refreshLogs} />
         {/if}
 
-        <div class="log-viewer" role="region" aria-label="Recent Logs">
+        <div class="log-viewer" role="region" aria-label="Recent logs">
             {#if recentLogs.length === 0}
                 <div class="log-empty">No recent logs recorded.</div>
             {:else}
@@ -521,437 +431,219 @@
 
         <div class="export-box">
             <div class="export-row">
-                <label for="diag-path-input">Export Diagnostics Report:</label>
-                <input
-                    type="text"
-                    id="diag-path-input"
-                    bind:value={diagnosticsPath}
-                    placeholder="localpdf-diagnostics.txt"
-                />
-                <button
-                    type="button"
-                    class="btn primary"
-                    disabled={isExportingDiag}
-                    onclick={() => handleExportDiagnostics(false)}
-                >
-                    {isExportingDiag ? 'Exporting...' : 'Export Diagnostics'}
-                </button>
+                <Input label="Export diagnostics report" bind:value={diagnosticsPath} placeholder="localpdf-diagnostics.txt" />
+                <Button variant="primary" busy={isExportingDiag} onclick={() => handleExportDiagnostics(false)}>
+                    {isExportingDiag ? 'Exporting…' : 'Export diagnostics'}
+                </Button>
             </div>
             {#if diagSuccessMessage}
-                <div class="banner success">{diagSuccessMessage}</div>
+                <div class="banner success" role="status">{diagSuccessMessage}</div>
             {/if}
             {#if diagErrorMessage}
-                <div class="banner error">{diagErrorMessage}</div>
+                <ErrorState what={diagErrorMessage.what} next={diagErrorMessage.next} />
             {/if}
         </div>
     </section>
 
-    <!-- Save Settings Action Footer -->
+    <!-- Save -->
     <div class="footer-actions">
-        <button
-            type="button"
-            class="btn primary large"
-            disabled={isSaving}
+        <Button
+            variant="primary"
+            size="lg"
+            busy={isSaving}
+            disabled={loadFailed || !isLoaded}
+            disabledReason={loadFailed ? "Settings couldn't be loaded. Retry first." : 'Your settings are still loading'}
             onclick={handleSaveSettings}
         >
-            {isSaving ? 'Saving...' : '💾 Save Settings'}
-        </button>
+            {isSaving ? 'Saving…' : 'Save settings'}
+        </Button>
     </div>
 </div>
 
 <style>
     .settings-view {
-        padding: 1.5rem;
-        max-width: 1200px;
-        margin: 0 auto;
-        color: var(--text-primary);
         display: flex;
         flex-direction: column;
-        gap: 1.5rem;
+        gap: var(--space-4);
+        padding: var(--space-4);
+        color: var(--text-primary);
     }
 
     .header h2 {
-        font-size: 1.8rem;
-        margin: 0 0 0.25rem 0;
+        margin: 0;
+        font-size: var(--font-size-title1);
         color: var(--accent-primary);
     }
 
-    .subtitle {
+    .subtitle,
+    .description {
+        margin: var(--space-1) 0 0;
         color: var(--text-secondary);
-        margin: 0;
-        font-size: 0.95rem;
-    }
-
-    .banner {
-        padding: 0.75rem 1rem;
-        border-radius: var(--radius-sm, 8px);
-        font-size: 0.9rem;
-    }
-
-    .banner.success {
-        background-color: rgba(52, 199, 89, 0.15);
-        border: 1px solid var(--semantic-success);
-        color: var(--semantic-success);
-    }
-
-    .banner.error {
-        background-color: rgba(255, 59, 48, 0.15);
-        border: 1px solid var(--semantic-danger);
-        color: var(--semantic-danger);
+        font-size: var(--font-size-footnote);
     }
 
     .settings-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+        align-items: start;
+        gap: var(--space-4);
     }
 
     .card {
-        background-color: var(--glass-bg-surface);
-        -webkit-backdrop-filter: var(--glass-blur);
-        backdrop-filter: var(--glass-blur);
+        background: var(--glass-bg-surface);
         border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-lg, 14px);
-        box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-sm);
-        padding: 1.5rem;
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: var(--space-3);
         min-width: 0;
-        box-sizing: border-box;
-    }
-
-    .card.full-width {
-        grid-column: 1 / -1;
     }
 
     .card h3 {
         margin: 0;
-        font-size: 1.15rem;
-        color: var(--text-primary);
-    }
-
-    .description {
-        margin: 0;
-        font-size: 0.85rem;
-        color: var(--text-secondary);
+        font-size: var(--font-size-title3);
     }
 
     .tier-options {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
-        gap: 0.75rem;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-2);
     }
 
-    .tier-btn {
-        background-color: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-sm, 8px);
-        padding: 0.75rem;
+    .tier-options :global(.tier-btn .lp-btn) {
+        height: auto;
+        min-height: 0;
+        justify-content: flex-start;
         text-align: left;
-        cursor: pointer;
-        color: var(--text-primary);
-        transition: all var(--dur-fast, 120ms) ease;
+        padding: var(--space-3);
+        font-weight: 400;
     }
 
-    .tier-btn:hover {
-        border-color: var(--accent-primary);
-        background-color: var(--glass-bg-hover);
-    }
-
-    .tier-btn.active {
-        border-color: var(--accent-primary);
-        background-color: var(--glass-bg-active);
-        color: var(--accent-primary);
+    .tier-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+        white-space: normal;
     }
 
     .tier-name {
         font-weight: 600;
-        font-size: 0.95rem;
-        margin-bottom: 0.2rem;
     }
 
     .tier-desc {
-        font-size: 0.75rem;
         color: var(--text-secondary);
+        font-size: var(--font-size-footnote);
     }
 
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.4rem;
-    }
-
-    .form-group label,
     .field-label {
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: var(--text-primary);
+        font-size: var(--font-size-footnote);
+        font-weight: 600;
+        color: var(--text-secondary);
     }
 
-    select, input[type="text"] {
-        background-color: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-md, 10px);
-        padding: 0.6rem 0.8rem;
-        color: var(--text-primary);
-        font-size: 0.9rem;
-        outline: none;
-    }
-
-    select option {
-        background-color: var(--option-bg) !important;
-        color: var(--option-fg) !important;
-        padding: 0.4rem;
-    }
-
-    select:focus, input[type="text"]:focus {
-        border-color: var(--accent-primary);
-        box-shadow: 0 0 0 3px var(--accent-ring);
-    }
-
-    .checkbox-row {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.6rem;
-        padding-top: 0.25rem;
-    }
-
-    .checkbox-row input[type="checkbox"] {
-        margin-top: 0.2rem;
-        accent-color: var(--accent-primary);
-        cursor: pointer;
-    }
-
-    .checkbox-row label {
+    .theme-group {
         display: flex;
         flex-direction: column;
-        cursor: pointer;
-        font-size: 0.9rem;
+        gap: var(--space-2);
     }
 
-    .subtext {
-        font-size: 0.75rem;
-        color: var(--text-secondary);
+    .theme-buttons,
+    .input-action-row,
+    .export-row {
+        display: flex;
+        gap: var(--space-2);
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .input-action-row :global(.lp-field),
+    .export-row :global(.lp-field) {
+        flex: 1;
+        min-width: 14em;
     }
 
     .labs-list {
-        margin: 0.75rem 0 0;
-        padding-left: 1.1rem;
-        font-size: 0.8rem;
-        line-height: 1.45;
+        margin: 0;
+        padding-left: var(--space-5);
+        font-size: var(--font-size-footnote);
         color: var(--text-secondary);
-    }
-
-    .theme-buttons {
-        display: inline-flex;
-        padding: 3px;
-        border-radius: var(--radius-sm, 8px);
-        background: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        width: 100%;
-        max-width: 360px;
-        gap: 3px;
-    }
-
-    .theme-btn {
-        flex: 1;
-        padding: 0.45rem 0.75rem;
-        background-color: transparent;
-        border: none;
-        border-radius: var(--radius-xs, 6px);
-        color: var(--text-primary);
-        cursor: pointer;
-        font-size: 0.85rem;
-        font-weight: 500;
-        transition: background-color var(--dur-fast, 120ms) ease, box-shadow var(--dur-fast, 120ms) ease;
-    }
-
-    .theme-btn:hover {
-        background-color: var(--glass-bg-hover);
-    }
-
-    .theme-btn.active {
-        background-color: var(--glass-bg-elevated);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), inset 0 1px 0 0 var(--glass-border-specular);
-        color: var(--accent-primary);
-        font-weight: 600;
-    }
-
-    .input-action-row {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .input-action-row input {
-        flex: 1;
-    }
-
-    .model-badge-card {
-        background-color: var(--glass-bg-elevated);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-md, 10px);
-        padding: 0.75rem;
         display: flex;
         flex-direction: column;
-        gap: 0.4rem;
+        gap: var(--space-2);
     }
 
-    .badge-row {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .model-name {
-        font-weight: 500;
-        font-size: 0.85rem;
-        flex: 1;
-    }
-
-    .format-pill, .size-pill {
-        font-size: 0.75rem;
-        padding: 0.15rem 0.5rem;
-        border-radius: 12px;
-        background-color: var(--glass-bg-input);
-        color: var(--semantic-warning);
-    }
-
-    .size-pill {
-        color: var(--semantic-success);
-    }
-
-    .hash-row {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.75rem;
-        color: var(--text-secondary);
-    }
-
-    .hash-row code {
-        background-color: var(--glass-bg-input);
-        padding: 0.1rem 0.3rem;
-        border-radius: 4px;
-        color: var(--text-primary);
-        word-break: break-all;
-    }
-
+    .model-badge-card,
     .license-panel {
-        background-color: var(--glass-bg-surface);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-md, 10px);
-        padding: 0.75rem;
+        padding: var(--space-3);
+        border-radius: var(--radius-md);
+        background: var(--glass-bg-input);
         display: flex;
         flex-direction: column;
-        gap: 0.6rem;
+        gap: var(--space-2);
     }
 
     .license-panel h4 {
         margin: 0;
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: var(--text-primary);
+    }
+
+    .badge-row {
+        display: flex;
+        gap: var(--space-2);
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .format-pill,
+    .size-pill {
+        font-size: var(--font-size-caption);
+        padding: 0 var(--space-2);
+        border-radius: var(--radius-pill);
+        background: var(--glass-bg-active);
+    }
+
+    .hash-row code {
+        word-break: break-all;
+        font-size: var(--font-size-caption);
     }
 
     .card-header-actions {
         display: flex;
         justify-content: space-between;
+        gap: var(--space-3);
         align-items: flex-start;
+        flex-wrap: wrap;
     }
 
     .log-viewer {
-        background-color: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-md, 10px);
-        padding: 0.75rem;
-        height: 180px;
-        overflow-y: auto;
-        font-family: var(--font-mono, monospace);
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        display: flex;
-        flex-direction: column;
-        gap: 0.2rem;
-    }
-
-    .log-empty {
-        color: var(--text-tertiary);
-        font-style: italic;
+        max-height: 220px;
+        overflow: auto;
+        padding: var(--space-3);
+        border-radius: var(--radius-md);
+        background: var(--glass-bg-input);
+        font-family: var(--font-mono);
+        font-size: var(--font-size-caption);
     }
 
     .log-line {
-        line-height: 1.3;
+        white-space: pre-wrap;
         word-break: break-all;
     }
 
-    .export-box {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        padding-top: 0.5rem;
-        border-top: 1px solid var(--glass-border-subtle);
-    }
-
-    .export-row {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .export-row label {
-        font-size: 0.85rem;
-        color: var(--text-primary);
-        white-space: nowrap;
-    }
-
-    .export-row input {
-        flex: 1;
-    }
-
-    .btn {
-        padding: 0.6rem 1rem;
-        border-radius: var(--radius-md, 10px);
+    .banner {
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-footnote);
+        background: var(--glass-bg-input);
         border: 1px solid var(--glass-border-subtle);
-        cursor: pointer;
-        font-size: 0.85rem;
-        font-weight: 500;
-        transition: all var(--dur-fast, 120ms) ease;
     }
 
-    .btn.primary {
-        background-color: var(--accent-primary);
-        color: var(--text-on-accent);
-        border-color: transparent;
-    }
-
-    .btn.primary:hover:not(:disabled) {
-        background-color: var(--accent-primary-hover);
-    }
-
-    .btn.secondary {
-        background-color: var(--glass-bg-input);
-        color: var(--text-primary);
-    }
-
-    .btn.secondary:hover:not(:disabled) {
-        background-color: var(--glass-bg-hover);
-    }
-
-    .btn.large {
-        padding: 0.8rem 1.75rem;
-        font-size: 1rem;
-        font-weight: 600;
-    }
-
-    .btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+    .banner.success {
+        border-color: var(--semantic-success);
     }
 
     .footer-actions {
         display: flex;
         justify-content: flex-end;
-        padding-top: 0.5rem;
     }
 </style>

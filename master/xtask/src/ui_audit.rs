@@ -108,7 +108,16 @@ fn is_spacing_prop(p: &str) -> bool {
 }
 
 /// Words that overclaim. `100%` is handled separately (see `overclaim_hits`).
-const OVERCLAIM_WORDS: &[&str] = &["instantly", "perfect", "flawless"];
+const OVERCLAIM_WORDS: &[&str] = &[
+    "military-grade",
+    "military grade",
+    "instantly",
+    "instant",
+    "perfect",
+    "flawless",
+    "zero cloud",
+    "zero-cloud",
+];
 
 /// Proper nouns that legitimately start with a capital inside a sentence-case button label.
 const PROPER_NOUNS: &[&str] = &[
@@ -822,9 +831,87 @@ pub fn audit_source(file: &str, src: &str, shared_tags: &[&str]) -> Vec<Violatio
         }
     }
 
+    // (f1b) Badges and pills are labels too: Title Case text in `<span class="...badge...">` / `...pill...`.
+    for t in find_tags(&markup, "span") {
+        if t.self_closing || !(t.attrs.contains("badge") || t.attrs.contains("pill")) {
+            continue;
+        }
+        let Some(close) = markup[t.open_end..].find("</span") else {
+            continue;
+        };
+        let inner = analyze_inner(&markup[t.open_end..t.open_end + close]);
+        if inner.unknown || !inner.has_text || inner.dynamic || inner.blocks {
+            continue;
+        }
+        let label = inner.text.split_whitespace().collect::<Vec<_>>().join(" ");
+        if is_title_case(&label) {
+            push(
+                t.line,
+                Rule::TitleCase,
+                label.clone(),
+                format!("badge text `{label}` is Title Case: use sentence case"),
+            );
+        }
+    }
+
     out.sort_by(|a, b| (a.line, a.rule, &a.detail).cmp(&(b.line, b.rule, &b.detail)));
     out.dedup();
     out
+}
+
+/// Audit the user-visible strings of an i18n JSON catalog (FAQ answers, labels, ...) with the same overclaim and
+/// Title Case rules as the `.svelte` files. A short value (at most six words, no sentence punctuation) is a label
+/// and must be sentence case; every value is checked for overclaiming words and for "100% <word>" claims.
+pub fn audit_i18n_json(file: &str, src: &str) -> Vec<Violation> {
+    let mut out = Vec::new();
+    let english = file.ends_with("/en.json") || file == "en.json";
+    for (i, line) in src.lines().enumerate() {
+        let Some(value) = json_string_value(line) else {
+            continue;
+        };
+        let lower = value.to_lowercase();
+        let mut hits = overclaim_hits(&lower, false);
+        hits.sort();
+        hits.dedup();
+        for w in hits {
+            out.push(Violation {
+                file: file.to_string(),
+                line: i + 1,
+                rule: Rule::Overclaim,
+                detail: w.clone(),
+                message: format!(
+                    "overclaiming wording `{w}`: say what the feature does, not how well"
+                ),
+            });
+        }
+        let words = value.split_whitespace().count();
+        let sentence = value.ends_with(['.', '?', '!', ':', ';']) || value.contains(". ");
+        // Title Case is an English convention: only the English catalog is checked for it.
+        if english && words <= 6 && !sentence && is_title_case(&value) {
+            out.push(Violation {
+                file: file.to_string(),
+                line: i + 1,
+                rule: Rule::TitleCase,
+                detail: value.clone(),
+                message: format!("label `{value}` is Title Case: use sentence case"),
+            });
+        }
+    }
+    out
+}
+
+/// The string value of a `"key": "value"` JSON line (the catalogs are one pair per line), unescaped just enough.
+fn json_string_value(line: &str) -> Option<String> {
+    let t = line
+        .trim()
+        .trim_start_matches('{')
+        .trim_end_matches(',')
+        .trim_end_matches('}')
+        .trim();
+    let after_key = t.strip_prefix('"')?.split_once("\": ")?.1;
+    let body = after_key.strip_prefix('"')?;
+    let end = body.rfind('"')?;
+    Some(body[..end].replace("\\\"", "\""))
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1048,6 +1135,23 @@ pub fn scan_tree(workspace_root: &std::path::Path) -> Scan {
             }
         }
         files.push(rel);
+    }
+    // i18n catalogs (FAQ and any other JSON under lib/i18n): overclaim and Title Case rules apply to their strings too.
+    let mut json_paths: Vec<std::path::PathBuf> = walkdir::WalkDir::new(src_root.join("lib/i18n"))
+        .into_iter()
+        .filter_map(Result::ok)
+        .map(|e| e.into_path())
+        .filter(|p| p.is_file() && p.extension().and_then(|s| s.to_str()) == Some("json"))
+        .collect();
+    json_paths.sort();
+    for p in &json_paths {
+        let rel = p
+            .strip_prefix(workspace_root)
+            .unwrap_or(p)
+            .to_string_lossy()
+            .replace('\\', "/");
+        let content = std::fs::read_to_string(p).unwrap_or_default();
+        violations.extend(audit_i18n_json(&rel, &content));
     }
     Scan {
         files,
@@ -1651,6 +1755,91 @@ mod tests {
         }
         // zoom / CSS percentages are not claims
         assert_eq!(count("<button>100%</button>", Rule::Overclaim), 0);
+    }
+
+    // i18n JSON strings: the same overclaim and Title Case rules as the .svelte files.
+    fn i18n(src: &str) -> Vec<Violation> {
+        audit_i18n_json("lib/i18n/faq/en.json", src)
+    }
+
+    #[test]
+    fn i18n_overclaims_are_flagged() {
+        for bad in [
+            r#"{"a": "Conversion runs 100% on your device."}"#,
+            r#"{"a": "Quick and instant non-destructive actions."}"#,
+            r#"{"a": "Select extractive mode for instant summarization."}"#,
+            r#"{"a": "Pipeline stages use WAL journals; zero cloud dependency."}"#,
+            r#"{"a": "Works instantly."}"#,
+            r#"{"a": "Uses military-grade encryption."}"#,
+        ] {
+            let v = i18n(bad);
+            assert!(v.iter().any(|v| v.rule == Rule::Overclaim), "{bad}: {v:?}");
+        }
+    }
+
+    #[test]
+    fn i18n_honest_strings_pass() {
+        for ok in [
+            r#"{"a": "Conversion runs on your device using native Rust engines."}"#,
+            r#"{"a": "No cloud service is used."}"#,
+            r#"{"a": "Set the zoom to 100%."}"#,
+            r#"{"a": "Passwords are zeroed in memory right after use."}"#,
+        ] {
+            assert!(i18n(ok).is_empty(), "{ok}: {:?}", i18n(ok));
+        }
+    }
+
+    #[test]
+    fn i18n_title_case_labels_are_flagged_but_sentences_and_questions_are_not() {
+        let v = i18n(r#"{"feature": "Security & Signatures"}"#);
+        assert!(v.iter().any(|v| v.rule == Rule::TitleCase), "{v:?}");
+        let v = i18n(r#"{"feature": "Batch Queue"}"#);
+        assert!(v.iter().any(|v| v.rule == Rule::TitleCase), "{v:?}");
+        for ok in [
+            r#"{"feature": "Security and signatures"}"#,
+            r#"{"feature": "Markdown"}"#,
+            r#"{"q": "How does the AI Summarizer process text without cloud LLMs?"}"#,
+            r#"{"a": "Yes. The Organize workspace lets you reorder pages."}"#,
+        ] {
+            assert!(i18n(ok).is_empty(), "{ok}: {:?}", i18n(ok));
+        }
+    }
+
+    // Badges and pills are labels too (the old rule only looked at buttons: "Gated Opt-In" slipped through).
+    #[test]
+    fn title_case_badge_text_is_flagged() {
+        assert_eq!(
+            count(
+                "<span class=\"mode-badge\" data-testid=\"x\">Gated Opt-In</span>",
+                Rule::TitleCase
+            ),
+            1
+        );
+        assert_eq!(
+            count(
+                "<span class=\"format-pill\">Quick Mode Badge</span>",
+                Rule::TitleCase
+            ),
+            1
+        );
+        assert_eq!(
+            count(
+                "<span class=\"mode-badge\">Gated opt-in</span>",
+                Rule::TitleCase
+            ),
+            0
+        );
+        assert_eq!(
+            count("<span class=\"mode-badge\">{label}</span>", Rule::TitleCase),
+            0
+        );
+        assert_eq!(
+            count(
+                "<span class=\"title\">Some Heading Text</span>",
+                Rule::TitleCase
+            ),
+            0
+        );
     }
 
     // strict-mode globs

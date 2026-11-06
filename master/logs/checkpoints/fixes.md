@@ -1,4 +1,5 @@
 # checkpoints/fixes.md — fixes builder (wt/fixes). Builder keeps this current; < 150 lines.
+- **C sweep group 14 DONE (AiSummarize, Batch, Settings): UI sweep COMPLETE, inventory 0 violations in 52 files, uncommitted, awaiting lead.** verify GREEN; flows 10,23 PASS. FLAG Settings writes prefs (presentation-only). Sample batch -> Labs.
 - **C sweep group 11 DONE (Forms, Security [SECURITY FLAG], PdfViewer) + stale-notice/wording minors, uncommitted, awaiting lead.** verify GREEN; flows 10,23 PASS. Remaining: ConvertFrom/To, Markdown, AiSummarize, Batch, Pipelines, Settings. HARD STOP 16:45.
 - **C sweep group 10 DONE (ConvertView tabs, OptimizeView, EditView, shared ViewShell + JobRunner; BUG-045 fixed), uncommitted, awaiting lead.** verify GREEN; flows 10,22,23 PASS. Next: group 11 Forms/Security(FLAG)/PdfViewer; then ConvertFrom/To, Markdown, AiSummarize, Batch, Pipelines, Settings. HARD STOP 16:45.
 - **C sweep group 9 DONE (PropertyPill + ui/ColorSwatch, compact Select/Input), uncommitted, awaiting lead.** Tests red (sweep-g9-red) -> green; verify GREEN; flows 4,5,21,22 PASS. Inventory regenerated. New: ui/ColorSwatch.svelte, flow22_sweep_pill.py, StudioUndoTooltip.test.ts.
@@ -63,3 +64,10 @@
   code unchanged. Red: logs/runs/xtask-ui-red-keep.log (10/17 fail), xtask-ui-red2.log (emoji label); green: xtask-ui-green2.log 17/17.
   New files: xtask/src/ui_audit.rs, xtask/ui-strict.txt (empty), docs/UI_CONSISTENCY_INVENTORY.md. Next: verify.sh gate, report.
 - **A2 batch (uncommitted):** px allowlist (xtask/ui-px-allowlist.txt, tests red->green t1/t3); raw-px 286->283; FaqModal Escape moved to commandEngine.registerEscape (FaqModalKeys.test.ts green before+after); 5 icon buttons labelled; ConvertToPdf wording; 6 local-key deferred (allowlisted). verify GREEN.
+
+## g14 fix round (14:20)
+- BUG-059 Settings fail-closed (Save disabled + reason, handler guard; 3 tests red->green). Theme: Settings no longer snaps theme to the saved backend value on open (test red->green) = why "dark" shot was light.
+- i18n/ConvertTo overclaims reworded (en/ta/fr/ja/zh; ja/zh/ta/fr need native re-check); audit extended to i18n JSON (overclaim all langs, Title Case en only) + badge spans; ui-strict += lib/i18n/faq/*.json. Limit: overclaim words are English-only.
+- Visual: Batch header compact, StudioIcon += bolt/chip/globe/file/clock/warning/arrow.right (emoji removed in the 3 views), Toggle label left-aligned, Settings grid aligned, disabled destructive Button legible, floating Help and FAQ only when sidebar collapsed (test), Gated opt-in / Model ready.
+- Flow 23 leftover: wd.stop_group waits for whole driver group (test_driver_stop.py red->green). verify GREEN; flows 10, 23 PASS, no leftover warning.
+- BUG-059 remainder: import refuses on unreadable settings (Rust test), UI Import disabled, handler-direct tests, military-grade removed (AES-256 only) + audit word. verify GREEN, flow 23 PASS.

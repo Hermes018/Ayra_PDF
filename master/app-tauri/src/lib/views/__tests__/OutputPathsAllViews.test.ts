@@ -184,7 +184,7 @@ describe('Batch queue: compress outputs', () => {
         vi.spyOn(mod, 'pickFilesDialog').mockResolvedValue(['/docs/one', '/docs/two.pdf']);
         const { default: BatchQueueView } = await import('../BatchQueueView.svelte');
         render(BatchQueueView);
-        await click(screen.getByRole('button', { name: /Add Files|Add files|Browse/i }));
+        await click(screen.getByTestId('btn-add-batch-files'));
         await waitFor(() => expect(spy).toHaveBeenCalled());
         for (const r of submitted) {
             expect(outputOf(r)).not.toBe(r.input_path);

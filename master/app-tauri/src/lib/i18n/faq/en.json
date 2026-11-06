@@ -1,7 +1,7 @@
 {
   "locale": "en",
   "language": "English",
-  "title": "Frequently Asked Questions",
+  "title": "Frequently asked questions",
   "searchPlaceholder": "Search features, workflows, and offline policies...",
   "emptySearch": "No matching features found.",
   "items": [
@@ -9,7 +9,7 @@
       "id": "convert",
       "feature": "Convert",
       "question": "How does PDF conversion work without uploading my documents?",
-      "answer": "Conversion runs 100% on your device using native Rust vector engines and sandboxed document adapters.",
+      "answer": "Conversion runs on your device using native Rust vector engines and sandboxed document adapters.",
       "usage": "Select Convert in the sidebar, choose Convert From PDF or Convert To PDF, configure your target format (Office, Image, PDF/A, HTML, TXT), and click Convert.",
       "outputs": "Generates pristine DOCX, XLSX, PPTX, PNG, JPEG, PDF/A-2b/3b, HTML, or TXT files atomically to your target folder.",
       "offlineBoundaries": "Zero network requests. No cloud telemetry, no remote servers. Everything runs in isolated local worker processes."
@@ -18,7 +18,7 @@
       "id": "organize",
       "feature": "Organize",
       "question": "Can I reorder, rotate, delete, and extract pages safely?",
-      "answer": "Yes. The Organize workspace lets you manipulate pages visually with drag-and-drop page grids and instant non-destructive actions.",
+      "answer": "Yes. The Organize workspace lets you manipulate pages visually with drag-and-drop page grids and non-destructive actions.",
       "usage": "Drag PDF pages into the visual grid to reorder them, rotate individual or all pages, delete unwanted pages, or split into chapters.",
       "outputs": "Saves an atomically rewritten, valid PDF file while leaving the original untouched unless explicit overwrite is chosen.",
       "offlineBoundaries": "All page tree adjustments happen in memory and local temp files; no external runtime dependencies."
@@ -34,16 +34,16 @@
     },
     {
       "id": "security",
-      "feature": "Security & Signatures",
+      "feature": "Security and signatures",
       "question": "How secure is encryption and digital signing in LocalPDF Studio?",
-      "answer": "Security uses military-grade AES-256 and AES-128 encryption with strict fail-closed cryptographic integrity and PKCS#12 signing.",
+      "answer": "Security encrypts PDFs with AES-256 (Acrobat X and later) and signs with PKCS#12 certificates; integrity checks fail closed.",
       "usage": "Set user and owner passwords, configure granular print/copy permissions, or select a PKCS#12 (.p12/.pfx) digital certificate to sign.",
       "outputs": "Standard-compliant encrypted PDF or PAdES digitally signed document with cryptographically verifiable digests.",
       "offlineBoundaries": "Passwords and private keys are zeroized in RAM immediately after use. No remote timestamp authority pings or certificate upload."
     },
     {
       "id": "edit",
-      "feature": "Edit & Annotate",
+      "feature": "Edit and annotate",
       "question": "Can I add annotations, watermarks, stamps, and bates numbering?",
       "answer": "Yes. The Edit suite allows adding standard PDF markup annotations, headers/footers, text overlays, and legal bates numbers.",
       "usage": "Open a PDF in Edit mode, select annotation tools (highlight, underline, sticky note, watermark), customize styles, and click Save.",
@@ -52,7 +52,7 @@
     },
     {
       "id": "forms",
-      "feature": "Interactive Forms",
+      "feature": "Interactive forms",
       "question": "How do AcroForm and XFA form filling and flattening work?",
       "answer": "LocalPDF Studio detects, populates, exports, and flattens form fields (text boxes, checkboxes, radio buttons, dropdowns) seamlessly.",
       "usage": "Fill out fields interactively, import/export data via XFDF, or choose 'Flatten Form' to convert interactive widgets into static vector art.",
@@ -70,16 +70,16 @@
     },
     {
       "id": "ai_summarizer",
-      "feature": "AI Summarizer",
+      "feature": "AI summarizer",
       "question": "How does the AI Summarizer process text without cloud LLMs?",
       "answer": "Summaries are created locally using pure extractive algorithms by default, or an optional offline local ONNX/GGUF model.",
-      "usage": "Select extractive mode for instant statistical key-sentence summarization, or import a local GGUF/ONNX model for map-reduce synthesis.",
+      "usage": "Select extractive mode for statistical key-sentence summarization that needs no model, or import a local GGUF/ONNX model for map-reduce synthesis.",
       "outputs": "Concise Markdown summaries or structured topic outlines saved to disk.",
       "offlineBoundaries": "Failsafe F19 enforced: strictly offline local inference. Network socket access is barred via container and OS sandboxing."
     },
     {
       "id": "batch_queue",
-      "feature": "Batch Queue",
+      "feature": "Batch queue",
       "question": "Can I process hundreds of files simultaneously?",
       "answer": "The Batch Queue manages asynchronous multi-threaded jobs with automatic concurrency scaling based on detected hardware tiers.",
       "usage": "Enqueue multiple documents or directories, choose individual operations, prioritize tasks, and monitor progress bars.",
@@ -88,12 +88,12 @@
     },
     {
       "id": "workflows",
-      "feature": "Workflows & Pipelines",
+      "feature": "Workflows and pipelines",
       "question": "What is tool chaining and how do workflow pipelines work?",
       "answer": "Workflows let you chain multiple PDF transformations (e.g., OCR -> Redact -> Compress -> Sign) into an automated one-click pipeline.",
       "usage": "Select a built-in workflow preset (Legal Compliance, Archival, Web Optimization) or build custom pipelines with sequential steps.",
       "outputs": "A thoroughly processed final PDF that has passed every stage with atomic verification between stages.",
-      "offlineBoundaries": "Pipeline stages pass temporary files using internal WAL journals on disk; zero cloud dependency."
+      "offlineBoundaries": "Pipeline stages pass temporary files using internal WAL journals on disk; no cloud service is used."
     }
   ]
 }

@@ -235,6 +235,26 @@ fn import_local_ai_model(
     license_spdx: Option<String>,
     acknowledge_license: Option<bool>,
 ) -> Result<AiModelInfo, String> {
+    import_local_ai_model_at(
+        &get_settings_path(),
+        model_path,
+        license_spdx,
+        acknowledge_license,
+    )
+}
+
+/// Testable core of the import. Fail closed: if the settings file cannot be read the import is refused and
+/// nothing is written, so defaults can never replace the user's real settings (BUG-059).
+fn import_local_ai_model_at(
+    settings_path: &std::path::Path,
+    model_path: String,
+    license_spdx: Option<String>,
+    acknowledge_license: Option<bool>,
+) -> Result<AiModelInfo, String> {
+    let mut current_settings = lpdf_fs_safety::load_settings(settings_path).map_err(|e| {
+        format!("SETTINGS_UNREADABLE: your settings could not be read, so nothing was imported or changed ({e})")
+    })?;
+
     let path = PathBuf::from(&model_path);
     let mut info = lpdf_core_types::inspect_ai_model(&path).map_err(|e| e.to_string())?;
 
@@ -242,14 +262,15 @@ fn import_local_ai_model(
     info.license_spdx = license_spdx.clone();
     info.license_acknowledged = ack;
 
-    let mut current_settings = get_settings().unwrap_or_default();
     current_settings.local_ai_model_path = Some(path);
     current_settings.ai_model_sha256 = Some(info.sha256_hex.clone());
     current_settings.ai_model_license = license_spdx;
     current_settings.ai_license_acknowledged = ack;
     // Failsafe F19: refuse to enable ai_local_enabled unless license is explicitly acknowledged
     current_settings.ai_local_enabled = ack;
-    let _ = save_settings(current_settings);
+    lpdf_fs_safety::save_settings_atomic(settings_path, &current_settings).map_err(|e| {
+        format!("SETTINGS_WRITE_FAILED: the model was not saved to your settings ({e})")
+    })?;
 
     Ok(info)
 }
@@ -901,5 +922,36 @@ mod writer_guard_tests {
             native_text_only: None,
         })));
         assert_eq!(std::fs::read(&existing).unwrap(), b"previous");
+    }
+}
+
+#[cfg(test)]
+mod import_settings_guard_tests {
+    use super::*;
+
+    // BUG-059: importing a model must never write defaults over a settings file that cannot be read.
+    #[test]
+    fn import_refuses_and_writes_nothing_when_settings_are_unreadable() {
+        let d = std::env::temp_dir().join(format!("lpdf_import_guard_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        let settings = d.join("settings.toml");
+        let corrupt = b"this is = not [valid toml\n licence = \"keep me\"";
+        std::fs::write(&settings, corrupt).unwrap();
+        let model = d.join("m.gguf");
+        std::fs::write(&model, b"GGUF\x03\0\0\0 model bytes").unwrap();
+
+        let r = import_local_ai_model_at(
+            &settings,
+            model.to_string_lossy().to_string(),
+            Some("Apache-2.0".into()),
+            Some(true),
+        );
+        assert!(
+            r.as_ref().is_err_and(|e| e.contains("SETTINGS_UNREADABLE")),
+            "{r:?}"
+        );
+        assert_eq!(std::fs::read(&settings).unwrap(), corrupt);
+        let _ = std::fs::remove_dir_all(&d);
     }
 }

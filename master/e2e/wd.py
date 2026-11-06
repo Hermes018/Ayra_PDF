@@ -90,17 +90,41 @@ class Driver:
             return f.read().decode("utf-8", "replace")
 
     def stop(self):
-        if self.proc.poll() is None:
-            try:
-                os.killpg(self.proc.pid, signal.SIGTERM)
-                self.proc.wait(timeout=10)
-            except (ProcessLookupError, subprocess.TimeoutExpired):
-                try:
-                    os.killpg(self.proc.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
+        stop_group(self.proc)
         self._log.close()
 
+
+
+def stop_group(proc, term_wait=10.0):
+    """SIGTERM the process group, then wait until EVERY member is gone (the leader can exit before its
+    WebKitWebDriver child), and SIGKILL the group if some member outlives `term_wait`."""
+    pgid = proc.pid
+    try:
+        os.killpg(pgid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    try:
+        proc.wait(timeout=term_wait)
+    except subprocess.TimeoutExpired:
+        pass
+    deadline = time.time() + term_wait
+    while time.time() < deadline:
+        try:
+            os.killpg(pgid, 0)
+        except ProcessLookupError:
+            return
+        time.sleep(0.05)
+    try:
+        os.killpg(pgid, signal.SIGKILL)
+    except ProcessLookupError:
+        return
+    deadline = time.time() + 3
+    while time.time() < deadline:
+        try:
+            os.killpg(pgid, 0)
+        except ProcessLookupError:
+            return
+        time.sleep(0.05)
 
 class Element:
     def __init__(self, session, ref):

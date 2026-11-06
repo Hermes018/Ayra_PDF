@@ -33,22 +33,22 @@ describe('AiSummarizeView', () => {
         cleanup();
     });
 
-    test('renders header and mode cards with Basic Extractive active by default', () => {
+    test('renders header and mode cards with Basic extractive active by default', () => {
         render(AiSummarizeView);
 
-        expect(screen.getByText('AI Document Summarizer')).toBeInTheDocument();
-        expect(screen.getByText('100% Offline & Private')).toBeInTheDocument();
+        expect(screen.getByText('AI document summarizer')).toBeInTheDocument();
+        expect(screen.getByText('Works offline')).toBeInTheDocument();
 
         const extractiveCard = screen.getByTestId('mode-extractive');
-        expect(extractiveCard).toHaveClass('active');
-        expect(screen.getByText('Basic Extractive')).toBeInTheDocument();
-        expect(screen.getByText('Default Mode')).toBeInTheDocument();
+        expect(extractiveCard).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByText('Basic extractive')).toBeInTheDocument();
+        expect(screen.getByText('Default mode')).toBeInTheDocument();
 
         const llmCard = screen.getByTestId('mode-local-llm');
-        expect(llmCard).not.toHaveClass('active');
+        expect(llmCard).toHaveAttribute('aria-pressed', 'false');
         expect(screen.getByText(/Local LLM Mode/i)).toBeInTheDocument();
-        expect(screen.getByTestId('llm-status-badge')).toHaveTextContent('Gated Opt-In');
-        expect(screen.getByTestId('translate-status-badge')).toHaveTextContent('Gated Opt-In');
+        expect(screen.getByTestId('llm-status-badge')).toHaveTextContent('Gated opt-in');
+        expect(screen.getByTestId('translate-status-badge')).toHaveTextContent('Gated opt-in');
     });
 
     test('navigates to settings when clicking configure in settings link', async () => {
@@ -69,19 +69,19 @@ describe('AiSummarizeView', () => {
         const detBtn = screen.getByTestId('length-detailed');
 
         // Medium is default
-        expect(medBtn).toHaveClass('selected');
-        expect(shortBtn).not.toHaveClass('selected');
-        expect(detBtn).not.toHaveClass('selected');
+        expect(medBtn).toHaveAttribute('aria-pressed', 'true');
+        expect(shortBtn).toHaveAttribute('aria-pressed', 'false');
+        expect(detBtn).toHaveAttribute('aria-pressed', 'false');
 
         // Select Short
         await fireEvent.click(shortBtn);
-        expect(shortBtn).toHaveClass('selected');
-        expect(medBtn).not.toHaveClass('selected');
+        expect(shortBtn).toHaveAttribute('aria-pressed', 'true');
+        expect(medBtn).toHaveAttribute('aria-pressed', 'false');
 
         // Select Detailed
         await fireEvent.click(detBtn);
-        expect(detBtn).toHaveClass('selected');
-        expect(shortBtn).not.toHaveClass('selected');
+        expect(detBtn).toHaveAttribute('aria-pressed', 'true');
+        expect(shortBtn).toHaveAttribute('aria-pressed', 'false');
     });
 
     test('shows validation error when attempting to submit without input path', async () => {
@@ -136,7 +136,7 @@ describe('AiSummarizeView', () => {
         expect(output.value).toBe('/test/state_doc_summary.md');
     });
 
-    test('displays Model Ready badge and model metadata when Local AI is configured and acknowledged', async () => {
+    test('displays Model ready badge and model metadata when Local AI is configured and acknowledged', async () => {
         vi.spyOn(IpcClient, 'getSettings').mockResolvedValue({
             tier_override: null,
             output_policy: 'SuffixNewFile',
@@ -153,7 +153,7 @@ describe('AiSummarizeView', () => {
         render(AiSummarizeView);
 
         await waitFor(() => {
-            expect(screen.getByTestId('llm-status-badge')).toHaveTextContent('Model Ready');
+            expect(screen.getByTestId('llm-status-badge')).toHaveTextContent('Model ready');
         });
         expect(screen.getByTestId('llm-model-path')).toHaveTextContent('/models/llama-3.2-1b.gguf');
         expect(screen.getByTestId('llm-model-hash')).toHaveTextContent('a1b2c3d4e5f60718...');
@@ -178,13 +178,13 @@ describe('AiSummarizeView', () => {
         render(AiSummarizeView);
 
         await waitFor(() => {
-            expect(screen.getByTestId('llm-status-badge')).toHaveTextContent('Model Ready');
+            expect(screen.getByTestId('llm-status-badge')).toHaveTextContent('Model ready');
         });
 
         const llmCard = screen.getByTestId('mode-local-llm');
         await fireEvent.click(llmCard);
 
-        expect(llmCard).toHaveClass('active');
+        expect(llmCard).toHaveAttribute('aria-pressed', 'true');
         expect(screen.getByTestId('map-reduce-section')).toBeInTheDocument();
 
         // Check chunk word limit and temperature controls
@@ -260,17 +260,17 @@ describe('AiSummarizeView', () => {
         const transCard = screen.getByTestId('mode-translate');
         await fireEvent.click(transCard);
 
-        expect(transCard).toHaveClass('active');
+        expect(transCard).toHaveAttribute('aria-pressed', 'true');
         expect(screen.getByTestId('translate-config-section')).toBeInTheDocument();
 
         // Check source and target language selectors
         const sourceSelect = screen.getByTestId('source-lang-select') as HTMLSelectElement;
         const targetSelect = screen.getByTestId('target-lang-select') as HTMLSelectElement;
-        const preserveCheckbox = screen.getByTestId('preserve-layout-checkbox') as HTMLInputElement;
+        const preserveCheckbox = screen.getByTestId('preserve-layout-checkbox');
 
         expect(sourceSelect.value).toBe('Auto');
         expect(targetSelect.value).toBe('es');
-        expect(preserveCheckbox.checked).toBe(true);
+        expect(preserveCheckbox).toHaveAttribute('aria-checked', 'true');
 
         // Change languages
         await fireEvent.change(sourceSelect, { target: { value: 'en' } });

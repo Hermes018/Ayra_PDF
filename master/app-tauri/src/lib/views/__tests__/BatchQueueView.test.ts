@@ -1,5 +1,6 @@
 import { expect, test, vi, beforeEach, afterEach, describe } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/svelte';
+import { setLabs, resetLabsGateForTests } from '$lib/components/studio/labs.svelte';
 import BatchQueueView from '../BatchQueueView.svelte';
 import { IpcClient } from '$lib/ipc';
 import type { JobRecord } from '$lib/bindings/JobRecord';
@@ -93,7 +94,7 @@ describe('BatchQueueView', () => {
         render(BatchQueueView);
 
         // Header and subtitle
-        expect(screen.getByText('Batch Queue Management')).toBeInTheDocument();
+        expect(screen.getByText('Batch queue')).toBeInTheDocument();
 
         // Check metrics: 1 Running, 1 Queued, 1 Completed, 1 Failed
         expect(await screen.findByText('Running')).toBeInTheDocument();
@@ -158,13 +159,22 @@ describe('BatchQueueView', () => {
         const clearSpy = vi.spyOn(IpcClient, 'clearFinishedJobs').mockResolvedValue(2);
         render(BatchQueueView);
 
+        await screen.findAllByTestId('job-card'); // the queue has loaded: the button is enabled
         const clearBtn = await screen.findByTestId('btn-clear-finished');
         await fireEvent.click(clearBtn);
 
         expect(clearSpy).toHaveBeenCalled();
     });
 
-    test('submits batch demo when clicked', async () => {
+    test('the sample batch is a Labs feature: hidden by default', async () => {
+        resetLabsGateForTests();
+        render(BatchQueueView);
+        await screen.findAllByTestId('job-card');
+        expect(screen.queryByTestId('btn-add-batch-demo')).toBeNull();
+    });
+
+    test('submits batch demo when clicked (Labs on)', async () => {
+        setLabs(true);
         const submitBatchSpy = vi.spyOn(IpcClient, 'submitBatch').mockResolvedValue(['id-1', 'id-2', 'id-3']);
         render(BatchQueueView);
 

@@ -1,7 +1,12 @@
 <script lang="ts">
+    import StudioIcon from '$lib/components/studio/StudioIcon.svelte';
     import { onMount, onDestroy } from 'svelte';
     import { IpcClient, pickFilesDialog } from '$lib/ipc';
     import For from '$lib/components/For.svelte';
+    import Button from '$lib/components/ui/Button.svelte';
+    import EmptyState from '$lib/components/ui/EmptyState.svelte';
+    import { friendlyJobError } from '$lib/core/jobError';
+    import { SAMPLE_BATCH_ID, SAMPLE_BATCH_LABS, LABS_BADGE, labsVisible } from '$lib/components/studio/labs.svelte';
     import { appState } from '$lib/state.svelte';
     import { freeOutputPath, siblingOutputPath } from '$lib/views/studio/outputNames';
     import type { JobRecord } from '$lib/bindings/JobRecord';
@@ -138,7 +143,8 @@
             actionMessage = `Job ${jobId.slice(0, 8)} cancelled.`;
             await loadQueue();
         } catch (e) {
-            actionMessage = `Failed to cancel job: ${e}`;
+            console.error('Failed to cancel job:', e);
+            actionMessage = "Couldn't cancel the job. Refresh the queue and try again.";
         }
     }
 
@@ -148,7 +154,8 @@
             actionMessage = `Job re-enqueued as ${newId.slice(0, 8)}.`;
             await loadQueue();
         } catch (e) {
-            actionMessage = `Failed to retry job: ${e}`;
+            console.error('Failed to retry job:', e);
+            actionMessage = "Couldn't retry the job. Refresh the queue and try again.";
         }
     }
 
@@ -158,7 +165,8 @@
             actionMessage = `Cleared ${count} finished jobs.`;
             await loadQueue();
         } catch (e) {
-            actionMessage = `Failed to clear finished jobs: ${e}`;
+            console.error('Failed to clear finished jobs:', e);
+            actionMessage = "Couldn't clear the finished jobs. Try again.";
         }
     }
 
@@ -172,7 +180,8 @@
             actionMessage = `Cancelled ${active.length} active jobs.`;
             await loadQueue();
         } catch (e) {
-            actionMessage = `Error cancelling active jobs: ${e}`;
+            console.error('Failed to cancel active jobs:', e);
+            actionMessage = "Couldn't cancel all active jobs. Refresh the queue and try again.";
         }
     }
 
@@ -198,10 +207,11 @@
 
         try {
             const ids = await IpcClient.submitBatch(demoRequests, 'High');
-            actionMessage = `Submitted batch demo with ${ids.length} jobs.`;
+            actionMessage = `Submitted the sample batch with ${ids.length} jobs.`;
             await loadQueue();
         } catch (e) {
-            actionMessage = `Failed to dispatch batch: ${e}`;
+            console.error('Failed to dispatch the sample batch:', e);
+            actionMessage = "Couldn't submit the sample batch. Try again.";
         }
     }
 
@@ -225,7 +235,7 @@
             await loadQueue();
         } catch (e) {
             console.error('Failed to add files to batch queue:', e);
-            actionMessage = `Failed to add files: ${e}`;
+            actionMessage = "Couldn't add the files. Try again; if it keeps failing, check that the files exist.";
         }
     }
 
@@ -261,22 +271,19 @@
     <!-- View Header -->
     <header class="header">
         <div class="header-title">
-            <span class="icon">📋</span>
             <div>
-                <h2>Batch Queue Management</h2>
-                <p class="subtitle">Inspect, monitor, prioritize, and control multi-file background operations</p>
+                <h2>Batch queue</h2>
+                <p class="subtitle">Inspect, monitor, and control multi-file background jobs</p>
             </div>
         </div>
         <div class="header-actions">
-            <button class="btn btn-secondary" onclick={loadQueue} disabled={loading} title="Refresh Queue">
-                🔄 Refresh
-            </button>
-            <button class="btn btn-primary" onclick={handleAddFiles} data-testid="btn-add-batch-files" title="Select PDF files from Dolphin / File Manager">
-                📁 Add Files...
-            </button>
-            <button class="btn btn-outline" onclick={handleAddBatchDemo} data-testid="btn-add-batch-demo" title="Submit simulated sample batch jobs">
-                ⚡ Demo Batch
-            </button>
+            <Button variant="secondary" disabled={loading} disabledReason="Refreshing the queue" onclick={loadQueue}>Refresh</Button>
+            <Button variant="primary" data-testid="btn-add-batch-files" title="Choose PDF files to compress in the background" onclick={handleAddFiles}>Add files…</Button>
+            {#if labsVisible(SAMPLE_BATCH_ID)}
+                <Button variant="secondary" data-testid="btn-add-batch-demo" ariaLabel={SAMPLE_BATCH_LABS.label} title={`${SAMPLE_BATCH_LABS.label}: ${SAMPLE_BATCH_LABS.note}`} onclick={handleAddBatchDemo}>
+                    {SAMPLE_BATCH_LABS.name} <span class="labs-badge">{LABS_BADGE}</span>
+                </Button>
+            {/if}
         </div>
     </header>
 
@@ -284,35 +291,35 @@
     {#if actionMessage}
         <div class="alert-banner">
             <span>{actionMessage}</span>
-            <button class="close-alert" aria-label="Dismiss this message" title="Dismiss this message" onclick={() => { actionMessage = null; }}>×</button>
+            <Button variant="plain" size="sm" ariaLabel="Dismiss this message" title="Dismiss this message" onclick={() => { actionMessage = null; }}><StudioIcon name="close" size={14} /></Button>
         </div>
     {/if}
 
     <!-- Summary Metrics Grid -->
     <section class="summary-grid" data-testid="summary-header">
         <div class="summary-card active">
-            <div class="card-icon">⚡</div>
+            <div class="card-icon"><StudioIcon name="bolt" size={22} /></div>
             <div class="card-info">
                 <span class="card-value">{runningCount}</span>
                 <span class="card-label">Running</span>
             </div>
         </div>
         <div class="summary-card queued">
-            <div class="card-icon">⏳</div>
+            <div class="card-icon"><StudioIcon name="clock" size={22} /></div>
             <div class="card-info">
                 <span class="card-value">{queuedCount}</span>
                 <span class="card-label">Queued</span>
             </div>
         </div>
         <div class="summary-card completed">
-            <div class="card-icon">✓</div>
+            <div class="card-icon"><StudioIcon name="check" size={22} /></div>
             <div class="card-info">
                 <span class="card-value">{completedCount}</span>
                 <span class="card-label">Completed</span>
             </div>
         </div>
         <div class="summary-card failed">
-            <div class="card-icon">✕</div>
+            <div class="card-icon"><StudioIcon name="close" size={22} /></div>
             <div class="card-info">
                 <span class="card-value">{failedCount}</span>
                 <span class="card-label">Failed</span>
@@ -323,70 +330,27 @@
     <!-- Controls & Filter Bar -->
     <section class="controls-bar">
         <div class="filter-tabs">
-            <button
-                class="tab-btn"
-                class:active={currentFilter === 'All'}
-                onclick={() => { currentFilter = 'All'; }}
-                data-testid="filter-all"
-            >
-                All ({totalCount})
-            </button>
-            <button
-                class="tab-btn"
-                class:active={currentFilter === 'Active'}
-                onclick={() => { currentFilter = 'Active'; }}
-                data-testid="filter-active"
-            >
-                Active ({runningCount + queuedCount})
-            </button>
-            <button
-                class="tab-btn"
-                class:active={currentFilter === 'Completed'}
-                onclick={() => { currentFilter = 'Completed'; }}
-                data-testid="filter-completed"
-            >
-                Completed ({completedCount})
-            </button>
-            <button
-                class="tab-btn"
-                class:active={currentFilter === 'Failed'}
-                onclick={() => { currentFilter = 'Failed'; }}
-                data-testid="filter-failed"
-            >
-                Failed ({failedCount})
-            </button>
+            <Button variant="plain" size="sm" pressed={currentFilter === 'All'} data-testid="filter-all" onclick={() => { currentFilter = 'All'; }}>All ({totalCount})</Button>
+            <Button variant="plain" size="sm" pressed={currentFilter === 'Active'} data-testid="filter-active" onclick={() => { currentFilter = 'Active'; }}>Active ({runningCount + queuedCount})</Button>
+            <Button variant="plain" size="sm" pressed={currentFilter === 'Completed'} data-testid="filter-completed" onclick={() => { currentFilter = 'Completed'; }}>Completed ({completedCount})</Button>
+            <Button variant="plain" size="sm" pressed={currentFilter === 'Failed'} data-testid="filter-failed" onclick={() => { currentFilter = 'Failed'; }}>Failed ({failedCount})</Button>
         </div>
 
         <div class="bulk-actions">
-            <button
-                class="btn btn-outline-danger"
-                onclick={handleCancelAllActive}
-                disabled={activeJobs.length === 0}
-                data-testid="btn-cancel-all-active"
-            >
-                Cancel All Active
-            </button>
-            <button
-                class="btn btn-outline"
-                onclick={handleClearFinished}
-                disabled={completedCount === 0 && failedCount === 0}
-                data-testid="btn-clear-finished"
-            >
-                Clear Finished
-            </button>
+            <Button variant="destructive" size="sm" disabled={activeJobs.length === 0} disabledReason="No jobs are running or queued" data-testid="btn-cancel-all-active" onclick={handleCancelAllActive}>Cancel all active</Button>
+            <Button variant="secondary" size="sm" disabled={completedCount === 0 && failedCount === 0} disabledReason="There are no finished jobs to clear" data-testid="btn-clear-finished" onclick={handleClearFinished}>Clear finished</Button>
         </div>
     </section>
 
     <!-- Queue List -->
     <main class="queue-list">
         {#if filteredJobs.length === 0}
-            <div class="empty-state" data-testid="empty-queue-message">
-                <div class="empty-icon">📭</div>
-                <h3>No jobs matching '{currentFilter}' filter</h3>
-                <p>Submit a new batch operation or click below to simulate batch PDF conversions.</p>
-                <button class="btn btn-primary" onclick={handleAddBatchDemo}>
-                    Enqueue Sample Batch Jobs
-                </button>
+            <div data-testid="empty-queue-message">
+                <EmptyState
+                    title={`No jobs match the ${currentFilter} filter`}
+                    body="Choose PDF files to compress in the background."
+                    action={{ label: 'Add files…', onclick: handleAddFiles }}
+                />
             </div>
         {:else}
             <For items={filteredJobs}>
@@ -395,7 +359,7 @@
                     <div class="job-card-header">
                         <div class="job-title-group">
                             <span class="job-title">{job.title}</span>
-                            <span class="badge {getPriorityClass(job.priority)}">{job.priority} Priority</span>
+                            <span class="badge {getPriorityClass(job.priority)}">{job.priority} priority</span>
                         </div>
                         <span class="status-pill {getStatusClass(job.status)}" data-testid="status-badge">
                             {job.status}
@@ -408,7 +372,7 @@
                             <span class="file-name" title={job.input_path ?? ''}>{formatFilename(job.input_path)}</span>
                         </div>
                         {#if job.output_path}
-                            <span class="arrow">➔</span>
+                            <span class="arrow"><StudioIcon name="arrow.right" size={16} /></span>
                             <div class="file-item">
                                 <span class="file-label">Output:</span>
                                 <span class="file-name" title={job.output_path}>{formatFilename(job.output_path)}</span>
@@ -436,9 +400,9 @@
                         <div class="diagnostics-box" data-testid="diagnostics-box" role="alert" aria-live="assertive">
                             <div class="diag-header">
                                 <span class="diag-badge">{job.error_code || 'ERROR'}</span>
-                                <span class="diag-title">Diagnostics</span>
+                                <span class="diag-title">Details</span>
                             </div>
-                            <p class="diag-message">{job.error_message || 'Job execution encountered an unhandled error.'}</p>
+                            <p class="diag-message">{friendlyJobError(job.error_message ?? '', { what: job.error_message || 'The job failed.', next: '' }).what}</p>
                         </div>
                     {/if}
 
@@ -447,22 +411,10 @@
                         <span class="job-id-text">ID: {job.job_id.slice(0, 12)}...</span>
                         <div class="btn-group">
                             {#if job.status === 'Queued' || job.status === 'Running'}
-                                <button
-                                    class="btn btn-sm btn-danger"
-                                    onclick={() => handleCancelJob(job.job_id)}
-                                    data-testid={`btn-cancel-${job.job_id}`}
-                                >
-                                    Cancel
-                                </button>
+                                <Button variant="destructive" size="sm" data-testid={`btn-cancel-${job.job_id}`} onclick={() => handleCancelJob(job.job_id)}>Cancel</Button>
                             {/if}
                             {#if job.status === 'Failed' || job.status === 'Cancelled'}
-                                <button
-                                    class="btn btn-sm btn-retry"
-                                    onclick={() => handleRetryJob(job.job_id)}
-                                    data-testid={`btn-retry-${job.job_id}`}
-                                >
-                                    🔄 Retry Job
-                                </button>
+                                <Button variant="secondary" size="sm" data-testid={`btn-retry-${job.job_id}`} onclick={() => handleRetryJob(job.job_id)}>Retry job</Button>
                             {/if}
                         </div>
                     </div>
@@ -475,10 +427,10 @@
 
 <style>
     .batch-queue-container {
-        padding: 1.5rem;
+        padding: var(--space-6);
         display: flex;
         flex-direction: column;
-        gap: 1.5rem;
+        gap: var(--space-6);
         color: var(--text-primary);
         max-width: 1200px;
         margin: 0 auto;
@@ -490,35 +442,30 @@
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
-        gap: 1rem;
+        gap: var(--space-4);
     }
 
     .header-title {
         display: flex;
         align-items: center;
-        gap: 1rem;
-    }
-
-    .header-title .icon {
-        font-size: 2.2rem;
+        gap: var(--space-4);
     }
 
     .header-title h2 {
-        font-size: 1.75rem;
+        font-size: var(--font-size-title1);
         margin: 0;
-        font-weight: 700;
         color: var(--accent-primary);
     }
 
     .subtitle {
-        margin: 0.25rem 0 0;
-        font-size: 0.9rem;
+        margin: var(--space-1) 0 0;
+        font-size: var(--font-size-body);
         color: var(--text-secondary);
     }
 
     .header-actions {
         display: flex;
-        gap: 0.75rem;
+        gap: var(--space-3);
         flex-wrap: wrap;
     }
 
@@ -529,25 +476,18 @@
         background: var(--glass-bg-surface);
         border-left: 4px solid var(--accent-primary);
         border: 1px solid var(--glass-border-subtle);
-        padding: 0.75rem 1rem;
+        padding: var(--space-3) var(--space-4);
         border-radius: var(--radius-sm, 8px);
-        font-size: 0.9rem;
+        font-size: var(--font-size-body);
         color: var(--text-primary);
     }
 
-    .close-alert {
-        background: none;
-        border: none;
-        color: var(--text-secondary);
-        font-size: 1.25rem;
-        cursor: pointer;
-    }
 
     /* Summary Metrics Grid */
     .summary-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
-        gap: 1rem;
+        gap: var(--space-4);
     }
 
     .summary-card {
@@ -557,10 +497,10 @@
         border: 1px solid var(--glass-border-subtle);
         border-radius: var(--radius-lg, 14px);
         box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-sm);
-        padding: 1.25rem;
+        padding: var(--space-5);
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: var(--space-4);
         transition: transform var(--dur-fast, 120ms) ease;
     }
 
@@ -574,7 +514,7 @@
     .summary-card.failed { border-color: var(--semantic-danger); }
 
     .card-icon {
-        font-size: 1.8rem;
+        color: var(--text-secondary);
         width: 48px;
         height: 48px;
         border-radius: var(--radius-md, 10px);
@@ -590,13 +530,13 @@
     }
 
     .card-value {
-        font-size: 1.6rem;
+        font-size: var(--font-size-title1);
         font-weight: 700;
         color: var(--text-primary);
     }
 
     .card-label {
-        font-size: 0.85rem;
+        font-size: var(--font-size-body);
         color: var(--text-secondary);
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -608,124 +548,54 @@
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
-        gap: 1rem;
+        gap: var(--space-4);
         background: var(--glass-bg-surface);
         -webkit-backdrop-filter: var(--glass-blur);
         backdrop-filter: var(--glass-blur);
-        padding: 0.75rem 1rem;
+        padding: var(--space-3) var(--space-4);
         border-radius: var(--radius-lg, 14px);
         border: 1px solid var(--glass-border-subtle);
     }
 
     .filter-tabs {
         display: flex;
-        gap: 0.5rem;
+        gap: var(--space-2);
         flex-wrap: wrap;
     }
 
-    .tab-btn {
-        background: transparent;
-        border: 1px solid transparent;
-        color: var(--text-secondary);
-        padding: 0.45rem 0.9rem;
-        border-radius: var(--radius-sm, 8px);
-        cursor: pointer;
-        font-size: 0.9rem;
-        font-weight: 500;
-        transition: all var(--dur-fast, 120ms) ease;
-    }
 
-    .tab-btn:hover {
-        color: var(--text-primary);
-        background: var(--glass-bg-hover);
-    }
 
-    .tab-btn.active {
-        color: var(--accent-primary);
-        background: var(--glass-bg-active);
-        font-weight: 600;
-    }
 
     .bulk-actions {
         display: flex;
-        gap: 0.75rem;
+        gap: var(--space-3);
         flex-wrap: wrap;
     }
 
     /* Buttons */
-    .btn {
-        padding: 0.5rem 1rem;
-        border-radius: 6px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        cursor: pointer;
-        border: 1px solid transparent;
-        transition: all 0.2s;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-    }
 
-    .btn:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-    }
 
-    .btn-primary {
-        background: var(--accent-primary);
-        color: var(--text-on-accent);
-        border-color: transparent;
-    }
     .btn-primary:hover:not(:disabled) {
         background: var(--accent-primary-hover);
     }
 
-    .btn-secondary {
-        background: var(--glass-bg-input);
-        color: var(--text-primary);
-        border-color: var(--glass-border-subtle);
-    }
     .btn-secondary:hover:not(:disabled) {
         background: var(--glass-bg-hover);
     }
 
-    .btn-outline {
-        background: transparent;
-        border-color: var(--glass-border-subtle);
-        color: var(--text-primary);
-    }
     .btn-outline:hover:not(:disabled) {
         background: var(--glass-bg-hover);
     }
 
-    .btn-outline-danger {
-        background: transparent;
-        border-color: var(--semantic-danger);
-        color: var(--semantic-danger);
-    }
     .btn-outline-danger:hover:not(:disabled) {
-        background: rgba(255, 59, 48, 0.15);
+        background: color-mix(in srgb, var(--semantic-danger) 15%, transparent);
     }
 
-    .btn-sm {
-        padding: 0.3rem 0.75rem;
-        font-size: 0.8rem;
-    }
 
-    .btn-danger {
-        background: var(--semantic-danger);
-        color: var(--text-on-accent);
-        border-color: transparent;
-    }
     .btn-danger:hover:not(:disabled) {
         filter: brightness(1.1);
     }
 
-    .btn-retry {
-        background: var(--semantic-warning);
-        color: var(--text-on-accent);
-        border-color: transparent;
-    }
     .btn-retry:hover:not(:disabled) {
         filter: brightness(1.1);
     }
@@ -734,7 +604,7 @@
     .queue-list {
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: var(--space-4);
     }
 
     .empty-state {
@@ -743,21 +613,21 @@
         backdrop-filter: var(--glass-blur);
         border: 2px dashed var(--glass-border-subtle);
         border-radius: var(--radius-lg, 14px);
-        padding: 4rem 2rem;
+        padding: calc(var(--space-8) * 2) var(--space-8);
         text-align: center;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 1rem;
+        gap: var(--space-4);
     }
 
     .empty-icon {
-        font-size: 3.5rem;
+        font-size: calc(var(--font-size-title1) * 2.5);
     }
 
     .empty-state h3 {
         margin: 0;
-        font-size: 1.3rem;
+        font-size: var(--font-size-title1);
         color: var(--text-primary);
     }
 
@@ -774,10 +644,10 @@
         backdrop-filter: var(--glass-blur);
         border: 1px solid var(--glass-border-subtle);
         border-radius: var(--radius-lg, 14px);
-        padding: 1.25rem;
+        padding: var(--space-5);
         display: flex;
         flex-direction: column;
-        gap: 0.85rem;
+        gap: var(--space-3);
         box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-sm);
         transition: border-color var(--dur-fast, 120ms) ease;
     }
@@ -791,25 +661,25 @@
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
-        gap: 0.5rem;
+        gap: var(--space-2);
     }
 
     .job-title-group {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: var(--space-3);
     }
 
     .job-title {
-        font-size: 1.1rem;
+        font-size: var(--font-size-title2);
         font-weight: 700;
         color: var(--text-primary);
     }
 
     .badge {
-        font-size: 0.75rem;
+        font-size: var(--font-size-footnote);
         font-weight: 600;
-        padding: 0.2rem 0.5rem;
+        padding: var(--space-1) var(--space-2);
         border-radius: var(--radius-xs, 4px);
         text-transform: uppercase;
     }
@@ -820,9 +690,9 @@
     .badge-low { background: var(--glass-bg-input); color: var(--text-secondary); }
 
     .status-pill {
-        font-size: 0.8rem;
+        font-size: var(--font-size-footnote);
         font-weight: 600;
-        padding: 0.3rem 0.7rem;
+        padding: var(--space-1) var(--space-3);
         border-radius: var(--radius-pill, 999px);
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -837,17 +707,17 @@
     .job-files-row {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        font-size: 0.85rem;
+        gap: var(--space-3);
+        font-size: var(--font-size-body);
         background: var(--glass-bg-input);
-        padding: 0.6rem 0.85rem;
+        padding: var(--space-2) var(--space-3);
         border-radius: var(--radius-sm, 8px);
         overflow: hidden;
     }
 
     .file-item {
         display: flex;
-        gap: 0.4rem;
+        gap: var(--space-2);
         align-items: center;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -873,7 +743,7 @@
     .progress-container {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: var(--space-3);
     }
 
     .progress-bar-bg {
@@ -906,7 +776,7 @@
     }
 
     .progress-label {
-        font-size: 0.8rem;
+        font-size: var(--font-size-footnote);
         font-family: var(--font-mono, monospace);
         color: var(--text-secondary);
         min-width: 38px;
@@ -915,26 +785,26 @@
 
     /* Diagnostics */
     .diagnostics-box {
-        background: rgba(255, 59, 48, 0.12);
+        background: color-mix(in srgb, var(--semantic-danger) 12%, transparent);
         border: 1px solid var(--semantic-danger);
         border-radius: var(--radius-sm, 8px);
-        padding: 0.75rem;
-        font-size: 0.85rem;
+        padding: var(--space-3);
+        font-size: var(--font-size-body);
     }
 
     .diag-header {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 0.35rem;
+        gap: var(--space-2);
+        margin-bottom: var(--space-1);
     }
 
     .diag-badge {
         background: var(--semantic-danger);
         color: var(--text-on-accent);
-        font-size: 0.7rem;
+        font-size: var(--font-size-footnote);
         font-weight: bold;
-        padding: 0.15rem 0.4rem;
+        padding: var(--space-1) var(--space-2);
         border-radius: 3px;
         font-family: var(--font-mono, monospace);
     }
@@ -948,7 +818,7 @@
         margin: 0;
         color: var(--text-primary);
         font-family: var(--font-mono, monospace);
-        font-size: 0.8rem;
+        font-size: var(--font-size-footnote);
     }
 
     /* Card Actions */
@@ -957,17 +827,17 @@
         justify-content: space-between;
         align-items: center;
         border-top: 1px solid var(--glass-border-subtle);
-        padding-top: 0.6rem;
+        padding-top: var(--space-2);
     }
 
     .job-id-text {
-        font-size: 0.75rem;
+        font-size: var(--font-size-footnote);
         color: var(--text-tertiary);
         font-family: var(--font-mono, monospace);
     }
 
     .btn-group {
         display: flex;
-        gap: 0.5rem;
+        gap: var(--space-2);
     }
 </style>

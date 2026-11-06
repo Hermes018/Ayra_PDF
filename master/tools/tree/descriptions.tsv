@@ -663,3 +663,6 @@ master/app-tauri/src/lib/views/__tests__/MarkdownWording.test.ts	Tests: Markdown
 master/app-tauri/src/lib/views/__tests__/NoPasswordInConsole.test.ts	Tests (BUG-058): no console call ever contains an entered password
 master/crates/lpdf-core-types/src/secret.rs	Secret: wrapper for passwords and other secrets; Debug/Display print [redacted]; value only via expose()
 master/crates/lpdf-jobs/tests/secret_redaction_tests.rs	Tests (BUG-058): passwords absent from Debug, Display, Progress events, log lines and the job list
+master/app-tauri/src/lib/views/__tests__/NoPasswordInStudioConsole.test.ts	Tests (BUG-058): the Studio password prompt never puts the password in a console call (incl. pdf.js errors); control proves the spy works
+master/app-tauri/src/lib/components/MainLayoutFaq.test.ts	Tests: floating Help and FAQ button shows only when the sidebar is collapsed
+master/e2e/test_driver_stop.py	Self-test: wd.stop_group waits for the whole driver process group (no leftover processes)

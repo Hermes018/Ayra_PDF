@@ -194,6 +194,7 @@ master/
 │   │   │   │   ├── For.svelte                                # Tiny generic keyed list helper component
 │   │   │   │   ├── GridEditor.svelte                         # Page-thumbnail grid for organizing pages (reorder, rotate, delete)
 │   │   │   │   ├── MainLayout.svelte                         # App frame: sidebar + content + status bar, sidebar collapse
+│   │   │   │   ├── MainLayoutFaq.test.ts                     # Tests: floating Help and FAQ button shows only when the sidebar is collapsed
 │   │   │   │   ├── organizeApply.ts                          # Organize Apply: runs reorder/delete/rotate jobs in sequence and reports the true result (BUG-014)
 │   │   │   │   ├── PdfViewer.svelte                          # Read-only page preview using pdf.js
 │   │   │   │   ├── PdfViewerLayout.test.ts                   # Tests: PdfViewer is not clipped inside tool views (left edge)
@@ -277,6 +278,7 @@ master/
 │   │   │   │   │   ├── MarkdownWording.test.ts               # Tests: Markdown view wording matches what each operation does (new file vs. replace)
 │   │   │   │   │   ├── MeasurePerimeter.test.ts              # Tests: perimeter closes the shape (BUG-022)
 │   │   │   │   │   ├── NoPasswordInConsole.test.ts           # Tests (BUG-058): no console call ever contains an entered password
+│   │   │   │   │   ├── NoPasswordInStudioConsole.test.ts     # Tests (BUG-058): the Studio password prompt never puts the password in a console call (incl. pdf.js errors); control proves the spy works
 │   │   │   │   │   ├── OrganizeApply.test.ts                 # Tests: Organize Apply keeps rotation, reports failures (BUG-014)
 │   │   │   │   │   ├── OrganizeView.test.ts                  # Tests: organize view
 │   │   │   │   │   ├── OutputPathsAllViews.test.ts           # Tests (BUG-051): every writing view (Organize, Forms, Security x3, Batch, Pipelines, AiSummarize, Markdown, Convert x2) builds a distinct, non-existing output, with and without .pdf
@@ -542,6 +544,7 @@ master/
 │   ├── ink_match.py                                          # Matcher for content-less annotations (drawn signature): one /Ink or /Stamp with non-empty InkList or AP, /Rect on page and covering the drawn stroke, enough points (BUG-046)
 │   ├── pkg_smoke.py                                          # Clean-user install smoke test for rpm/deb/AppImage (flows 1-2 against the packaged binary, fresh HOME)
 │   ├── run.py                                                # Runner: python3 master/e2e/run.py [--flows] [--binary] [--soak-minutes]
+│   ├── test_driver_stop.py                                   # Self-test: wd.stop_group waits for the whole driver process group (no leftover processes)
 │   ├── test_flow07_matcher.py                                # Self-test for ink_match.py: 9 synthetic cases (empty, duplicate, off-page, too few points fail; real strokes pass)
 │   ├── test_leak_check.py                                    # Tests (BUG-031): post-run leak check catches leaked harness/dbus processes; nothing left after bus stop or SIGTERM
 │   ├── test_screens_layout.py                                # Self-test (BUG-048): per-run screenshot folders survive later runs; out/screens points at the newest run

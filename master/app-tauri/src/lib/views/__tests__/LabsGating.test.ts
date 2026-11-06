@@ -149,8 +149,8 @@ describe('Labs gating (2.16 math text, 8.10 shape guess)', () => {
             render(SettingsView);
             await screen.findByTestId('settings-loaded');
 
-            const toggle = screen.getByTestId('labs-toggle') as HTMLInputElement;
-            expect(toggle.checked).toBe(false);
+            const toggle = screen.getByTestId('labs-toggle');
+            expect(toggle).toHaveAttribute('aria-checked', 'false');
             const list = screen.getByTestId('labs-feature-list');
             expect(list).toHaveTextContent(MATH_TEXT_LABS.label);
             expect(list).toHaveTextContent('not a TeX renderer');

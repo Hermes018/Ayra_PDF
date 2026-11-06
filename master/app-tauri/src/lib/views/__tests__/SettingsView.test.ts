@@ -70,11 +70,11 @@ describe('SettingsView', () => {
         await fireEvent.click(highTierBtn);
 
         // Click Dark Theme button
-        const darkThemeBtn = screen.getByText('🌙 Dark');
+        const darkThemeBtn = screen.getByRole('button', { name: 'Dark' });
         await fireEvent.click(darkThemeBtn);
 
         // Click Save Settings button
-        const saveBtn = screen.getByText('💾 Save Settings');
+        const saveBtn = screen.getByRole('button', { name: 'Save settings' });
         await fireEvent.click(saveBtn);
 
         expect(IpcClient.saveSettings).toHaveBeenCalledWith(
@@ -83,7 +83,7 @@ describe('SettingsView', () => {
                 theme: 'Dark',
             })
         );
-        expect(await screen.findByText('Settings saved successfully!')).toBeInTheDocument();
+        expect(await screen.findByText('Settings saved.')).toBeInTheDocument();
     });
 
     test('refreshes local logs when refresh button is clicked', async () => {
@@ -93,7 +93,7 @@ describe('SettingsView', () => {
         const newLogs = ['2026-10-12T18:05:00Z INFO New job finished'];
         vi.spyOn(IpcClient, 'getRecentLogs').mockResolvedValue(newLogs);
 
-        const refreshBtn = screen.getByText('🔄 Refresh Logs');
+        const refreshBtn = screen.getByRole('button', { name: 'Refresh logs' });
         await fireEvent.click(refreshBtn);
 
         expect(IpcClient.getRecentLogs).toHaveBeenCalled();
@@ -105,7 +105,7 @@ describe('SettingsView', () => {
         const spy = vi.spyOn(IpcClient, 'exportDiagnostics');
         spy.mockRejectedValueOnce(new Error('OUTPUT_PATH_UNSAFE: a file already exists at the output path (/tmp/d.txt). Nothing was written.'));
         render(SettingsView);
-        await fireEvent.click(screen.getByText('Export Diagnostics'));
+        await fireEvent.click(screen.getByRole('button', { name: 'Export diagnostics' }));
         const dialog = await screen.findByRole('alertdialog', { name: 'Replace the existing file?' });
         expect(dialog).toBeInTheDocument();
         expect(spy).toHaveBeenCalledTimes(1);
@@ -118,7 +118,7 @@ describe('SettingsView', () => {
         const spy = vi.spyOn(IpcClient, 'exportDiagnostics');
         spy.mockRejectedValueOnce(new Error('OUTPUT_PATH_UNSAFE: a file already exists at the output path (/tmp/d.txt). Nothing was written.'));
         render(SettingsView);
-        await fireEvent.click(screen.getByText('Export Diagnostics'));
+        await fireEvent.click(screen.getByRole('button', { name: 'Export diagnostics' }));
         await screen.findByRole('alertdialog', { name: 'Replace the existing file?' });
         await vi.waitFor(() => expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus());
         // explicit, not just "first button": the destructive Replace must never become the default
@@ -130,7 +130,7 @@ describe('SettingsView', () => {
         const spy = vi.spyOn(IpcClient, 'exportDiagnostics');
         spy.mockRejectedValueOnce(new Error('OUTPUT_PATH_UNSAFE: a file already exists at the output path (/tmp/d.txt). Nothing was written.'));
         render(SettingsView);
-        await fireEvent.click(screen.getByText('Export Diagnostics'));
+        await fireEvent.click(screen.getByRole('button', { name: 'Export diagnostics' }));
         await screen.findByRole('alertdialog', { name: 'Replace the existing file?' });
         await fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
         expect(screen.queryByRole('alertdialog')).toBeNull();
@@ -141,7 +141,7 @@ describe('SettingsView', () => {
         const spy = vi.spyOn(IpcClient, 'exportDiagnostics');
         spy.mockRejectedValueOnce(new Error('OUTPUT_PATH_UNSAFE: the output file would overwrite the original (/docs/a.pdf). Nothing was written.'));
         render(SettingsView);
-        await fireEvent.click(screen.getByText('Export Diagnostics'));
+        await fireEvent.click(screen.getByRole('button', { name: 'Export diagnostics' }));
         expect(await screen.findByText(/would overwrite the original/)).toBeInTheDocument();
         expect(screen.queryByRole('alertdialog')).toBeNull();
     });
@@ -149,7 +149,7 @@ describe('SettingsView', () => {
     test('exports diagnostics report via IpcClient', async () => {
         render(SettingsView);
 
-        const exportBtn = screen.getByText('Export Diagnostics');
+        const exportBtn = screen.getByRole('button', { name: 'Export diagnostics' });
         await fireEvent.click(exportBtn);
 
         expect(IpcClient.exportDiagnostics).toHaveBeenCalledWith('localpdf-diagnostics.txt', [], false);
@@ -162,7 +162,7 @@ describe('SettingsView', () => {
         const modelInput = screen.getByPlaceholderText('/path/to/model.gguf or model.onnx');
         await fireEvent.input(modelInput, { target: { value: '/models/llama-3.2-1b.gguf' } });
 
-        const importBtn = screen.getByText('Import Model');
+        const importBtn = screen.getByRole('button', { name: 'Import model' });
         await fireEvent.click(importBtn);
 
         expect(IpcClient.importLocalAiModel).toHaveBeenCalledWith(
@@ -170,7 +170,7 @@ describe('SettingsView', () => {
             'Apache-2.0',
             false
         );
-        expect(await screen.findByText('📄 llama-3.2-1b.gguf')).toBeInTheDocument();
+        expect(await screen.findAllByText('llama-3.2-1b.gguf', { exact: false })).not.toHaveLength(0);
         expect(screen.getByText('GGUF')).toBeInTheDocument();
         expect(screen.getByTestId('model-sha256')).toHaveTextContent(
             'a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0'
@@ -181,24 +181,24 @@ describe('SettingsView', () => {
         render(SettingsView);
         await screen.findByTestId('settings-loaded');
 
-        const aiToggle = screen.getByTestId('ai-local-toggle') as HTMLInputElement;
-        const ackCheckbox = screen.getByTestId('license-acknowledge-checkbox') as HTMLInputElement;
+        const aiToggle = screen.getByTestId('ai-local-toggle');
+        const ackCheckbox = screen.getByTestId('license-acknowledge-checkbox');
 
         // Initially disabled because licence is not acknowledged
-        expect(aiToggle.disabled).toBe(true);
-        expect(ackCheckbox.checked).toBe(false);
+        expect(aiToggle).toHaveAttribute('aria-disabled', 'true');
+        expect(ackCheckbox).toHaveAttribute('aria-checked', 'false');
 
         // Acknowledge licence terms
         await fireEvent.click(ackCheckbox);
-        expect(ackCheckbox.checked).toBe(true);
-        expect(aiToggle.disabled).toBe(false);
+        expect(ackCheckbox).toHaveAttribute('aria-checked', 'true');
+        expect(aiToggle).not.toHaveAttribute('aria-disabled');
 
         // Enable AI toggle
         await fireEvent.click(aiToggle);
-        expect(aiToggle.checked).toBe(true);
+        expect(aiToggle).toHaveAttribute('aria-checked', 'true');
 
         // Save settings and verify payload has ai_license_acknowledged = true
-        const saveBtn = screen.getByText('💾 Save Settings');
+        const saveBtn = screen.getByRole('button', { name: 'Save settings' });
         await fireEvent.click(saveBtn);
 
         expect(IpcClient.saveSettings).toHaveBeenCalledWith(
@@ -207,5 +207,71 @@ describe('SettingsView', () => {
                 ai_license_acknowledged: true,
             })
         );
+    });
+
+    // BUG-059: fail closed. After a load error the defaults are on screen; saving them would overwrite the user's
+    // real settings (licence included).
+    test('after a load error, Save is disabled with the reason, and clicking it writes nothing', async () => {
+        vi.spyOn(IpcClient, 'getSettings').mockRejectedValue(new Error('disk read failed'));
+        render(SettingsView);
+        await screen.findByTestId('settings-loaded');
+        const save = screen.getByRole('button', { name: 'Save settings' });
+        expect(save).toHaveAttribute('aria-disabled', 'true');
+        const tip = document.getElementById(save.getAttribute('aria-describedby') ?? '');
+        expect(tip).toHaveTextContent("Settings couldn't be loaded. Retry first.");
+        await fireEvent.click(save);
+        await new Promise((r) => setTimeout(r, 0));
+        expect(IpcClient.saveSettings).not.toHaveBeenCalled();
+    });
+
+    test('Retry that succeeds re-enables Save, and Save then writes the loaded settings', async () => {
+        const get = vi.spyOn(IpcClient, 'getSettings');
+        get.mockRejectedValueOnce(new Error('disk read failed'));
+        render(SettingsView);
+        await screen.findByTestId('settings-loaded');
+        expect(screen.getByRole('button', { name: 'Save settings' })).toHaveAttribute('aria-disabled', 'true');
+        get.mockResolvedValue({ ...initialSettings, backups_enabled: false });
+        await fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+        await vi.waitFor(() => expect(screen.getByRole('button', { name: 'Save settings' })).not.toHaveAttribute('aria-disabled'));
+        await fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
+        expect(IpcClient.saveSettings).toHaveBeenCalledWith(expect.objectContaining({ backups_enabled: false }));
+    });
+
+    test('Save stays disabled until the first load has finished', async () => {
+        let release!: (v: AppSettings) => void;
+        vi.spyOn(IpcClient, 'getSettings').mockReturnValue(new Promise<AppSettings>((r) => (release = r)));
+        render(SettingsView);
+        expect(screen.getByRole('button', { name: 'Save settings' })).toHaveAttribute('aria-disabled', 'true');
+        release({ ...initialSettings });
+        await screen.findByTestId('settings-loaded');
+        await vi.waitFor(() => expect(screen.getByRole('button', { name: 'Save settings' })).not.toHaveAttribute('aria-disabled'));
+    });
+    test('opening Settings keeps the theme the user is already using (no snap back to the saved value)', async () => {
+        const { appState } = await import('$lib/state.svelte');
+        appState.setTheme('Dark');
+        render(SettingsView);
+        await screen.findByTestId('settings-loaded');
+        expect(appState.themePreference).toBe('Dark');
+        expect(screen.getByRole('button', { name: 'Dark' })).toHaveAttribute('aria-pressed', 'true');
+        appState.setTheme('System');
+    });
+    test('Import model is disabled with the same reason after a failed load, and its handler refuses', async () => {
+        vi.spyOn(IpcClient, 'getSettings').mockRejectedValue(new Error('unreadable'));
+        const { component } = render(SettingsView);
+        await screen.findByTestId('settings-loaded');
+        const imp = screen.getByRole('button', { name: 'Import model' });
+        expect(imp).toHaveAttribute('aria-disabled', 'true');
+        expect(document.body.textContent).toContain("Settings couldn't be loaded. Retry first.");
+        await fireEvent.input(screen.getByLabelText('Local model file path'), { target: { value: '/m/x.gguf' } });
+        await (component as unknown as { handleImportModel: () => Promise<void> }).handleImportModel();
+        expect(IpcClient.importLocalAiModel).not.toHaveBeenCalled();
+    });
+
+    test('the save handler itself refuses while the load has failed (not only the disabled button)', async () => {
+        vi.spyOn(IpcClient, 'getSettings').mockRejectedValue(new Error('unreadable'));
+        const { component } = render(SettingsView);
+        await screen.findByTestId('settings-loaded');
+        await (component as unknown as { handleSaveSettings: () => Promise<void> }).handleSaveSettings();
+        expect(IpcClient.saveSettings).not.toHaveBeenCalled();
     });
 });

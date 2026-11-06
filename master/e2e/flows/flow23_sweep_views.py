@@ -21,7 +21,10 @@ VIEWS = [("Convert", "convert", ".convert-container"),
          ("Security", "security", ".view-container"),
          ("Forms", "forms", ".forms-view"),
          ("Markdown", "markdown", ".markdown-view-container"),
-         ("Workflows", "workflows", "[data-testid=pipelines-view]")]
+         ("Workflows", "workflows", "[data-testid=pipelines-view]"),
+         ("AI summarizer", "ai-summarizer", ".summarize-view"),
+         ("Batch queue", "batch-queue", "[data-testid=batch-queue-view]"),
+         ("Settings", "settings", ".settings-view")]
 
 RAW_JS = ("return [...document.querySelectorAll(arguments[0] + ' button, ' + arguments[0] + ' input, ' + arguments[0] + ' select')]"
           ".filter(e => !e.closest('.lp-btnwrap, .lp-iconwrap, .lp-field, .lp-swatchwrap, .lp-togglewrap')).length")
@@ -37,7 +40,8 @@ def run(flow):
         s.wait("return !window.__preReload && document.readyState === 'complete' && !!document.querySelector(\"nav[aria-label='Primary Navigation']\")", 30)
         s.js(common.HOOK_JS)
         for label, name, scope in VIEWS:
-            btn = s.find_text("nav[aria-label='Primary Navigation'] button", label)
+            nav = "aside.sidebar button" if label == "Settings" else "nav[aria-label='Primary Navigation'] button"
+            btn = s.find_text(nav, label)
             if not flow.check(f"{key}: {label} reachable", bool(btn), ""):
                 continue
             btn.click()
