@@ -64,6 +64,13 @@ describe('Button', () => {
     render(Button, { variant: 'plain', block: true, onclick: () => {}, children: text('Convert') });
     expect(screen.getByRole('button', { name: 'Convert' })).not.toHaveAttribute('aria-current');
   });
+  it('expanded (disclosure): aria-expanded true / false; absent when not a disclosure', () => {
+    const { unmount } = render(Button, { variant: 'plain', expanded: true, onclick: () => {}, children: text('Topic') });
+    expect(screen.getByRole('button', { name: 'Topic' })).toHaveAttribute('aria-expanded', 'true');
+    unmount();
+    render(Button, { variant: 'plain', expanded: false, onclick: () => {}, children: text('Topic') });
+    expect(screen.getByRole('button', { name: 'Topic' })).toHaveAttribute('aria-expanded', 'false');
+  });
   it('disabled: ignores clicks, stays focusable, exposes the reason via aria-describedby', async () => {
     const onclick = vi.fn();
     render(Button, { variant: 'primary', onclick, disabled: true, disabledReason: 'Open a PDF to enable Save', children: text('Save') });
@@ -301,5 +308,28 @@ describe('EmptyState / ErrorState / Progress / SidebarSection', () => {
     await fireEvent.click(head);
     expect(head).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('button', { name: 'Merge' })).toBeNull();
+  });
+});
+
+// Every IconButton with a shortcutCmd must show its real chord in the tooltip (the visible "(Ctrl+B)" hint
+// was dropped from the label in the shell sweep).
+describe('IconButton shortcut chords in the app', () => {
+  const sources = import.meta.glob('/src/lib/**/*.svelte', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+  const cmds = new Set<string>();
+  for (const [path, src] of Object.entries(sources)) {
+    if (path.includes('/ui/IconButton.svelte')) continue;
+    for (const m of src.matchAll(/shortcutCmd=["{']+([\w.]+)/g)) cmds.add(m[1]);
+  }
+  it('finds the shortcutCmd users (guards against a vacuous test)', () => {
+    expect(cmds.has('app.toggleSidebar')).toBe(true);
+  });
+  it('each shortcutCmd resolves to a bound chord, shown in the tooltip', () => {
+    for (const cmd of cmds) {
+      const chord = commands.shortcutFor(cmd);
+      expect(chord, `no default shortcut bound for ${cmd}`).toBeTruthy();
+      const { unmount } = render(IconButton, { icon: 'undo', ariaLabel: 'Label', onclick: () => {}, shortcutCmd: cmd });
+      expect(describedText(screen.getByRole('button', { name: 'Label' }))).toBe(`Label (${chord})`);
+      unmount();
+    }
   });
 });

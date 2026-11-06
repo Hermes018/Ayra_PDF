@@ -78,7 +78,7 @@
     <section aria-labelledby="g-icons">
         <h2 id="g-icons">IconButton</h2>
         <div class="row">
-            <IconButton icon="undo" ariaLabel="Undo" onclick={noop} shortcutCmd="undo" />
+            <IconButton icon="undo" ariaLabel="Undo" onclick={noop} shortcutCmd="history.undo" />
             <IconButton icon="pin" ariaLabel="Pin toolbar" pressed={pressed} onclick={() => (pressed = !pressed)} />
             <IconButton icon="redo" ariaLabel="Redo" onclick={noop} disabled disabledReason="Nothing to redo" data-testid="g-icon-disabled" />
         </div>

@@ -16,6 +16,8 @@
       current?: boolean;
       /** Full width, label aligned to the start (sidebar items). */
       block?: boolean;
+      /** Disclosure (accordion header): exposes aria-expanded. */
+      expanded?: boolean;
     };
 
   let {
@@ -29,6 +31,7 @@
     type = 'button',
     current = false,
     block = false,
+    expanded,
     class: klass = '',
     'data-testid': testid,
   }: Props = $props();
@@ -56,6 +59,7 @@
     class:is-block={block}
     class:is-current={current}
     aria-current={current ? 'page' : undefined}
+    aria-expanded={expanded}
     aria-disabled={disabled || undefined}
     aria-busy={busy || undefined}
     aria-describedby={disabled ? tipId : undefined}

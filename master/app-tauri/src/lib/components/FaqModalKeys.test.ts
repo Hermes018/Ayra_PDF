@@ -47,6 +47,7 @@ describe('FaqModal keys', () => {
         await tick();
         for (const tag of ['input', 'textarea']) {
             faqStore.open();
+            await tick(); // ui/Dialog registers Escape in an effect while open
             const el = document.createElement(tag);
             document.body.appendChild(el);
             el.focus();

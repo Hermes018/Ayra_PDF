@@ -618,3 +618,5 @@ master/app-tauri/src/lib/components/ui/tooltipPlacement.ts	Tooltip placement: vi
 master/app-tauri/src/lib/core/commandEngine.space.test.ts	Tests (BUG-043): Space activates focused interactive elements; canvas Space behaviour characterized and kept
 master/e2e/flows/flow14_sweep_organize.py	E2E smoke (sweep): Organize screen opens, light/dark screenshots at 2 sizes, no console errors
 master/e2e/flows/flow15_sweep_shell.py	E2E smoke (sweep): app shell (Sidebar, StatusBar, MainLayout) light/dark screenshots at 2 sizes, no console errors
+master/e2e/flows/flow16_sweep_overlays.py	E2E smoke (sweep): toasts and the FAQ dialog, light/dark screenshots at 2 sizes, no console errors
+master/docs/UI_BACKLOG.md	UI items deferred to after the release (need behaviour or redesign beyond the consistency sweep)

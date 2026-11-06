@@ -3,6 +3,7 @@
     import { backOut } from 'svelte/easing';
     import { flip } from 'svelte/animate';
     import { appState } from '$lib/state.svelte';
+    import Button from '$lib/components/ui/Button.svelte';
 
     const ICON: Record<string, string> = {
         success: '✓',
@@ -31,13 +32,7 @@
                 {/if}
             </div>
             <div class="toast__actions">
-                <button
-                    class="toast__btn"
-                    aria-label="Clear notification"
-                    onclick={() => appState.dismissToast(t.id)}
-                >
-                    Clear
-                </button>
+                <Button variant="plain" size="sm" onclick={() => appState.dismissToast(t.id)}>Clear</Button>
             </div>
         </div>
     {/each}
@@ -46,13 +41,13 @@
 <style>
     .toast-stack {
         position: fixed;
-        top: 16px;
-        right: 16px;
-        z-index: 9999;
+        top: var(--space-4);
+        right: var(--space-4);
+        z-index: var(--z-toast);
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        width: min(380px, calc(100vw - 32px));
+        gap: var(--space-2);
+        width: min(380px, calc(100vw - var(--space-8)));
         pointer-events: none;
     }
 
@@ -61,30 +56,30 @@
         display: grid;
         grid-template-columns: auto 1fr;
         grid-template-areas: "badge body" "badge actions";
-        column-gap: 12px;
-        row-gap: 8px;
-        padding: 12px 14px;
-        border-radius: var(--radius-xl, 20px);
-        background: var(--glass-bg-elevated, rgba(58, 58, 68, 0.85));
-        -webkit-backdrop-filter: var(--glass-blur-toast, blur(20px));
-        backdrop-filter: var(--glass-blur-toast, blur(20px));
-        border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.1));
-        box-shadow: inset 0 1px 0 0 var(--glass-border-specular, rgba(255, 255, 255, 0.2)), var(--glass-shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.4));
+        column-gap: var(--space-3);
+        row-gap: var(--space-2);
+        padding: var(--space-3);
+        border-radius: var(--radius-xl);
+        background: var(--glass-bg-elevated);
+        -webkit-backdrop-filter: var(--glass-blur-toast);
+        backdrop-filter: var(--glass-blur-toast);
+        border: 1px solid var(--glass-border-subtle);
+        box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-lg);
         color: var(--text-primary);
         min-width: 0;
     }
 
     .toast__badge {
         grid-area: badge;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
+        width: var(--control-height-md);
+        height: var(--control-height-md);
+        border-radius: var(--radius-pill);
         display: grid;
         place-items: center;
         font-weight: 700;
-        font-size: 14px;
+        font-size: var(--font-size-body);
         color: var(--text-on-accent);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        box-shadow: inset 0 1px 0 var(--glass-border-specular);
     }
 
     .toast--success .toast__badge { background: var(--semantic-success); }
@@ -99,15 +94,15 @@
 
     .toast__title {
         font-weight: 600;
-        font-size: 13px;
+        font-size: var(--font-size-body);
         line-height: 1.3;
     }
 
     .toast__detail {
-        margin-top: 3px;
-        font-family: var(--font-mono, monospace);
-        font-size: 11.5px;
-        color: var(--text-secondary, rgba(235, 235, 245, 0.7));
+        margin-top: var(--space-1);
+        font-family: var(--font-mono);
+        font-size: var(--font-size-caption);
+        color: var(--text-secondary);
         overflow-wrap: anywhere;
         display: -webkit-box;
         -webkit-line-clamp: 3;
@@ -119,24 +114,7 @@
     .toast__actions {
         grid-area: actions;
         display: flex;
-        gap: 6px;
+        gap: var(--space-2);
         justify-content: flex-end;
-    }
-
-    .toast__btn {
-        font: inherit;
-        font-size: 12px;
-        font-weight: 500;
-        padding: 3px 10px;
-        border-radius: var(--radius-pill, 999px);
-        border: 1px solid var(--glass-border-subtle, rgba(255, 255, 255, 0.15));
-        background: var(--glass-bg-input, rgba(118, 118, 128, 0.24));
-        color: var(--text-primary);
-        cursor: pointer;
-        transition: background-color 0.15s ease;
-    }
-
-    .toast__btn:hover {
-        background: var(--glass-bg-hover, rgba(255, 255, 255, 0.15));
     }
 </style>

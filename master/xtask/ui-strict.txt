@@ -21,3 +21,6 @@ lib/components/Dropzone.svelte
 lib/components/Sidebar.svelte
 lib/components/StatusBar.svelte
 lib/components/MainLayout.svelte
+# Sweep group 3: Global overlays
+lib/components/ToastContainer.svelte
+lib/components/FaqModal.svelte
