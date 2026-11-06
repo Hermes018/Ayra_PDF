@@ -37,4 +37,6 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 10:11 | fixes-build | sweep group 1 (main-flow screens) | sonnet/medium (owner) | ok | | Organize 25→0; missed one behaviour change in report |
 | 2026-11-06 10:24 | reviewer | sweep g1 | sonnet/medium | ok | | PASS, found unlisted behaviour change |
 | 2026-11-06 10:24 | merge-verify | sweep g1 (save path) | opus/high | ok | | GREEN, flow10 18/18 |
-| 2026-11-06 10:24 | fixes-build | sweep group 2 (Sidebar, StatusBar, MainLayout) | sonnet/medium | running | | |
+| 2026-11-06 10:24 | fixes-build | sweep group 2 (Sidebar, StatusBar, MainLayout) | sonnet/medium | ok | | all behaviour changes listed |
+| 2026-11-06 10:31 | review+verify+visual | sweep g2 | sonnet/medium | ok | | PASS, gate GREEN |
+| 2026-11-06 10:32 | fixes-build | sweep group 3 | sonnet/medium | running | | |
