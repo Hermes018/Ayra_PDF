@@ -56,7 +56,7 @@ def run(flow):
             s.keys(common.wd.KEY_ESCAPE)
             flow.check(f"{key}: Escape closes the calibration dialog", bool(s.wait(f"return !document.querySelector('{CAL}')", 5)), "")
         # shortcuts dialog
-        opened = app.click_button("", 'button[aria-label="Shortcuts Settings"]')
+        opened = app.click_button("", 'button[aria-label="Shortcuts settings"]')
         flow.check(f"{key}: shortcuts dialog opens", opened and bool(s.wait("return !!document.querySelector('.shortcuts-dialog')", 5)), "")
         time.sleep(0.5)
         flow.check(f"{key}: shortcuts controls are ui/ components", s.js(RAW_JS, ".shortcuts-dialog") == 0, str(s.js(RAW_JS, ".shortcuts-dialog")))

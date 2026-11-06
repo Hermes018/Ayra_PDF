@@ -622,3 +622,6 @@ master/e2e/flows/flow16_sweep_overlays.py	E2E smoke (sweep): toasts and the FAQ 
 master/docs/UI_BACKLOG.md	UI items deferred to after the release (need behaviour or redesign beyond the consistency sweep)
 master/e2e/flows/flow17_sweep_studio_docs.py	E2E smoke (sweep): document tabs, favourites bar and split layout, light/dark screenshots at 2 sizes, no console errors
 master/e2e/flows/flow18_sweep_studio_panels.py	E2E smoke (sweep): calibration dialog and shortcut settings, light/dark screenshots at 2 sizes, no console errors
+master/e2e/flows/flow19_sweep_toolbar.py	E2E smoke (sweep): dockable toolbar, radial menu and measure overlay, light/dark screenshots at 2 sizes, no console errors
+master/app-tauri/src/lib/components/studio/CalibrationModal.test.ts	Tests: calibration dialog asks "Discard calibration?" on Escape/backdrop only when values changed
+master/app-tauri/src/lib/core/commandEngine.capture.test.ts	Tests: Escape during chord capture cancels capture only (characterization + fix)

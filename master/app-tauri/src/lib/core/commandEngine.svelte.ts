@@ -65,7 +65,7 @@ export class CommandBusAndShortcutEngine {
   #handlers = new Map<string, CommandHandler>();
   #pointerSink: PointerSink = null;
   #renderSink: RenderSink = null;
-  #chordCaptureResolver: ((chord: Chord) => void) | null = null;
+  #chordCaptureResolver: ((chord: Chord | null) => void) | null = null;
   onRadialToggle: (() => void) | null = null;
   onRadialKey: ((key: string) => boolean) | null = null;
   spaceSpringActive = $state(false);
@@ -228,14 +228,17 @@ export class CommandBusAndShortcutEngine {
     this.shortcuts = { ...(defaultShortcuts as Record<Chord, string>) };
   }
 
-  captureNextChord(): Promise<Chord> {
+  /** Resolves with the next chord pressed, or null when the capture is cancelled (Escape, cancelCaptureChord). */
+  captureNextChord(): Promise<Chord | null> {
     return new Promise((resolve) => {
       this.#chordCaptureResolver = resolve;
     });
   }
 
   cancelCaptureChord(): void {
+    const resolver = this.#chordCaptureResolver;
     this.#chordCaptureResolver = null;
+    resolver?.(null);
   }
 
   /** Single global keyboard entry point (protocol-lint forbids keydown listeners elsewhere). */
@@ -244,10 +247,11 @@ export class CommandBusAndShortcutEngine {
       if (this.#chordCaptureResolver) {
         e.preventDefault();
         e.stopPropagation();
-        const chord = canonicalChord(e);
+        e.stopImmediatePropagation(); // any other attached keyboard listener must not see a captured key
         const resolver = this.#chordCaptureResolver;
         this.#chordCaptureResolver = null;
-        resolver(chord);
+        // Escape cancels the capture and does nothing else (it is never recorded as a shortcut).
+        resolver(e.key === 'Escape' ? null : canonicalChord(e));
         return;
       }
       if (e.key === 'Escape') {

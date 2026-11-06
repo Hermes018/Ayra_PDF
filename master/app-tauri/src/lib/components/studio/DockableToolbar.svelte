@@ -134,6 +134,8 @@
   import { tools } from '$lib/core/toolEngine.svelte';
   import { commands } from '$lib/core/commandEngine.svelte';
   import StudioIcon from './StudioIcon.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
+  import IconButton from '$lib/components/ui/IconButton.svelte';
   import { LABS_BADGE, isLabsTool, labsToolNote, labsVisible, selectToolIfAllowed } from './labs.svelte';
 
   let {
@@ -306,7 +308,7 @@
   style={isDragging || dockEdge === 'floating'
     ? `left: 0; top: 0; transform: translate3d(${isDragging ? dragPos.x : floatPos.x}px, ${isDragging ? dragPos.y : floatPos.y}px, 0); transition: none;`
     : undefined}
-  aria-label="Drawboard Studio Markup Toolbar"
+  aria-label="Drawboard Studio markup toolbar"
 >
   <!-- Drag Handle -->
   <div
@@ -315,7 +317,7 @@
     onpointermove={handleGripMove}
     onpointerup={handleGripUp}
     onpointercancel={handleGripUp}
-    title="Drag to dock (Top, Left, Right) or float"
+    title="Drag to dock (top, left, right) or float"
     role="button"
     tabindex="0"
     aria-label="Drag handle to position toolbar"
@@ -327,24 +329,26 @@
     class="toolbar-tools"
     role="toolbar"
     tabindex={0}
-    aria-label="Drawing Tools"
+    aria-label="Drawing tools"
     onpointerdown={(e) => e.stopPropagation()}
   >
     {#each CATEGORIES as cat (cat.id)}
       <div class="category-wrapper" class:popover-open={activeCategoryPopover === cat.id}>
-        <button
-          type="button"
-          class="tool-btn category-btn"
-          class:active={isCategoryActive(cat)}
-          aria-pressed={isCategoryActive(cat)}
-          onclick={() => handleCategoryClick(cat)}
-          title="{cat.name} — Click to select, click again to open drawer"
-          aria-label="{cat.name}"
+        <Button
+          variant="plain"
+          size="sm"
+          class="category-btn"
+          pressed={isCategoryActive(cat)}
+          title="{cat.name}: click to select, click again to open the drawer"
           data-testid="category-btn-{cat.id}"
+          onclick={() => handleCategoryClick(cat)}
         >
-          <StudioIcon name={getCategoryActiveTool(cat).icon} size={16} />
-          <span class="category-caret">▾</span>
-        </button>
+          <span class="category-glyph">
+            <StudioIcon name={getCategoryActiveTool(cat).icon} size={16} />
+            <span class="category-caret" aria-hidden="true">▾</span>
+          </span>
+          <span class="sr-only">{cat.name}</span>
+        </Button>
 
         {#if activeCategoryPopover === cat.id}
           <div
@@ -352,20 +356,12 @@
             data-testid="toolbar-category-popover"
             role="menu"
             tabindex="-1"
-            aria-label="{cat.name} Tools"
+            aria-label="{cat.name} tools"
             onpointerdown={(e) => e.stopPropagation()}
           >
             <div class="popover-header">
               <span class="popover-title">{cat.name}</span>
-              <button
-                type="button"
-                class="popover-close-btn"
-                onclick={() => (activeCategoryPopover = null)}
-                title="Close drawer"
-                aria-label="Close drawer"
-              >
-                <StudioIcon name="close" size={12} />
-              </button>
+              <IconButton icon="close" size="sm" ariaLabel="Close drawer" onclick={() => (activeCategoryPopover = null)} />
             </div>
             <div class="popover-items-list">
               {#each visibleTools(cat) as tool (tool.id)}
@@ -376,11 +372,11 @@
                   tabindex="-1"
                   title={labsToolNote(tool.id)}
                 >
-                  <!-- svelte-ignore a11y_click_events_have_key_events -->
-                  <div
+                  <Button
+                    variant="plain"
+                    block
+                    size="sm"
                     class="item-left"
-                    role="button"
-                    tabindex="0"
                     data-testid="toolbar-tool-{tool.id}"
                     onclick={() => handleSelectToolFromPopover(tool.id, cat.id)}
                   >
@@ -389,21 +385,17 @@
                     {#if isLabsTool(tool.id)}
                       <span class="labs-badge" data-testid="labs-badge">{LABS_BADGE}</span>
                     {/if}
-                  </div>
+                  </Button>
                   <div class="item-right">
                     {#if commands.shortcutFor(tool.id)}
                       <kbd class="item-kbd">{commands.shortcutFor(tool.id)}</kbd>
                     {/if}
-                    <button
-                      type="button"
-                      class="pin-btn"
-                      class:pinned={tools.isFavorite(tool.id)}
+                    <IconButton
+                      icon={tools.isFavorite(tool.id) ? 'star.filled' : 'star'}
+                      size="sm"
+                      ariaLabel={tools.isFavorite(tool.id) ? 'Unpin favorite' : 'Pin to favorites bar'}
                       onclick={(e) => handlePinFavorite(e, tool.id)}
-                      title={tools.isFavorite(tool.id) ? 'Unpin favorite' : 'Pin to favorites bar'}
-                      aria-label={tools.isFavorite(tool.id) ? 'Unpin favorite' : 'Pin to favorites bar'}
-                    >
-                      <StudioIcon name={tools.isFavorite(tool.id) ? 'star.filled' : 'star'} size={13} />
-                    </button>
+                    />
                   </div>
                 </div>
               {/each}
@@ -416,43 +408,27 @@
     <div class="toolbar-separator"></div>
 
     <!-- Structural PDF Text Edit Mode Toggle -->
-    <button
-      type="button"
-      class="tool-btn structural-toggle-btn"
-      class:active={isStructuralEdit}
-      aria-pressed={isStructuralEdit}
-      onclick={() => onToggleStructuralEdit?.()}
-      title={isStructuralEdit ? 'Exit Structural PDF Text Edit' : 'Edit Native PDF Text Blocks (Structural)'}
-      aria-label="Structural PDF Text Edit"
+    <IconButton
+      icon="text.review"
+      ariaLabel={isStructuralEdit ? 'Exit structural PDF text edit' : 'Structural PDF text edit'}
+      pressed={isStructuralEdit}
       data-testid="toolbar-structural-edit-toggle"
-    >
-      <StudioIcon name="text.review" size={16} />
-    </button>
+      onclick={() => onToggleStructuralEdit?.()}
+    />
 
     <!-- Radial Menu Summon Trigger -->
-    <button
-      type="button"
-      class="tool-btn radial-trigger-btn"
+    <IconButton
+      icon="radial"
+      ariaLabel="Toggle radial menu"
+      shortcutCmd="radial.open"
       onclick={() => {
         if (onToggleRadial) onToggleRadial();
         else onOpenRadial?.();
       }}
-      title="Toggle 8-Sector Radial Menu (/)"
-      aria-label="Toggle Radial Menu"
-    >
-      <StudioIcon name="radial" size={16} />
-    </button>
+    />
 
     <!-- Keyboard Shortcuts Settings -->
-    <button
-      type="button"
-      class="tool-btn"
-      onclick={() => onOpenShortcuts?.()}
-      title="Custom Shortcuts Editor"
-      aria-label="Shortcuts Settings"
-    >
-      <StudioIcon name="shortcuts" size={16} />
-    </button>
+    <IconButton icon="shortcuts" ariaLabel="Shortcuts settings" onclick={() => onOpenShortcuts?.()} />
   </div>
 </aside>
 
@@ -468,8 +444,8 @@
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
     border-radius: 12px;
-    padding: 6px;
-    gap: 4px;
+    padding: var(--space-2);
+    gap: var(--space-1);
     color: var(--glass-text);
     touch-action: none;
     user-select: none;
@@ -518,7 +494,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px;
+    padding: var(--space-2);
     cursor: grab;
     border-radius: 6px;
     opacity: 0.6;
@@ -537,7 +513,7 @@
 
   .toolbar-tools {
     display: flex;
-    gap: 4px;
+    gap: var(--space-1);
   }
 
   .dock-left .toolbar-tools,
@@ -563,49 +539,18 @@
   .dock-floating .toolbar-separator {
     height: 1px;
     width: 100%;
-    margin: 2px 0;
+    margin: var(--space-1) 0;
   }
 
   .dock-top .toolbar-separator {
     width: 1px;
     height: 100%;
-    margin: 0 2px;
+    margin: 0 var(--space-1);
   }
 
-  .tool-btn {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    background: transparent;
-    border-radius: 8px;
-    cursor: pointer;
-    color: var(--glass-text);
-    transition: background var(--motion-duration) ease, transform 0.1s ease;
-  }
-
-  .tool-btn:hover {
-    background: var(--canvas-selection);
-  }
-
-  .tool-btn:active {
-    transform: scale(0.94);
-  }
-
-  .tool-btn.active {
-    background: var(--accent);
-    color: var(--laser-core);
-    box-shadow: 0 2px 8px var(--glass-shadow);
-  }
-
-  .radial-trigger-btn {
-    border: 1px dashed var(--glass-border);
-  }
-
-  .structural-toggle-btn {
-    border: 1px solid var(--glass-border);
+  /* An open drawer must stack above the property pill (same z-index, later in the DOM). */
+  .dockable-toolbar:has(.popover-open) {
+    z-index: 210;
   }
 
   .category-wrapper {
@@ -615,26 +560,26 @@
     justify-content: center;
   }
 
-  .category-btn {
+  :global(.category-btn) {
+    position: relative;
+  }
+
+  .category-glyph {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 1px;
-    padding-bottom: 2px;
+    padding-bottom: var(--space-1);
   }
 
   .category-caret {
-    font-size: 8px;
-    line-height: 8px;
+    font-size: var(--font-size-caption);
+    line-height: 1;
     opacity: 0.6;
     user-select: none;
     pointer-events: none;
-  }
-
-  .category-btn.active .category-caret {
-    opacity: 0.9;
   }
 
   .category-popover {
@@ -650,7 +595,7 @@
     border: 1px solid var(--glass-border);
     border-radius: 12px;
     box-shadow: var(--glass-shadow);
-    padding: 8px;
+    padding: var(--space-2);
     color: var(--glass-text);
   }
 
@@ -674,44 +619,25 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 6px 8px 6px;
+    padding: var(--space-1) var(--space-2) var(--space-2) var(--space-2);
     border-bottom: 1px solid var(--glass-border);
-    margin-bottom: 6px;
+    margin-bottom: var(--space-2);
   }
 
   .popover-title {
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     opacity: 0.8;
   }
 
-  .popover-close-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    color: var(--glass-text);
-    opacity: 0.6;
-    padding: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: opacity var(--motion-duration) ease, background var(--motion-duration) ease;
-  }
-
-  .popover-close-btn:hover {
-    opacity: 1;
-    background: var(--canvas-selection);
-  }
-
   .popover-items-list {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-1);
     overflow-y: auto;
-    padding-right: 2px;
+    padding-right: var(--space-1);
   }
 
   .popover-item-row {
@@ -719,13 +645,13 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 6px 8px;
+    padding: var(--space-2) var(--space-2);
     border-radius: 8px;
     background: transparent;
     border: none;
     color: var(--glass-text);
     cursor: pointer;
-    font-size: 12px;
+    font-size: var(--font-size-footnote);
     text-align: left;
     transition: background var(--motion-duration) ease;
   }
@@ -739,10 +665,10 @@
     color: var(--laser-core);
   }
 
-  .item-left {
+  :global(.item-left) {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-2);
     flex: 1;
     min-width: 0;
   }
@@ -755,11 +681,11 @@
 
   .labs-badge {
     flex-shrink: 0;
-    font-size: 9px;
+    font-size: var(--font-size-caption);
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    padding: 1px 5px;
+    padding: 1px var(--space-1);
     border-radius: 999px;
     border: 1px solid var(--accent);
     color: var(--accent);
@@ -773,13 +699,13 @@
   .item-right {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--space-2);
     flex-shrink: 0;
   }
 
   .item-kbd {
-    font-size: 10px;
-    padding: 1px 5px;
+    font-size: var(--font-size-caption);
+    padding: 1px var(--space-1);
     border-radius: 4px;
     background: var(--canvas-selection);
     border: 1px solid var(--glass-border);
@@ -788,36 +714,17 @@
   }
 
   .popover-item-row.active .item-kbd {
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--glass-bg-active);
     color: var(--laser-core);
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: var(--glass-border-subtle);
   }
 
-  .pin-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    color: var(--glass-text);
-    opacity: 0.4;
-    padding: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: opacity var(--motion-duration) ease, transform 0.1s ease;
-  }
-
-  .pin-btn:hover {
-    opacity: 1;
-    transform: scale(1.15);
-  }
-
-  .pin-btn.pinned {
-    opacity: 1;
-    color: var(--focus-ring);
-  }
-
-  .popover-item-row.active .pin-btn {
-    color: var(--laser-core);
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 </style>
