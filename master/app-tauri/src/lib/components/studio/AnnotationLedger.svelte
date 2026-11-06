@@ -282,7 +282,7 @@
         </div>
         <div class="ledger-filter-row">
           {#if labsVisible(INK_GUESS_ID)}
-            <!-- Labs-only (8.10): see ./labs.ts -->
+            <!-- Labs-only (8.10): see ./labs.svelte.ts -->
             <Button
               variant="secondary"
               size="sm"
@@ -469,7 +469,7 @@
   </aside>
 {/if}
 
-<!-- Labs-only (2.16) math text dialog (`insert.latex`); see ./labs.ts -->
+<!-- Labs-only (2.16) math text dialog (`insert.latex`); see ./labs.svelte.ts -->
 {#if labsVisible('insert.latex')}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div onpointerdown={(e) => e.stopPropagation()}>

@@ -54,7 +54,7 @@ export const MATH_TEXT_LABS = {
   name: 'Math text',
   label: 'Math text (Labs)',
   note:
-    'Converts \\frac, \\sqrt, Greek letters and ^/_ into Unicode text and places it as a text box. ' +
+    'Converts \\frac, \\sqrt, Greek letters and ^/_ into Unicode text and places it as a text box (inserted text always starts with "∑ "). ' +
     'It is not a TeX renderer.',
   inputLabel: 'Math text source (LaTeX-style)',
   insertAction: 'Insert math text',

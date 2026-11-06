@@ -67,4 +67,30 @@ describe('FaqModal keys', () => {
         await press(window, 'Escape');
         expect(faqStore.isOpen).toBe(false);
     });
+    test('Escape with another dialog open closes the FAQ modal', async () => {
+        let otherClosed = false;
+        const unregisterOther = commands.registerEscape(() => {
+            otherClosed = true;
+            return true;
+        });
+        render(FaqModal);
+        faqStore.open();
+        await tick();
+        expect(faqStore.isOpen).toBe(true);
+
+        await press(window, 'Escape');
+        expect(faqStore.isOpen).toBe(false);
+        expect(otherClosed).toBe(true);
+        unregisterOther();
+    });
+    test('Escape after unmount does not throw or reopen', async () => {
+        const { unmount } = render(FaqModal);
+        faqStore.open();
+        await tick();
+        expect(faqStore.isOpen).toBe(true);
+        unmount();
+        await tick();
+        await expect(press(window, 'Escape')).resolves.not.toThrow();
+        expect(faqStore.isOpen).toBe(true);
+    });
 });

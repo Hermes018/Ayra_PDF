@@ -315,7 +315,13 @@ describe('Labs gating (2.16 math text, 8.10 shape guess)', () => {
             const row = label.closest('[role="menuitem"]') as HTMLElement;
             expect(within(row).getByTestId('labs-badge')).toHaveTextContent('Labs');
             expect(row.getAttribute('title')).toContain('not a TeX renderer');
+            expect(row.getAttribute('aria-label')).toContain('not a TeX renderer');
+            expect(within(drawer).getByLabelText(/not a TeX renderer/i)).toBe(row);
             expectNoOverclaims();
+        });
+
+        test('math-text note specifies that inserted text always starts with ∑', () => {
+            expect(MATH_TEXT_LABS.note).toContain('∑');
         });
 
         test('property pill lists and labels the tool as "Math text (Labs)"', () => {

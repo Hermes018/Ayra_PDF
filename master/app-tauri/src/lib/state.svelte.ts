@@ -35,7 +35,7 @@ class AppState {
     preferNativeText = $state<boolean>(false);
     /**
      * Labs (experimental) features: OFF by default. This is the single switch the UI reads;
-     * see components/studio/labs.ts for the list of features it gates.
+     * see components/studio/labs.svelte.ts for the list of features it gates.
      */
     labsEnabled = $state<boolean>(false);
     sidebarCollapsed = $state<boolean>(false);

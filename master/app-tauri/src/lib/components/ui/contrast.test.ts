@@ -42,6 +42,11 @@ describe('Dialog and Tooltip contrast (from tokens)', () => {
       expect(t).toBeGreaterThanOrEqual(4.5);
       expect(b).toBeGreaterThanOrEqual(4.5);
     });
+    it(`${theme}: tooltip text meets 4.5:1 on the opaque surface`, () => {
+      const r = ratio('--text-primary', '--surface-dialog', theme);
+      console.info(`tooltip ${theme}: text ${r.toFixed(2)}`);
+      expect(r).toBeGreaterThanOrEqual(4.5);
+    });
     it(`${theme}: the dialog scrim is a translucent token`, () => {
       expect(parse(TOKENS[theme]['--scrim' as keyof (typeof TOKENS)['light']])[3]).toBeLessThan(1);
     });

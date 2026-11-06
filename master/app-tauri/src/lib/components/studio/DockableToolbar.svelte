@@ -107,7 +107,7 @@
         { id: 'insert.stamp', label: 'Engineering Stamp', icon: 'stamp' },
         { id: 'insert.signature', label: 'Signature Suite', icon: 'signature' },
         { id: 'insert.image', label: 'Insert Image', icon: 'image' },
-        // Labs-only (2.16): hidden unless Settings → Labs is on; see ./labs.ts.
+        // Labs-only (2.16): hidden unless Settings → Labs is on; see ./labs.svelte.ts.
         { id: 'insert.latex', label: MATH_TEXT_LABS.name, icon: 'latex' },
         { id: 'insert.audio', label: 'Voice Audio Note', icon: 'audio' }
       ]
@@ -371,6 +371,7 @@
                   role="menuitem"
                   tabindex="-1"
                   title={labsToolNote(tool.id)}
+                  aria-label={labsToolNote(tool.id)}
                 >
                   <Button
                     variant="plain"

@@ -71,4 +71,17 @@ describe('document switch resets every per-document engine field', () => {
         expect(snapshot()).toEqual(clean);
         clearDocumentSessions();
     });
+
+    test('activate() resets plain (non-getter/setter) engine state', () => {
+        clearDocumentSessions();
+        activate('/reset/one.pdf');
+        // Dirty plain engine fields on inserts (resetDocumentState resets recordedChunks)
+        (inserts as any).recordedChunks = [new Blob()];
+        expect((inserts as any).recordedChunks.length).toBe(1);
+
+        activate('/reset/two.pdf');
+        expect((inserts as any).recordedChunks).toEqual([]);
+        // Note: commands.journal is plain and not cleared by activate (recorded in checkpoint per AT-06).
+        clearDocumentSessions();
+    });
 });
