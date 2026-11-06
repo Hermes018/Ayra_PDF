@@ -24,5 +24,7 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 09:27 | dogfood-build | (escalation rule) | haiku/low | escalated | haiku → sonnet/low | next long-running script task of this type goes to Sonnet low (owner) |
 | 2026-11-06 09:28 | release-build | BUG-031 + real-world PDF dogfood run | sonnet/medium (agent file) | running | | |
 | 2026-11-06 09:28 | explore | UI screen inventory | haiku/low (agent file) | ok | | 12 screens, 1 dialog, 20 components, E2E: Organize only |
-| 2026-11-06 09:28 | fixes-build | studio-audit over all .svelte (A2) | sonnet/high (agent file) | running | | |
+| 2026-11-06 09:28 | fixes-build | studio-audit over all .svelte (A2) | sonnet/high (agent file) | ok | | 385 violations in 30 files; verify GREEN |
 | 2026-11-06 09:29 | design-spec | DESIGN_LANGUAGE.md one pass | opus/medium | ok | | 10 CREATE, 2 reuse, 11 NEW tokens |
+| 2026-11-06 09:35 | review+verify | UI audit A2 (tooling) | sonnet/medium (agent file) | stopped | | lead stopped: owner triage changes the diff |
+| 2026-11-06 09:37 | fixes-build | audit triage: px allowlist, 7 key listeners→commandEngine, 6 icon labels, overclaim | sonnet/low (owner) | running | | |
