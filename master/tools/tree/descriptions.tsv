@@ -500,3 +500,4 @@ master/vendor/patches/cadcraft-render/src/	Upstream src/ except lib.rs re-export
 master/docs/UPSTREAM_MANIFEST.toml	Every adopted craft crate, patch and KEEP-PORT source: repo, rev, licence, adapter, last-checked
 master/crates/lpdf-geom/src/cadcraft.rs	Cadcraft-backed hatch implementation (HatchEngine::Cadcraft): real polygon clipping (ERR-007)
 master/crates/lpdf-geom/tests/cadcraft_parity.rs	Tests: cadcraft hatch inside concave polygons, all patterns distinct, parity notes vs legacy
+master/KNOWN_ISSUES.md	Cuts and known limitations shipped in v0.2.0-prototype, with workarounds (KI-xxx)

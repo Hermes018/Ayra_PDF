@@ -508,6 +508,7 @@ master/
 ├── Cargo.lock                                                # Pinned versions of every Rust dependency (committed for reproducible builds)
 ├── Cargo.toml                                                # Rust workspace manifest: members, release profile, patches pointing at pdfcraft's vendored crates
 ├── deny.toml                                                 # cargo-deny policy: licence allow-list (no GPL/AGPL), banned crates, advisories
+├── KNOWN_ISSUES.md                                           # Cuts and known limitations shipped in v0.2.0-prototype, with workarounds (KI-xxx)
 ├── master.md                                                 # Map of master/ with build/dev commands
 ├── MASTER_PROMPT.md                                          # Original project boot prompt given to the first coding agent
 └── rust-toolchain.toml                                       # Rust toolchain channel (stable) + rustfmt/clippy components
