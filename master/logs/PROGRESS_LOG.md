@@ -1609,3 +1609,8 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 ## [2026-11-06 09:51] Automated real-world dogfood
 - Automated real-world dogfood: 8 files (DF-01..08), all public by heuristic. Open 8/8 (1.3–3.7 s), render 8/8, text 1 PASS / 7 PARTIAL, forms N/A, markup 8/8, redaction (DF-04) sentence gone + qpdf ok, large-file flag DF-03 2.9 GB RSS. No P0s. Originals' SHA-256 unchanged 8/8. Corpus candidates DF-01..08 await owner approval.
 - BUG-031 fixed on wt/release (in review).
+
+## [2026-11-06 10:24] Sweep group 1 (Organize) merged — 1ab81a5, tag sweep-g1-green
+- OrganizeView/GridEditor/Dropzone on ui/ components and tokens (25→0 violations), ErrorState/Progress/Cancel, sentence case; flow 14 smoke; flow 10 glob fixed.
+- Accepted behaviour changes (for the CHANGELOG): the Dropzone picker opens via the "Browse files" button only (drag-and-drop unchanged); Organize tools await runJob (Progress/Cancel/ErrorState, 120 s stall); overlay buttons show on keyboard focus.
+- Verifier (opus/high, save path): Apply path unchanged; flow 10 PASS 18/18. Next: group 2.

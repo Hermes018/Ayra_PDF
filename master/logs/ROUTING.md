@@ -34,4 +34,7 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 10:04 | review+verify+visual | C0 library | sonnet/medium (agent file) | ok | | PASS w/ 2 visual majors (dark dialog contrast, tooltip clip) → fix round |
 | 2026-11-06 10:05 | fixes-build | C0 fix round (dialog contrast, tooltip clamp, gallery check control, env -u, BUG-043) | sonnet/medium | ok | | |
 | 2026-11-06 10:11 | review+verify | C0 delta recheck + fresh gate | sonnet/medium (agent file) | ok | | 3/4 PASS, tooltip overlap minor; gate GREEN |
-| 2026-11-06 10:11 | fixes-build | sweep group 1 (main-flow screens) | sonnet/medium (owner) | running | | |
+| 2026-11-06 10:11 | fixes-build | sweep group 1 (main-flow screens) | sonnet/medium (owner) | ok | | Organize 25→0; missed one behaviour change in report |
+| 2026-11-06 10:24 | reviewer | sweep g1 | sonnet/medium | ok | | PASS, found unlisted behaviour change |
+| 2026-11-06 10:24 | merge-verify | sweep g1 (save path) | opus/high | ok | | GREEN, flow10 18/18 |
+| 2026-11-06 10:24 | fixes-build | sweep group 2 (Sidebar, StatusBar, MainLayout) | sonnet/medium | running | | |
