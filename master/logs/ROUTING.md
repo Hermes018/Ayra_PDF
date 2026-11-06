@@ -107,5 +107,6 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 15:14 | docs | ARGON_TASKS.md (step 4, doc-only) | sonnet/medium | ok | | lead removed AT-08/16/17, restricted AT-15 (SpatialCanvas holds save code) |
 | 2026-11-06 15:54 | log-read | flow 12 soak data + flow 13 reason | haiku/low | ok | | RSS series + code lines delivered verbatim |
 | 2026-11-06 15:54 | release-build | flow 13 rerun (flagged build) + real-PDF rerun | sonnet/medium | ok | | flow 13 PASS; real-PDF steps 3,5,6 regressed → triage |
-| 2026-11-06 15:55 | fixes-build | packaging prep P-a: version 0.2.0, About screen, reset preferences, build hash | sonnet/medium | running | | settings backend → opus |
+| 2026-11-06 15:55 | fixes-build | packaging prep P-a: version 0.2.0, About screen, reset preferences, build hash | sonnet/medium | ok | | Cargo.lock hand-edited (21 crates) → verifier checks |
 | 2026-11-06 16:04 | release-build | triage: real-PDF regressions (driver drift vs app regression) | sonnet/medium | running | | no app-code fixes; potential P0 save/redaction |
+| 2026-11-06 16:09 | review+verify (combined) | packaging prep A (reset_preferences, Cargo.lock, build hash, About) | opus/high | running | | settings persistence; no E2E (app in use) |
