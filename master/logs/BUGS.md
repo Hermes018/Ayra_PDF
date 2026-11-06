@@ -201,3 +201,6 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 
 ## BUG-045 [P2] The "PINS" toolbar at bottom-left overlaps the page (seen in the shell screenshots; it predates the sweep) — status: open
 - Found by: sweep g2 visual review. Candidate for the Studio chrome sweep group, or UI_BACKLOG.md. Owner: fixes
+
+## BUG-046 [P1] Flow 7 false FAIL: the harness matches saved annotations by text, so a drawn signature (no text) can never match — status: open
+- Found by: sweep group 6 builder. E2E flow 7 fails the same way on the merged main binary (logs/runs/sweep-e2e7-base.log in wt/fixes), so this predates the sweep. **Triage (lead):** NOT data loss. The saved output's /Ink annotation has an /InkList of 20 points (40 numbers), an /AP appearance stream and /Rect [73.2 423.1 219.3 444.7] (qpdf + parse). flow07_insert.py:113-116 matches by `text`, and `want=''` gives 0 hits. Fix: for content-less annotations (drawn signature), match by subtype {/Ink,/Stamp} plus a non-empty InkList or AP inside the expected bbox, and check stroke count against what was drawn. Blocks flow 7 = 12/12 at the RC, so P1. Owner: release. Also P2: sticky note saved as /FreeText (expected /Text) and stamp as /FreeText (expected /Stamp), per the flow's native-type WARNs.

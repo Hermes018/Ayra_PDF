@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 10:58 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 11:07 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -10,9 +10,9 @@ Updated 2026-11-06 10:58 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 ## Worktrees
 | Worktree | HEAD | State |
 |---|---|---|
-| main | d06571f (tags sweep-g4-green … ui-library-green, …) | lead |
+| main | e49089d (tags sweep-g5-green … ui-library-green, …) | lead |
 | wt/engines | 9919398 + CP3 uncommitted | PARKED; target dir deleted (owner 08:50) — rebuild needed before CP3 tests |
-| wt/fixes | d06571f | RUNNING (sonnet/med): Escape/backdrop-during-save test (must fail with guard reverted), alert Dialog variant, Button attrs order, then sweep group 5 |
+| wt/fixes | e49089d | RUNNING (sonnet/med): sweep group 6 + Escape-during-capture fix + calibration discard confirm; asked for ETA to finish main-flow screens by 16:30 |
 | wt/release | 0291a99 (merged: WIP follow-ups + BUG-031) | idle; next: Sat AM packaging (D) incl. KI-006, .rpm |
 | android | 644caf3 | paused until Sun |
 
