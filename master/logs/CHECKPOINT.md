@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 08:18 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 09:28 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -11,9 +11,9 @@ Updated 2026-11-06 08:18 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 | Worktree | HEAD | State |
 |---|---|---|
 | main | 52b7a17 (tags fixes-err007-green, fixes-p0-green, …) | lead |
-| wt/engines | 9919398 + CP3 uncommitted (BUG-029/030 + minors; compiles, tests NOT run) | PARKED (tier). NOTE: CP3 changes path_exists to Result<bool,String>; fixes must adapt when CP3 merges |
-| wt/fixes | 52b7a17 (merged) | idle; next: BUG-032/033/035 (P1) if the tier allows |
-| wt/release | 6fa23a8 WIP (follow-ups 1,2,3,5,6; unverified) | PAUSED. After restart: verify + merge; then BUG-031 (P1, process-group reap + no-leftover check). KI-006 offline AppImage proof → Saturday packaging, before RC |
+| wt/engines | 9919398 + CP3 uncommitted | PARKED; target dir deleted (owner 08:50) — rebuild needed before CP3 tests |
+| wt/fixes | 409f10e | RUNNING (fixes-builder, sonnet/high): UI workstream A2 — studio-audit over all .svelte + --strict + UI_CONSISTENCY_INVENTORY.md |
+| wt/release | a547ee0 (main + WIP 6fa23a8) | RUNNING (release-builder, sonnet/med): BUG-031 → gate; then real-world PDF dogfood run (DF-xx IDs, copies in ~/lpdf-dogfood-run, originals read-only) |
 | android | 644caf3 | paused until Sun |
 
 ## P0 (BUGS.md)
@@ -23,6 +23,10 @@ Updated 2026-11-06 08:18 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 1. E2E flows 1, 2, 4, 6, 11 on main (running).
 2. DOGFOOD build (AppImage) for the owner.
 3. Pace check at ~09:00 (owner %); then P1s, if the tier allows.
+
+## UI consistency workstream (owner 2026-11-06 09:28; feature freeze holds)
+A inventory (explorer haiku running; audit ext. fixes) → B docs/DESIGN_LANGUAGE.md (Opus medium, one pass) → C sweep main-flow screens (Sonnet medium, strict audit, screenshots) by 17:00 → 17–18 E2E + screenshots → Sat AM D packaging (0.2.0, LTO, rpm/deb/AppImage, SBOM, offline run) → RC 18:00. Owner dogfood findings beat sweep work. If weekly > 80 % before Sat noon: stop sweep at main-flow screens, finish D, rest → UI_BACKLOG.md.
+- Weekly 66 % at 09:28 (≈0.7 %/h since 07:47): tier stays 85–92 %; owner un-paused release builder. DOGFOOD copy: ~/LocalPDF-dogfood/ (+SHA256SUMS).
 
 ## Cuts (KNOWN_ISSUES.md)
 KI-001 tab switch clears undo · KI-002 Organize intermediate file · KI-003 Labs · KI-004 split view → Labs · KI-005 no LTO, version 0.1.0 · KI-006 AppImage tools pinned, prefetch once · KI-007 no Close document.
