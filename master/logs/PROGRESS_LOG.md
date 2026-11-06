@@ -1620,3 +1620,11 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - New shared pieces along the way: alert Dialog variant, ColorSwatch, compact Select/Input, IconButton tooltip, Tooltip clamp/flip, opaque dark surfaces (contrast tests ≥ 4.5:1).
 - Bugs fixed during the sweep: BUG-043 (Space on focused buttons), Escape during chord capture, autocomplete=off on the password field (a regression caught by Opus), plus data-safety tests (Escape/backdrop during save).
 - Remaining: 808 audit hits in 14 non-main-flow files (raw-px 616, shared-component 147, title-case 35, raw-colour 7). Sweep continues until 16:45, then E2E + screenshots 17:00–18:00.
+
+## [2026-11-06 14:40] Workstream C: whole-app UI consistency sweep COMPLETE — 280a6c5, tag ui-sweep-complete
+- 14 sweep groups plus the C0 component library; the audit (incl. i18n JSON and badges) reports 0 violations in 52 files; every screen strict-listed. Design spec: docs/DESIGN_LANGUAGE.md.
+- Bugs found and fixed along the way:
+  - P0: BUG-050 (output could overwrite the original), BUG-053 (redaction of the wrong page), BUG-057 (hard-coded Protect password), BUG-058 (passwords in logs).
+  - P1: BUG-043, 046, 051, 052, 054, 059 (settings fail open).
+- Honest UI: demo highlight and sample batch moved to Labs; overclaims removed from every screen and every FAQ locale.
+- Next: BUG-060 (FAQ text), then the 17:00 E2E rerun (all 12 flows) + screenshots.
