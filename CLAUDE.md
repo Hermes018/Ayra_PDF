@@ -52,7 +52,7 @@ The lead is the orchestrator only. It does NOT read logs, search the codebase, e
 | Sonnet 5.5 high | fixes-builder (failing test first) |
 | Opus 5.5 medium | lead, engines-builder |
 | Opus 5.5 high | merge-verifier, rc-verifier, escalation |
-- **Escalate:** Haiku fails once → Sonnet low. Sonnet fails the same task twice → Opus high, then normal routing. Engine code, save/atomic-write/redaction paths and the RC are always verified by Opus high. Log every task and escalation in ROUTING.md.
+- **Escalate:** Haiku fails once → Sonnet low. Sonnet fails the same task twice → Opus high, then normal routing. Engine code and the RC are always verified by Opus high. **Save paths, atomic writes and redaction always get the Opus-high verifier, overriding any throttle tier** (owner, 2026-11-06). Log every task and escalation in ROUTING.md.
 - **Self-tune at each milestone:** `python3 master/tools/routing-stats.py`. A type with > 25 % escalations moves up a tier; a Sonnet-high type with 0 escalations over 10+ tasks tries one tier down. Report the changes.
 - **Idle:** no polling (background tasks + notifications; check at most every 10 min). A diff < 200 lines gets one combined Opus-high review + verify pass; engine swaps and the RC keep separate passes. Batch small P0s into one gate. Reports ≤ 150 words.
 - **Throttle tiers** (owner pastes weekly %; record the tier in CHECKPOINT):
