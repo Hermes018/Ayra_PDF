@@ -237,3 +237,6 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 
 ## BUG-056 [P2] Studio: non-redaction annotations on a page that doesn't exist are clamped silently to the last page; sidecar network blocking enforced on Linux only — status: open
 - Found by: BUG-054 Opus pass. Annotations aren't destructive, but a misplaced markup is wrong; refuse or warn instead. "Works offline" holds on Linux (this release); on other platforms the sidecar's network blocking isn't enforced (ADR-020 platform work, after the release). Owner: fixes
+
+## BUG-057 [P0, security] Pipelines Protect step pre-filled with the hard-coded password "password123" — status: fixing (sweep g13, in Opus verification)
+- Found by: sweep g13 builder; confirmed on main (PipelinesView.svelte:97) and in the DOGFOOD AppImage (09:0x build). A user who ran Pipelines → Protect without typing a password got a "protected" PDF with a publicly known password. Fix: the field starts empty, an empty Protect password is refused, autocomplete=off; the Opus check also looks for other hard-coded secrets, persisted passwords and a backend refusal. Owner informed: treat any DOGFOOD-build Pipelines-protected files as unprotected. Owner: fixes
