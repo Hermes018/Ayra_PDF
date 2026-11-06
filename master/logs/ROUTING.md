@@ -90,4 +90,6 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 13:25 | fixes-build | BUG-054 + BUG-055 + sweep g12 (Convert from/to) | sonnet/medium | ok | | inventory 446 in 5 files |
 | 2026-11-06 13:33 | review+verify (combined) | BUG-054/055 + g12 | opus/high | ok | | GREEN 245; flows 8,11 PASS |
 | 2026-11-06 13:36 | fixes-build | sweep g13 (Markdown, Pipelines) + mixed-batch test; found BUG-057 | sonnet/medium | ok | | |
-| 2026-11-06 13:42 | review+verify (combined) | g13 + BUG-057 (secrets sweep) | opus/high | running | | security |
+| 2026-11-06 13:42 | review+verify (combined) | g13 + BUG-057 (secrets sweep) | opus/high | ok | | GREEN; found BUG-058 password in debug log |
+| 2026-11-06 13:46 | fixes-build | BUG-058 secrets redaction (+ wording, opacity limits, temp test) | sonnet/medium | ok | | encrypted-open password not listed → opus checks |
+| 2026-11-06 13:52 | review+verify (combined) | BUG-058 secrets (all password holders, log path, flow 2 grep) | opus/high | running | | security |
