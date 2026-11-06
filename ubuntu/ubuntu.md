@@ -35,9 +35,11 @@ Every entry has a one-line description. `master/vendor/pdfcraft` is an upstream 
 
 ```text
 ubuntu/
-├── packaging/                  # Files used to build the .deb
-│   ├── build-deb.sh            # Builds CLI + worker + app and bundles the .deb with the Ubuntu overlay
-│   ├── desktop.template        # Linux .desktop launcher template (Ubuntu copy)
-│   └── tauri.ubuntu.conf.json  # Tauri config overlay: deb target, Debian dependency names, extra binaries
-└── ubuntu.md                   # Map of ubuntu/ with setup, build instructions and known issues
+├── packaging/                    # Files used to build the .deb
+│   ├── build-appimage.sh         # Builds the AppImage from master/ with the AppImage overlay (linuxdeploy fetched at build time only)
+│   ├── build-deb.sh              # Builds CLI + worker + app and bundles the .deb with the Ubuntu overlay
+│   ├── desktop.template          # Linux .desktop launcher template (Ubuntu copy)
+│   ├── tauri.appimage.conf.json  # Tauri config overlay: AppImage target plus the CLI and worker binaries
+│   └── tauri.ubuntu.conf.json    # Tauri config overlay: deb target, Debian dependency names, extra binaries
+└── ubuntu.md                     # Map of ubuntu/ with setup, build instructions and known issues
 ```

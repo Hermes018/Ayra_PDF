@@ -127,3 +127,15 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 
 ## BUG-028 [P1] Voice note with an empty recording saves a made-up 440 Hz tone instead of failing (DON'T-5) — status: open
 - Found by: engines builder (matrix row T42). `buildOfflineWavBytes` (insertEngine.svelte.ts:~412) substitutes a synthetic tone when the recording yields no bytes. It must refuse with a clear "Nothing was recorded" error instead. Owner: fixes (after the P0 merge)
+
+## BUG-029 [P1] F4 guard is trivially bypassed and covers only GetInfo/RenderPage — status: open
+- Found by: engines CP2b reviewer. guard.rs:53-93 checks only a direct, literal `/Length`.
+  - Bypasses: an indirect `/Length 9 0 R`; a hex-escaped name `/L#65ngth`; a real flate bomb with an honest small /Length (the F4 decompression-ratio cap is missing).
+  - Coverage gap: the guard runs only in `load()` (engine-switcher lib.rs:83). Merge, extract, compress and the studio.rs pdfcraft Session paths skip it.
+  - The corpus `hostile-bombs.pdf` is caught. Owner: engines
+## BUG-030 [P1] Every load reads the whole file into RAM (twice per RenderPage) — status: open
+- Found by: engines CP2b reviewer. engine-switcher lib.rs:83 calls `std::fs::read` before the guard, which contradicts the "cheap, bounded" doc. Fine for the 1k-page corpus (253 KB); bad for 100 MB+ scans. Fix: a fixed-buffer streaming scan. Owner: engines
+
+## BUG-031 [P1] E2E harness leaves its private dbus-daemon running after the run — status: open
+- Found by: lead (scope run-racc58…, dbus-daemon with /tmp/lpdf-bus-*/bus.conf alive 1h23m after pkg_smoke started at 06:24). reap() covers app/driver/WebKitWebDriver but not the private bus. Owner: release (paused by the throttle tier)
+- Raised to P1 (owner). Fix: run each harness run in its own process group/session and kill the whole group on exit, dbus included; add a post-run check that no harness processes remain. Assigned: release builder, after the session restart.

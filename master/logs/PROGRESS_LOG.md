@@ -1577,3 +1577,16 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
   - CHANGELOG claims features with open P0s.
   - Verifier: tree-map RED; the lead's descriptions were missing (fixed by the lead). Round 3 sent.
 - **BUG-028 (P1) logged:** empty voice recording → synthetic tone.
+
+## [2026-11-06 07:30] Merge: engines CP2b — DONE (9919398, tag engines-cp2b-green)
+- Reviewer: PASS conditional, no blockers. Majors → BUG-029 (guard bypasses / coverage) and BUG-030 (full-file read). Minors → engines CP3.
+- Verifier: verify.sh GREEN (nextest 186/186, vitest 165/165). Guard trips only on hostile-bombs across 9 corpus PDFs; cadcraft is absent from the shipped dependency tree.
+- Merge of main into wt/engines: descriptions.tsv conflict resolved by union; tree-map check OK; fast-forward to main.
+- **BUG-015 / ERR-007 is NOT fixed in the shipped build.** Cadcraft stays off until the owner decides on R3 licence wording. The switch patch is ready.
+
+## [2026-11-06 07:37] Merge: release CP1+2+R3 — DONE (ad484fd, tag release-cp2-green)
+- Reviewer R3 (sonnet/medium) PASS, minors; verifier R3 (opus/high) verify.sh GREEN, nextest 155.
+- Follow-ups: pkg_smoke reap RuntimeError not caught; flaky-only reason misleading; AppImage cache filenames not proven offline; cargo build without --locked; CHANGELOG lines 51-53 not E2E-tested.
+
+## [2026-11-06 07:37] Routing setup
+- 13 role files in .claude/agents (not loaded until a session restart — the first agents dir in this scope; meanwhile routed via per-call model/effort); ROUTING.md + tools/routing-stats.py; CLAUDE.md sections 'Lead role' and 'Model routing'.

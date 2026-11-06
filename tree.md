@@ -46,7 +46,21 @@ Ayra_PDF/
 
 ```text
 .claude/
-└── settings.json  # Project hooks: Bash guard (PreToolUse), auto-format (PostToolUse), activity log (Stop/SubagentStop)
+├── agents/                    # Claude Code subagent role files (model and effort per role; see master/logs/ROUTING.md)
+│   ├── bug-triager.md         # Subagent role (sonnet-5-5/low): Triage findings into master/logs/BUGS.md (P0/P1/P2 per docs/PROTOTYPE_SCOPE.md) and summarize reviewer findings.
+│   ├── checkpoint-writer.md   # Subagent role (sonnet-5-5/low): Update master/logs/CHECKPOINT.md or a per-worktree checkpoint from facts the lead provides. Small judgment, low blast radius.
+│   ├── engines-builder.md     # Subagent role (opus-5-5/medium): Engines builder in ~/Desktop/Ayra_PDF-wt/engines: ADR-018 adapters and engine swaps behind goldens/parity.
+│   ├── escalation.md          # Subagent role (opus-5-5/high): Escalated task: redo work that failed twice on Sonnet or once on Haiku+Sonnet (see logs/ROUTING.md).
+│   ├── explorer.md            # Subagent role (haiku-5-5): Locate files, symbols and call sites; broad read-only search. Mechanical: output is checked by a later step.
+│   ├── fixes-builder.md       # Subagent role (sonnet-5-5/high): Fixes builder in ~/Desktop/Ayra_PDF-wt/fixes: P0/P1 bug fixes, failing test first.
+│   ├── log-reader.md          # Subagent role (haiku-5-5): Read build/test logs (master/logs/runs/*.log) and extract failures verbatim. Mechanical.
+│   ├── merge-verifier.md      # Subagent role (opus-5-5/high): Fresh merge-gate verifier: gets only spec + staged diff + verify.sh; runs the gate itself. Always used for engine code, save/atomic-write/redaction paths.
+│   ├── provenance-auditor.md  # Subagent role (sonnet-5-5/medium): Audit vendored/upstream code provenance: pins, licences, NOTICE files, UPSTREAM_MANIFEST.toml, deny.toml.
+│   ├── rc-verifier.md         # Subagent role (opus-5-5/high): Release-candidate verifier: full gate, 12/12 E2E flows, package smoke, on the RC tag.
+│   ├── release-builder.md     # Subagent role (sonnet-5-5/medium): Release builder in ~/Desktop/Ayra_PDF-wt/release: E2E harness (master/e2e), corpus, packaging scripts, CHANGELOG.
+│   ├── reviewer.md            # Subagent role (sonnet-5-5/medium): Read-only code reviewer for a staged diff in a worktree. Use for every non-engine merge (engine swaps and RC also get an Opus-high verifier).
+│   └── status-snapshot.md     # Subagent role (haiku-5-5): Run a script or status command (scheduler, disk, RAM, git) and report its output. Mechanical.
+└── settings.json              # Project hooks: Bash guard (PreToolUse), auto-format (PostToolUse), activity log (Stop/SubagentStop)
 ```
 
 ## `.github/`
@@ -282,7 +296,7 @@ master/
 │   ├── vitest-setup.ts                                       # Vitest setup: jest-dom matchers and Tauri IPC mocks
 │   └── vitest.config.ts                                      # Vitest config (jsdom environment, test file globs)
 ├── corpus/                                                   # Test PDFs: manifest + fetch script (the PDFs themselves are downloaded, not committed)
-│   ├── fetch.sh                                              # Downloads/generates the corpus (needs wget or curl, and qpdf for synthetic files)
+│   ├── fetch.sh                                              # Downloads/generates the corpus incl. scanned.pdf and encrypted.pdf (POSIX sh; needs wget/curl, qpdf, pdftoppm)
 │   ├── MANIFEST                                              # List of corpus files and what each tests
 │   └── SHA256SUMS                                            # Expected hashes of corpus files
 ├── crates/                                                   # Rust library/binary crates (the engine side)
@@ -427,6 +441,26 @@ master/
 │   ├── STUDIO_UI_UX_OVERHAUL_SPEC.md                         # Studio UI/UX overhaul spec (phases U1–U5)
 │   ├── UPGRADING.md                                          # DRAFT procedure for bumping a pinned upstream engine (branch → gate → verifier → log)
 │   └── UPSTREAM_MANIFEST.toml                                # Every adopted craft crate, patch and KEEP-PORT source: repo, rev, licence, adapter, last-checked
+├── e2e/                                                      # Golden-path E2E tests (12 flows, tauri-driver/WebDriver, Python stdlib; dev only)
+│   ├── flows/                                                # One module per PROTOTYPE_SCOPE flow
+│   │   ├── __init__.py                                       # Flow registry
+│   │   ├── flow01_install_launch.py                          # Flow 1: install + cold launch < 3 s, no console errors
+│   │   ├── flow02_open.py                                    # Flow 2: open small/large/scanned/encrypted/malformed PDFs
+│   │   ├── flow03_navigate.py                                # Flow 3: pan/zoom/pinch/fit, thumbnails, multiple documents
+│   │   ├── flow04_ink.py                                     # Flow 4: pen, highlighter, erasers, undo/redo
+│   │   ├── flow05_shapes_hatch.py                            # Flow 5: shapes, polygon-clipped distinct hatching, revision cloud
+│   │   ├── flow06_measure.py                                 # Flow 6: calibrate, length/area/angle, ledger, CSV export
+│   │   ├── flow07_insert.py                                  # Flow 7: text box, callout, note, stamp, signature
+│   │   ├── flow08_redact.py                                  # Flow 8: redact and confirm removal with pdftotext/qpdf
+│   │   ├── flow09_edit_text.py                               # Flow 9: edit PDF text in place
+│   │   ├── flow10_organize.py                                # Flow 10: reorder, rotate, delete, merge pages
+│   │   ├── flow11_save_reopen.py                             # Flow 11: save new file, original untouched, reopen in app/poppler/pdf.js
+│   │   └── flow12_soak.py                                    # Flow 12: scripted soak, crash/memory/fd/temp checks
+│   ├── .gitignore                                            # Ignores e2e/out/ (reports, screenshots, copied binary)
+│   ├── common.py                                             # Ground-truth helpers (poppler/qpdf/hashes), process sampling, isolation (private D-Bus/XDG)
+│   ├── pkg_smoke.py                                          # Clean-user install smoke test for rpm/deb/AppImage (flows 1-2 against the packaged binary, fresh HOME)
+│   ├── run.py                                                # Runner: python3 master/e2e/run.py [--flows] [--binary] [--soak-minutes]
+│   └── wd.py                                                 # Minimal W3C WebDriver client (urllib)
 ├── fuzz/                                                     # cargo-fuzz workspace (libFuzzer targets)
 │   ├── fuzz_targets/                                         # Fuzz entry points
 │   │   ├── fuzz_engine_switcher.rs                           # Fuzz: engine switcher
@@ -438,7 +472,8 @@ master/
 ├── logs/                                                     # Project logs (append-only, except CHECKPOINT which is overwritten)
 │   ├── checkpoints/                                          # Per-worktree builder checkpoints (each builder keeps its own current)
 │   │   ├── engines.md                                        # Engines builder state: task, files, tests, next step, blockers
-│   │   └── fixes.md                                          # Fixes builder state: task, files, tests, next step, blockers
+│   │   ├── fixes.md                                          # Fixes builder state: task, files, tests, next step, blockers
+│   │   └── release.md                                        # Release builder state: task, files, tests, next step, blockers
 │   ├── ADR-008-sveltekit-spa.md                              # Detail for the SvelteKit SPA exception (registered as ADR-011 in DECISIONS_ADR)
 │   ├── ADR-009-vendored-pdfjs.md                             # Detail for the vendored pdf.js exception (registered as ADR-012 in DECISIONS_ADR)
 │   ├── AGENT_ACTIVITY.md                                     # One line per agent stop (written by hooks)
@@ -452,6 +487,7 @@ master/
 │   ├── PLAN_LOG.md                                           # Plans written before each phase
 │   ├── PROGRESS_LOG.md                                       # What was done per phase, with verification evidence
 │   ├── PROMPT_LOG.md                                         # User prompts and how they were interpreted
+│   ├── ROUTING.md                                            # Model routing table, escalation log and per-milestone routing tuning notes
 │   ├── sbom.cdx.json                                         # Software bill of materials (regenerated by `cargo xtask sbom`)
 │   └── UI_AUDIT_LOG.md                                       # UI bug register and verification notes
 ├── protocol/                                                 # Project rules (read-only except where noted)
@@ -497,6 +533,7 @@ master/
 │   ├── protect.sh                                            # Wraps each agent job: cgroup MemoryMax/High from live MemAvailable, OOM preference, nice/ionice
 │   ├── ram-budget.env                                        # Measured peak inputs for the scheduler (HEAVY/LIGHT MiB)
 │   ├── restore-context.sh                                    # SessionStart hook (compact/resume/startup): prints CHECKPOINT + STATE_AUTO back into context
+│   ├── routing-stats.py                                      # Escalation rate per task type from logs/ROUTING.md, with tier-move suggestions (> 25 % up; Sonnet-high 0/10+ down)
 │   ├── run.sh                                                # Runs one heavy command under the build lock, full log to logs/runs/, prints a short summary
 │   ├── sample-training.sh                                    # Read-only sampler of the training job's total RSS every 30 s
 │   ├── sb.sh                                                 # Runs a command under CPU/RAM limits (systemd-run) for low-memory hosts
@@ -538,6 +575,7 @@ master/
 ├── .allowed-deletions                                        # Paths the pre-commit hook allows to be deleted (all other deletions are blocked)
 ├── Cargo.lock                                                # Pinned versions of every Rust dependency (committed for reproducible builds)
 ├── Cargo.toml                                                # Rust workspace manifest: members, release profile, patches pointing at pdfcraft's vendored crates
+├── CHANGELOG.md                                              # Release notes for v0.2.0-prototype (draft; finalised by the lead at tag time)
 ├── deny.toml                                                 # cargo-deny policy: licence allow-list (no GPL/AGPL), banned crates, advisories
 ├── KNOWN_ISSUES.md                                           # Cuts and known limitations shipped in v0.2.0-prototype, with workarounds (KI-xxx)
 ├── master.md                                                 # Map of master/ with build/dev commands
@@ -550,11 +588,13 @@ master/
 
 ```text
 ubuntu/
-├── packaging/                  # Files used to build the .deb
-│   ├── build-deb.sh            # Builds CLI + worker + app and bundles the .deb with the Ubuntu overlay
-│   ├── desktop.template        # Linux .desktop launcher template (Ubuntu copy)
-│   └── tauri.ubuntu.conf.json  # Tauri config overlay: deb target, Debian dependency names, extra binaries
-└── ubuntu.md                   # Map of ubuntu/ with setup, build instructions and known issues
+├── packaging/                    # Files used to build the .deb
+│   ├── build-appimage.sh         # Builds the AppImage from master/ with the AppImage overlay (linuxdeploy fetched at build time only)
+│   ├── build-deb.sh              # Builds CLI + worker + app and bundles the .deb with the Ubuntu overlay
+│   ├── desktop.template          # Linux .desktop launcher template (Ubuntu copy)
+│   ├── tauri.appimage.conf.json  # Tauri config overlay: AppImage target plus the CLI and worker binaries
+│   └── tauri.ubuntu.conf.json    # Tauri config overlay: deb target, Debian dependency names, extra binaries
+└── ubuntu.md                     # Map of ubuntu/ with setup, build instructions and known issues
 ```
 
 ## `fedora/` — see also [`fedora/fedora.md`](fedora/fedora.md)
