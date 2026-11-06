@@ -112,3 +112,4 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 16:09 | review+verify (combined) | packaging prep A (reset_preferences, Cargo.lock, build hash, About) | opus/high | ok | | GREEN 260/543; minors → BUG-064 |
 | 2026-11-06 16:12 | release-build | packaging B1: measure LTO, build rpm/deb/AppImage, SHA256SUMS, SBOM, KI-006 offline proof | sonnet/medium | running | | no app instance; wt/release cold target |
 | 2026-11-06 16:14 | release-build | BUG-062 counted retry + BUG-061 close-tabs soak diagnostic (in wt/fixes) | sonnet/medium | running | | harness; shares the app instance with nobody (B1 builds only) |
+| 2026-11-06 16:24 | stop | owner budget stop: agents cancelled (B1 LTO measure, soak diagnostic), WIP committed on 3 branches, ARGON_TASKS section 0 written | sonnet/low | ok | | no verify run (owner) |

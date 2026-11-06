@@ -2,6 +2,37 @@
 
 Read this whole file first. Pick ONE task, do it, finish its Done checklist, then pick the next. Paths are relative to `/home/rakib/Desktop/Ayra_PDF/master/` unless they start with `/`. Frontend source root: `app-tauri/src/` (called `SRC` below).
 
+## 0. Remaining release steps, IN ORDER (state at the 2026-11-06 budget stop)
+
+Branches (all local; nothing pushed): `main` (verified through packaging prep A, tag `packaging-prep-a-green`), `wt/fixes` **WIP db28b40**, `wt/release` **WIP 53aebd9**, `wt/engines` **WIP 13b9bb3**, `track/android` 644caf3 (paused). WIP = committed but NEVER verified. Worktrees live in `~/Desktop/Ayra_PDF-wt/<name>`. Run heavy commands only via `master/tools/run.sh <name> <cmd>`, one at a time. **Steps A-D touch files on the "strong review" list (section 2). You may prepare and run them, but nothing is merged to `main` and no tag is made until Claude has reviewed it.** Write what you did in your own `master/logs/checkpoints/<worktree>.md`.
+
+**A. Finish BUG-062 / BUG-061 (soak harness)** in `~/Desktop/Ayra_PDF-wt/fixes` (branch `wt/fixes`).
+1. `git status` must be clean. Self-test: `python3 -I master/e2e/test_soak_retry.py` (files: `e2e/soak_retry.py`, `flow12_soak.py`, `run.py`). Accept: one disconnect with the app alive = WARN and pass; dead app = FAIL; two failures in a row = FAIL; hiccups above 1 % = FAIL.
+2. Build the plain binary: `LPDF_PRIO=e2e master/tools/run.sh e2e-bin-soak corepack pnpm --dir master/app-tauri tauri build --debug --no-bundle --ci`, then `mkdir -p master/e2e/out/bin && cp master/target/debug/localpdf-studio master/e2e/out/bin/`.
+3. Diagnostic (never run yet): `LPDF_PRIO=e2e master/tools/run.sh soak20 python3 master/e2e/run.py --flows 12 --soak-minutes 20 --binary master/e2e/out/bin/localpdf-studio`. Compute MB per iteration after minute 5, then extrapolate to a normal 2-hour session (60 saves). Owner rule: more than about 1 GB = P0; otherwise P1 plus a KNOWN_ISSUES entry (KI-009), and it does NOT block the RC.
+4. `master/tools/verify.sh` green, then Claude reviews and merges.
+
+**B. Packaging B1** in `~/Desktop/Ayra_PDF-wt/release` (branch `wt/release`; first `git merge main`).
+1. LTO peak (never finished): `LPDF_EXCLUSIVE=1 LPDF_PRIO=e2e master/tools/measure-ram.sh rc1-fatlto-release cargo build --locked --offline --release -p app-tauri -p lpdf-cli -p lpdf-worker`. Takes 20-40 min cold; run nothing else heavy. Exit 0 within the cap: keep `lto = true`. Exit 137 or peak above MemAvailable minus 6 GiB: set `lto = "thin"` and `codegen-units = 1` in `[profile.release]` of `master/Cargo.toml`. Record the numbers in `master/docs/RAM_BUDGET.md` ("Release build LTO decision 2026-11-06"). Training RAM has priority: never override the cgroup cap.
+2. Build (read each script first): `bash ubuntu/packaging/build-appimage.sh`, `bash ubuntu/packaging/build-deb.sh`, `bash fedora/packaging/build-rpm.sh`. Copy the three files to `~/LocalPDF-rc1/`, then `cd ~/LocalPDF-rc1 && sha256sum * > SHA256SUMS && sha256sum -c SHA256SUMS`. All names must say 0.2.0.
+3. KI-006 (offline AppImage proof): after a warm compile run `unshare -rn sh -c 'ip link set lo up && exec bash ubuntu/packaging/build-appimage.sh'`. It must reach bundling without downloading anything.
+4. SBOM: `master/tools/run.sh sbom cargo xtask sbom`, then complete it with `python3 master/tools/sbom_npm.py` (read its header for arguments). **`master/tools/sbom_npm.py` is UNREVIEWED: Claude must review it before any SBOM ships.** It replaces xtask's direct-only npm list with the full pnpm-lock tree and stamps the real version. Copy the result to `~/LocalPDF-rc1/sbom.cdx.json`, then `git checkout master/logs/sbom.cdx.json`.
+5. Checks: `file` shows each binary "stripped"; each package contains the GUI, `localpdf`, `lpdf-worker`, a .desktop with MimeType application/pdf, icons, `THIRD_PARTY_NOTICES.md`; `localpdf --help` runs.
+
+**C. Packaging B2** (same worktree).
+1. Clean install, no container available: `python3 master/e2e/pkg_smoke.py --kinds appimage,deb,rpm` extracts each package into a private prefix with a fresh HOME inside `unshare -rn`. Uninstall = delete the prefix. Record this method in the RC notes.
+2. Network-isolated run: `unshare -rn sh -c 'ip link set lo up && exec python3 master/e2e/run.py --offline --flows 1,2,3,4,5,6,7,8,9,10,11 --binary <extracted rc1 binary>'`. All must PASS. If `strace` exists, count `connect()` calls to non-loopback addresses (expect 0); if not, say the count is not measurable.
+3. Docs (write from facts only): `README.md` (install, run, offline, file locations: settings `~/.config/localpdf/settings.toml`, library `~/.config/localpdf/studio_markup_library.json`, Studio prefs `~/.config/studio/studio_prefs.json`, logs `~/.local/state/localpdf/localpdf.log.*`, Reset preferences keeps the licence), `QUICKSTART.md` (the 12 flows in plain steps, from `docs/PROTOTYPE_SCOPE.md`), `CHANGELOG.md` (final; remove "(pending ...)" for fixed bugs), `KNOWN_ISSUES.md` (KI-005 "0.1.0, no LTO" is stale: update it; add KI-009 if A.3 says so).
+
+**D. RC verification and tag.**
+1. `master/tools/verify.sh` green in the worktree being merged.
+2. Flows 1-12 on the package binary: `LPDF_PRIO=e2e master/tools/run.sh rc-golden python3 master/e2e/run.py --flows 1,2,3,4,5,6,7,8,9,10,11,12 --binary <package binary>` (flow 12 takes 1 hour; flow 1 needs the packages). Sweep smoke flows 13-23 as well; flow 13 needs a build with `VITE_LPDF_GALLERY=1`.
+3. The network-isolated run from C.2.
+4. A fresh Opus-high verifier gets only the spec, the diff and `verify.sh`.
+5. Only after that PASS: merge the branches to `main`, then `git tag v0.2.0-rc1`. Never push; the owner pushes.
+
+**E. Then the low-risk items** (sections 1, 3, 4 below): P2 bugs, the UI backlog, wording and docs.
+
 ## 1. Rules for Argon
 
 1. Work in your own worktree and branch (never on `main`). Commit only there; the lead merges. Never push.
@@ -15,7 +46,7 @@ Read this whole file first. Pick ONE task, do it, finish its Done checklist, the
 9. Never invent function or file names: open the file and check before you use a name.
 10. A task that fails twice: stop, record it in your checkpoint, move on.
 
-## 2. DO NOT TOUCH
+## 2. DO NOT TOUCH without strong review by Claude
 
 - Engines: `master/crates/lpdf-engine-*`, `lpdf-geom`, `lpdf-engine-switcher`, `vendor/`.
 - `master/crates/lpdf-fs-safety`.
@@ -24,7 +55,8 @@ Read this whole file first. Pick ONE task, do it, finish its Done checklist, the
 - Password handling: `lpdf_core_types::Secret` and anything that holds a password.
 - xtask gates: `master/xtask/src` (including `ui_audit.rs`) and `verify.sh`.
 - Hooks and tooling: `.claude/`, `master/tools/`.
-- Packaging: `ubuntu/`, `fedora/`, `windows/`, `macos/`, `tauri.*.conf.json`.
+- Packaging: `ubuntu/`, `fedora/`, `windows/`, `macos/`, `tauri.*.conf.json`, `master/tools/sbom_npm.py`.
+- Settings persistence (`reset_preferences`, `load_settings`, `save_settings_atomic`), `Cargo.lock`, `master/.allowed-deletions`.
 - CSP and `tauri.conf.json`.
 - `SRC/lib/core/commandEngine.svelte.ts`.
 - E2E harness core: `master/e2e/common.py`, `wd.py`, `run.py`, plus `ink_match.py` and the flow files 1-12.
