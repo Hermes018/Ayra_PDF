@@ -86,3 +86,5 @@
 - 2026-11-06T07:37:20+06:00 HOOK-TEST compact: PreCompact wrote STATE_AUTO 06:57:59; SessionStart(compact) printed the restore header 07:00:06; output truncated to preview (ERR-009) → fixed; next compaction re-tests
 - 2026-11-06T07:37:20+06:00 Stop lead session=c9df49d5 cwd=Ayra_PDF
 - 2026-11-06T07:39:12+06:00 SubagentStop general-purpose#aa501f01 session=c9df49d5 cwd=Ayra_PDF
+- 2026-11-06T07:39:49+06:00 Stop lead session=c9df49d5 cwd=Ayra_PDF
+- 2026-11-06T07:41:01+06:00 SubagentStop general-purpose#aefbcf79 session=c9df49d5 cwd=master
