@@ -14,6 +14,8 @@
 //! [`GeomError`]); no upstream engine type is ever exposed.
 //!
 //! Implementations are selected with [`HatchEngine`]:
+//! - [`HatchEngine::Studio`] (default): our own pattern definitions (line families with angle,
+//!   pitch, offset, dash) clipped to the real loops, even-odd. Fixes ERR-007 / BUG-015.
 //! - [`HatchEngine::Legacy`]: the hand-written generator that used to live in `studio.rs`
 //!   (`generate_hatch_strokes`, commit `562e4f9`), moved here unchanged. It hatches the
 //!   **bounding box** of the loops, not the loops themselves (known defect ERR-007), and draws
@@ -25,11 +27,20 @@
 
 #[cfg(feature = "cadcraft")]
 mod cadcraft;
+mod fill;
 mod legacy;
+mod patterns;
 
 #[cfg(feature = "cadcraft")]
-pub use cadcraft::MAX_CADCRAFT_RUNS;
+pub use cadcraft::{
+    display_scale as cadcraft_display_scale, AR_CONC_DISPLAY_SCALE, MAX_CADCRAFT_RUNS,
+};
+pub use fill::MAX_STUDIO_SEGMENTS;
 pub use legacy::MAX_LEGACY_SEGMENTS;
+pub use patterns::{
+    pattern_families, pattern_tile, unit_pt, HatchFamily, SCALE_MAX, SCALE_MIN, TILE_CELLS,
+    UNIT_BASE_PT, UNIT_MIN_PT,
+};
 
 /// A point in PDF user space (`pt`).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -146,8 +157,13 @@ impl HatchPatternId {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
 pub enum HatchEngine {
-    /// The pre-ADR-018 generator from `studio.rs` (bounding-box hatching, ERR-007).
+    /// Our own clipped hatch (ERR-007 fix, owner decision 2026-11-06): pattern definitions in
+    /// `patterns.rs`, even-odd clipping to the real loops in `fill.rs`. The default; no upstream
+    /// code, so no licence question (R3).
     #[default]
+    Studio,
+    /// The pre-ADR-018 generator from `studio.rs` (bounding-box hatching, ERR-007). Kept only as
+    /// the characterised oracle (goldens); removed one release after the Studio engine ships.
     Legacy,
     /// cadcraft@df65974 patterns swept across the real loops (even-odd, dashes): fixes ERR-007.
     /// Not the default until parity against the goldens passes (ADR-018 R2 step 5).
@@ -204,6 +220,11 @@ pub fn hatch_segments_with(
     scale: f64,
 ) -> Result<Vec<Segment>, GeomError> {
     match engine {
+        HatchEngine::Studio => fill::hatch_rings(
+            patterns::pattern_families(pattern),
+            &fill::finite_rings(loops),
+            scale,
+        ),
         HatchEngine::Legacy => legacy::hatch_segments(pattern, loops, scale),
         #[cfg(feature = "cadcraft")]
         HatchEngine::Cadcraft => cadcraft::hatch_segments(pattern, loops, scale),

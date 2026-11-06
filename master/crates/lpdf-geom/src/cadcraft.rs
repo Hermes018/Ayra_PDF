@@ -57,12 +57,21 @@ fn families(pattern: HatchPatternId) -> Families {
     }
 }
 
-/// Per-pattern correction of [`PATTERN_UNIT_PT`]: `AR-CONC` is defined 16x coarser than the ANSI
-/// patterns upstream (`scaled_pattern(.., 16.0)`, cadcraft@df65974 `crates/doc/src/library.rs`), so
-/// it gets 1/16 to show its aggregate at the same plan density as the others.
-fn unit_factor(pattern: HatchPatternId) -> f64 {
+/// Default display scale of `AR-CONC`: x1/16 (owner decision 2026-11-06).
+///
+/// Upstream defines `AR-CONC` 16x coarser than the ANSI patterns (`scaled_pattern(.., 16.0)`,
+/// cadcraft@df65974 `crates/doc/src/library.rs`). Rule: **never edit upstream pattern data; adjust
+/// scale only in this adapter.** The vendored definition stays byte-for-byte upstream (checked by
+/// `tests/cadcraft_parity.rs::ar_conc_display_scale_lives_in_the_adapter_only`), and this constant is
+/// the one place that shows it at the same plan density as the other patterns. Change it here, not
+/// in `vendor/`, if the look needs adjusting.
+pub const AR_CONC_DISPLAY_SCALE: f64 = 1.0 / 16.0;
+
+/// Per-pattern display scale applied on top of [`PATTERN_UNIT_PT`]; 1.0 means "as upstream draws it".
+/// The only entry today is `AR-CONC` ([`AR_CONC_DISPLAY_SCALE`]).
+pub fn display_scale(pattern: HatchPatternId) -> f64 {
     match pattern {
-        HatchPatternId::Concrete => 1.0 / 16.0,
+        HatchPatternId::Concrete => AR_CONC_DISPLAY_SCALE,
         _ => 1.0,
     }
 }
@@ -133,7 +142,7 @@ pub(crate) fn hatch_segments(
     } else {
         1.0
     };
-    let hatch_scale = user_scale * PATTERN_UNIT_PT * unit_factor(pattern);
+    let hatch_scale = user_scale * PATTERN_UNIT_PT * display_scale(pattern);
     let lines = line_families(pattern);
     let diag = (max_x - min_x).hypot(max_y - min_y);
     let estimate = estimated_runs(&lines, hatch_scale, diag);

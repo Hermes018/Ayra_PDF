@@ -326,3 +326,97 @@ fn swatch_is_inside_its_square_and_distinct_per_pattern() {
     assert!(lpdf_geom::hatch_swatch(HatchPatternId::Timber, 0.0).is_err());
     assert!(lpdf_geom::hatch_swatch(HatchPatternId::Timber, f64::NAN).is_err());
 }
+
+/// Owner rule (2026-11-06): never edit upstream pattern data; adjust scale only in our adapter.
+/// The x1/16 for AR-CONC is applied by the adapter, the vendored definition is still upstream's.
+#[test]
+fn ar_conc_display_scale_lives_in_the_adapter_only() {
+    use cadcraft_doc::library;
+    use std::path::PathBuf;
+
+    // 1. The adapter applies 1/16 to AR-CONC (and nothing to the other patterns).
+    assert_eq!(lpdf_geom::AR_CONC_DISPLAY_SCALE, 1.0 / 16.0);
+    for p in HatchPatternId::ALL {
+        let want = if p == HatchPatternId::Concrete {
+            1.0 / 16.0
+        } else {
+            1.0
+        };
+        assert_eq!(lpdf_geom::cadcraft_display_scale(p), want, "{}", p.as_id());
+    }
+
+    // 2. The definition cadcraft-doc hands out is upstream's: the four lines of
+    //    `scaled_pattern(AR-CONC, 16.0)` at df65974, spelled out with the same arithmetic.
+    let k = 16.0;
+    let want = [
+        (
+            50.0,
+            (0.0 * k, 0.0 * k),
+            (0.4 * k, 0.25 * k),
+            [0.15 * k, -0.6 * k],
+        ),
+        (
+            355.0,
+            (0.0 * k, 0.0 * k),
+            (0.27 * k, 0.3 * k),
+            [0.12 * k, -0.5 * k],
+        ),
+        (
+            100.0,
+            (0.12 * k, 0.05 * k),
+            (0.35 * k, 0.33 * k),
+            [0.1 * k, -0.55 * k],
+        ),
+        (
+            0.0,
+            (0.07 * k, 0.02 * k),
+            (0.21 * k, 0.17 * k),
+            [0.0 * k, -0.4 * k],
+        ),
+    ];
+    let got = library::pattern("AR-CONC")
+        .map(|p| p.lines)
+        .unwrap_or_default();
+    assert_eq!(got.len(), want.len());
+    for (g, (angle, origin, delta, dashes)) in got.iter().zip(want) {
+        assert_eq!(
+            (g.angle, g.origin, g.delta, g.dashes.as_slice()),
+            (angle, origin, delta, dashes.as_slice())
+        );
+    }
+
+    // 3. Nothing in vendor/ was changed to rescale it: our patch of cadcraft-render differs from
+    //    the pristine vendored copy only in src/lib.rs (the one re-export), and holds no pattern data.
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../vendor");
+    let pristine = root.join("craft/cadcraft/cadcraft-render-0.17.0/src");
+    let patched = root.join("patches/cadcraft-render/src");
+    let mut seen = 0;
+    for entry in std::fs::read_dir(&patched)
+        .map(|d| d.flatten().collect::<Vec<_>>())
+        .unwrap_or_default()
+    {
+        let name = entry.file_name();
+        if !entry.path().is_file() || name == "lib.rs" {
+            continue;
+        }
+        seen += 1;
+        let a = std::fs::read(entry.path()).unwrap_or_default();
+        let b = std::fs::read(pristine.join(&name)).unwrap_or_else(|_| vec![1]);
+        assert!(a == b, "patched {name:?} differs from upstream");
+    }
+    assert!(seen > 0, "no patched files compared");
+    let lib_patched = std::fs::read_to_string(patched.join("lib.rs")).unwrap_or_default();
+    let lib_pristine = std::fs::read_to_string(pristine.join("lib.rs")).unwrap_or_default();
+    let diff: Vec<_> = lib_patched
+        .lines()
+        .zip(lib_pristine.lines())
+        .filter(|(a, b)| a != b)
+        .collect();
+    assert_eq!(lib_patched.lines().count(), lib_pristine.lines().count());
+    assert_eq!(
+        diff.len(),
+        1,
+        "lib.rs may differ in the one re-export line only: {diff:?}"
+    );
+    assert!(diff[0].0.contains("pattern_lines"));
+}

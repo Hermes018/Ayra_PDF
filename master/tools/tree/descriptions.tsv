@@ -573,3 +573,12 @@ master/app-tauri/src/lib/views/__tests__/EngineReset.test.ts	Tests: every engine
 .claude/agents/status-snapshot.md	Subagent role (haiku-5-5): Run a script or status command (scheduler, disk, RAM, git) and report its output. Mechanical.
 master/logs/ROUTING.md	Model routing table, escalation log and per-milestone routing tuning notes
 master/tools/routing-stats.py	Escalation rate per task type from logs/ROUTING.md, with tier-move suggestions (> 25 % up; Sonnet-high 0/10+ down)
+master/crates/lpdf-geom/src/fill.rs	Studio hatch clipping (original work): every hatch line clipped to the polygon by even-odd rule over multiple rings (holes); half-open vertex rule; work cap
+master/crates/lpdf-geom/src/patterns.rs	Studio hatch pattern definitions (original work): 9 patterns as line families (angle, pitch, offset, phase, dash)
+master/crates/lpdf-geom/tests/studio_hatch.rs	Tests (ERR-007): segments inside rect/concave L/star/holed polygon, no edge crossings, all patterns distinct
+master/crates/lpdf-geom/tests/studio_golden.rs	Tests: Studio hatch output vs hatch_studio golden
+master/crates/lpdf-geom/tests/goldens/hatch_studio.golden.json	Golden: Studio hatch segments per pattern (ERR-007 intentional change, approved by owner 2026-11-06)
+master/app-tauri/src-tauri/tests/hatch_save_e2e.rs	Tests (ERR-007 flow 5): save a hatched concave polygon to a new PDF, re-extract segments from the content stream, all inside
+master/app-tauri/src/lib/core/hatchPatterns.json	Hatch pattern parameters generated from lpdf-geom patterns.rs (single source for the on-screen preview)
+master/app-tauri/src/lib/core/hatchPatterns.ts	Typed loader for hatchPatterns.json used by HatchDefs.svelte
+master/app-tauri/src/lib/components/studio/HatchDefs.test.ts	Tests: hatch preview tiles are drawn from the same pattern parameters as the saved output

@@ -9,10 +9,15 @@
 //! The L-polygon cases are **known-wrong, ERR-007**: the legacy generator hatches the bounding
 //! box, so segments leave the polygon. Checkpoint 2 (cadcraft) is expected to differ there.
 //!
+//! ERR-007 intentional change, approved by owner 2026-11-06: the DEFAULT engine is now
+//! `HatchEngine::Studio` (clipped hatch, own patterns). These goldens keep pinning the ORIGINAL
+//! generator, so every call here selects `HatchEngine::Legacy` explicitly. The Studio engine's own
+//! golden is `tests/goldens/hatch_studio.golden.json` (tests/studio_golden.rs).
+//!
 //! Regenerate (only when a change is intended and explained): `LPDF_UPDATE_GOLDENS=1 cargo nextest run -p lpdf-geom`.
 
 use lpdf_geom::{
-    hatch_segments, hatch_segments_with, HatchEngine, HatchPatternId, Loop, PdfPt, Segment,
+    hatch_segments_with, GeomError, HatchEngine, HatchPatternId, Loop, PdfPt, Segment,
 };
 use std::path::PathBuf;
 
@@ -115,6 +120,14 @@ mod original {
         let rect = bbox_from_points_or_rect(&pts, [0.0; 4]);
         generate_hatch_strokes(rect, pattern, scale)
     }
+}
+
+fn hatch_segments(
+    pattern: HatchPatternId,
+    loops: &[Loop],
+    scale: f64,
+) -> Result<Vec<Segment>, GeomError> {
+    hatch_segments_with(HatchEngine::Legacy, pattern, loops, scale)
 }
 
 const RECT: [(f64, f64); 4] = [

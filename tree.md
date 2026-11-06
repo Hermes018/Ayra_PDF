@@ -102,9 +102,10 @@ master/
 │   │   │   ├── lib.rs                                        # App setup, job manager wiring, core IPC commands, file dialogs (kdialog/zenity), window commands
 │   │   │   └── main.rs                                       # Binary entry point (calls lib::run)
 │   │   ├── tests/                                            # Integration tests for the desktop shell crate
-│   │   │   └── goldens/                                      # Characterization goldens for Rust studio commands (ADR-018 strangler step 1)
-│   │   │       ├── takeoff.golden.json                       # Golden: takeoff CSV export bytes
-│   │   │       └── text-blocks.standard-text.p0.golden.json  # Golden: text-block extract/edit on corpus standard-text.pdf page 1
+│   │   │   ├── goldens/                                      # Characterization goldens for Rust studio commands (ADR-018 strangler step 1)
+│   │   │   │   ├── takeoff.golden.json                       # Golden: takeoff CSV export bytes
+│   │   │   │   └── text-blocks.standard-text.p0.golden.json  # Golden: text-block extract/edit on corpus standard-text.pdf page 1
+│   │   │   └── hatch_save_e2e.rs                             # Tests (ERR-007 flow 5): save a hatched concave polygon to a new PDF, re-extract segments from the content stream, all inside
 │   │   ├── .gitignore                                        # Ignores Tauri generated schemas/build output
 │   │   ├── build.rs                                          # Tauri build script
 │   │   ├── Cargo.toml                                        # Desktop binary crate manifest (Tauri plugins, workspace crates, Windows-only deps)
@@ -158,6 +159,7 @@ master/
 │   │   │   │   │   ├── DocumentTabs.svelte                   # Document tabs for multiple open PDFs in Studio (BUG-016)
 │   │   │   │   │   ├── FavoritesBar.svelte                   # Pinned favourite tools/presets
 │   │   │   │   │   ├── HatchDefs.svelte                      # SVG pattern definitions for CAD hatching fills
+│   │   │   │   │   ├── HatchDefs.test.ts                     # Tests: hatch preview tiles are drawn from the same pattern parameters as the saved output
 │   │   │   │   │   ├── labs.svelte.ts                        # Labs gate: the one place that decides if Labs tools (math text, shape-to-character) are visible/selectable; honest copy
 │   │   │   │   │   ├── MeasureOverlay.svelte                 # Draws measurement lines, labels, ruler/protractor
 │   │   │   │   │   ├── PropertyPill.svelte                   # Floating style panel for the active tool (colour, width, line style)
@@ -194,6 +196,8 @@ master/
 │   │   │   │   ├── defaultPresets.json                       # Default pen/highlighter/shape presets
 │   │   │   │   ├── defaultShortcuts.json                     # Default keyboard shortcuts
 │   │   │   │   ├── engineGoldens.test.ts                     # Tests: compare current TS engine outputs with the goldens
+│   │   │   │   ├── hatchPatterns.json                        # Hatch pattern parameters generated from lpdf-geom patterns.rs (single source for the on-screen preview)
+│   │   │   │   ├── hatchPatterns.ts                          # Typed loader for hatchPatterns.json used by HatchDefs.svelte
 │   │   │   │   ├── inkEngine.svelte.ts                       # Freehand ink strokes, smoothing, shape recognition, laser pointer
 │   │   │   │   ├── insertAndTakeoff.test.ts                  # Tests: insert suite and takeoff CSV export
 │   │   │   │   ├── insertEngine.svelte.ts                    # Insert tools: images, stamps, signatures, audio, "LaTeX" (Unicode-only), workspace library
@@ -370,14 +374,19 @@ master/
 │   ├── lpdf-geom/                                            # Geometry adapter crate (ADR-018): hatching behind our own API; legacy impl now, cadcraft next
 │   │   ├── src/                                              # Crate source
 │   │   │   ├── cadcraft.rs                                   # Cadcraft-backed hatch implementation (HatchEngine::Cadcraft): real polygon clipping (ERR-007)
+│   │   │   ├── fill.rs                                       # Studio hatch clipping (original work): every hatch line clipped to the polygon by even-odd rule over multiple rings (holes); half-open vertex rule; work cap
 │   │   │   ├── legacy.rs                                     # Legacy hatch implementation moved from studio.rs (byte-identical)
-│   │   │   └── lib.rs                                        # Adapter API: hatch_segments, HatchEngine switch, GeomError codes
+│   │   │   ├── lib.rs                                        # Adapter API: hatch_segments, HatchEngine switch, GeomError codes
+│   │   │   └── patterns.rs                                   # Studio hatch pattern definitions (original work): 9 patterns as line families (angle, pitch, offset, phase, dash)
 │   │   ├── tests/                                            # Integration tests
 │   │   │   ├── goldens/                                      # Hatch goldens
 │   │   │   │   ├── hatch_cadcraft.golden.json                # Golden: cadcraft hatch segments per pattern (rect + concave L), all inside the loop
-│   │   │   │   └── hatch_legacy.golden.json                  # Golden: legacy hatch segments per pattern (rect + concave L)
+│   │   │   │   ├── hatch_legacy.golden.json                  # Golden: legacy hatch segments per pattern (rect + concave L)
+│   │   │   │   └── hatch_studio.golden.json                  # Golden: Studio hatch segments per pattern (ERR-007 intentional change, approved by owner 2026-11-06)
 │   │   │   ├── cadcraft_parity.rs                            # Tests: cadcraft hatch inside concave polygons, all patterns distinct, parity notes vs legacy
-│   │   │   └── hatch_golden.rs                               # Tests: hatch output vs goldens (ERR-007 cases marked known-wrong)
+│   │   │   ├── hatch_golden.rs                               # Tests: hatch output vs goldens (ERR-007 cases marked known-wrong)
+│   │   │   ├── studio_golden.rs                              # Tests: Studio hatch output vs hatch_studio golden
+│   │   │   └── studio_hatch.rs                               # Tests (ERR-007): segments inside rect/concave L/star/holed polygon, no edge crossings, all patterns distinct
 │   │   └── Cargo.toml                                        # Crate manifest
 │   ├── lpdf-hw/                                              # Hardware detection → tier L/M/H and budgets
 │   │   ├── src/                                              # Crate source

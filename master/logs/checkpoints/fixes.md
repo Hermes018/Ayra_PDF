@@ -1,4 +1,9 @@
 # checkpoints/fixes.md — fixes builder (wt/fixes). Builder keeps this current; < 150 lines.
+- **CURRENT TASK (ERR-007 / BUG-015, P0 flow 5) — uncommitted, plan runs/plan-ERR007.md:** own clipped hatch engine
+  `HatchEngine::Studio` (default; lpdf-geom src/fill.rs + patterns.rs, no cadcraft in the path). Red first: logs/runs/geom-red.log
+  (7/10 studio_hatch fail on Legacy), logs/runs/e2e-red-keep.log (saved PDF segment outside L). Green: geom 30/30, app-tauri 12/12, vitest HatchDefs.
+  Preview = Rust-generated app-tauri/src/lib/core/hatchPatterns.json (checked by studio_golden.rs). AR-CONC x1/16 kept in adapter
+  (cadcraft.rs display_scale) + rule in UPSTREAM_MANIFEST/UPGRADING + test. Next: verify.sh gate, report; new files listed in the report.
 - **Task:** P0 review r5 — FINAL tabs round (base main 9919398 incl. engines CP2b; lead restaged r4). Uncommitted.
 - **r5 status (07:55):** tests red first (logs/runs/r5-red.log: 18 failing), green (r5-views.log, r5-views2.log).
   Fixed: close-through-store (BLOCKER); inserts blocked until restored + busy cursor; Save refuses on

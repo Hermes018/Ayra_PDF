@@ -21,6 +21,7 @@ This applies to every entry in `master/upstream/UPSTREAM.toml`: `dependency` (gi
    - Run `cargo xtask upstream-check --strict`, which must show no undocumented diff.
    - If upstream has merged our request, delete the patch, switch the entry to `dependency`, and remove the `[patch]` section.
 3. **For `kind = "port"`:** re-port the upstream changes to the listed local file. Better: check whether the code can now be consumed as a dependency or via WASM (ADR-018 §4).
+3a. **Never edit upstream pattern data; adjust scale only in our adapter** (owner rule, 2026-11-06). Upstream hatch pattern definitions (`cadcraft-doc` `library.rs`, e.g. `AR-CONC`) stay byte-for-byte upstream in `vendor/`, including `vendor/patches/`. Any display-scale correction lives in the adapter (`crates/lpdf-geom/src/cadcraft.rs`, `display_scale`, e.g. `AR_CONC_DISPLAY_SCALE = 1/16`), is documented there, and is covered by `tests/cadcraft_parity.rs::ar_conc_display_scale_lives_in_the_adapter_only`. After a bump, re-check that test and the manifest note.
 4. **Fix compile errors in the adapter crate only** (`crates/lpdf-adapter-*`). If code outside the adapter needs changing, the adapter's API is leaking; fix the adapter instead.
 5. `cargo update -p <crate>` only for the crates being bumped. Review the `Cargo.lock` diff for new transitive crates.
 
