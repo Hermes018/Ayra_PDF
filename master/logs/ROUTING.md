@@ -81,4 +81,9 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 12:49 | merge-verify | BUG-052 backend + error path + flows 10,11 | opus/high | ok | | GREEN; symlink-to-pdf note |
 | 2026-11-06 12:49 | reviewer (read-only) | BUG-052 frontend | sonnet/medium | fail | | BLOCKER Convert status banner deleted (silent errors) |
 | 2026-11-06 12:53 | fixes-build | BUG-052 fix round (banner, toast, pipelines banner, diag canonical) | sonnet/medium | ok | | |
-| 2026-11-06 12:59 | review+verify (combined) | BUG-052 fix delta | opus/high | running | | combined (delta ~250 lines, backend) |
+| 2026-11-06 12:59 | review+verify (combined) | BUG-052 fix delta | opus/high | ok | | GREEN, flow 10 PASS |
+| 2026-11-06 13:03 | fixes-build | sweep group 11 (Forms, Security, PdfViewer) | sonnet/medium | ok | | password kept after failure (flagged) |
+| 2026-11-06 13:09 | merge-verify | g11 security/redaction/password + flows 2,8 | opus/high | fail | | password not cleared on file change; blank regions default |
+| 2026-11-06 13:09 | reviewer (read-only) | g11 frontend + visual | sonnet/medium | fail | | P0 redaction page off-by-one |
+| 2026-11-06 13:13 | fixes-build | g11 fix round (BUG-053 P0 page, blanks, password on file change, tests, layout) | sonnet/medium | ok | | |
+| 2026-11-06 13:20 | review+verify (combined) | BUG-053 + g11 (callers page base, flows 2,8, CLI redact check) | opus/high | running | | security |
