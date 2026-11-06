@@ -223,6 +223,6 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 - Tests: OutputPathsBug050.test.ts covers only 2 of 9 views; Rust `an_existing_output_file_is_never_replaced` can't fail (Repair errors on non-PDF input anyway).
 - Found by: BUG-050 Opus verifier + reviewer. Owner: fixes. Opus-high verification (backend writers).
 
-## BUG-052 [P1] Output-path robustness after BUG-050/051 — status: fixing
+## BUG-052 [P1] Output-path robustness after BUG-050/051 — status: fixed (tag fixes-bug052-green)
 - Views show the raw error string when the backend refuses an output (OUTPUT_PATH_UNSAFE) instead of an ErrorState that offers the next free name (Pipelines :129, AiSummarize :107). Pipelines submit awaits outside try, before its busy guard (unhandled rejection; a double-click reserves two names). Markdown's isSubmitting may not reset on throw. x-2.pdf → x-2-2.pdf. Settings overwrite confirm doesn't focus Cancel. export_diagnostics can "Replace" a .pdf that isn't open (should refuse .pdf like the CSV export).
 - Found by: BUG-051 reviewer + Opus verifier. No data-loss path (backend guards). Owner: fixes.
