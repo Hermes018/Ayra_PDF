@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 12:27 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 12:41 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -10,10 +10,10 @@ Updated 2026-11-06 12:27 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 ## Worktrees
 | Worktree | HEAD | State |
 |---|---|---|
-| main | 43182d5 (tags fixes-bug050-green, sweep-mainflows-green, release-bug048-green, …) | lead |
+| main | 87cdf07 (tags fixes-bug051-green, fixes-bug050-green, sweep-mainflows-green, …) | lead |
 | wt/engines | 9919398 + CP3 uncommitted | PARKED; target dir deleted (owner 08:50) — rebuild needed before CP3 tests |
-| wt/fixes | 43182d5 | RUNNING (sonnet/med): BUG-051 (2nd-run naming, all-view naming tests, remaining writers guarded, weak Rust test) → then the rest of the sweep; HARD STOP 16:45 |
-| wt/release | main | 43182d5 (tags fixes-bug050-green, sweep-mainflows-green, release-bug048-green, …) | lead |
+| wt/fixes | 87cdf07 | RUNNING (sonnet/med): BUG-052 output-path robustness → then remaining sweep groups; HARD STOP 16:45 |
+| wt/release | main | 87cdf07 (tags fixes-bug051-green, fixes-bug050-green, sweep-mainflows-green, …) | lead |
 | android | 644caf3 | paused until Sun |
 
 ## P0 (BUGS.md)
