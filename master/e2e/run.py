@@ -58,6 +58,8 @@ def main():
     ap.add_argument("--flows", default="", help="comma list, e.g. 1,2,5 (default: flows 1-12; 13 = optional gallery smoke, needs a VITE_LPDF_GALLERY=1 binary)")
     ap.add_argument("--binary", default=common.DEFAULT_BINARY)
     ap.add_argument("--soak-minutes", type=float, default=60.0, help="flow 12 duration (default 60)")
+    ap.add_argument("--no-close", action="store_true", help="flow 12: do not close the tabs each save opens (BUG-061 comparison)")
+    ap.add_argument("--idle-minutes", type=float, default=0.0, help="flow 12: after the soak loop idle this long, sampling RSS every 30 s")
     ap.add_argument("--out", default=common.OUT)
     ap.add_argument("--offline", action="store_true",
                     help="run inside a new network namespace with only loopback (unshare -rn)")
@@ -115,6 +117,7 @@ def main():
     os.makedirs(run_dir, exist_ok=True)
     screens_dir = common.prepare_run_screens(a.out, run_id)  # BUG-048: per-run; out/screens = latest symlink
     ctx = common.Context(binary, a.out, a.soak_minutes, screens=screens_dir)
+    ctx.no_close, ctx.idle_minutes = a.no_close, a.idle_minutes
 
     def write(rep_):
         # Each run keeps its own report under out/runs/<run_id>/; <out>/report.json is the latest
