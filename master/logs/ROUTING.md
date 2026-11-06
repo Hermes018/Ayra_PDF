@@ -100,4 +100,5 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 14:22 | review+verify (combined) | g14 fix round (settings writers, theme, i18n keys) | opus/high | fail | | model import fails open; military-grade |
 | 2026-11-06 14:22 | visual recheck | g14 screenshots | sonnet/medium | ok | | 4/4 fixed |
 | 2026-11-06 14:28 | fixes-build | g14 last items (model import fail-closed, handler test, military-grade) | sonnet/medium | ok | | |
-| 2026-11-06 14:33 | review+verify (combined) | g14 last items + gate + flows 10,11,23 | opus/high | running | | |
+| 2026-11-06 14:33 | review+verify (combined) | g14 last items + gate + flows 10,11,23 | opus/high | ok | | functional PASS; bn.json + FAQ permissions claim → BUG-060 |
+| 2026-11-06 14:40 | fixes-build | BUG-060 FAQ text (bn military-grade, permissions claim) + audit all locales | sonnet/medium | running | | stop 16:45 |
