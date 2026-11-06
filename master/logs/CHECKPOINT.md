@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (overwrite; keep < 150 lines; history in CHECKPOINT_HISTORY.md)
-Updated: 2026-11-06 05:58 Asia/Dhaka by the lead. If this disagrees with logs/STATE_AUTO.md (git/process facts), trust STATE_AUTO.md and fix this file.
+Updated: 2026-11-06 07:26 Asia/Dhaka by the lead. If this disagrees with logs/STATE_AUTO.md (git/process facts), trust STATE_AUTO.md and fix this file.
 
 ## Sprint
 - **Goal:** fully working Linux prototype **v0.2.0-prototype**, tag by **Sat 2026-11-07 23:59 Asia/Dhaka**. Scope and 12 E2E flows: `docs/PROTOTYPE_SCOPE.md`. Feature freeze; Labs holds the partial features.
@@ -15,32 +15,32 @@ Updated: 2026-11-06 05:58 Asia/Dhaka by the lead. If this disagrees with logs/ST
   | Sat 18:00 | rc1: verify green, 12/12 flows, packages smoke-tested | — |
   | Sat 23:59 | Tag v0.2.0-prototype | — |
 
-## Worktrees (all builders currently IDLE)
+## Worktrees
 
 | Worktree | Branch | Last commit | Uncommitted | Current task | State / owner |
 |---|---|---|---|---|---|
-| ~/Desktop/Ayra_PDF (main) | main | 81ae676 infra (per-worktree targets, disk guard, compaction hooks) | logs only | lead: coordinating merges | lead |
-| ~/Desktop/Ayra_PDF-wt/engines | wt/engines | 81ae676 | checkpoint 1 staged; verifier PASS, reviewer FAIL (matrix completeness) | **RUNNING**: matrix fixes, then checkpoint 2 (ERR-007 cadcraft); reports by 07:30 | engines builder |
-| ~/Desktop/Ayra_PDF-wt/fixes | wt/fixes | 81ae676 | checkpoint 2 in progress | **RUNNING**: P0 BUG-011..020 (order in its brief); reports after the first 4 if past 06:30 | fixes builder |
-| ~/Desktop/Ayra_PDF-wt/release | wt/release | 81ae676 | checkpoint 1 staged; verifier PASS, reviewer FAIL (4 major harness issues) | **RUNNING**: harness fixes, then checkpoint 2 packaging | release builder |
+| ~/Desktop/Ayra_PDF (main) | main | 7dc56c8 engines CP1 (tag engines-cp1-green) | logs | lead: coordinating merges; Fri 08:00 report | lead |
+| ~/Desktop/Ayra_PDF-wt/engines | wt/engines | 7dc56c8 | CP2b staged (31 files); builder GREEN; switch patch prepared, not applied (logs/runs/hatch-default-switch.patch) | fresh reviewer + verifier RUNNING | idle / engines builder |
+| ~/Desktop/Ayra_PDF-wt/fixes | wt/fixes | ed3b5a2 | P0 round 2 staged (33 files); round 4 staged (40 files, structural store; split → Labs); builder GREEN vitest 222 | fresh reviewer + verifier RUNNING; next: wire engines contract after engines merge | idle / fixes builder |
+| ~/Desktop/Ayra_PDF-wt/release | wt/release | 81ae676 | CP1+CP2 staged; review FAIL (4 majors: pkg_smoke rc, reap, linuxdeploy pin, CHANGELOG honesty) | **RUNNING** round 3 | release builder |
 | ~/Desktop/Ayra_PDF-wt/android | track/android | 644caf3 ADR-019 DRAFT | none | paused | paused |
 
-**Running subagents:** fixes builder (P0s), engines builder (review fixes + checkpoint 2), release builder (review fixes). Heavy jobs go through the RAM scheduler (tools/sched.sh, 1 HEAVY slot at ~14 GiB available). Training (Jupyter swin_v2) has absolute priority; sampler logs to logs/runs/training-mem.log.
+**Running subagents:** 4 review agents (fixes reviewer+verifier, engines reviewer+verifier); release builder (harness fixes). The fixes and engines builders are idle awaiting merge.
 
 ## P0 (from logs/BUGS.md) — owner — status
 
 | Bug | Flow | Issue | Owner | Status |
 |---|---|---|---|---|
-| BUG-011 | 2 | Encrypted PDF: no password prompt | fixes | open |
-| BUG-012 | 3 | CSP blocks data:/blob: images (blank thumbnails); fix `img-src 'self' data: blob:` (lead-approved) | fixes | open |
-| BUG-013 | 9 | Edit Text hotspot unreachable (#wet-layer covers it) | fixes | open |
-| BUG-014 | 10 | Organize Apply drops rotation, reports success | fixes | open |
-| BUG-015 | 5 | ERR-007 hatch outside polygon / patterns not distinct (cadcraft via lpdf-geom) | engines | open |
-| BUG-016 | 3 | Second document never shown (no tabs/split) | fixes | open |
-| BUG-017 | 7 | Drawn signature lost, text stamped instead | fixes | open |
-| BUG-018 | 2 | Hostile/malformed PDFs open silently, no error or degraded notice | fixes (+engines if backend) | open |
-| BUG-019 | 4 | Erasers not in undo; Undo removes another stroke | fixes | open |
-| BUG-020 | 3 | Fit Width/Page assume A4 and ignore the page offset | fixes | open |
+| BUG-011 | 2 | Encrypted PDF: no password prompt | fixes | fixed in wt/fixes (in review) |
+| BUG-012 | 3 | CSP blocks data:/blob: images (blank thumbnails); fix `img-src 'self' data: blob:` (lead-approved) | fixes | fixed in wt/fixes (in review) |
+| BUG-013 | 9 | Edit Text hotspot unreachable (#wet-layer covers it) | fixes | fixed in wt/fixes (in review) |
+| BUG-014 | 10 | Organize Apply drops rotation, reports success | fixes | fixed in wt/fixes (in review) |
+| BUG-015 | 5 | ERR-007 hatch outside polygon / patterns not distinct (cadcraft via lpdf-geom) | engines | cadcraft impl ready behind switch (in review); default switch pending |
+| BUG-016 | 3 | Second document never shown (no tabs/split) | fixes | fixed in wt/fixes (in review) |
+| BUG-017 | 7 | Drawn signature lost, text stamped instead | fixes | fixed in wt/fixes (in review) |
+| BUG-018 | 2 | Hostile/malformed PDFs open silently, no error or degraded notice | fixes (+engines if backend) | fixed in wt/fixes (in review) |
+| BUG-019 | 4 | Erasers not in undo; Undo removes another stroke | fixes | fixed in wt/fixes (in review) |
+| BUG-020 | 3 | Fit Width/Page assume A4 and ignore the page offset | fixes | fixed in wt/fixes (in review) |
 
 **P1:**
 
@@ -62,6 +62,7 @@ P2s: BUG-001..009, 025..027 (after the release).
 3. Merge fixes P0 batches as they arrive (reviewer + verifier each). Fri 08:00 report: flows, engines, P0/P1, cuts, disk, unpushed commits/tags.
 
 ## Open decisions for the owner
+- **ADR-018 R3 licence wording:** R3 says "MIT/Apache only", but cadcraft-render brings BSD-3 (tiny-skia), BSD-2 (arrayref) and Unicode-3.0. Existing deps already include BSD-3 (winprint, ADR-017) and Unicode-3.0 (unicode-ident). Recommendation: amend R3 to "permissive licences on the deny.toml allow-list, with notices in THIRD_PARTY_NOTICES.md". Until you decide, cadcraft stays behind the switch (default Legacy).
 - Owner action needed: run `/compact` once to live-test the PreCompact/SessionStart hooks (both pipe-tested; I can't run /compact). Otherwise none blocking. FYI: the lead approved the CSP `img-src 'self' data: blob:` change (BUG-012) and E2E harness isolation (private D-Bus/XDG), both in DECISIONS_ADR.
 
 ## Approved exceptions and standing rules

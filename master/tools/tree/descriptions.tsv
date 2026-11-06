@@ -509,3 +509,4 @@ master/vendor/patches/cadcraft-render/LICENSE-APACHE	Upstream cadcraft-render Ap
 master/vendor/patches/cadcraft-render/LICENSE-MIT	Upstream cadcraft-render MIT licence (kept with the patched copy)
 master/vendor/patches/cadcraft-render/NOTICE	Upstream NOTICE file, reproduced in THIRD_PARTY_NOTICES.md (Apache-2.0 §4(d))
 master/xtask/src/notices.rs	xtask notices: generates THIRD_PARTY_NOTICES.md from cargo metadata (Linux graph) + npm licences
+master/KNOWN_ISSUES.md	Cuts and known limitations shipped in v0.2.0-prototype, with workarounds (KI-xxx)
