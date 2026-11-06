@@ -1558,3 +1558,22 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - All 11 harness review fixes landed. Packages built: rpm, deb and AppImage (LTO off, version 0.1.0 → KI-005).
 - Offline E2E run (release binary from the RPM, loopback-only netns): 3 PASS (6, 8, 11), 1 SHORT-PASS (12, 5-min soak), 7 FAIL (all product bugs BUG-011..020), 1 BLOCKED (1: rpm/deb system install needs sudo). The AppImage passes flow 1 as a user-level install.
 - FLAKY: 2 entries added (flow 2 fixed, flow 12 open). Staged 27 files on wt/release.
+
+## [2026-11-06 07:27] Three checkpoints in review at once
+- **Fixes round 4 (structural):**
+  - documentSessions is the sole owner of state; one saver (studioSave.ts); token checks after every await.
+  - Split view is Labs-only (KI-004).
+  - Builder verify.sh GREEN code-wise (vitest 222/222). The lead added 5 tree descriptions. Staged 40 files; fresh reviewer + verifier running.
+- **Engines CP2b:**
+  - Parity test hardened (edge crossing); THIRD_PARTY_NOTICES via `cargo xtask notices`; deny allow-git for cadcraft.
+  - BUG-010/023/024 fixed.
+  - BUG-018 backend: F4 guard `declared-stream-length` → `Failed{F4_RESOURCE_GUARD}`, `Completed{degraded:true}`.
+  - New IPC: `path_exists`, `delete_organize_intermediate`.
+  - Default switch prepared as a patch (logs/runs/hatch-default-switch.patch in the engines worktree), NOT applied; it waits on the R3 licence decision.
+  - The lead added 9 tree descriptions. Staged 31 files; fresh reviewer + verifier running.
+- **Release CP1+2 review FAIL (4 majors):**
+  - pkg_smoke ignores rc / partial reports, and tauri-driver survives a timeout;
+  - linuxdeploy is unpinned with no hash; pnpm install needs network;
+  - CHANGELOG claims features with open P0s.
+  - Verifier: tree-map RED; the lead's descriptions were missing (fixed by the lead). Round 3 sent.
+- **BUG-028 (P1) logged:** empty voice recording → synthetic tone.
