@@ -1553,3 +1553,8 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
   - documentSessions becomes the single owner of document state (activate(path), a global seq, a seq/livePath check after every await, one saver).
   - Multi-pane split view goes behind Labs → KI-004.
   - Timebox: if round 4 fails review, fall back to single-document mode and report flow 3's two-document check as a cut.
+
+## [2026-11-06 07:20] Release checkpoints 1+2 delivered — fresh review + verify running
+- All 11 harness review fixes landed. Packages built: rpm, deb and AppImage (LTO off, version 0.1.0 → KI-005).
+- Offline E2E run (release binary from the RPM, loopback-only netns): 3 PASS (6, 8, 11), 1 SHORT-PASS (12, 5-min soak), 7 FAIL (all product bugs BUG-011..020), 1 BLOCKED (1: rpm/deb system install needs sudo). The AppImage passes flow 1 as a user-level install.
+- FLAKY: 2 entries added (flow 2 fixed, flow 12 open). Staged 27 files on wt/release.
