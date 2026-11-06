@@ -10,6 +10,16 @@ import type { AiModelInfo } from './bindings/AiModelInfo';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { JobEvent } from './bindings/JobEvent';
 
+/** What the About screen shows (mirrors `AboutInfo` in src-tauri/src/lib.rs). */
+export interface AboutInfo {
+    version: string;
+    build_hash: string;
+    settings_file: string;
+    studio_prefs_file: string;
+    markup_library_file: string;
+    log_dir: string;
+}
+
 export interface ConvertPdfPayload {
     inputPath: string;
     outputPath: string;
@@ -185,6 +195,28 @@ export class IpcClient {
      */
     static async saveSettings(settings: AppSettings): Promise<AppSettings> {
         return await invoke<AppSettings>('save_settings', { settings });
+    }
+
+    /**
+     * Reset theme, language, tier, output policy, backups and the AI switch to defaults. The licence is kept.
+     * Refused by the backend when the settings file cannot be read.
+     */
+    static async resetPreferences(): Promise<AppSettings> {
+        return await invoke<AppSettings>('reset_preferences');
+    }
+
+    /**
+     * Version, build hash and the folders the app keeps its files in (read-only).
+     */
+    static async getAboutInfo(): Promise<AboutInfo> {
+        return await invoke<AboutInfo>('get_about_info');
+    }
+
+    /**
+     * The bundled THIRD_PARTY_NOTICES.md text. Rejects with `{ kind: 'missing' | 'unreadable', message }`.
+     */
+    static async getThirdPartyNotices(): Promise<string> {
+        return await invoke<string>('get_third_party_notices');
     }
 
     /**

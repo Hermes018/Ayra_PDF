@@ -65,6 +65,10 @@
             <span class="icon" aria-hidden="true">⚙️</span>
             Settings
         </Button>
+        <Button variant="plain" block current={currentView === 'About'} onclick={() => { currentView = 'About'; }}>
+            <span class="icon" aria-hidden="true">ℹ️</span>
+            About
+        </Button>
     </div>
 </aside>
 

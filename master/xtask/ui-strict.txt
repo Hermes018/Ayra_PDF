@@ -55,4 +55,5 @@ lib/views/PipelinesView.svelte
 lib/views/AiSummarizeView.svelte
 lib/views/BatchQueueView.svelte
 lib/views/SettingsView.svelte
+lib/views/AboutView.svelte
 lib/i18n/faq/*.json

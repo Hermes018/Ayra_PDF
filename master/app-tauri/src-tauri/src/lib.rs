@@ -104,6 +104,135 @@ fn save_settings(settings: AppSettings) -> Result<AppSettings, String> {
     Ok(settings)
 }
 
+/// Reset preferences (theme, language, tier, output policy, backups, ai-local switch) to their defaults.
+/// The licence (acknowledgement, licence id, model path and hash) is never touched. Fail closed (BUG-059): when
+/// the settings file cannot be read nothing is written, so defaults can never replace settings we could not see.
+/// Writes through the same atomic writer as `save_settings`.
+fn reset_preferences_at(settings_path: &std::path::Path) -> Result<AppSettings, String> {
+    let current = lpdf_fs_safety::load_settings(settings_path).map_err(|e| {
+        format!("SETTINGS_UNREADABLE: your settings could not be read, so nothing was reset ({e})")
+    })?;
+    let defaults = AppSettings::default();
+    let reset = AppSettings {
+        tier_override: defaults.tier_override,
+        output_policy: defaults.output_policy,
+        backups_enabled: defaults.backups_enabled,
+        language: defaults.language,
+        theme: defaults.theme,
+        ai_local_enabled: defaults.ai_local_enabled,
+        // Licence fields stay exactly as they were.
+        ..current
+    };
+    lpdf_fs_safety::save_settings_atomic(settings_path, &reset).map_err(|e| {
+        format!("SETTINGS_WRITE_FAILED: your preferences were not reset, nothing was changed ({e})")
+    })?;
+    Ok(reset)
+}
+
+/// Reset preferences to defaults while keeping the licence. See `reset_preferences_at`.
+#[tauri::command]
+fn reset_preferences() -> Result<AppSettings, String> {
+    reset_preferences_at(&get_settings_path())
+}
+
+/// What the About screen shows. Everything is read-only and local.
+#[derive(Debug, Clone, serde::Serialize)]
+struct AboutInfo {
+    /// The package version (the Cargo workspace version, repeated in package.json and tauri.conf.json).
+    version: String,
+    /// Short git hash embedded at build time by build.rs, or "unknown" outside git.
+    build_hash: String,
+    settings_file: String,
+    studio_prefs_file: String,
+    markup_library_file: String,
+    log_dir: String,
+}
+
+/// The folder the rotating log files live in (state dir, falling back to the data dir).
+fn log_dir_path() -> Option<PathBuf> {
+    let proj_dirs = ProjectDirs::from("", "", "localpdf")?;
+    Some(
+        proj_dirs
+            .state_dir()
+            .unwrap_or(proj_dirs.data_dir())
+            .to_path_buf(),
+    )
+}
+
+fn build_about_info() -> AboutInfo {
+    AboutInfo {
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        build_hash: env!("LPDF_BUILD_HASH").to_string(),
+        settings_file: get_settings_path().to_string_lossy().to_string(),
+        studio_prefs_file: commands::studio::studio_prefs_path()
+            .to_string_lossy()
+            .to_string(),
+        markup_library_file: commands::studio::get_markup_library_path()
+            .to_string_lossy()
+            .to_string(),
+        log_dir: log_dir_path()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|| "unavailable".to_string()),
+    }
+}
+
+/// Version, build hash and the folders the app keeps its files in.
+#[tauri::command]
+fn get_about_info() -> AboutInfo {
+    build_about_info()
+}
+
+/// Why the bundled licence notices could not be returned.
+#[derive(Debug, serde::Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum NoticesError {
+    /// The notices file is not where the bundle says it should be.
+    Missing { message: String },
+    /// The file exists but could not be read as text.
+    Unreadable { message: String },
+}
+
+impl std::fmt::Display for NoticesError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            NoticesError::Missing { message } | NoticesError::Unreadable { message } => {
+                f.write_str(message)
+            }
+        }
+    }
+}
+
+fn read_notices_at(path: &std::path::Path) -> Result<String, NoticesError> {
+    match std::fs::read_to_string(path) {
+        Ok(text) => Ok(text),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Err(NoticesError::Missing {
+            message: format!(
+                "the licence notices file was not found at {}",
+                path.display()
+            ),
+        }),
+        Err(e) => Err(NoticesError::Unreadable {
+            message: format!("the licence notices file could not be read ({e})"),
+        }),
+    }
+}
+
+/// The bundled THIRD_PARTY_NOTICES.md text (a Tauri resource). Read-only.
+#[tauri::command]
+fn get_third_party_notices(app: tauri::AppHandle) -> Result<String, NoticesError> {
+    use tauri::Manager;
+    let path = app
+        .path()
+        .resolve(
+            "THIRD_PARTY_NOTICES.md",
+            tauri::path::BaseDirectory::Resource,
+        )
+        .map_err(|e| NoticesError::Missing {
+            message: format!("the app's resource folder could not be located ({e})"),
+        })?;
+    read_notices_at(&path)
+}
+
 /// Fetch recent log lines from local rotating log files (strictly local).
 #[tauri::command]
 fn get_recent_logs(max_lines: Option<usize>) -> Result<Vec<String>, String> {
@@ -771,6 +900,9 @@ pub fn run() {
             read_file_bytes,
             get_settings,
             save_settings,
+            reset_preferences,
+            get_about_info,
+            get_third_party_notices,
             get_recent_logs,
             export_diagnostics,
             import_local_ai_model,
@@ -952,6 +1084,113 @@ mod import_settings_guard_tests {
             "{r:?}"
         );
         assert_eq!(std::fs::read(&settings).unwrap(), corrupt);
+        let _ = std::fs::remove_dir_all(&d);
+    }
+}
+
+#[cfg(test)]
+mod about_and_reset_tests {
+    use super::*;
+    use lpdf_core_types::{HardwareTier, OutputPolicy, ThemePreference};
+
+    fn scratch(tag: &str) -> PathBuf {
+        let d = std::env::temp_dir().join(format!("lpdf_about_{tag}_{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    fn customised() -> AppSettings {
+        AppSettings {
+            tier_override: Some(HardwareTier::High),
+            output_policy: OutputPolicy::OverwriteWithBackup,
+            backups_enabled: false,
+            language: "de".into(),
+            theme: ThemePreference::Dark,
+            local_ai_model_path: Some(PathBuf::from("/models/m.gguf")),
+            ai_local_enabled: true,
+            ai_license_acknowledged: true,
+            ai_model_sha256: Some("ab12".into()),
+            ai_model_license: Some("Apache-2.0".into()),
+        }
+    }
+
+    // Reset preferences: theme, language, tier, policy, backups and ai_local go back to the defaults; the licence
+    // (acknowledgement, licence id, model path and hash) is kept.
+    #[test]
+    fn reset_restores_defaults_and_keeps_the_licence() {
+        let d = scratch("reset_ok");
+        let path = d.join("settings.toml");
+        lpdf_fs_safety::save_settings_atomic(&path, &customised()).unwrap();
+
+        let out = reset_preferences_at(&path).unwrap();
+        let defaults = AppSettings::default();
+        assert_eq!(out.tier_override, defaults.tier_override);
+        assert_eq!(out.output_policy, defaults.output_policy);
+        assert_eq!(out.backups_enabled, defaults.backups_enabled);
+        assert_eq!(out.language, defaults.language);
+        assert_eq!(out.theme, defaults.theme);
+        assert!(!out.ai_local_enabled);
+        // the licence survives, in the returned value and on disk
+        let on_disk = lpdf_fs_safety::load_settings(&path).unwrap();
+        assert_eq!(on_disk, out);
+        assert!(on_disk.ai_license_acknowledged);
+        assert_eq!(on_disk.ai_model_license.as_deref(), Some("Apache-2.0"));
+        assert_eq!(on_disk.ai_model_sha256.as_deref(), Some("ab12"));
+        assert_eq!(
+            on_disk.local_ai_model_path,
+            Some(PathBuf::from("/models/m.gguf"))
+        );
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    // BUG-059 fail-closed rule: unreadable settings are refused and the bytes stay exactly as they were.
+    #[test]
+    fn reset_refuses_and_writes_nothing_when_settings_are_unreadable() {
+        let d = scratch("reset_bad");
+        let path = d.join("settings.toml");
+        let corrupt = b"this is = not [valid toml\n licence = \"keep me\"";
+        std::fs::write(&path, corrupt).unwrap();
+
+        let r = reset_preferences_at(&path);
+        assert!(
+            r.as_ref().is_err_and(|e| e.contains("SETTINGS_UNREADABLE")),
+            "{r:?}"
+        );
+        assert_eq!(std::fs::read(&path).unwrap(), corrupt);
+        let _ = std::fs::remove_dir_all(&d);
+    }
+
+    #[test]
+    fn about_info_reports_the_package_version_and_a_build_hash() {
+        let info = build_about_info();
+        assert_eq!(info.version, env!("CARGO_PKG_VERSION"));
+        let h = &info.build_hash;
+        assert!(
+            h == "unknown" || (h.len() >= 7 && h.chars().all(|c| c.is_ascii_hexdigit())),
+            "build hash must be a short git hash or 'unknown', got {h:?}"
+        );
+        assert!(info.settings_file.ends_with("settings.toml"));
+        assert!(info.studio_prefs_file.ends_with("studio_prefs.json"));
+        assert!(info
+            .markup_library_file
+            .ends_with("studio_markup_library.json"));
+        assert!(!info.log_dir.is_empty());
+    }
+
+    #[test]
+    fn notices_text_is_returned_and_a_missing_file_is_a_typed_error() {
+        let d = scratch("notices");
+        let ok = d.join("THIRD_PARTY_NOTICES.md");
+        std::fs::write(&ok, "# Notices\nMIT licence text").unwrap();
+        assert_eq!(read_notices_at(&ok).unwrap(), "# Notices\nMIT licence text");
+
+        let missing = d.join("nope.md");
+        let e = read_notices_at(&missing).unwrap_err();
+        assert!(matches!(e, NoticesError::Missing { .. }), "{e:?}");
+        let json = serde_json::to_value(&e).unwrap();
+        assert_eq!(json["kind"], "missing");
+        assert!(!json["message"].as_str().unwrap_or("").is_empty());
         let _ = std::fs::remove_dir_all(&d);
     }
 }

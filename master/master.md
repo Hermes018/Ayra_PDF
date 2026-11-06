@@ -211,6 +211,7 @@ master/
 │   │   │   ├── views/                                        # One view per tool group
 │   │   │   │   ├── __tests__/                                # View tests (Vitest + Testing Library, mocked IPC)
 │   │   │   │   │   ├── A11yConformance.test.ts               # Tests: accessibility basics across views
+│   │   │   │   │   ├── AboutView.test.ts                     # Tests: About screen shows version/hash/licences/offline statement; notices load error shows ErrorState + Retry
 │   │   │   │   │   ├── AiSummarizeView.test.ts               # Tests: AI summarize view
 │   │   │   │   │   ├── BatchQueueView.test.ts                # Tests: batch queue view
 │   │   │   │   │   ├── ConvertFromPdfView.test.ts            # Tests: convert-from view
@@ -256,6 +257,7 @@ master/
 │   │   │   │   │   ├── SpatialCanvas.svelte                  # Studio canvas: page rendering, pointer input, layers, responsive top bar, empty state (largest file)
 │   │   │   │   │   ├── SplitLayout.svelte                    # Side-by-side document panes with draggable divider
 │   │   │   │   │   └── studioSave.ts                         # The single Studio saver: snapshots path/seq/revision, refuses ("Nothing was written") if the document changed or is still loading
+│   │   │   │   ├── AboutView.svelte                          # About screen: version, build hash, bundled licences (THIRD_PARTY_NOTICES), offline statement, data locations, Reset preferences
 │   │   │   │   ├── AiSummarizeView.svelte                    # PDF Intelligence: summarize / translate (basic mode + optional local model)
 │   │   │   │   ├── BatchQueueView.svelte                     # Batch job queue
 │   │   │   │   ├── ConvertFromPdfView.svelte                 # PDF → images/Word/HTML/text/Office/PDF-A
@@ -271,7 +273,8 @@ master/
 │   │   │   │   └── SettingsView.svelte                       # Settings: theme, tier, output policy, logs, AI models
 │   │   │   ├── i18n.ts                                       # Translation lookup helper
 │   │   │   ├── ipc.ts                                        # Typed wrappers around Tauri `invoke` (jobs, settings, dialogs, files)
-│   │   │   └── state.svelte.ts                               # Global app state (current view, open files, theme, sidebar) with runes
+│   │   │   ├── state.svelte.ts                               # Global app state (current view, open files, theme, sidebar) with runes
+│   │   │   └── versionConsistency.test.ts                    # Tests: package.json, tauri.conf.json and the Cargo workspace version are identical
 │   │   ├── locales/                                          # UI translation strings
 │   │   │   └── en.json                                       # English UI strings
 │   │   ├── routes/                                           # SvelteKit routes (single page app)

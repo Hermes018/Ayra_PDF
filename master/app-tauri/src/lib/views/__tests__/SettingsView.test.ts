@@ -277,4 +277,82 @@ describe('SettingsView', () => {
         await (component as unknown as { handleSaveSettings: () => Promise<void> }).handleSaveSettings();
         expect(IpcClient.saveSettings).not.toHaveBeenCalled();
     });
+
+    // Packaging prep: Reset preferences. Settings persistence: the licence is kept and a failed load blocks it.
+    describe('Reset preferences', () => {
+        const RESET_BODY =
+            'This resets the theme, language, hardware tier, output policy, backups and the local AI switch to their defaults. Your model licence is kept. Your PDFs are not touched.';
+
+        beforeEach(() => {
+            vi.spyOn(IpcClient, 'resetPreferences').mockResolvedValue({
+                ...initialSettings,
+                ai_license_acknowledged: true,
+                ai_model_license: 'Apache-2.0',
+            });
+        });
+
+        test('asks first, says exactly what is reset and kept, and focuses Cancel', async () => {
+            render(SettingsView);
+            await screen.findByTestId('settings-loaded');
+            await fireEvent.click(screen.getByRole('button', { name: 'Reset preferences' }));
+            const dialog = await screen.findByRole('alertdialog', { name: 'Reset preferences?' });
+            expect(dialog).toHaveTextContent(RESET_BODY);
+            await vi.waitFor(() => expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus());
+            expect(screen.getByRole('button', { name: 'Cancel' })).toHaveAttribute('data-autofocus');
+            expect(IpcClient.resetPreferences).not.toHaveBeenCalled();
+        });
+
+        test('Cancel changes nothing', async () => {
+            render(SettingsView);
+            await screen.findByTestId('settings-loaded');
+            await fireEvent.click(screen.getByRole('button', { name: 'Reset preferences' }));
+            await screen.findByRole('alertdialog', { name: 'Reset preferences?' });
+            await fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+            expect(IpcClient.resetPreferences).not.toHaveBeenCalled();
+            expect(screen.queryByRole('alertdialog')).toBeNull();
+        });
+
+        test('confirming resets, shows the defaults on screen and says the licence was kept', async () => {
+            const { appState } = await import('$lib/state.svelte');
+            appState.setTheme('Dark');
+            vi.spyOn(IpcClient, 'getSettings').mockResolvedValue({ ...initialSettings, theme: 'Dark', tier_override: 'High' });
+            render(SettingsView);
+            await screen.findByTestId('settings-loaded');
+            await fireEvent.click(screen.getByRole('button', { name: 'Reset preferences' }));
+            await screen.findByRole('alertdialog', { name: 'Reset preferences?' });
+            await fireEvent.click(screen.getByRole('button', { name: 'Reset now' }));
+            await vi.waitFor(() => expect(IpcClient.resetPreferences).toHaveBeenCalledTimes(1));
+            expect(await screen.findByText('Preferences reset to the defaults. Your model licence was kept.')).toBeInTheDocument();
+            expect(appState.themePreference).toBe('System');
+            expect(screen.getByRole('button', { name: 'System' })).toHaveAttribute('aria-pressed', 'true');
+            expect(screen.getByTestId('tier-btn-auto')).toHaveAttribute('aria-pressed', 'true');
+            expect(screen.queryByRole('alertdialog')).toBeNull();
+        });
+
+        test('a failed reset says nothing was changed and offers Retry', async () => {
+            vi.spyOn(IpcClient, 'resetPreferences').mockRejectedValueOnce(new Error('SETTINGS_UNREADABLE: x'));
+            render(SettingsView);
+            await screen.findByTestId('settings-loaded');
+            await fireEvent.click(screen.getByRole('button', { name: 'Reset preferences' }));
+            await screen.findByRole('alertdialog', { name: 'Reset preferences?' });
+            await fireEvent.click(screen.getByRole('button', { name: 'Reset now' }));
+            const alert = await screen.findByRole('alert');
+            expect(alert).toHaveTextContent("Couldn't reset your preferences.");
+            expect(alert).toHaveTextContent('Nothing was changed.');
+        });
+
+        test('after a failed load the button is disabled with the reason, and the handler refuses', async () => {
+            vi.spyOn(IpcClient, 'getSettings').mockRejectedValue(new Error('unreadable'));
+            const { component } = render(SettingsView);
+            await screen.findByTestId('settings-loaded');
+            const btn = screen.getByRole('button', { name: 'Reset preferences' });
+            expect(btn).toHaveAttribute('aria-disabled', 'true');
+            const tip = document.getElementById(btn.getAttribute('aria-describedby') ?? '');
+            expect(tip).toHaveTextContent("Settings couldn't be loaded. Retry first.");
+            await fireEvent.click(btn);
+            expect(screen.queryByRole('alertdialog', { name: 'Reset preferences?' })).toBeNull();
+            await (component as any).handleResetPreferences();
+            expect(IpcClient.resetPreferences).not.toHaveBeenCalled();
+        });
+    });
 });

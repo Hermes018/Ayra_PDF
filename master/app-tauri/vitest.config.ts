@@ -9,6 +9,8 @@ export default defineConfig({
         },
         conditions: ['browser']
     },
+    // The version test reads the Cargo manifests one level above the app (read-only).
+    server: { fs: { allow: ['..'] } },
     test: {
         environment: 'jsdom',
         setupFiles: ['./vitest-setup.ts'],

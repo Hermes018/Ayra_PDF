@@ -14,6 +14,7 @@
     import BatchQueueView from '$lib/views/BatchQueueView.svelte';
     import PipelinesView from '$lib/views/PipelinesView.svelte';
     import SettingsView from '$lib/views/SettingsView.svelte';
+    import AboutView from '$lib/views/AboutView.svelte';
     import AiSummarizeView from '$lib/views/AiSummarizeView.svelte';
     import SplitLayout from '$lib/views/studio/SplitLayout.svelte';
     import { theme } from '$lib/core/themeContract.svelte';
@@ -92,6 +93,8 @@
         <PipelinesView />
     {:else if currentView === 'Settings'}
         <SettingsView />
+    {:else if currentView === 'About'}
+        <AboutView />
     {:else}
         <div>Unknown view: {currentView}</div>
     {/if}

@@ -173,6 +173,38 @@
         }
     }
 
+    // Reset preferences: asks first (Cancel has focus). The backend keeps the licence and refuses when the settings
+    // file cannot be read; the screen mirrors that by disabling the button after a failed load.
+    let confirmReset = $state(false);
+    let isResetting = $state(false);
+    let resetError = $state(false);
+
+    // Exported so tests can call the handler directly (the guard must hold even without the disabled button).
+    export async function handleResetPreferences() {
+        if (loadFailed || !isLoaded) return;
+        isResetting = true;
+        resetError = false;
+        confirmReset = false;
+        try {
+            const reset = await IpcClient.resetPreferences();
+            settings = reset;
+            appState.setTheme(reset.theme);
+            licenseAcknowledged = reset.ai_license_acknowledged;
+            if (reset.ai_model_license) {
+                modelLicense = reset.ai_model_license;
+            }
+            saveMessage = 'Preferences reset to the defaults. Your model licence was kept.';
+            setTimeout(() => {
+                saveMessage = null;
+            }, 3000);
+        } catch (e: any) {
+            console.error('Failed to reset preferences:', e);
+            resetError = true;
+        } finally {
+            isResetting = false;
+        }
+    }
+
     // An existing file is replaced only after the user confirms; an open document is never a valid target.
     let confirmReplaceDiag = $state(false);
 
@@ -251,6 +283,22 @@
     {/snippet}
 </Dialog>
 
+<Dialog
+    bind:open={confirmReset}
+    variant="alert"
+    title="Reset preferences?"
+    onclose={() => (confirmReset = false)}
+>
+    <p>
+        This resets the theme, language, hardware tier, output policy, backups and the local AI switch to their defaults.
+        Your model licence is kept. Your PDFs are not touched.
+    </p>
+    {#snippet actions()}
+        <Button variant="secondary" attrs={{ 'data-autofocus': '' }} onclick={() => (confirmReset = false)}>Cancel</Button>
+        <Button variant="destructive" onclick={handleResetPreferences}>Reset now</Button>
+    {/snippet}
+</Dialog>
+
 <div class="settings-view" data-testid={isLoaded ? 'settings-loaded' : 'settings-loading'}>
     <div class="header">
         <h2>Settings & Diagnostics</h2>
@@ -262,6 +310,9 @@
     {/if}
     {#if saveMessage}
         <div class="banner success" role="status">{saveMessage}</div>
+    {/if}
+    {#if resetError}
+        <ErrorState what="Couldn't reset your preferences." next="Nothing was changed. Try again." retry={handleResetPreferences} />
     {/if}
     {#if saveError}
         <ErrorState what="Couldn't save your settings." next="Nothing was changed on disk. Try again." retry={handleSaveSettings} />
@@ -447,6 +498,16 @@
 
     <!-- Save -->
     <div class="footer-actions">
+        <Button
+            variant="secondary"
+            size="lg"
+            busy={isResetting}
+            disabled={loadFailed || !isLoaded}
+            disabledReason={loadFailed ? "Settings couldn't be loaded. Retry first." : 'Your settings are still loading'}
+            onclick={() => (confirmReset = true)}
+        >
+            Reset preferences
+        </Button>
         <Button
             variant="primary"
             size="lg"
@@ -645,5 +706,6 @@
     .footer-actions {
         display: flex;
         justify-content: flex-end;
+        gap: var(--space-2);
     }
 </style>

@@ -667,3 +667,6 @@ master/app-tauri/src/lib/views/__tests__/NoPasswordInStudioConsole.test.ts	Tests
 master/app-tauri/src/lib/components/MainLayoutFaq.test.ts	Tests: floating Help and FAQ button shows only when the sidebar is collapsed
 master/e2e/test_driver_stop.py	Self-test: wd.stop_group waits for the whole driver process group (no leftover processes)
 master/docs/ARGON_TASKS.md	Low-risk task list for the weaker Argon agent: rules, DO-NOT-TOUCH list, strict-audit workflow, tasks AT-01..AT-15 with acceptance tests, done checklist
+master/app-tauri/src/lib/versionConsistency.test.ts	Tests: package.json, tauri.conf.json and the Cargo workspace version are identical
+master/app-tauri/src/lib/views/AboutView.svelte	About screen: version, build hash, bundled licences (THIRD_PARTY_NOTICES), offline statement, data locations, Reset preferences
+master/app-tauri/src/lib/views/__tests__/AboutView.test.ts	Tests: About screen shows version/hash/licences/offline statement; notices load error shows ErrorState + Retry

@@ -171,7 +171,7 @@ pub struct StudioSaveResult {
     pub page_count: usize,
 }
 
-fn studio_prefs_path() -> PathBuf {
+pub(crate) fn studio_prefs_path() -> PathBuf {
     if let Some(proj_dirs) = ProjectDirs::from("com", "localpdf", "studio") {
         let config_dir = proj_dirs.config_dir();
         let _ = fs::create_dir_all(config_dir);
@@ -1088,7 +1088,7 @@ pub struct MarkupLibraryItemDto {
     pub created_at_ms: u64,
 }
 
-fn get_markup_library_path() -> PathBuf {
+pub(crate) fn get_markup_library_path() -> PathBuf {
     if let Ok(custom_dir) = std::env::var("LPDF_STUDIO_CONFIG_DIR") {
         let dir = PathBuf::from(custom_dir);
         let _ = fs::create_dir_all(&dir);
