@@ -3,6 +3,8 @@
     import { appState } from '$lib/state.svelte';
     import { resolveFreeOutput } from '$lib/views/studio/outputNames';
     import { IpcClient, pickFilesDialog, pickFolderDialog, saveFileDialog } from '$lib/ipc';
+    import { friendlyJobError } from '$lib/core/jobError';
+    import ErrorState from '$lib/components/ui/ErrorState.svelte';
     import For from '$lib/components/For.svelte';
     import type { JobRequest } from '$lib/bindings/JobRequest';
     import type { OfficeInputFormat } from '$lib/bindings/OfficeInputFormat';
@@ -11,7 +13,13 @@
 
     let currentPath = $derived(appState.currentFile);
     let customOutputPath = $state<string>('');
-    let statusMessage = $state<string | null>(null);
+    // What the screen tells the user after a click (the old free-text status string, now structured): an error with
+    // what happened and what to do (ErrorState, with Retry where it applies) or a non-blocking success notice.
+    let notice = $state<
+        | { kind: 'error'; what: string; next: string; retry?: () => void }
+        | { kind: 'success'; text: string }
+        | null
+    >(null);
     let isSubmitting = $state<boolean>(false);
     let lastJobId = $state<string | null>(null);
 
@@ -78,14 +86,14 @@
                     outputPath: out
                 };
                 failedResult = null;
-                statusMessage = null;
+                notice = null;
             } else if (event.kind === 'Failed') {
                 failedResult = {
                     op: 'Convert to PDF',
                     message: (event as any)?.data?.error_message || 'Conversion failed'
                 };
                 completedResult = null;
-                statusMessage = null;
+                notice = null;
             }
         });
     });
@@ -97,7 +105,7 @@
     function resetConversion() {
         completedResult = null;
         failedResult = null;
-        statusMessage = null;
+        notice = null;
         customOutputPath = '';
         lastJobId = null;
     }
@@ -280,21 +288,31 @@
 
     async function handleConvert() {
         if (!currentPath) {
-            statusMessage = 'Error: Please select or open an input file first.';
+            notice = { kind: 'error', what: 'No PDF is selected.', next: 'Open or select a file, then convert again.' };
             return;
         }
 
         const wanted = computedOutputPath;
         if (!wanted) {
-            statusMessage = 'Error: Invalid destination path.';
+            notice = { kind: 'error', what: "The output path isn't valid.", next: 'Enter a different output file name, or leave it blank to save next to the source.' };
             return;
         }
+        if (isSubmitting) return; // set before any await: a double click starts one job
+        isSubmitting = true;
         // A name that is the input or already exists gets the next free name (BUG-051); folders are left as chosen.
-        const out = currentOption.id === 'BatchMarkdownConvert' ? wanted : await resolveFreeOutput(wanted, currentPath);
+        let out: string;
+        try {
+            out = currentOption.id === 'BatchMarkdownConvert' ? wanted : await resolveFreeOutput(wanted, currentPath);
+        } catch (e) {
+            console.error('No free output name', e);
+            notice = { kind: 'error', what: "Couldn't find a free output file name.", next: 'Choose another location and try again.', retry: () => void handleConvert() };
+            isSubmitting = false;
+            return;
+        }
         if (out !== wanted) customOutputPath = out;
 
         isSubmitting = true;
-        statusMessage = null;
+        notice = null;
 
         const opt = currentOption;
         let req: JobRequest;
@@ -345,7 +363,7 @@
                 output_path: out
             } as JobRequest;
         } else {
-            statusMessage = 'Error: Unsupported conversion option.';
+            notice = { kind: 'error', what: 'That conversion is not supported.', next: 'Choose another conversion option.' };
             isSubmitting = false;
             return;
         }
@@ -353,9 +371,10 @@
         try {
             const jobId = await IpcClient.submitJob(req);
             lastJobId = jobId;
-            statusMessage = `Conversion job submitted successfully (ID: ${jobId.slice(0, 8)}...)`;
+            notice = { kind: 'success', text: `Job started. Output: ${out.split(/[\/]/).pop()}` };
         } catch (e: any) {
-            statusMessage = `Conversion failed: ${e?.message || e || 'Unknown error'}`;
+            console.error('Conversion failed to start:', e);
+            notice = { kind: 'error', what: "Couldn't start the conversion.", next: 'Try again. If it keeps failing, check the file and the output location.', retry: () => void handleConvert() };
         } finally {
             isSubmitting = false;
         }
@@ -488,22 +507,16 @@
                     </button>
                 </div>
             {:else if failedResult}
-                <div class="toast-banner error-toast" role="alert" aria-live="assertive">
-                    <div class="toast-content">
-                        <div class="toast-header">
-                            <span class="toast-icon">❌</span>
-                            <span class="toast-title">{failedResult.op} — Failed</span>
-                        </div>
-                        <p class="toast-path">{failedResult.message}</p>
+                {@const f = friendlyJobError(failedResult.message, { what: `${failedResult.op} failed.`, next: 'Check the file and the output location, then try again.' })}
+                <ErrorState what={f.what} next={f.next} retry={() => { failedResult = null; void handleConvert(); }} data-testid="convert-failure" />
+            {:else if notice}
+                {#if notice.kind === 'error'}
+                    <ErrorState what={notice.what} next={notice.next} retry={notice.retry} data-testid="convert-status-error" />
+                {:else}
+                    <div class="status-banner" role="status" data-testid="convert-submitted">
+                        <span>{notice.text}</span>
                     </div>
-                    <button type="button" class="btn-toast" onclick={() => { failedResult = null; }}>
-                        Dismiss
-                    </button>
-                </div>
-            {:else if statusMessage}
-                <div class="status-banner" class:error={statusMessage.startsWith('Error') || statusMessage.startsWith('Conversion failed')}>
-                    <span>{statusMessage}</span>
-                </div>
+                {/if}
             {/if}
 
             <div class="action-row">

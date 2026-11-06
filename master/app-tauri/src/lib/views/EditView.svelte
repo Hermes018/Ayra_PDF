@@ -30,33 +30,34 @@
     const jobs = new JobRunner();
     const busyReason = 'Wait for the current job to finish, or cancel it';
 
-    async function watermark() {
-        if (!currentPath || !watermarkText) return;
-        const out = await freeOutputPath(currentPath, 'watermarked');
+    // Requests are built per attempt (a builder), so a Retry after a refused name gets the next free name.
+    function watermark() {
+        const input = currentPath;
+        if (!input || !watermarkText) return;
         const settings: WatermarkSettings = {
             text: watermarkText,
             opacity: parseNumberOr(watermarkOpacity, 0.5),
             rotation: parseNumberOr(watermarkRotation, 45),
             color: [0.8, 0.2, 0.2], // Red-ish watermark
         };
-        void jobs.run('Adding the watermark', "Couldn't add the watermark.", NEXT, {
+        void jobs.run('Adding the watermark', "Couldn't add the watermark.", NEXT, async () => ({
             op: 'WatermarkDocument',
-            input_path: currentPath,
-            output_path: out,
+            input_path: input,
+            output_path: await freeOutputPath(input, 'watermarked'),
             settings,
-        });
+        }));
     }
 
-    async function annotate(label: string, what: string, tag: string, shape: AnnotationShape) {
-        if (!currentPath) return;
-        const out = await freeOutputPath(currentPath, tag);
+    function annotate(label: string, what: string, tag: string, shape: AnnotationShape) {
+        const input = currentPath;
+        if (!input) return;
         const annotation: AnnotationDef = { page: 0, shape, author: authorName };
-        void jobs.run(label, what, NEXT, {
+        void jobs.run(label, what, NEXT, async () => ({
             op: 'AnnotateDocument',
-            input_path: currentPath,
-            output_path: out,
+            input_path: input,
+            output_path: await freeOutputPath(input, tag),
             annotation,
-        });
+        }));
     }
 
     function stickyNote() {
@@ -73,14 +74,14 @@
         });
     }
 
-    async function flatten() {
-        if (!currentPath) return;
-        const out = await freeOutputPath(currentPath, 'flattened');
-        void jobs.run('Flattening comments', "Couldn't flatten the comments.", NEXT, {
+    function flatten() {
+        const input = currentPath;
+        if (!input) return;
+        void jobs.run('Flattening comments', "Couldn't flatten the comments.", NEXT, async () => ({
             op: 'FlattenComments',
-            input_path: currentPath,
-            output_path: out,
-        });
+            input_path: input,
+            output_path: await freeOutputPath(input, 'flattened'),
+        }));
     }
 </script>
 

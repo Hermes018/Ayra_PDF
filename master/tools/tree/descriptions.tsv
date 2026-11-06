@@ -650,3 +650,7 @@ master/crates/lpdf-jobs/tests/output_guard_tests.rs	Tests: output_guard unit cas
 master/app-tauri/src/lib/components/studio/LedgerTakeoffExport.test.ts	Tests: ledger takeoff CSV export surfaces a refused (unsafe) output path instead of swallowing it
 master/app-tauri/src/lib/core/takeoffExport.test.ts	Tests: takeoff CSV output naming is collision-safe and never the input
 master/app-tauri/src/lib/views/__tests__/OutputPathsAllViews.test.ts	Tests (BUG-051): every writing view (Organize, Forms, Security x3, Batch, Pipelines, AiSummarize, Markdown, Convert x2) builds a distinct, non-existing output, with and without .pdf
+master/app-tauri/src/lib/core/jobError.ts	friendlyJobError: maps backend job errors (e.g. OUTPUT_PATH_UNSAFE) to plain words: what happened + what to do
+master/app-tauri/src/lib/core/jobError.test.ts	Tests: friendlyJobError wording per error code
+master/app-tauri/src/lib/core/failedJobToast.test.ts	Tests: the global failed-job toast uses plain wording, never a raw error string
+master/app-tauri/src/lib/views/__tests__/OutputUnsafeUi.test.ts	Tests (BUG-052): a refused output shows an ErrorState with Retry on the next free name in every writing view

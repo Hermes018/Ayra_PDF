@@ -1,6 +1,8 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import { IpcClient } from '$lib/ipc';
+    import { friendlyJobError } from '$lib/core/jobError';
+    import ErrorState from '$lib/components/ui/ErrorState.svelte';
     import For from '$lib/components/For.svelte';
     import { appState } from '$lib/state.svelte';
     import { siblingOutputPath, resolveFreeOutput } from '$lib/views/studio/outputNames';
@@ -26,7 +28,28 @@
         }
     });
 
+    onDestroy(() => unlistenJobs?.());
+
+    // A queued run that later fails replaces the "enqueued successfully" banner with the plain ErrorState.
+    let lastJobId: string | null = null;
+    let unlistenJobs: (() => void) | undefined;
     onMount(async () => {
+        try {
+            unlistenJobs = await IpcClient.onJobEvent((event) => {
+                const ev = event as { kind?: string; data?: { job_id?: string; error_message?: string } };
+                if (!lastJobId || ev.data?.job_id !== lastJobId) return;
+                if (ev.kind === 'Failed') {
+                    executionMessage = null;
+                    const f = friendlyJobError(ev.data?.error_message ?? '', {
+                        what: 'The workflow failed.',
+                        next: 'Check the input file and the steps, then try again.',
+                    });
+                    runFailure = { what: f.what, next: f.next, retry: () => void handleRunWorkflow() };
+                }
+            });
+        } catch (e) {
+            console.error('Failed to listen for job events:', e);
+        }
         try {
             presets = await IpcClient.listPipelinePresets();
             if (presets.length > 0 && activeSteps.length === 0) {
@@ -115,7 +138,11 @@
         selectedPresetId = null;
     }
 
+    // A failed run: what happened and what to do, with a Retry that picks the next free name.
+    let runFailure = $state<{ what: string; next: string; retry: () => void } | null>(null);
+
     async function handleRunWorkflow() {
+        if (isSubmitting) return; // set before any await: a double click starts one job
         if (!inputPath || !outputPath) {
             executionMessage = 'Please select both input and output paths.';
             return;
@@ -125,24 +152,30 @@
             return;
         }
 
-        const preset = presets.find(p => p.id === selectedPresetId);
-        // Never the input, never an existing file: next free name (BUG-051).
-        const out = await resolveFreeOutput(outputPath.trim(), inputPath);
-        if (out !== outputPath.trim()) outputPath = out;
-        const req: JobRequest = {
-            op: 'RunPipeline',
-            input_path: inputPath,
-            output_path: out,
-            steps: activeSteps,
-            preset_name: preset ? preset.name : null
-        };
-
+        isSubmitting = true;
+        runFailure = null;
         try {
-            isSubmitting = true;
+            const preset = presets.find(p => p.id === selectedPresetId);
+            // Never the input, never an existing file: next free name (BUG-051).
+            const out = await resolveFreeOutput(outputPath.trim(), inputPath);
+            if (out !== outputPath.trim()) outputPath = out;
+            const req: JobRequest = {
+                op: 'RunPipeline',
+                input_path: inputPath,
+                output_path: out,
+                steps: activeSteps,
+                preset_name: preset ? preset.name : null
+            };
             const jobId = await IpcClient.submitJob(req);
+            lastJobId = jobId;
             executionMessage = `Workflow enqueued successfully (Job ID: ${jobId.slice(0, 8)}). Track progress in Batch Queue.`;
         } catch (e) {
-            executionMessage = `Failed to dispatch workflow: ${e}`;
+            console.error('Failed to dispatch workflow:', e);
+            const f = friendlyJobError(e instanceof Error ? e.message : String(e), {
+                what: "Couldn't start the workflow.",
+                next: 'Check the input and output paths, then try again.',
+            });
+            runFailure = { what: f.what, next: f.next, retry: () => void handleRunWorkflow() };
         } finally {
             isSubmitting = false;
         }
@@ -189,6 +222,10 @@
             </div>
         </div>
     </header>
+
+    {#if runFailure}
+        <ErrorState what={runFailure.what} next={runFailure.next} retry={runFailure.retry} data-testid="run-failure" />
+    {/if}
 
     {#if executionMessage}
         <div class="alert-banner" data-testid="execution-message">

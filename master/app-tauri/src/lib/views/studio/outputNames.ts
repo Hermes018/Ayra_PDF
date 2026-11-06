@@ -124,10 +124,14 @@ export async function resolveFreeOutput(
   const slash = Math.max(desired.lastIndexOf('/'), desired.lastIndexOf('\\'));
   const dot = desired.lastIndexOf('.');
   const hasExt = dot > slash + 1;
-  const base = hasExt ? desired.slice(0, dot) : desired;
+  const fullBase = hasExt ? desired.slice(0, dot) : desired;
   const tail = hasExt ? desired.slice(dot) : '';
-  for (let n = 1; n <= MAX_CANDIDATES; n++) {
-    const c = n === 1 ? desired : `${base}-${n}${tail}`;
+  // `x-2` continues as `x-3` (not `x-2-2`). Only a small counter (2..99) counts: `report-2024` is just a name.
+  const counter = /^(.*)-(\d{1,2})$/.exec(fullBase);
+  const base = counter && Number(counter[2]) >= 2 ? counter[1] : fullBase;
+  const first = counter && Number(counter[2]) >= 2 ? Number(counter[2]) : 1;
+  for (let n = first; n <= first + MAX_CANDIDATES; n++) {
+    const c = n === first ? desired : `${base}-${n}${tail}`;
     if (issued.has(c) || c === inputPath) continue;
     issued.add(c);
     if (await exists(c)) continue;

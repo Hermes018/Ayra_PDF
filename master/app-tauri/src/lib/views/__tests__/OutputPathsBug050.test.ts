@@ -17,7 +17,7 @@ vi.mock('@tauri-apps/api/core', () => ({
 }));
 vi.mock('$lib/components/PdfViewer.svelte', () => ({ default: () => {} }));
 
-import { freeOutputPath } from '../studio/outputNames';
+import { freeOutputPath, resetIssuedOutputNamesForTests } from '../studio/outputNames';
 import OptimizeView from '../OptimizeView.svelte';
 import EditView from '../EditView.svelte';
 import { appState } from '$lib/state.svelte';
@@ -98,5 +98,16 @@ describe('resolveFreeOutput (editable and derived names)', () => {
         expect(swapExtension('/d/doc.md', '.pdf')).toBe('/d/doc.pdf');
         expect(swapExtension('/d/doc', '.pdf')).toBe('/d/doc.pdf');
         expect(swapExtension('/d.x/doc', '.pdf')).toBe('/d.x/doc.pdf');
+    });
+
+    test('a name already ending in -2 increments to -3 (never -2-2); a year-like suffix is not a counter', async () => {
+        const taken = new Set(['/docs/x-2.pdf', '/docs/x-3.pdf']);
+        expect(await resolveFreeOutput('/docs/x-2.pdf', '/docs/in.pdf', async (p) => taken.has(p))).toBe('/docs/x-4.pdf');
+        resetIssuedOutputNamesForTests();
+        const t2 = new Set(['/docs/x-2.pdf']);
+        expect(await resolveFreeOutput('/docs/x-2.pdf', '/docs/in.pdf', async (p) => t2.has(p))).toBe('/docs/x-3.pdf');
+        resetIssuedOutputNamesForTests();
+        const y = new Set(['/docs/report-2024.pdf']);
+        expect(await resolveFreeOutput('/docs/report-2024.pdf', '/docs/in.pdf', async (p) => y.has(p))).toBe('/docs/report-2024-2.pdf');
     });
 });

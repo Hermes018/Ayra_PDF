@@ -63,6 +63,13 @@ fn canonical_target(path: &Path) -> PathBuf {
     }
 }
 
+/// True when the path names a PDF, either as written or after resolving symlinks (a link `x.txt` that points at
+/// `a.pdf` resolves to a PDF). Used by writers of non-PDF text (diagnostics report, takeoff CSV).
+pub fn targets_pdf(path: &Path) -> bool {
+    let is_pdf = |p: &Path| p.extension().is_some_and(|e| e.eq_ignore_ascii_case("pdf"));
+    is_pdf(path) || is_pdf(&canonical_target(path))
+}
+
 /// Like `check_output_path`, but an existing file is allowed (the user confirmed replacing it). A protected path
 /// (an input or an open document) is still always refused.
 pub fn check_output_path_confirmed(

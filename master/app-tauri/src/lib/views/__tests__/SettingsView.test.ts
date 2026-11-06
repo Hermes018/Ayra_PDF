@@ -114,6 +114,18 @@ describe('SettingsView', () => {
         expect(spy).toHaveBeenLastCalledWith('localpdf-diagnostics.txt', [], true);
     });
 
+    test('the replace question starts with focus on Cancel (the safe default)', async () => {
+        const spy = vi.spyOn(IpcClient, 'exportDiagnostics');
+        spy.mockRejectedValueOnce(new Error('OUTPUT_PATH_UNSAFE: a file already exists at the output path (/tmp/d.txt). Nothing was written.'));
+        render(SettingsView);
+        await fireEvent.click(screen.getByText('Export Diagnostics'));
+        await screen.findByRole('alertdialog', { name: 'Replace the existing file?' });
+        await vi.waitFor(() => expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus());
+        // explicit, not just "first button": the destructive Replace must never become the default
+        expect(screen.getByRole('button', { name: 'Cancel' })).toHaveAttribute('data-autofocus');
+        expect(screen.getByRole('button', { name: 'Replace file' })).not.toHaveAttribute('data-autofocus');
+    });
+
     test('Cancel on the replace question exports nothing', async () => {
         const spy = vi.spyOn(IpcClient, 'exportDiagnostics');
         spy.mockRejectedValueOnce(new Error('OUTPUT_PATH_UNSAFE: a file already exists at the output path (/tmp/d.txt). Nothing was written.'));

@@ -222,11 +222,14 @@ master/
 │   │   │   │   ├── defaultPresets.json                       # Default pen/highlighter/shape presets
 │   │   │   │   ├── defaultShortcuts.json                     # Default keyboard shortcuts
 │   │   │   │   ├── engineGoldens.test.ts                     # Tests: compare current TS engine outputs with the goldens
+│   │   │   │   ├── failedJobToast.test.ts                    # Tests: the global failed-job toast uses plain wording, never a raw error string
 │   │   │   │   ├── hatchPatterns.json                        # Hatch pattern parameters generated from lpdf-geom patterns.rs (single source for the on-screen preview)
 │   │   │   │   ├── hatchPatterns.ts                          # Typed loader for hatchPatterns.json used by HatchDefs.svelte
 │   │   │   │   ├── inkEngine.svelte.ts                       # Freehand ink strokes, smoothing, shape recognition, laser pointer
 │   │   │   │   ├── insertAndTakeoff.test.ts                  # Tests: insert suite and takeoff CSV export
 │   │   │   │   ├── insertEngine.svelte.ts                    # Insert tools: images, stamps, signatures, audio, "LaTeX" (Unicode-only), workspace library
+│   │   │   │   ├── jobError.test.ts                          # Tests: friendlyJobError wording per error code
+│   │   │   │   ├── jobError.ts                               # friendlyJobError: maps backend job errors (e.g. OUTPUT_PATH_UNSAFE) to plain words: what happened + what to do
 │   │   │   │   ├── jobRunner.svelte.ts                       # Runs one backend job for a tool view: progress, Cancel, Retry, error state (wraps IpcClient.runJob)
 │   │   │   │   ├── jobRunner.test.ts                         # Tests: jobRunner progress, cancel, retry and error states
 │   │   │   │   ├── measureEngine.svelte.ts                   # Length/area/angle/volume measurement and scale maths
@@ -275,6 +278,7 @@ master/
 │   │   │   │   │   ├── OrganizeView.test.ts                  # Tests: organize view
 │   │   │   │   │   ├── OutputPathsAllViews.test.ts           # Tests (BUG-051): every writing view (Organize, Forms, Security x3, Batch, Pipelines, AiSummarize, Markdown, Convert x2) builds a distinct, non-existing output, with and without .pdf
 │   │   │   │   │   ├── OutputPathsBug050.test.ts             # Tests (BUG-050): every view builds a collision-safe output path that is never the input or an existing file
+│   │   │   │   │   ├── OutputUnsafeUi.test.ts                # Tests (BUG-052): a refused output shows an ErrorState with Retry on the next free name in every writing view
 │   │   │   │   │   ├── PipelinesView.test.ts                 # Tests: pipelines view
 │   │   │   │   │   ├── SettingsView.test.ts                  # Tests: settings view
 │   │   │   │   │   ├── SignatureDraw.test.ts                 # Tests: drawn signature saved as ink, not text (BUG-017)

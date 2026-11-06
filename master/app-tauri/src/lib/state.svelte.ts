@@ -1,6 +1,7 @@
 import type { ThemePreference } from './bindings/ThemePreference';
 import { IpcClient } from './ipc';
 import { theme, type ThemeMode } from './core/themeContract.svelte';
+import { friendlyJobError } from './core/jobError';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -182,7 +183,10 @@ class AppState {
                         (event as any)?.data?.error_message ||
                         (event as any)?.data?.error_code ||
                         'Operation failed';
-                    this.addToast('Operation Failed', 'error', err);
+                    // The backend's refusal to overwrite a file is shown in plain words (no raw code or path).
+                    const f = friendlyJobError(String(err), { what: 'Operation Failed', next: String(err) }, false);
+                    if (String(err).includes('OUTPUT_PATH_UNSAFE')) this.addToast(f.what, 'error', f.next);
+                    else this.addToast('Operation Failed', 'error', err);
                 } else if (event.kind === 'Cancelled') {
                     this.addToast('Operation Cancelled', 'warning');
                 }

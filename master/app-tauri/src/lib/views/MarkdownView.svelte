@@ -3,6 +3,8 @@
     import { appState } from '$lib/state.svelte';
     import { siblingOutputPath, swapExtension, resolveFreeOutput } from '$lib/views/studio/outputNames';
     import { IpcClient, pickFilesDialog, pickFolderDialog, saveFileDialog } from '$lib/ipc';
+    import { friendlyJobError } from '$lib/core/jobError';
+    import ErrorState from '$lib/components/ui/ErrorState.svelte';
     import type { JobRequest } from '$lib/bindings/JobRequest';
 
     type MarkdownMode = 'PdfToMarkdown' | 'MarkdownToPdf' | 'BatchFolder';
@@ -99,11 +101,12 @@
         completedResult = null;
         failedResult = null;
 
+        let req: JobRequest;
+        try {
         const wanted = customOutputPath.trim() || computedOutputPath;
         // Never the input, never an existing file: next free name (BUG-051); the batch folder is left as chosen.
         const out = selectedMode === 'BatchFolder' ? wanted : await resolveFreeOutput(wanted, activeSource);
         if (out !== wanted) customOutputPath = out;
-        let req: JobRequest;
 
         if (selectedMode === 'PdfToMarkdown') {
             req = {
@@ -131,7 +134,6 @@
             };
         }
 
-        try {
             const jobId = await IpcClient.submitJob(req);
             lastJobId = jobId;
         } catch (e: any) {
@@ -321,18 +323,8 @@
                     </button>
                 </div>
             {:else if failedResult}
-                <div class="toast-banner error-toast" role="alert" aria-live="assertive">
-                    <div class="toast-content">
-                        <div class="toast-header">
-                            <span class="toast-icon">❌</span>
-                            <span class="toast-title">{failedResult.op} — Failed</span>
-                        </div>
-                        <p class="toast-path">{failedResult.message}</p>
-                    </div>
-                    <button type="button" class="btn-toast" onclick={() => { failedResult = null; }}>
-                        Dismiss
-                    </button>
-                </div>
+                {@const f = friendlyJobError(failedResult.message, { what: `${failedResult.op} failed.`, next: 'Check the file, then try again.' })}
+                <ErrorState what={f.what} next={f.next} retry={() => { failedResult = null; void handleConvert(); }} data-testid="convert-failure" />
             {/if}
 
             <div class="action-row">

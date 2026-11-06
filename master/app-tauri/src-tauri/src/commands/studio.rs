@@ -1232,10 +1232,7 @@ pub fn studio_export_takeoff_csv(
     let out_path = PathBuf::from(&output_path);
     // A takeoff CSV is never written to a PDF path or an open document, and never over an existing file unless
     // the UI confirmed the overwrite (BUG-051 follow-up).
-    if out_path
-        .extension()
-        .is_some_and(|e| e.eq_ignore_ascii_case("pdf"))
-    {
+    if lpdf_jobs::output_guard::targets_pdf(&out_path) {
         return Err(format!(
             "OUTPUT_PATH_UNSAFE: a takeoff CSV cannot be written to a PDF path ({output_path}). Nothing was written."
         ));

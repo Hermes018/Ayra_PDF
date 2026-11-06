@@ -21,34 +21,36 @@
     const busyReason = 'Wait for the current job to finish, or cancel it';
 
     // Output names come from the collision-safe naming: never the input, never an existing file (BUG-050).
-    async function compress() {
-        if (!currentPath) return;
-        const out = await freeOutputPath(currentPath, `compressed-${selectedProfile.toLowerCase()}`);
-        void jobs.run('Compressing the PDF', "Couldn't compress the PDF.", NEXT, {
+    // The request is built per attempt (a builder), so a Retry after a refused name gets the next free name.
+    function compress() {
+        const input = currentPath;
+        if (!input) return;
+        const profile = selectedProfile as OptimizeProfile;
+        void jobs.run('Compressing the PDF', "Couldn't compress the PDF.", NEXT, async () => ({
             op: 'Compress',
-            input_path: currentPath,
-            output_path: out,
-            profile: selectedProfile as OptimizeProfile,
-        });
+            input_path: input,
+            output_path: await freeOutputPath(input, `compressed-${profile.toLowerCase()}`),
+            profile,
+        }));
     }
-    async function repair() {
-        if (!currentPath) return;
-        const out = await freeOutputPath(currentPath, 'repaired');
-        void jobs.run('Repairing the PDF', "Couldn't repair the PDF.", NEXT, {
+    function repair() {
+        const input = currentPath;
+        if (!input) return;
+        void jobs.run('Repairing the PDF', "Couldn't repair the PDF.", NEXT, async () => ({
             op: 'Repair',
-            input_path: currentPath,
-            output_path: out,
-        });
+            input_path: input,
+            output_path: await freeOutputPath(input, 'repaired'),
+        }));
     }
-    async function ocr() {
-        if (!currentPath) return;
-        const out = await freeOutputPath(currentPath, 'ocr');
-        void jobs.run('Recognizing text', "Couldn't recognize the text.", NEXT, {
+    function ocr() {
+        const input = currentPath;
+        if (!input) return;
+        void jobs.run('Recognizing text', "Couldn't recognize the text.", NEXT, async () => ({
             op: 'Ocr',
-            input_path: currentPath,
-            output_path: out,
+            input_path: input,
+            output_path: await freeOutputPath(input, 'ocr'),
             lang: 'en', // Only Latin supported right now natively
-        });
+        }));
     }
 </script>
 

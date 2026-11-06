@@ -158,6 +158,12 @@ fn export_diagnostics(
     overwrite: Option<bool>,
 ) -> Result<String, String> {
     let target = PathBuf::from(&output_path);
+    // A diagnostics report is text: never a PDF path, even when a replace was confirmed.
+    if lpdf_jobs::output_guard::targets_pdf(&target) {
+        return Err(format!(
+            "OUTPUT_PATH_UNSAFE: a diagnostics report cannot be written to a PDF path ({output_path}). Nothing was written."
+        ));
+    }
     // Never an open document or input path; an existing file only when the UI confirmed the overwrite.
     let protected: Vec<PathBuf> = protected_paths
         .unwrap_or_default()
@@ -836,6 +842,36 @@ mod writer_guard_tests {
         // a fresh name works
         let fresh = d.join("fresh.txt").to_string_lossy().to_string();
         assert!(export_diagnostics(fresh, None, None).is_ok());
+    }
+
+    // Even a confirmed "Replace" must never clobber a PDF: a diagnostics report is text.
+    #[test]
+    fn export_diagnostics_refuses_a_pdf_target_even_when_replace_was_confirmed() {
+        let d = scratch("diagpdf");
+        let pdf = d.join("someone-elses.PDF"); // not an open document, just a PDF on disk
+        std::fs::write(&pdf, b"%PDF-1.4 precious").unwrap();
+        let p = pdf.to_string_lossy().to_string();
+        assert!(unsafe_err(export_diagnostics(p.clone(), None, Some(true))));
+        assert!(unsafe_err(export_diagnostics(p, None, None)));
+        assert_eq!(std::fs::read(&pdf).unwrap(), b"%PDF-1.4 precious");
+        // a fresh .pdf name is refused too (it would be a text file pretending to be a PDF)
+        let fresh = d.join("report.pdf").to_string_lossy().to_string();
+        assert!(unsafe_err(export_diagnostics(fresh, None, None)));
+    }
+
+    // A link named x.txt that points at a .pdf must not let a "Replace" clobber the PDF either.
+    #[cfg(unix)]
+    #[test]
+    fn export_diagnostics_refuses_a_symlink_that_resolves_to_a_pdf() {
+        let d = scratch("diaglink");
+        let pdf = d.join("precious.pdf");
+        std::fs::write(&pdf, b"%PDF-1.4 precious").unwrap();
+        let link = d.join("report.txt");
+        std::os::unix::fs::symlink(&pdf, &link).unwrap();
+        let l = link.to_string_lossy().to_string();
+        assert!(unsafe_err(export_diagnostics(l.clone(), None, Some(true))));
+        assert!(unsafe_err(export_diagnostics(l, None, None)));
+        assert_eq!(std::fs::read(&pdf).unwrap(), b"%PDF-1.4 precious");
     }
 
     #[test]

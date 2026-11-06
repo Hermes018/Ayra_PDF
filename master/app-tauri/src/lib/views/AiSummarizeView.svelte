@@ -1,6 +1,8 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { IpcClient } from '$lib/ipc';
+    import { friendlyJobError } from '$lib/core/jobError';
+    import ErrorState from '$lib/components/ui/ErrorState.svelte';
     import { appState } from '$lib/state.svelte';
     import { siblingOutputPath, resolveFreeOutput } from '$lib/views/studio/outputNames';
     import For from '$lib/components/For.svelte';
@@ -88,8 +90,13 @@
         },
     ];
 
+    // A failed submit: what happened and what to do, with a Retry that picks the next free name.
+    let genFailure = $state<{ what: string; next: string; retry: () => void } | null>(null);
+
     async function handleGenerateSummary() {
+        if (isSubmitting) return; // set before any await: a double click starts one job
         errorMessage = null;
+        genFailure = null;
         submissionStatus = null;
 
         if (!inputPath.trim()) {
@@ -182,7 +189,17 @@
             const actionName = activeMode === 'translate' ? 'Translation' : 'Summary';
             submissionStatus = `${actionName} job queued successfully (ID: ${jobId}). Check Batch Queue for progress.`;
         } catch (e: any) {
-            errorMessage = e?.message || String(e) || 'Failed to submit summarization job.';
+            console.error('Failed to submit summarization job:', e);
+            const msg = e?.message || String(e) || '';
+            if (msg.startsWith('Local AI model path')) {
+                errorMessage = msg; // a plain configuration message, already in words
+            } else {
+                const f = friendlyJobError(msg, {
+                    what: "Couldn't start the job.",
+                    next: 'Check the file paths and settings, then try again.',
+                });
+                genFailure = { what: f.what, next: f.next, retry: () => void handleGenerateSummary() };
+            }
         } finally {
             isSubmitting = false;
         }
@@ -504,6 +521,10 @@
                 </div>
             </div>
         </div>
+
+        {#if genFailure}
+            <ErrorState what={genFailure.what} next={genFailure.next} retry={genFailure.retry} data-testid="gen-failure" />
+        {/if}
 
         {#if errorMessage}
             <div class="status-box error" role="alert" aria-live="assertive" data-testid="error-message">

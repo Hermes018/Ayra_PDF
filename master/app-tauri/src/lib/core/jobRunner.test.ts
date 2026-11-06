@@ -54,4 +54,27 @@ describe('JobRunner', () => {
     await r.run('Two', 'x', 'y', REQ);
     expect(runJob).toHaveBeenCalledTimes(1);
   });
+
+  it('an OUTPUT_PATH_UNSAFE refusal shows the plain-words error; Retry rebuilds the request (a new name)', async () => {
+    runJob.mockRejectedValueOnce(new Error('OUTPUT_PATH_UNSAFE: a file already exists at the output path (/a_repaired.pdf). Nothing was written.'));
+    const r = new JobRunner();
+    let n = 0;
+    const build = async () => ({ op: 'Repair', input_path: '/a.pdf', output_path: `/a_repaired-${++n}.pdf` }) as never;
+    await r.run('Repairing', "Couldn't repair the file.", 'Try again.', build);
+    expect(r.error?.what).toBe('A file named a_repaired.pdf already exists.');
+    runJob.mockResolvedValueOnce('id');
+    r.error!.retry();
+    await vi.waitFor(() => expect(runJob).toHaveBeenCalledTimes(2));
+    const outs = runJob.mock.calls.map((c) => (c[0] as { output_path: string }).output_path);
+    expect(outs).toEqual(['/a_repaired-1.pdf', '/a_repaired-2.pdf']);
+  });
+
+  it('a throwing request builder is an error, not an unhandled rejection, and busyLabel resets', async () => {
+    const r = new JobRunner();
+    await r.run('Repairing', "Couldn't repair the file.", 'Try again.', async () => {
+      throw new Error('no free name');
+    });
+    expect(r.busyLabel).toBeNull();
+    expect(r.error?.what).toBe("Couldn't repair the file.");
+  });
 });

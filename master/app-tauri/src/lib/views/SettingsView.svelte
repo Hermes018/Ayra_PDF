@@ -201,7 +201,7 @@
 >
     <p>A file with that name already exists. Replacing it cannot be undone.</p>
     {#snippet actions()}
-        <Button variant="secondary" onclick={() => (confirmReplaceDiag = false)}>Cancel</Button>
+        <Button variant="secondary" attrs={{ 'data-autofocus': '' }} onclick={() => (confirmReplaceDiag = false)}>Cancel</Button>
         <Button variant="destructive" onclick={() => handleExportDiagnostics(true)}>Replace file</Button>
     {/snippet}
 </Dialog>

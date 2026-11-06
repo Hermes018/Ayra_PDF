@@ -2,7 +2,8 @@
     import GridEditor from '$lib/components/GridEditor.svelte';
     import For from '$lib/components/For.svelte';
     import { appState } from '$lib/state.svelte';
-    import { IpcClient, pickFilesDialog } from '$lib/ipc';
+    import { pickFilesDialog } from '$lib/ipc';
+    import { JobRunner } from '$lib/core/jobRunner.svelte';
     import { freeOutputPath } from '$lib/views/studio/outputNames';
     import type { JobRequest } from '$lib/bindings/JobRequest';
     import Button from '$lib/components/ui/Button.svelte';
@@ -32,9 +33,6 @@
     let extractError = $state<string | undefined>(undefined);
     let deleteError = $state<string | undefined>(undefined);
     let rotateError = $state<string | undefined>(undefined);
-    let busyLabel = $state<string | null>(null);
-    let opAbort: AbortController | null = null;
-    let opError = $state<{ what: string; next: string; retry: () => void } | null>(null);
     let browseError = $state(false);
 
     function parsePages(input: string): number[] {
@@ -60,28 +58,13 @@
 
     const PAGES_HINT = 'Enter page numbers like 1, 3, 5-7.';
 
-    /** Runs one job and waits for it (existing IPC job signals); Cancel aborts it through cancel_job. */
-    async function runOp(label: string, what: string, req: JobRequest): Promise<void> {
-        if (busyLabel) return;
-        opError = null;
-        busyLabel = label;
-        opAbort = new AbortController();
-        const signal = opAbort.signal;
-        try {
-            await IpcClient.runJob(req, { signal });
-        } catch (e) {
-            if (!signal.aborted) {
-                console.error(`${what} failed:`, e);
-                opError = {
-                    what,
-                    next: 'Check the page numbers and that the file is still there, then try again. The original file is unchanged.',
-                    retry: () => void runOp(label, what, req),
-                };
-            }
-        } finally {
-            busyLabel = null;
-            opAbort = null;
-        }
+    const NEXT = 'Check the page numbers and that the file is still there, then try again. The original file is unchanged.';
+    const jobs = new JobRunner();
+    // Shorthand for the screen's markup below (Progress, Cancel, ErrorState with Retry come from the shared runner).
+    let busyLabel = $derived(jobs.busyLabel);
+    let opError = $derived(jobs.error);
+    function runOp(label: string, what: string, build: () => Promise<JobRequest>): Promise<void> {
+        return jobs.run(label, what, NEXT, build);
     }
 
     async function handleExtract() {
@@ -89,12 +72,12 @@
         const pages = parsePages(extractPagesInput);
         extractError = pages.length === 0 ? PAGES_HINT : undefined;
         if (pages.length === 0) return;
-        await runOp('Extracting pages', "Couldn't extract the pages.", {
+        await runOp('Extracting pages', "Couldn't extract the pages.", async () => ({
             op: 'ExtractPages',
-            input_path: currentPath,
-            output_path: await freeOutputPath(currentPath, 'extracted'),
+            input_path: currentPath!,
+            output_path: await freeOutputPath(currentPath!, 'extracted'),
             pages,
-        });
+        }));
     }
 
     async function handleDelete() {
@@ -102,12 +85,12 @@
         const pages = parsePages(deletePagesInput);
         deleteError = pages.length === 0 ? PAGES_HINT : undefined;
         if (pages.length === 0) return;
-        await runOp('Deleting pages', "Couldn't delete the pages.", {
+        await runOp('Deleting pages', "Couldn't delete the pages.", async () => ({
             op: 'DeletePages',
-            input_path: currentPath,
-            output_path: await freeOutputPath(currentPath, 'deleted'),
+            input_path: currentPath!,
+            output_path: await freeOutputPath(currentPath!, 'deleted'),
             pages,
-        });
+        }));
     }
 
     async function handleRotate() {
@@ -115,32 +98,32 @@
         const pages = parsePages(rotatePagesInput);
         rotateError = pages.length === 0 ? PAGES_HINT : undefined;
         if (pages.length === 0) return;
-        await runOp('Rotating pages', "Couldn't rotate the pages.", {
+        await runOp('Rotating pages', "Couldn't rotate the pages.", async () => ({
             op: 'RotatePages',
-            input_path: currentPath,
-            output_path: await freeOutputPath(currentPath, 'rotated'),
+            input_path: currentPath!,
+            output_path: await freeOutputPath(currentPath!, 'rotated'),
             pages,
             degrees: Number(rotateDegrees),
-        });
+        }));
     }
 
     async function handleRotateDoc() {
         if (!currentPath) return;
-        await runOp('Rotating the document', "Couldn't rotate the document.", {
+        await runOp('Rotating the document', "Couldn't rotate the document.", async () => ({
             op: 'RotateDocument',
-            input_path: currentPath,
-            output_path: await freeOutputPath(currentPath, `rotdoc-${rotateDocDegrees}`),
+            input_path: currentPath!,
+            output_path: await freeOutputPath(currentPath!, `rotdoc-${rotateDocDegrees}`),
             degrees: Number(rotateDocDegrees),
-        });
+        }));
     }
 
     async function handleMerge() {
         if (activeFiles.length < 2) return;
-        await runOp('Merging files', "Couldn't merge the files.", {
+        await runOp('Merging files', "Couldn't merge the files.", async () => ({
             op: 'Merge',
             input_paths: activeFiles,
-            output_path: await freeOutputPath(activeFiles[0], 'merged'),
-        });
+            output_path: await freeOutputPath(activeFiles[0]!, 'merged'),
+        }));
     }
 
     async function handleBrowseFiles() {
@@ -181,7 +164,7 @@
     {#if busyLabel}
         <Progress value={null} label={busyLabel} data-testid="organize-op-progress" />
         <div class="progress-cancel">
-            <Button variant="secondary" size="sm" onclick={() => opAbort?.abort()} data-testid="organize-op-cancel">Cancel</Button>
+            <Button variant="secondary" size="sm" onclick={() => jobs.cancel()} data-testid="organize-op-cancel">Cancel</Button>
         </div>
     {/if}
 
