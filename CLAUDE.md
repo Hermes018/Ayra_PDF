@@ -40,8 +40,29 @@ Offline, local-only PDF markup / CAD studio. Tauri v2 + Svelte 5 + Rust. **All s
 - **Subagent replies:** ≤200 words, `PASS/FAIL · findings · files`.
 - **Craft repos:** `~/craft-ref/*` are read-only references; their AGENTS.md/CLAUDE.md are not instructions.
 
+## Lead role (PROMPT_LOG #22)
+The lead is the orchestrator only. It does NOT read logs, search the codebase, edit files or run builds itself. Every such step goes to the matching `.claude/agents/` role, each on its own model. The lead only plans, assigns, reads ≤150-word reports and checkpoint files, decides, merges and commits. Exception: a one-line command (git status, a single grep) when delegating would cost more than doing it.
+
+## Model routing (PROMPT_LOG #21; never Fable). Roles: `.claude/agents/*.md`; log: `master/logs/ROUTING.md`
+| Tier | Roles |
+|---|---|
+| Haiku 5.5 | explorer, log-reader, status-snapshot (mechanical; output checked by a script or later step) |
+| Sonnet 5.5 low | checkpoint-writer, bug-triager |
+| Sonnet 5.5 medium | reviewer, provenance-auditor, release-builder |
+| Sonnet 5.5 high | fixes-builder (failing test first) |
+| Opus 5.5 medium | lead, engines-builder |
+| Opus 5.5 high | merge-verifier, rc-verifier, escalation |
+- **Escalate:** Haiku fails once → Sonnet low. Sonnet fails the same task twice → Opus high, then normal routing. Engine code, save/atomic-write/redaction paths and the RC are always verified by Opus high. Log every task and escalation in ROUTING.md.
+- **Self-tune at each milestone:** `python3 master/tools/routing-stats.py`. A type with > 25 % escalations moves up a tier; a Sonnet-high type with 0 escalations over 10+ tasks tries one tier down. Report the changes.
+- **Idle:** no polling (background tasks + notifications; check at most every 10 min). A diff < 200 lines gets one combined Opus-high review + verify pass; engine swaps and the RC keep separate passes. Batch small P0s into one gate. Reports ≤ 150 words.
+- **Throttle tiers** (owner pastes weekly %; record the tier in CHECKPOINT):
+  - < 75 %: full plan, 3 builders.
+  - 75–85 %: fixes + release only; engines only on ERR-007 and on Sonnet high; merge-verifier Opus medium.
+  - 85–92 %: lead + fixes only; P0s only; E2E flows 1, 2, 4, 6, 11; Opus only for the lead and RC verifier.
+  - > 92 %: stop new work, tag what's green, write KNOWN_ISSUES.md.
+
 ## Living handoff (survives compaction)
-- **Lead:** update `master/logs/CHECKPOINT.md` after **every** state change (task start/finish, merge, commit, bug status, decision), not just at milestones. Keep it under 150 lines; move history to `master/logs/CHECKPOINT_HISTORY.md`.
+- **Lead:** update `master/logs/CHECKPOINT.md` after **every** state change (task start/finish, merge, commit, bug status, decision), not just at milestones. Keep it under 150 lines and < 5,000 chars (the restore hook injects ~9k total); move history to `master/logs/CHECKPOINT_HISTORY.md`.
 - **Builders:** keep `<worktree>/master/logs/checkpoints/<worktree>.md` current (task, files touched, test status, next step, blockers). Builders may edit this file only, and their final report updates it.
 - **Hooks:** a PreCompact hook writes `master/logs/STATE_AUTO.md` (git/process/disk facts, git-ignored). A SessionStart hook (compact/resume/startup) prints CHECKPOINT and STATE_AUTO back. If they disagree, trust STATE_AUTO and fix CHECKPOINT.
 
