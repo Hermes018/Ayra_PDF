@@ -356,12 +356,34 @@ class Blocked(Exception):
     pass
 
 
+def prepare_run_screens(out_dir, run_id):
+    """BUG-048: create out/runs/<run_id>/screens and point the 'latest' view out/screens at it.
+    Nothing is ever deleted: a pre-existing real out/screens folder is moved to runs/legacy-screens."""
+    target = os.path.join(out_dir, "runs", run_id, "screens")
+    os.makedirs(target, exist_ok=True)
+    link = os.path.join(out_dir, "screens")
+    if os.path.isdir(link) and not os.path.islink(link):
+        legacy = os.path.join(out_dir, "runs", "legacy-screens")
+        n = 0
+        while os.path.exists(legacy):
+            n += 1
+            legacy = os.path.join(out_dir, "runs", f"legacy-screens-{n}")
+        os.makedirs(os.path.dirname(legacy), exist_ok=True)
+        os.rename(link, legacy)
+    tmp = link + f".tmp{os.getpid()}"
+    if os.path.lexists(tmp):
+        os.remove(tmp)
+    os.symlink(os.path.relpath(target, out_dir), tmp)
+    os.replace(tmp, link)  # atomic repoint; never touches the files inside
+    return target
+
+
 class Context:
-    def __init__(self, binary, out_dir, soak_minutes):
+    def __init__(self, binary, out_dir, soak_minutes, screens=None):
         self.binary = binary
         self.out = out_dir
         self.soak_minutes = soak_minutes
-        self.screens = os.path.join(out_dir, "screens")
+        self.screens = screens or os.path.join(out_dir, "screens")
         self.work = os.path.join(out_dir, "work")
         os.makedirs(self.screens, exist_ok=True)
         os.makedirs(self.work, exist_ok=True)

@@ -3,7 +3,7 @@ NOT one of the 12 golden-path flows: run with `--flows 21`. Canvas and geometry 
 
 For light and dark at 1200x800 and 1600x1000: screenshot of the Studio with its top command bar; checks that the
 top bar controls are ui/ components, Zoom in/out and the zoom preset work, and there are no console errors.
-Screenshots: <out>/screens/sweep_canvas-chrome_<theme>_<WxH>.png
+Screenshots: <out>/runs/<run-id>/screens/sweep_canvas-chrome_<theme>_<WxH>.png
 """
 import os
 import time

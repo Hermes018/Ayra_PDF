@@ -3,7 +3,7 @@
 Opens a PDF, goes to Organize, and for light and dark at 1200x800 and 1600x1000 takes a screenshot and
 checks the page grid, the Tools column controls and that there are no console errors. Light/dark is
 switched with the app's own persisted preference (localStorage) and a reload.
-Screenshots: <out>/screens/sweep_organize_<theme>_<WxH>.png
+Screenshots: <out>/runs/<run-id>/screens/sweep_organize_<theme>_<WxH>.png
 """
 import os
 import time

@@ -4,7 +4,7 @@ clean). NOT one of the 12 golden-path flows: run with `--flows 19`.
 For light and dark at 1200x800 and 1600x1000: the ink category drawer is opened and screenshotted; checks that
 the toolbar controls are ui/ components and the drawer lists tools as ui/ Buttons; selecting a tool from the drawer
 works. Also: in the shortcuts dialog, Record then Escape cancels the capture and leaves the dialog open.
-Screenshots: <out>/screens/sweep_toolbar_<theme>_<WxH>.png
+Screenshots: <out>/runs/<run-id>/screens/sweep_toolbar_<theme>_<WxH>.png
 """
 import os
 import time

@@ -7,7 +7,7 @@ Drives the real app through tauri-driver + WebKitWebDriver (W3C WebDriver). The 
 the frontend (built with the `custom-protocol` feature), e.g.
     master/tools/build-lock.sh pnpm --dir app-tauri tauri build --debug --no-bundle
 then copy target/debug/localpdf-studio to master/e2e/out/bin/ (the default --binary) so other
-builds cannot replace it mid-run. Writes master/e2e/out/report.json and out/screens/*.png.
+builds cannot replace it mid-run. Writes master/e2e/out/report.json and out/runs/<run-id>/screens/*.png (out/screens = latest symlink).
 Python standard library only; ground truth from poppler-utils and qpdf.
 """
 import argparse
@@ -108,14 +108,13 @@ def main():
 
     for sg in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
         signal.signal(sg, _on_signal)
-    for old in glob.glob(os.path.join(a.out, "screens", "*.png")):
-        os.remove(old)
-    ctx = common.Context(binary, a.out, a.soak_minutes)
     started = datetime.datetime.now().astimezone()
     mode = "offline" if a.offline else "online"
     run_id = started.strftime("%Y%m%dT%H%M%S") + f"-{mode}-" + ("all" if not a.flows else "f" + "_".join(map(str, wanted)))
     run_dir = os.path.join(a.out, "runs", run_id)
     os.makedirs(run_dir, exist_ok=True)
+    screens_dir = common.prepare_run_screens(a.out, run_id)  # BUG-048: per-run; out/screens = latest symlink
+    ctx = common.Context(binary, a.out, a.soak_minutes, screens=screens_dir)
 
     def write(rep_):
         # Each run keeps its own report under out/runs/<run_id>/; <out>/report.json is the latest
@@ -170,6 +169,7 @@ def main():
     write(report)
     print(f"\nRUN {run_id}  binary={binary}  mode={mode}")
     print("SUMMARY", json.dumps(counts), "->", report["report_path"])
+    print("SCREENS", screens_dir, f"(latest view: {os.path.join(a.out, 'screens')})")
     for r in report["flows"]:
         print(f"  {r['flow']:>2} {r['status']:<8} {r['title']}")
     ran = {r["flow"] for r in report["flows"]}

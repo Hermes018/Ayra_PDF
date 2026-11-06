@@ -3,7 +3,7 @@ golden-path flows: run with `--flows 18`. (PropertyPill is deferred, see docs/UI
 
 For light and dark at 1200x800 and 1600x1000: the calibration dialog (two-point drag with the calibrate tool)
 and the shortcuts dialog are opened, checked (ui/ controls, focus inside, Escape closes) and screenshotted.
-Screenshots: <out>/screens/sweep_calibration_<theme>_<WxH>.png and sweep_shortcuts_<theme>_<WxH>.png
+Screenshots: <out>/runs/<run-id>/screens/sweep_calibration_<theme>_<WxH>.png and sweep_shortcuts_<theme>_<WxH>.png
 """
 import os
 import time

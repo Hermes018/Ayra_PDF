@@ -20,3 +20,4 @@
 - **Next:** verify.sh result → report. Then: full E2E after P0 merges (lead); rc1 packages with full LTO.
 - **Blockers:** real dnf/apt install needs sudo; no native-dialog seam; no "close document" UI.
 - **BUG-046 (P1) DONE:** new e2e/ink_match.py (drawn-signature matcher), test_flow07_matcher.py (9 PASS), flow07 wired; flow 7 PASS (run e2e-f7). verify.sh run.
+- **BUG-048 (P2) DONE:** common.prepare_run_screens + Context(screens=); run.py no longer globs/removes out/screens/*.png (that was the wipe), prints SCREENS path; out/screens = symlink to newest run; test e2e/test_screens_layout.py (red then 7 PASS). Not E2E-run.

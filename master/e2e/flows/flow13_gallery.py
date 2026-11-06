@@ -4,7 +4,7 @@ Needs a binary built with VITE_LPDF_GALLERY=1 (the gallery is compiled out of re
 /gallery in one app instance, then for light and dark at 1200x800 and 1600x1000: screenshot, a real
 keyboard check (Tab order, Enter and Space on a Button), the disabled-reason tooltip on hover, and the
 Dialog (opens, focus inside, Escape closes it through commandEngine). Fails on any console error.
-Screenshots: <out>/screens/gallery_<theme>_<WxH>_<state>.png
+Screenshots: <out>/runs/<run-id>/screens/gallery_<theme>_<WxH>_<state>.png
 """
 import os
 import time

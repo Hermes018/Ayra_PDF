@@ -512,6 +512,7 @@ master/
 │   ├── run.py                                                # Runner: python3 master/e2e/run.py [--flows] [--binary] [--soak-minutes]
 │   ├── test_flow07_matcher.py                                # Self-test for ink_match.py: 9 synthetic cases (empty, duplicate, off-page, too few points fail; real strokes pass)
 │   ├── test_leak_check.py                                    # Tests (BUG-031): post-run leak check catches leaked harness/dbus processes; nothing left after bus stop or SIGTERM
+│   ├── test_screens_layout.py                                # Self-test (BUG-048): per-run screenshot folders survive later runs; out/screens points at the newest run
 │   └── wd.py                                                 # Minimal W3C WebDriver client (urllib)
 ├── fuzz/                                                     # cargo-fuzz workspace (libFuzzer targets)
 │   ├── fuzz_targets/                                         # Fuzz entry points
