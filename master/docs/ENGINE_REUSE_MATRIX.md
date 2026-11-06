@@ -60,6 +60,8 @@ Risk column: **L**ow / **M**edium / **H**igh, then the concrete risk.
 | T38 | `toolEngine.svelte.ts:196` `evalPressure` (cubic-Bézier response by bisection) | photocraft@834e253 `crates/paint/src/curve.rs:19` `ResponseCurve` (monotone) | **ADOPT-WASM** (pending S1) | Per-sample path, same wasm module as T15's port consumer; S1 decides. Note: dead today, since `widthAt` has no caller and `generateSvgPathFromPoints` maps pressure linearly, so the preset curve is never applied. | M: wiring it in changes every stroke width. |
 | T39 | `toolEngine.svelte.ts:396` `widthAt` (pressure × tilt shading) | photocraft@834e253 `crates/paint/src/curve.rs:19` + `dynamics.rs` | **ADOPT-WASM** (pending S1) | Same as T38; no caller today. | L |
 | T40 | `radialGeometry.ts:15` `getSector`, `:29` `radialHit`, `:81` `clampCenter`, `:86` `sectorAngles`, `:96` `describeArc` | none (craft apps use egui menus) | **REJECT** | Radial-menu UI geometry; no craft counterpart. | L |
+| T41 | `insertEngine.svelte.ts:362` `parsePageRangeSpec` (All/Even/Odd/"1-5, 8"; silently drops out-of-range or malformed tokens) | pdfcraft@75360d1 `crates/print/src/range.rs:50` `select_pages(count, range, labels, subset, reverse)` (re-exported as `pdfcraft_engine::print`, `engine/src/lib.rs:113`): page labels, open ranges `9-`, typed `OutOfRange`/`NotAPage` errors | **ADOPT** | Runs once per "apply to pages" action, so one IPC call is allowed; gives label support and tells the user about bad tokens instead of silently skipping them (DON'T-7 spirit). | M: invalid specs now return an error the UI must show. |
+| T42 | `insertEngine.svelte.ts:412` `buildOfflineWavBytes` (synthesises a 440 Hz tone WAV) | none (pdfcraft only embeds the bytes it is given: `Edit::AddAttachment` + Sound annot, `studio.rs:1077`) | **REJECT** | No craft audio encoder to reuse. **Finding:** it is used as the fallback when recording yields no bytes (`insertEngine.svelte.ts:805-807`), so a failed capture is saved as a fabricated tone — a DON'T-5 risk for the fixes owner (report the failure instead). | H (DON'T-5) |
 
 ## 2. Rust (`app-tauri/src-tauri/src/commands/studio.rs`)
 
@@ -104,14 +106,14 @@ The `lpdf-tools-*` crates (organize, security, edit, convert, optimize, markdown
 | `lint/ast-grep/rules/string-error.yml` ("String as an error type" → thiserror enum) | cadcraft | **Yes in spirit** (DO-7). | `studio.rs` returns `Result<_, String>` everywhere; new adapter crates use typed errors with stable codes (`GeomError::code`). Migrating `studio.rs` is post-prototype. |
 | Workspace `edition = "2024"`, `rust-version = "1.95"` | cadcraft | n/a | Only matters because cadcraft crates need >= 1.95; our toolchain is stable 1.99 but `Cargo.toml` still declares `rust-version = "1.74"` (inaccurate once cadcraft is linked). |
 
-## 5. Summary (59 rows)
+## 5. Summary (61 rows)
 
 | Decision | Count | Rows |
 |---|---|---|
-| ADOPT | 23 | T6, T8, T13, T14, T16, T27, T29, T31; R1, R2, R3, R4, R5, R7, R8, R9; P1-P7 (P1-P6 already pdfcraft) |
+| ADOPT | 24 | T6, T8, T13, T14, T16, T27, T29, T31, T41; R1, R2, R3, R4, R5, R7, R8, R9; P1-P7 (P1-P6 already pdfcraft) |
 | ADOPT-WASM (provisional, S1) | 7 | T1, T2, T3, T7, T23, T38, T39 |
 | KEEP-PORT | 4 | T11, T15, T19, T24 |
-| REJECT | 25 | T4, T5, T9, T10, T12, T17, T18, T20, T21, T22, T25, T26, T28, T30, T32, T33, T34, T35, T36, T37, T40; R6; P8, P9, P10 |
+| REJECT | 26 | T4, T5, T9, T10, T12, T17, T18, T20, T21, T22, T25, T26, T28, T30, T32, T33, T34, T35, T36, T37, T40, T42; R6; P8, P9, P10 |
 
 **Top 5 ADOPT targets (by user-visible impact × prototype flow):**
 1. **R1 + R2** cadcraft hatch (`cadcraft-doc` + patched `cadcraft-render`) — ERR-007, flow 5, must ship.

@@ -243,7 +243,14 @@ unknown-git = "warn"
 # if not specified. If it is specified but empty, no registries are allowed.
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 # List of URLs for allowed Git repositories
-allow-git = []
+allow-git = [
+    # ADR-018 R3: pinned storytold sources (exact revs in Cargo.toml; cadcraft is vendored in
+    # vendor/craft/cadcraft and patched in vendor/patches/cadcraft-render).
+    "https://github.com/storytold/cadcraft?rev=df6597445803c3db1274412f403e2aba9d76626a",
+    "https://github.com/storytold/pdfcraft?rev=75360d1d7db06fed974f48c914d4c04132757187",
+    "https://github.com/storytold/craft-libs?rev=e11f9d9aebea5f6b8e74643c1ea1ed172ba5f545",   # via pdfcraft
+    "https://github.com/storytold/winprint.rs?rev=417ac3c4d14d3da5485a99c7d5ce8f05664ec312",  # craft-winprint-gdi, via craft-print
+]
 
 [sources.allow-org]
 # github.com organizations to allow git sources for

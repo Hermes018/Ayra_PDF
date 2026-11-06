@@ -275,13 +275,15 @@ master/
 │   ├── lpdf-engine-switcher/                                 # Tries pdfcraft then fallback; also hosts fuzz/hostile/perf/soak/SBOM harnesses
 │   │   ├── src/                                              # Crate source
 │   │   │   ├── fuzz.rs                                       # Deterministic fuzzing of engine inputs
+│   │   │   ├── guard.rs                                      # F4 resource guard: refuses hostile files (e.g. declared stream length larger than the file) before any engine parses them
 │   │   │   ├── hostile.rs                                    # Hostile-PDF generators (bombs, broken xref, deep trees)
 │   │   │   ├── lib.rs                                        # EngineSwitcher (primary → fallback, degraded mode)
 │   │   │   ├── perf.rs                                       # Per-tier performance/memory budget checks
 │   │   │   ├── sbom.rs                                       # CycloneDX SBOM + supply-chain checks (licences, forbid(unsafe) allow-list)
 │   │   │   └── soak.rs                                       # Soak / leak testing
 │   │   ├── tests/                                            # Integration tests
-│   │   │   └── fuzz_smoke_tests.rs                           # Tests: fuzz/hostile/perf/sbom/a11y/soak smoke runs
+│   │   │   ├── fuzz_smoke_tests.rs                           # Tests: fuzz/hostile/perf/sbom/a11y/soak smoke runs
+│   │   │   └── guard_tests.rs                                # Tests: F4 guard trips on hostile corpus files and passes normal ones
 │   │   └── Cargo.toml                                        # Crate manifest
 │   ├── lpdf-fs-safety/                                       # Atomic writes, filename sanitizing, child-process sandbox (Linux unshare, Windows Job Object)
 │   │   ├── src/                                              # Crate source
@@ -296,6 +298,7 @@ master/
 │   │   │   └── lib.rs                                        # Adapter API: hatch_segments, HatchEngine switch, GeomError codes
 │   │   ├── tests/                                            # Integration tests
 │   │   │   ├── goldens/                                      # Hatch goldens
+│   │   │   │   ├── hatch_cadcraft.golden.json                # Golden: cadcraft hatch segments per pattern (rect + concave L), all inside the loop
 │   │   │   │   └── hatch_legacy.golden.json                  # Golden: legacy hatch segments per pattern (rect + concave L)
 │   │   │   ├── cadcraft_parity.rs                            # Tests: cadcraft hatch inside concave polygons, all patterns distinct, parity notes vs legacy
 │   │   │   └── hatch_golden.rs                               # Tests: hatch output vs goldens (ERR-007 cases marked known-wrong)
@@ -311,6 +314,7 @@ master/
 │   │   │   ├── pipeline.rs                                   # Workflow steps and built-in presets
 │   │   │   └── queue.rs                                      # JobManager and every job kind (runs in-process today; sandboxed worker not wired yet)
 │   │   ├── tests/                                            # Integration tests
+│   │   │   ├── bug018_tests.rs                               # Tests (BUG-018): GetInfo on hostile files ends Failed with F4 code; fallback opens report degraded
 │   │   │   └── queue_tests.rs                                # Tests: queue behaviour
 │   │   └── Cargo.toml                                        # Crate manifest
 │   ├── lpdf-tools-convert/                                   # Thin convert wrappers over PdfEngine (currently unused by other crates)
@@ -452,6 +456,9 @@ master/
 │   │   ├── cadcraft-render/                                  # cadcraft-render with a one-line re-export of pattern_lines + de-workspaced Cargo.toml (ADR-018)
 │   │   │   ├── src/                                          # Upstream src/ except lib.rs re-export line (not listed individually)
 │   │   │   ├── Cargo.toml                                    # Manifest with inherited workspace fields made explicit; siblings pinned to the vendored rev
+│   │   │   ├── LICENSE-APACHE                                # Upstream cadcraft-render Apache-2.0 licence (kept with the patched copy)
+│   │   │   ├── LICENSE-MIT                                   # Upstream cadcraft-render MIT licence (kept with the patched copy)
+│   │   │   ├── NOTICE                                        # Upstream NOTICE file, reproduced in THIRD_PARTY_NOTICES.md (Apache-2.0 §4(d))
 │   │   │   └── PATCH_NOTES.md                                # Exact diff vs upstream and how to re-sync
 │   │   └── winprint/                                         # winprint (Windows printing, via pdfcraft → craft-print) without its network build-dependencies (ADR-017)
 │   │       ├── src/                                          # Byte-identical copy of upstream winprint.rs @ 5f80b9b src/ (44 files, not listed individually)
@@ -462,7 +469,8 @@ master/
 │   └── pdfcraft                                              # pdfcraft PDF engine (git submodule, pinned 75360d1 / v0.15.0) — run `git submodule update --init --recursive`
 ├── xtask/                                                    # `cargo xtask` project tooling
 │   ├── src/                                                  # Tool source
-│   │   └── main.rs                                           # gate, protocol-lint, feature-map-check, studio-audit, fuzz/perf/sbom/soak runners
+│   │   ├── main.rs                                           # gate, protocol-lint, feature-map-check, studio-audit, fuzz/perf/sbom/soak runners
+│   │   └── notices.rs                                        # xtask notices: generates THIRD_PARTY_NOTICES.md from cargo metadata (Linux graph) + npm licences
 │   └── Cargo.toml                                            # Crate manifest
 ├── .allowed-deletions                                        # Paths the pre-commit hook allows to be deleted (all other deletions are blocked)
 ├── Cargo.lock                                                # Pinned versions of every Rust dependency (committed for reproducible builds)
@@ -470,5 +478,6 @@ master/
 ├── deny.toml                                                 # cargo-deny policy: licence allow-list (no GPL/AGPL), banned crates, advisories
 ├── master.md                                                 # Map of master/ with build/dev commands
 ├── MASTER_PROMPT.md                                          # Original project boot prompt given to the first coding agent
-└── rust-toolchain.toml                                       # Rust toolchain channel (stable) + rustfmt/clippy components
+├── rust-toolchain.toml                                       # Rust toolchain channel (stable) + rustfmt/clippy components
+└── THIRD_PARTY_NOTICES.md                                    # Licences and notices of every shipped dependency (generated by `cargo xtask notices`; bundled as a Tauri resource)
 ```

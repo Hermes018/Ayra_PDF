@@ -25,6 +25,9 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "resources": {
+      "../../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md"
+    },
     "category": "Utility",
     "shortDescription": "Offline, private, enterprise-grade PDF studio and toolchain",
     "longDescription": "LocalPDF Studio is a high-performance offline PDF manipulation suite featuring native organize, edit, annotate, compress, protect, redact, OCR, and document conversion tools.",

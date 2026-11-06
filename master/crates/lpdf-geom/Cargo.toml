@@ -6,9 +6,9 @@ edition.workspace = true
 license.workspace = true
 
 [features]
-# The cadcraft-backed hatch engine (ADR-018 R2 step 3). On by default; `--no-default-features`
-# builds the legacy engine only.
-default = ["cadcraft"]
+# The cadcraft-backed hatch engine (ADR-018 R2 step 3). OFF by default until the R2 step 5 default
+# switch, so nothing unused ships; tests turn it on through the self dev-dependency below.
+default = []
 cadcraft = ["dep:cadcraft-doc", "dep:cadcraft-geom", "dep:cadcraft-render"]
 
 [dependencies]
@@ -21,3 +21,6 @@ cadcraft-render = { git = "https://github.com/storytold/cadcraft", rev = "df6597
 
 [dev-dependencies]
 serde_json = "1"
+# Test builds only: compile and test the cadcraft engine (tests/cadcraft_parity.rs) without
+# shipping it. Release/app builds don't enable dev-dependencies.
+lpdf-geom = { path = ".", features = ["cadcraft"] }

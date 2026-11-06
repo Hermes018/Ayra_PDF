@@ -18,10 +18,10 @@
 //!   (`generate_hatch_strokes`, commit `562e4f9`), moved here unchanged. It hatches the
 //!   **bounding box** of the loops, not the loops themselves (known defect ERR-007), and draws
 //!   several patterns identically. Its output is pinned by `tests/hatch_golden.rs`.
-//! - A cadcraft-backed implementation (`cadcraft-doc` patterns + `cadcraft-render`
-//!   `pattern_lines`) is added behind this same switch in ADR-018 checkpoint 2. Until it exists
-//!   the enum has only the legacy variant, so no caller can select an implementation that is not
-//!   there.
+//! - [`HatchEngine::Cadcraft`] (Cargo feature `cadcraft`, off by default until the R2 step 5
+//!   switch): cadcraft@df65974 patterns (`cadcraft-doc`) swept across the real loops by the
+//!   patched `cadcraft-render::pattern_lines`; fixes ERR-007. Parity: `tests/cadcraft_parity.rs`.
+//!   The variant only exists when the feature is on, so no build can select an engine it lacks.
 
 #[cfg(feature = "cadcraft")]
 mod cadcraft;
@@ -186,6 +186,14 @@ pub fn hatch_segments(
     scale: f64,
 ) -> Result<Vec<Segment>, GeomError> {
     hatch_segments_with(HatchEngine::default(), pattern, loops, scale)
+}
+
+/// Square on-screen preview of `pattern` (`side` x `side` pt at the origin), from the cadcraft
+/// engine's pattern data. Errors with [`GeomError::NoFiniteGeometry`] for a non-positive or
+/// non-finite side (or one above 10,000 pt).
+#[cfg(feature = "cadcraft")]
+pub fn hatch_swatch(pattern: HatchPatternId, side: f64) -> Result<Vec<Segment>, GeomError> {
+    cadcraft::hatch_swatch(pattern, side)
 }
 
 /// [`hatch_segments`] with an explicit implementation.

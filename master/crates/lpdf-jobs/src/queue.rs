@@ -4,7 +4,7 @@
 //! runtime is never starved. Each job gets a `CancellationToken` for
 //! cooperative cancellation.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -676,6 +676,34 @@ pub struct JobManager {
     jobs: Arc<Mutex<HashMap<JobId, JobEntry>>>,
     semaphore: Arc<Semaphore>,
     event_tx: JobEventSender,
+    /// Canonical paths of every output a job of THIS process wrote successfully. Never cleared by
+    /// `clear_finished_jobs`, so cleanup of app-created intermediates stays possible (BUG-018 c).
+    created_outputs: Arc<Mutex<HashSet<PathBuf>>>,
+}
+
+/// File-name marker of the intermediates Organize writes when it both reorders and rotates.
+pub const INTERMEDIATE_MARKER: &str = ".organizing-";
+
+/// True for `<stem>.organizing-<token>.pdf`: non-empty stem, token of ASCII letters, digits, `-`
+/// or `_`, lowercase or uppercase `.pdf` extension. Only the file name is inspected.
+pub fn is_organizing_intermediate(path: &Path) -> bool {
+    let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+        return false;
+    };
+    let lower = name.to_ascii_lowercase();
+    let Some(base) = lower.strip_suffix(".pdf") else {
+        return false;
+    };
+    let Some(idx) = base.rfind(INTERMEDIATE_MARKER) else {
+        return false;
+    };
+    let stem = &base[..idx];
+    let token = &base[idx + INTERMEDIATE_MARKER.len()..];
+    !stem.is_empty()
+        && !token.is_empty()
+        && token
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
 }
 
 impl JobManager {
@@ -688,6 +716,79 @@ impl JobManager {
             jobs: Arc::new(Mutex::new(HashMap::new())),
             semaphore: Arc::new(Semaphore::new(max_concurrent)),
             event_tx,
+            created_outputs: Arc::new(Mutex::new(HashSet::new())),
+        }
+    }
+
+    /// True when `path` is an output a job of this process wrote successfully.
+    pub fn created_this_session(&self, path: &Path) -> bool {
+        let Ok(canon) = std::fs::canonicalize(path) else {
+            return false;
+        };
+        let set = self
+            .created_outputs
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        set.contains(&canon)
+    }
+
+    /// Delete an Organize intermediate (`<stem>.organizing-<token>.pdf`) that a job of THIS
+    /// process created. Refuses (typed `InvalidInput`, file untouched) anything else: relative
+    /// paths, other names, symlinks or non-files, and every file this session did not write, so an
+    /// original is never deleted. BUG-018 (c).
+    pub fn delete_session_intermediate(&self, path: &Path) -> lpdf_core_types::Result<()> {
+        if !path.is_absolute() {
+            return Err(LpdfError::InvalidInput(
+                "intermediate path must be absolute".into(),
+            ));
+        }
+        if !is_organizing_intermediate(path) {
+            return Err(LpdfError::InvalidInput(format!(
+                "not an Organize intermediate (*{INTERMEDIATE_MARKER}*.pdf): {}",
+                path.display()
+            )));
+        }
+        let meta = std::fs::symlink_metadata(path).map_err(LpdfError::Io)?;
+        if !meta.file_type().is_file() {
+            return Err(LpdfError::InvalidInput(format!(
+                "not a regular file: {}",
+                path.display()
+            )));
+        }
+        let canon = std::fs::canonicalize(path).map_err(LpdfError::Io)?;
+        let mut set = self
+            .created_outputs
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        if !set.contains(&canon) {
+            return Err(LpdfError::InvalidInput(format!(
+                "not created by this session, refusing to delete: {}",
+                path.display()
+            )));
+        }
+        std::fs::remove_file(&canon).map_err(LpdfError::Io)?;
+        set.remove(&canon);
+        Ok(())
+    }
+
+    fn record_created(
+        created: &Arc<Mutex<HashSet<PathBuf>>>,
+        jobs: &Arc<Mutex<HashMap<JobId, JobEntry>>>,
+        job_id: &str,
+    ) {
+        let out = {
+            let jobs = jobs.lock().unwrap_or_else(|e| e.into_inner());
+            jobs.get(job_id).and_then(|e| e.record.output_path.clone())
+        };
+        if let Some(out) = out {
+            if let Ok(canon) = std::fs::canonicalize(&out) {
+                if std::fs::symlink_metadata(&canon).is_ok_and(|m| m.file_type().is_file()) {
+                    created
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .insert(canon);
+                }
+            }
         }
     }
 
@@ -741,6 +842,7 @@ impl JobManager {
         let jobs_map = Arc::clone(&self.jobs);
         let semaphore = Arc::clone(&self.semaphore);
         let event_tx = Arc::clone(&self.event_tx);
+        let created_outputs = Arc::clone(&self.created_outputs);
         let jid = job_id.clone();
 
         tokio::spawn(async move {
@@ -796,6 +898,7 @@ impl JobManager {
             match result {
                 Ok(Ok(output_info)) => {
                     Self::set_completed(&jobs_map, &jid, output_info.output_path.clone());
+                    Self::record_created(&created_outputs, &jobs_map, &jid);
                     let _ = event_tx.send(JobEvent::Completed {
                         job_id: jid,
                         output_path: output_info.output_path,
@@ -982,6 +1085,7 @@ impl JobManager {
             LpdfError::Unsupported(_) => "UNSUPPORTED".into(),
             LpdfError::OcrInferenceError(_) => "OCR_INFERENCE_ERROR".into(),
             LpdfError::ExternalDependencyError(_) => "EXTERNAL_DEPENDENCY_ERROR".into(),
+            LpdfError::ResourceLimit(_) => "F4_RESOURCE_GUARD".into(),
         }
     }
 

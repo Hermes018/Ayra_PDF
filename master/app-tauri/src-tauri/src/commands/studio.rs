@@ -558,7 +558,15 @@ pub fn studio_save_annotations(
                             contents: String::new(),
                             author: "LocalPDF Studio Hatch".to_string(),
                         };
-                        let _ = session.apply(doc_id, Edit::AddAnnotation(hatch_annot));
+                        // BUG-024: a failed hatch annotation fails the save (no silent loss).
+                        session
+                            .apply(doc_id, Edit::AddAnnotation(hatch_annot))
+                            .map_err(|e| {
+                                format!(
+                                    "Failed to apply hatch for annotation '{}': {}",
+                                    annot.id, e
+                                )
+                            })?;
                     }
                 }
             }
@@ -1460,8 +1468,8 @@ pub struct DetectedRegionDto {
 }
 
 /// Phase D6.1 Auto Table / Form Field Detection (`8.12`):
-/// Inspects page vector geometry and text blocks via `pdfcraft` to detect tabular grid structures
-/// and fillable form lines/boxes in flat PDFs.
+/// Detects tabular grid structures from page vector geometry, and fillable form fields with
+/// pdfcraft's field detection (`Session::detect_fields`). Returns only what was found.
 #[tauri::command]
 pub fn studio_detect_tables_and_fields(
     input_path: String,
@@ -1536,56 +1544,86 @@ pub fn studio_detect_tables_and_fields(
         }
     }
 
-    // 2. Inspect text blocks for colon/underscore fillable field prompts or tabular rows
-    let blocks = doc.text_blocks(page);
-    for (idx, b) in blocks.iter().enumerate() {
-        let txt = b.text.trim();
-        let rect = normalize_rect(b.rect);
-        if txt.contains("___") || txt.ends_with(':') || txt.contains("Name") || txt.contains("Date")
-        {
-            detected.push(DetectedRegionDto {
-                id: format!("fld-p{}-{}", page + 1, idx + 1),
-                kind: "form_field".to_string(),
-                page_index,
-                bbox_pt: [
-                    rect[0],
-                    rect[1],
-                    (rect[2] + 120.0).min(580.0),
-                    rect[3] + 4.0,
-                ],
-                rows: 1,
-                cols: 1,
-                label: format!("Fillable Field: {}", txt),
-            });
-        }
-    }
-
-    // Ensure at least one deterministic fillable region is returned on sample flat pages with text
-    if detected.is_empty() && !blocks.is_empty() {
-        let b0 = &blocks[0];
-        let r = normalize_rect(b0.rect);
+    // 2. Form fields: pdfcraft's own detection (DO-25 "Detect fields"; matrix R8), which reads
+    //    labels, boxes, rules and combs (or pixels on scanned pages) and skips existing widgets.
+    //    BUG-023: nothing is invented when nothing is found; an empty result means "none found".
+    for (idx, (_, c)) in session
+        .detect_fields(doc_id, &[page])
+        .into_iter()
+        .enumerate()
+    {
+        let kind_label = match c.kind {
+            pdfcraft_engine::detect::Kind::Text => "Text field".to_string(),
+            pdfcraft_engine::detect::Kind::CheckBox => "Checkbox".to_string(),
+            pdfcraft_engine::detect::Kind::Comb { cells } => format!("Comb field ({cells} cells)"),
+        };
         detected.push(DetectedRegionDto {
-            id: format!("fld-p{}-auto", page + 1),
+            id: format!("fld-p{}-{}", page + 1, idx + 1),
             kind: "form_field".to_string(),
             page_index,
-            bbox_pt: [
-                r[0],
-                r[1],
-                (r[2] + 96.0).min(580.0),
-                (r[3] + 18.0).min(760.0),
-            ],
+            bbox_pt: normalize_rect(c.rect),
             rows: 1,
             cols: 1,
-            label: format!("Auto-Detected Field ({})", b0.text.trim()),
+            label: format!("{kind_label}: {}", c.name),
         });
     }
 
     Ok(detected)
 }
 
+/// BUG-018 (b): read-only existence check for an absolute local path (no read, no network).
+/// Relative paths and paths that cannot be checked (permissions, I/O error) report `false`.
+#[tauri::command]
+pub fn path_exists(path: String) -> bool {
+    path_exists_at(Path::new(&path))
+}
+
+fn path_exists_at(path: &Path) -> bool {
+    path.is_absolute() && path.try_exists().unwrap_or(false)
+}
+
+/// BUG-018 (c): delete an Organize intermediate `<stem>.organizing-<token>.pdf` that a job of this
+/// app session wrote. Anything else (originals, other names, files this session did not create,
+/// symlinks, relative paths) is refused and left untouched.
+#[tauri::command]
+pub(crate) fn delete_organize_intermediate(
+    state: tauri::State<'_, crate::AppState>,
+    path: String,
+) -> Result<(), String> {
+    state
+        .job_manager
+        .delete_session_intermediate(Path::new(&path))
+        .map_err(|e| e.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn path_exists_is_absolute_only_and_read_only() {
+        let dir = std::env::temp_dir().join(format!("lpdf_path_exists_{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("present.pdf");
+        fs::write(&file, b"%PDF-1.4\n").unwrap();
+        let before = fs::read(&file).unwrap();
+        assert!(path_exists(file.to_string_lossy().to_string()));
+        assert!(path_exists(dir.to_string_lossy().to_string()));
+        assert!(!path_exists(
+            dir.join("absent.pdf").to_string_lossy().to_string()
+        ));
+        assert!(
+            !path_exists("present.pdf".to_string()),
+            "relative paths are never resolved"
+        );
+        assert!(!path_exists(String::new()));
+        assert_eq!(
+            fs::read(&file).unwrap(),
+            before,
+            "the check does not modify the file"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
 
     fn create_sample_pdf(path: &Path) {
         let pdf_bytes = b"%PDF-1.4\n\
@@ -1895,9 +1933,14 @@ startxref\n\
         let scanned = studio_scan_watch_folder(tmp_dir.to_string_lossy().to_string()).unwrap();
         assert!(scanned.iter().any(|p| p.ends_with("input_d6.pdf")));
 
+        // BUG-023: the one-line sample page has no table and no field, so nothing is reported
+        // (it used to return a fabricated "auto" field).
         let detected =
             studio_detect_tables_and_fields(input_pdf.to_string_lossy().to_string(), 0).unwrap();
-        assert!(!detected.is_empty());
+        assert!(
+            detected.iter().all(|d| !d.id.ends_with("-auto")),
+            "no fabricated regions: {detected:?}"
+        );
 
         let _ = fs::remove_dir_all(&tmp_dir);
     }

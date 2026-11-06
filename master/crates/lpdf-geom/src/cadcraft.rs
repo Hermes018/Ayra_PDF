@@ -1,7 +1,7 @@
 //! cadcraft-backed hatching (ADR-018 R2 step 3; fixes ERR-007).
 //!
 //! Pattern data comes from `cadcraft-doc` (`library::pattern`, cadcraft@df65974
-//! `crates/doc/src/library.rs:163`), and the lines are swept across the real boundary loops with
+//! `crates/doc/src/library.rs:240`), and the lines are swept across the real boundary loops with
 //! even-odd clipping and dashes by `cadcraft-render::pattern_lines` (`crates/render/src/hatch.rs:370`),
 //! which our local patch re-exports (`vendor/patches/cadcraft-render/PATCH_NOTES.md`). No cadcraft
 //! type leaves this module.
@@ -54,6 +54,16 @@ fn families(pattern: HatchPatternId) -> Families {
             pl(0.0, (0.0, 0.0), (0.0625, 0.125), &[0.25, -0.0625]),
             pl(0.0, (0.0, 0.0625), (0.1875, 0.125), &[0.125, -0.125]),
         ]),
+    }
+}
+
+/// Per-pattern correction of [`PATTERN_UNIT_PT`]: `AR-CONC` is defined 16x coarser than the ANSI
+/// patterns upstream (`scaled_pattern(.., 16.0)`, cadcraft@df65974 `crates/doc/src/library.rs`), so
+/// it gets 1/16 to show its aggregate at the same plan density as the others.
+fn unit_factor(pattern: HatchPatternId) -> f64 {
+    match pattern {
+        HatchPatternId::Concrete => 1.0 / 16.0,
+        _ => 1.0,
     }
 }
 
@@ -123,7 +133,7 @@ pub(crate) fn hatch_segments(
     } else {
         1.0
     };
-    let hatch_scale = user_scale * PATTERN_UNIT_PT;
+    let hatch_scale = user_scale * PATTERN_UNIT_PT * unit_factor(pattern);
     let lines = line_families(pattern);
     let diag = (max_x - min_x).hypot(max_y - min_y);
     let estimate = estimated_runs(&lines, hatch_scale, diag);
@@ -154,6 +164,22 @@ pub(crate) fn hatch_segments(
             limit: MAX_CADCRAFT_RUNS,
         });
     }
+    Ok(runs_to_segments(runs))
+}
+
+/// Square preview of a pattern for the on-screen `<pattern>` tiles (`HatchDefs.svelte`), from
+/// `cadcraft-render::pattern_swatch` (`crates/render/src/hatch.rs:423`): the pattern's runs inside
+/// the `side` x `side` square at the origin, at a scale showing about six repeats. Same families
+/// as [`hatch_segments`], so screen and PDF come from one source.
+pub(crate) fn hatch_swatch(pattern: HatchPatternId, side: f64) -> Result<Vec<Segment>, GeomError> {
+    if !side.is_finite() || side <= 0.0 || side > 10_000.0 {
+        return Err(GeomError::NoFiniteGeometry);
+    }
+    let runs = cadcraft_render::pattern_swatch(&line_families(pattern), side);
+    Ok(runs_to_segments(runs))
+}
+
+fn runs_to_segments(runs: Vec<Vec<Vec2>>) -> Vec<Segment> {
     let mut out = Vec::with_capacity(runs.len());
     for run in runs {
         match run.as_slice() {
@@ -175,5 +201,5 @@ pub(crate) fn hatch_segments(
             }
         }
     }
-    Ok(out)
+    out
 }

@@ -3,6 +3,8 @@ use std::fs;
 use std::path::Path;
 use std::process::{exit, Command};
 
+mod notices;
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
@@ -21,6 +23,12 @@ fn main() {
         "sbom" => run_sbom(),
         "a11y" => run_a11y(),
         "soak" => run_soak(&args[2..]),
+        "notices" => notices::run(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .parent()
+                .unwrap_or(Path::new(".")),
+            args.get(2).map(|s| s.as_str()) == Some("--check"),
+        ),
         _ => {
             eprintln!("Unknown command: {}", args[1]);
             exit(1);

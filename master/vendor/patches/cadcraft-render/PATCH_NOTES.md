@@ -18,10 +18,11 @@ and only `fill_loops` and `pattern_swatch` are re-exported (`src/lib.rs:35`), so
    changed from `path = "../<name>"` to `version = "0.17.0", git = "https://github.com/storytold/cadcraft",
    rev = "df65974…"` (resolved offline from `vendor/craft/cadcraft` by source replacement), and the `[[test]]`
    targets and the `serde_json` dev-dependency removed.
-3. Not copied: `tests/`, `.cargo-checksum.json`.
+3. Added: `LICENSE-MIT`, `LICENSE-APACHE`, `NOTICE` from the cadcraft repository root at the pinned rev (Apache-2.0 §4(d); picked up by `cargo xtask notices`).
+4. Not copied: `tests/`, `.cargo-checksum.json`.
 
 ## Re-sync / removal
 - On a cadcraft rev bump (docs/UPGRADING.md): re-vendor, copy the new `crates/render` from the vendor output,
-  re-apply 1-3, then `diff -r <upstream>/crates/render/src src` must show only the line in 1.
+  re-apply 1-4, then `diff -r <upstream>/crates/render/src src` must show only the line in 1.
 - Drop this patch (and the root `[patch]`) when upstream re-exports `pattern_lines`; the upstream request is to be
   drafted under `docs/upstream/`.

@@ -11,9 +11,10 @@
 //! - Unbounded work in the original: a huge extent gives an unbounded segment count, and far from
 //!   the origin `d + step == d` (or `x + step == x`) never advances, so the original loops forever.
 //!   The only change made here is a work guard, [`MAX_LEGACY_SEGMENTS`], that turns both into
-//!   [`GeomError::WorkLimitExceeded`] instead of a hang or unbounded memory. Every input that
-//!   terminated before produces exactly the same output (golden + parity tests), because the
-//!   guard is far above any real page (an A0 sheet at step 3 pt needs ~2,000 segments).
+//!   [`GeomError::WorkLimitExceeded`] (`GEOM_WORK_LIMIT`) instead of a hang or unbounded memory.
+//!   Inputs needing at most 100,000 segments produce exactly the original output (golden + parity
+//!   tests); inputs that terminated but needed more now return `GEOM_WORK_LIMIT` instead of their
+//!   segments. The limit is far above any real page (an A0 sheet at step 3 pt needs ~2,000).
 
 use crate::{GeomError, HatchPatternId, Loop, PdfPt, Segment};
 

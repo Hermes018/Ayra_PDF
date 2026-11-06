@@ -3441,6 +3441,7 @@ dependencies = [
  "cadcraft-doc",
  "cadcraft-geom",
  "cadcraft-render",
+ "lpdf-geom",
  "serde_json",
  "thiserror 2.0.21",
 ]
@@ -8223,6 +8224,7 @@ checksum = "2f45bb2c13fec6a6cb4c0f76a7e94839e110a14ec803ec2940777a94c347bc52"
 name = "xtask"
 version = "0.1.0"
 dependencies = [
+ "serde_json",
  "walkdir",
 ]
 
