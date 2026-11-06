@@ -88,4 +88,6 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 13:13 | fixes-build | g11 fix round (BUG-053 P0 page, blanks, password on file change, tests, layout) | sonnet/medium | ok | | |
 | 2026-11-06 13:20 | review+verify (combined) | BUG-053 + g11 (callers page base, flows 2,8, CLI redact check) | opus/high | ok | | GREEN 243; CLI page-2 check exact |
 | 2026-11-06 13:25 | fixes-build | BUG-054 + BUG-055 + sweep g12 (Convert from/to) | sonnet/medium | ok | | inventory 446 in 5 files |
-| 2026-11-06 13:33 | review+verify (combined) | BUG-054/055 + g12 | opus/high | running | | redaction backend |
+| 2026-11-06 13:33 | review+verify (combined) | BUG-054/055 + g12 | opus/high | ok | | GREEN 245; flows 8,11 PASS |
+| 2026-11-06 13:36 | fixes-build | sweep g13 (Markdown, Pipelines) + mixed-batch test; found BUG-057 | sonnet/medium | ok | | |
+| 2026-11-06 13:42 | review+verify (combined) | g13 + BUG-057 (secrets sweep) | opus/high | running | | security |
