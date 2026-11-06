@@ -582,3 +582,4 @@ master/app-tauri/src-tauri/tests/hatch_save_e2e.rs	Tests (ERR-007 flow 5): save 
 master/app-tauri/src/lib/core/hatchPatterns.json	Hatch pattern parameters generated from lpdf-geom patterns.rs (single source for the on-screen preview)
 master/app-tauri/src/lib/core/hatchPatterns.ts	Typed loader for hatchPatterns.json used by HatchDefs.svelte
 master/app-tauri/src/lib/components/studio/HatchDefs.test.ts	Tests: hatch preview tiles are drawn from the same pattern parameters as the saved output
+master/e2e/test_leak_check.py	Tests (BUG-031): post-run leak check catches leaked harness/dbus processes; nothing left after bus stop or SIGTERM

@@ -415,6 +415,7 @@ master/
 │   ├── common.py                                             # Ground-truth helpers (poppler/qpdf/hashes), process sampling, isolation (private D-Bus/XDG)
 │   ├── pkg_smoke.py                                          # Clean-user install smoke test for rpm/deb/AppImage (flows 1-2 against the packaged binary, fresh HOME)
 │   ├── run.py                                                # Runner: python3 master/e2e/run.py [--flows] [--binary] [--soak-minutes]
+│   ├── test_leak_check.py                                    # Tests (BUG-031): post-run leak check catches leaked harness/dbus processes; nothing left after bus stop or SIGTERM
 │   └── wd.py                                                 # Minimal W3C WebDriver client (urllib)
 ├── fuzz/                                                     # cargo-fuzz workspace (libFuzzer targets)
 │   ├── fuzz_targets/                                         # Fuzz entry points

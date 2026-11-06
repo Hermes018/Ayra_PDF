@@ -17,6 +17,7 @@ import importlib
 import json
 import os
 import shutil
+import signal
 import sys
 import time
 
@@ -92,6 +93,21 @@ def main():
         return 2
 
     os.makedirs(a.out, exist_ok=True)
+    # BUG-031: own session for the whole run, marker env inherited by every child, and cleanup on
+    # signals as well as on normal exit/exceptions.
+    marker = f"{os.getpid()}-{int(time.time())}"
+    os.environ[common.RUN_ENV] = marker
+    if not sys.stdin.isatty():  # interactive runs keep the terminal's Ctrl-C; the marker sweep covers both
+        try:
+            os.setsid()
+        except OSError:
+            pass  # already a group leader
+
+    def _on_signal(signum, _frame):
+        raise SystemExit(128 + signum)  # unwinds through the finally below
+
+    for sg in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+        signal.signal(sg, _on_signal)
     for old in glob.glob(os.path.join(a.out, "screens", "*.png")):
         os.remove(old)
     ctx = common.Context(binary, a.out, a.soak_minutes)
@@ -135,6 +151,13 @@ def main():
             write(report)
     finally:
         ctx.close()
+        leaked, survivors = ctx.post_run_check(marker)
+    leak_msg = None
+    if leaked or survivors:
+        leak_msg = (f"harness processes remained after the run: killed {leaked}, "
+                    f"still alive {survivors}")
+        print("LEAK:", leak_msg, file=sys.stderr)
+        report["leak"] = {"killed": leaked, "survivors": survivors}
     report["duration_s"] = round(time.monotonic() - t0, 1)
     counts = {}
     for r in report["flows"]:
@@ -164,7 +187,7 @@ def main():
     # Exit 0 only when every requested flow is a full PASS (SHORT-PASS / BLOCKED / FAIL -> 1) and no
     # launch had to be retried.
     all_pass = report["flows"] and all(r["status"] == "PASS" for r in report["flows"])
-    return 0 if all_pass and complete and not flaky else 1
+    return 0 if all_pass and complete and not flaky and not leak_msg else 1
 
 
 if __name__ == "__main__":
