@@ -226,6 +226,7 @@ master/
 │   │   │   │   │   ├── OutputPathsAllViews.test.ts           # Tests (BUG-051): every writing view (Organize, Forms, Security x3, Batch, Pipelines, AiSummarize, Markdown, Convert x2) builds a distinct, non-existing output, with and without .pdf
 │   │   │   │   │   ├── OutputPathsBug050.test.ts             # Tests (BUG-050): every view builds a collision-safe output path that is never the input or an existing file
 │   │   │   │   │   ├── OutputUnsafeUi.test.ts                # Tests (BUG-052): a refused output shows an ErrorState with Retry on the next free name in every writing view
+│   │   │   │   │   ├── PipelinesProtect.test.ts              # Tests (BUG-057): Pipelines Protect step starts with no password, refuses an empty one, autocomplete off
 │   │   │   │   │   ├── PipelinesView.test.ts                 # Tests: pipelines view
 │   │   │   │   │   ├── SecurityFormsViews.test.ts            # Tests: Security (protect/unlock/redact) and Forms views send the same job requests; password field autocomplete=off, cleared on success
 │   │   │   │   │   ├── SettingsView.test.ts                  # Tests: settings view

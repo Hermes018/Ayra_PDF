@@ -5,15 +5,24 @@
     import { IpcClient, pickFilesDialog, pickFolderDialog, saveFileDialog } from '$lib/ipc';
     import { friendlyJobError } from '$lib/core/jobError';
     import ErrorState from '$lib/components/ui/ErrorState.svelte';
+    import Button from '$lib/components/ui/Button.svelte';
+    import Input from '$lib/components/ui/Input.svelte';
+    import Toggle from '$lib/components/ui/Toggle.svelte';
     import type { JobRequest } from '$lib/bindings/JobRequest';
 
     type MarkdownMode = 'PdfToMarkdown' | 'MarkdownToPdf' | 'BatchFolder';
+    const MODES: { id: MarkdownMode; icon: string; title: string; desc: string }[] = [
+        { id: 'PdfToMarkdown', icon: '📄➔📘', title: 'PDF to Markdown', desc: 'Extract text, tables, and images into Markdown (.md)' },
+        { id: 'MarkdownToPdf', icon: '📘➔📄', title: 'Markdown to PDF', desc: 'Compile Markdown (.md) into a styled PDF document' },
+        { id: 'BatchFolder', icon: '📁➔📚', title: 'Batch folder conversion', desc: 'Convert an entire directory of documents into Markdown' },
+    ];
 
     let currentFile = $derived(appState.currentFile);
     let selectedMode = $state<MarkdownMode>('PdfToMarkdown');
     let sourcePath = $state<string>('');
     let customOutputPath = $state<string>('');
     let isSubmitting = $state(false);
+    let pickerFailed = $state(false);
     let lastJobId = $state<string | null>(null);
 
     let completedResult = $state<{ op: string; outputPath: string } | null>(null);
@@ -45,6 +54,7 @@
     });
 
     async function handleBrowseSource() {
+        pickerFailed = false;
         try {
             if (selectedMode === 'BatchFolder') {
                 const folder = await pickFolderDialog();
@@ -67,10 +77,12 @@
             }
         } catch (e) {
             console.error('Failed to browse source:', e);
+            pickerFailed = true;
         }
     }
 
     async function handleBrowseSaveAs() {
+        pickerFailed = false;
         try {
             const defaultName = computedOutputPath.split(/[\/\\]/).pop() || (selectedMode === 'PdfToMarkdown' ? 'converted.md' : 'converted.pdf');
             const savePath = await saveFileDialog(defaultName);
@@ -79,10 +91,12 @@
             }
         } catch (e) {
             console.error('Failed to browse save destination:', e);
+            pickerFailed = true;
         }
     }
 
     async function handleBrowseOutputFolder() {
+        pickerFailed = false;
         try {
             const folder = await pickFolderDialog();
             if (folder) {
@@ -91,6 +105,7 @@
             }
         } catch (e) {
             console.error('Failed to browse folder destination:', e);
+            pickerFailed = true;
         }
     }
 
@@ -187,70 +202,53 @@
 <div class="markdown-view-container">
     <div class="header">
         <div class="title-wrap">
-            <h2>📘 Markdown Studio</h2>
+            <h2>Markdown Studio</h2>
             <p class="subtitle">Convert between PDF documents and clean Markdown with asset extraction and front-matter support.</p>
         </div>
     </div>
 
     <div class="content-grid">
         <div class="main-panel">
-            <!-- Mode Selector -->
+            <!-- Mode -->
             <div class="section-card mode-card">
-                <span class="card-title">Select Operation</span>
+                <span class="card-title">Operation</span>
                 <div class="mode-buttons">
-                    <button
-                        type="button"
-                        class="mode-btn"
-                        class:active={selectedMode === 'PdfToMarkdown'}
-                        onclick={() => { selectedMode = 'PdfToMarkdown'; resetForm(); }}
-                    >
-                        <span class="mode-icon">📄➔📘</span>
-                        <div class="mode-info">
-                            <strong>PDF to Markdown</strong>
-                            <span>Extract text, tables, and images into Markdown (.md)</span>
-                        </div>
-                    </button>
-                    <button
-                        type="button"
-                        class="mode-btn"
-                        class:active={selectedMode === 'MarkdownToPdf'}
-                        onclick={() => { selectedMode = 'MarkdownToPdf'; resetForm(); }}
-                    >
-                        <span class="mode-icon">📘➔📄</span>
-                        <div class="mode-info">
-                            <strong>Markdown to PDF</strong>
-                            <span>Compile Markdown (.md) into a styled PDF document</span>
-                        </div>
-                    </button>
-                    <button
-                        type="button"
-                        class="mode-btn"
-                        class:active={selectedMode === 'BatchFolder'}
-                        onclick={() => { selectedMode = 'BatchFolder'; resetForm(); }}
-                    >
-                        <span class="mode-icon">📁➔📚</span>
-                        <div class="mode-info">
-                            <strong>Batch Folder Conversion</strong>
-                            <span>Convert an entire directory of documents into Markdown</span>
-                        </div>
-                    </button>
+                    {#each MODES as m (m.id)}
+                        <Button
+                            variant="secondary"
+                            block
+                            class="mode-btn"
+                            pressed={selectedMode === m.id}
+                            onclick={() => { selectedMode = m.id; resetForm(); }}
+                        >
+                            <span class="mode-btn-body">
+                                <span class="mode-icon" aria-hidden="true">{m.icon}</span>
+                                <span class="mode-info">
+                                    <strong>{m.title}</strong>
+                                    <span>{m.desc}</span>
+                                </span>
+                            </span>
+                        </Button>
+                    {/each}
                 </div>
             </div>
 
-            <!-- Source Document/Folder -->
+            <!-- Source -->
             <div class="section-card source-card">
                 <div class="card-head-row">
-                    <span class="card-title">
-                        {selectedMode === 'BatchFolder' ? 'Source Directory' : 'Source Document'}
-                    </span>
-                    <button type="button" class="btn-picker" onclick={handleBrowseSource}>
-                        📁 {selectedMode === 'BatchFolder' ? 'Select Folder...' : 'Browse File...'}
-                    </button>
+                    <span class="card-title">{selectedMode === 'BatchFolder' ? 'Source directory' : 'Source document'}</span>
+                    <Button variant="secondary" size="sm" onclick={handleBrowseSource}>
+                        {selectedMode === 'BatchFolder' ? 'Select folder…' : 'Browse file'}
+                    </Button>
                 </div>
+
+                {#if pickerFailed}
+                    <ErrorState what="Couldn't open the file picker." next="Try again." retry={handleBrowseSource} />
+                {/if}
 
                 {#if activeSource}
                     <div class="file-info-box">
-                        <span class="file-icon">{selectedMode === 'BatchFolder' ? '📁' : '📄'}</span>
+                        <span class="file-icon" aria-hidden="true">{selectedMode === 'BatchFolder' ? '📁' : '📄'}</span>
                         <div class="file-text">
                             <span class="file-name">{activeSource.split(/[\/\\]/).pop()}</span>
                             <span class="file-path">{activeSource}</span>
@@ -258,69 +256,38 @@
                     </div>
                 {:else}
                     <div class="empty-file-box">
-                        <p>No document selected. Click browse or drop a file.</p>
-                        <button type="button" class="btn-picker" onclick={handleBrowseSource} style="margin-top: 0.5rem;">
-                            📁 {selectedMode === 'BatchFolder' ? 'Browse Directory...' : 'Browse File...'}
-                        </button>
+                        <p>No document selected. Browse for a file or drop one here.</p>
                     </div>
                 {/if}
             </div>
 
-            <!-- Batch Options -->
+            <!-- Batch options -->
             {#if selectedMode === 'BatchFolder'}
                 <div class="section-card options-card">
-                    <span class="card-title">Batch Processing Options</span>
-                    <div class="checkboxes-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" bind:checked={injectFrontMatter} />
-                            <span>Inject YAML front-matter (title, source, timestamp)</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" bind:checked={preserveFrontMatter} />
-                            <span>Preserve existing YAML metadata</span>
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" bind:checked={extractAssets} />
-                            <span>Extract embedded images and rewrite links to assets/</span>
-                        </label>
-                    </div>
+                    <span class="card-title">Batch processing options</span>
+                    <Toggle label="Inject YAML front-matter (title, source, timestamp)" bind:checked={injectFrontMatter} />
+                    <Toggle label="Preserve existing YAML metadata" bind:checked={preserveFrontMatter} />
+                    <Toggle label="Extract embedded images and rewrite links to assets/" bind:checked={extractAssets} />
                 </div>
             {/if}
 
-            <!-- Output Destination -->
+            <!-- Destination -->
             <div class="section-card output-card">
-                <label class="card-title" for="md-output-path">Destination Path</label>
+                <Input label="Destination path" placeholder={computedOutputPath} bind:value={customOutputPath} data-testid="md-output-path" />
                 <div class="output-row">
-                    <input
-                        id="md-output-path"
-                        type="text"
-                        class="text-input"
-                        placeholder={computedOutputPath}
-                        bind:value={customOutputPath}
-                    />
-                    <button type="button" class="btn-picker" onclick={handleBrowseSaveAs} title="Save As file">
-                        💾 Save As...
-                    </button>
-                    <button type="button" class="btn-picker" onclick={handleBrowseOutputFolder} title="Select folder">
-                        📁 Select Folder...
-                    </button>
+                    <Button variant="secondary" size="sm" title="Choose the destination file" onclick={handleBrowseSaveAs}>Save as…</Button>
+                    <Button variant="secondary" size="sm" title="Choose a destination folder" onclick={handleBrowseOutputFolder}>Select folder…</Button>
                 </div>
-                <span class="help-text">Leave blank to automatically save adjacent to the source document.</span>
+                <span class="help-text">Leave blank to save next to the source document.</span>
             </div>
 
-            <!-- Toast / Completion Notification Banner -->
             {#if completedResult}
                 <div class="toast-banner success-toast" role="status" aria-live="polite">
                     <div class="toast-content">
-                        <div class="toast-header">
-                            <span class="toast-icon">✅</span>
-                            <span class="toast-title">{completedResult.op} — Completed Successfully</span>
-                        </div>
+                        <span class="toast-title">{completedResult.op}: completed</span>
                         <p class="toast-path"><strong>Saved to:</strong> {completedResult.outputPath}</p>
                     </div>
-                    <button type="button" class="btn-toast" onclick={resetForm}>
-                        🔄 Clear / Convert Another
-                    </button>
+                    <Button variant="secondary" size="sm" onclick={resetForm}>Clear and convert another</Button>
                 </div>
             {:else if failedResult}
                 {@const f = friendlyJobError(failedResult.message, { what: `${failedResult.op} failed.`, next: 'Check the file, then try again.' })}
@@ -328,29 +295,27 @@
             {/if}
 
             <div class="action-row">
-                <button
-                    type="button"
-                    class="btn-primary convert-btn"
-                    disabled={!activeSource || isSubmitting}
+                <Button
+                    variant="primary"
+                    size="lg"
+                    busy={isSubmitting}
+                    disabled={!activeSource}
+                    disabledReason="Choose a source document first"
                     onclick={handleConvert}
                 >
-                    {#if isSubmitting}
-                        <span class="spinner">⏳</span> Converting...
-                    {:else}
-                        <span>⚡ Convert Document</span>
-                    {/if}
-                </button>
+                    {isSubmitting ? 'Converting…' : 'Convert document'}
+                </Button>
             </div>
         </div>
 
         <div class="sidebar-info-panel">
             <div class="info-card">
-                <h3>📌 Engine Details</h3>
+                <h3>Engine details</h3>
                 <ul class="features-list">
-                    <li><strong>Offline Execution:</strong> Strictly local Pandoc / pdfcraft conversion with zero network calls.</li>
-                    <li><strong>Asset Isolation:</strong> Embedded images extracted into clean `assets/` subfolders.</li>
-                    <li><strong>Front-Matter:</strong> Generates standard Obsidian/Hugo compatible YAML front-matter blocks.</li>
-                    <li><strong>Atomic Writes:</strong> Existing files are never overwritten unless explicitly targeted.</li>
+                    <li><strong>Runs locally:</strong> Pandoc and the built-in engine convert on this computer with no network calls.</li>
+                    <li><strong>Asset isolation:</strong> Embedded images are extracted into an `assets/` subfolder.</li>
+                    <li><strong>Front-matter:</strong> Generates Obsidian/Hugo-compatible YAML front-matter blocks.</li>
+                    <li><strong>Safe writes:</strong> Existing files are never overwritten; a new name is used.</li>
                 </ul>
             </div>
         </div>
@@ -362,337 +327,313 @@
         display: flex;
         flex-direction: column;
         height: 100%;
-        background: transparent;
+        padding: var(--space-4);
+        gap: var(--space-4);
         color: var(--text-primary);
-        overflow-y: auto;
-        padding: 1.5rem;
-        box-sizing: border-box;
     }
 
     .header {
-        margin-bottom: 1.5rem;
+        padding: var(--space-4) var(--space-6);
+        background: var(--glass-bg-surface);
+        border: 1px solid var(--glass-border-subtle);
+        border-radius: var(--radius-lg);
     }
 
-    .title-wrap h2 {
+    h2 {
         margin: 0;
-        font-size: 1.6rem;
-        color: var(--text-primary);
+        font-size: var(--font-size-title1);
+        color: var(--accent-primary);
     }
 
     .subtitle {
-        margin: 0.35rem 0 0 0;
+        margin: var(--space-1) 0 0;
         color: var(--text-secondary);
-        font-size: 0.9rem;
+        font-size: var(--font-size-footnote);
     }
 
-    .content-grid {
+    .content {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 300px;
-        gap: 1.5rem;
-        align-items: start;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+        gap: var(--space-4);
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
     }
 
-    @media (max-width: 1024px) {
-        .content-grid {
-            grid-template-columns: minmax(0, 1fr);
-        }
-    }
-
-    .main-panel {
+    .controls-panel {
         display: flex;
         flex-direction: column;
-        gap: 1.25rem;
+        gap: var(--space-4);
+        min-width: 0;
     }
 
-    .section-card {
+    .section-card,
+    .preview-panel {
         background: var(--glass-bg-surface);
         border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-lg, 14px);
-        box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-sm);
-        padding: 1.25rem;
-    }
-
-    .card-title {
-        display: block;
-        font-weight: 600;
-        font-size: 0.95rem;
-        color: var(--text-primary);
-        margin-bottom: 0.75rem;
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
     }
 
     .card-head-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 0.75rem;
+        gap: var(--space-3);
     }
 
-    .card-head-row .card-title {
-        margin-bottom: 0;
-    }
-
-    .mode-buttons {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 0.75rem;
-    }
-
-    .mode-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.85rem;
-        padding: 1rem;
-        background: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-md, 10px);
-        color: var(--text-primary);
-        cursor: pointer;
-        text-align: left;
-        transition: all var(--dur-fast, 120ms) ease;
-    }
-
-    .mode-btn:hover {
-        border-color: var(--accent-primary);
-        background: var(--glass-bg-hover);
-    }
-
-    .mode-btn.active {
-        border-color: var(--accent-primary);
-        background: var(--glass-bg-active);
-        box-shadow: 0 0 0 1px var(--accent-primary);
-    }
-
-    .mode-icon {
-        font-size: 1.6rem;
-    }
-
-    .mode-info strong {
-        display: block;
-        font-size: 0.95rem;
-        margin-bottom: 0.2rem;
-    }
-
-    .mode-info span {
-        font-size: 0.78rem;
-        color: var(--text-secondary);
+    .card-title {
+        font-weight: 600;
+        font-size: var(--font-size-title3);
     }
 
     .file-info-box {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: var(--space-3);
+        padding: var(--space-3);
         background: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        padding: 0.75rem 1rem;
-        border-radius: var(--radius-md, 10px);
-    }
-
-    .file-icon {
-        font-size: 1.75rem;
+        border-radius: var(--radius-md);
     }
 
     .file-text {
         display: flex;
         flex-direction: column;
-        overflow: hidden;
+        min-width: 0;
     }
 
     .file-name {
         font-weight: 600;
-        color: var(--accent-primary);
-        font-size: 0.95rem;
     }
 
     .file-path {
-        font-size: 0.75rem;
         color: var(--text-secondary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-size: var(--font-size-caption);
+        word-break: break-all;
     }
 
-    .empty-file-box {
-        background: var(--glass-bg-input);
-        border: 1px dashed var(--glass-border-subtle);
-        border-radius: var(--radius-md, 10px);
-        padding: 1.5rem;
-        text-align: center;
+    .empty-file-box p {
+        margin: 0;
         color: var(--text-secondary);
-        font-size: 0.9rem;
+        font-size: var(--font-size-footnote);
+    }
+
+    .formats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: var(--space-3);
+    }
+
+    .formats-grid :global(.format-tile .lp-btn) {
+        height: auto;
+        min-height: 0;
+        align-items: flex-start;
+        justify-content: flex-start;
+        text-align: left;
+        padding: var(--space-3);
+        font-weight: 400;
+    }
+
+    .tile-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+        align-items: flex-start;
+        white-space: normal;
+    }
+
+    .tile-header {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+    }
+
+    .badge {
+        font-size: var(--font-size-caption);
+        padding: 0 var(--space-2);
+        border-radius: var(--radius-pill);
+        background: var(--glass-bg-active);
+    }
+
+    .tile-title {
+        font-weight: 600;
+        font-size: var(--font-size-body);
+    }
+
+    .tile-desc,
+    .toggle-subtitle,
+    .radio-desc,
+    .help-text {
+        color: var(--text-secondary);
+        font-size: var(--font-size-footnote);
+        line-height: 1.4;
     }
 
     .output-row {
         display: flex;
-        align-items: center;
-        gap: 0.5rem;
+        gap: var(--space-2);
         flex-wrap: wrap;
-    }
-
-    .output-row .text-input {
-        flex: 1;
-        min-width: 220px;
-        padding: 0.65rem 0.9rem;
-        background: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-md, 10px);
-        color: var(--text-primary);
-        font-size: 0.9rem;
-        box-sizing: border-box;
-    }
-
-    .output-row .text-input:focus {
-        outline: none;
-        border-color: var(--accent-primary);
-    }
-
-    .btn-picker {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        padding: 0.55rem 0.95rem;
-        background: var(--glass-bg-input);
-        color: var(--text-primary);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-sm, 8px);
-        font-size: 0.85rem;
-        font-weight: 500;
-        cursor: pointer;
-        white-space: nowrap;
-        transition: background-color var(--dur-fast, 120ms) ease;
-    }
-
-    .btn-picker:hover {
-        background: var(--glass-bg-hover);
-        color: var(--text-primary);
-        border-color: var(--accent-primary);
-    }
-
-    .help-text {
-        display: block;
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        margin-top: 0.5rem;
-    }
-
-    .checkboxes-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.65rem;
-    }
-
-    .checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 0.65rem;
-        font-size: 0.88rem;
-        color: var(--text-primary);
-        cursor: pointer;
     }
 
     .toast-banner {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 1rem;
-        padding: 1rem 1.25rem;
-        border-radius: var(--radius-md, 10px);
-        animation: fadeIn 0.2s ease-in-out;
-    }
-
-    .success-toast {
-        background: var(--glass-bg-surface);
+        gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-md);
         border: 1px solid var(--semantic-success);
-        color: var(--semantic-success);
+        background: var(--glass-bg-input);
     }
 
-    .error-toast {
-        background: var(--glass-bg-surface);
-        border: 1px solid var(--semantic-danger);
-        color: var(--semantic-danger);
-    }
-
-    .toast-header {
+    .toast-content {
         display: flex;
-        align-items: center;
-        gap: 0.5rem;
+        flex-direction: column;
+        gap: var(--space-1);
+        min-width: 0;
+    }
+
+    .toast-title {
         font-weight: 600;
-        font-size: 0.95rem;
     }
 
     .toast-path {
-        margin: 0.35rem 0 0 0;
-        font-size: 0.85rem;
-        color: var(--text-secondary);
+        margin: 0;
+        font-size: var(--font-size-footnote);
         word-break: break-all;
     }
 
-    .btn-toast {
-        padding: 0.5rem 1rem;
-        background: var(--accent-primary);
-        color: var(--text-on-accent);
-        font-weight: 600;
-        font-size: 0.85rem;
-        border: none;
-        border-radius: var(--radius-sm, 8px);
-        cursor: pointer;
-        white-space: nowrap;
-        transition: opacity var(--dur-fast, 120ms) ease;
-    }
-
-    .btn-toast:hover {
-        opacity: 0.9;
+    .status-banner {
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-md);
+        background: var(--glass-bg-input);
+        border: 1px solid var(--glass-border-subtle);
+        font-size: var(--font-size-footnote);
     }
 
     .action-row {
-        margin-top: 0.5rem;
+        display: flex;
+        justify-content: flex-end;
     }
 
-    .convert-btn {
-        padding: 0.85rem 1.75rem;
-        font-size: 1rem;
-        font-weight: 600;
-        border-radius: var(--radius-md, 10px);
-        background: var(--accent-primary);
-        color: var(--text-on-accent);
-        border: none;
-        cursor: pointer;
-        transition: opacity var(--dur-fast, 120ms) ease;
+    .preview-header h3 {
+        margin: 0;
+        font-size: var(--font-size-title3);
     }
 
-    .convert-btn:hover:not(:disabled) {
-        opacity: 0.9;
-        transform: translateY(-1px);
+    .summary-details {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
     }
 
-    .convert-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-3);
+        font-size: var(--font-size-footnote);
+    }
+
+    .summary-label {
+        color: var(--text-secondary);
+    }
+
+    .summary-val {
+        text-align: right;
+        word-break: break-all;
+    }
+
+    .summary-val.highlight {
+        color: var(--accent-primary);
+    }
+
+    .offline-guarantee-box {
+        display: flex;
+        gap: var(--space-3);
+        padding: var(--space-3);
+        border-radius: var(--radius-md);
+        background: var(--glass-bg-input);
+        font-size: var(--font-size-footnote);
+    }
+
+    .offline-guarantee-box p {
+        margin: var(--space-1) 0 0;
+        color: var(--text-secondary);
+    }
+
+    .mode-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+
+    .mode-buttons :global(.mode-btn .lp-btn) {
+        height: auto;
+        min-height: 0;
+        justify-content: flex-start;
+        text-align: left;
+        padding: var(--space-3);
+        font-weight: 400;
+    }
+
+    .mode-btn-body {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        white-space: normal;
+    }
+
+    .mode-info {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+        font-size: var(--font-size-footnote);
+        color: var(--text-secondary);
+    }
+
+    .mode-info strong {
+        color: var(--text-primary);
+        font-size: var(--font-size-body);
+    }
+
+    .info-card h3 {
+        margin: 0 0 var(--space-2);
+        font-size: var(--font-size-title3);
+    }
+
+    .features-list {
+        margin: 0;
+        padding-left: var(--space-5);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+        font-size: var(--font-size-footnote);
+        color: var(--text-secondary);
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+        gap: var(--space-4);
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .main-panel {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+        min-width: 0;
     }
 
     .sidebar-info-panel .info-card {
         background: var(--glass-bg-surface);
         border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-lg, 14px);
-        padding: 1.25rem;
-    }
-
-    .info-card h3 {
-        margin: 0 0 0.85rem 0;
-        font-size: 1rem;
-        color: var(--text-primary);
-    }
-
-    .features-list {
-        margin: 0;
-        padding-left: 1.2rem;
-        color: var(--text-secondary);
-        font-size: 0.85rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .features-list li strong {
-        color: var(--text-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
     }
 </style>

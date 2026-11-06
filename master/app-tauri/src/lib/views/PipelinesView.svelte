@@ -3,6 +3,12 @@
     import { IpcClient } from '$lib/ipc';
     import { friendlyJobError } from '$lib/core/jobError';
     import ErrorState from '$lib/components/ui/ErrorState.svelte';
+    import Button from '$lib/components/ui/Button.svelte';
+    import Input from '$lib/components/ui/Input.svelte';
+    import Select from '$lib/components/ui/Select.svelte';
+    import Toggle from '$lib/components/ui/Toggle.svelte';
+    import EmptyState from '$lib/components/ui/EmptyState.svelte';
+    import { parseNumberOr } from '$lib/core/parseNumber';
     import For from '$lib/components/For.svelte';
     import { appState } from '$lib/state.svelte';
     import { siblingOutputPath, resolveFreeOutput } from '$lib/views/studio/outputNames';
@@ -67,6 +73,33 @@
         executionMessage = `Loaded preset: ${preset.name}`;
     }
 
+    const STEP_OPTIONS = [
+        { value: 'Repair', label: '🛠️ Repair' },
+        { value: 'Compress', label: '⚡ Compress' },
+        { value: 'Ocr', label: '🔍 OCR' },
+        { value: 'Rotate', label: '🔄 Rotate' },
+        { value: 'FlattenComments', label: '💬 Flatten comments' },
+        { value: 'FlattenForms', label: '📝 Flatten forms' },
+        { value: 'Watermark', label: '🏷️ Watermark' },
+        { value: 'Protect', label: '🔒 Protect' },
+        { value: 'PdfToPdfA', label: '🏛️ PDF/A archival' },
+    ];
+    const PROFILE_OPTIONS = [
+        { value: 'Low', label: 'Low (maximum quality)' },
+        { value: 'Medium', label: 'Medium (recommended)' },
+        { value: 'High', label: 'High (maximum compression)' },
+    ];
+    const DEGREE_OPTIONS = [
+        { value: '90', label: '90° clockwise' },
+        { value: '180', label: '180° half turn' },
+        { value: '270', label: '270° counter-clockwise' },
+    ];
+    const CONFORMANCE_OPTIONS = [
+        { value: 'PdfA1b', label: 'PDF/A-1b (basic)' },
+        { value: 'PdfA2b', label: 'PDF/A-2b (recommended)' },
+        { value: 'PdfA3b', label: 'PDF/A-3b (embedded files)' },
+    ];
+
     function createDefaultStep(type: string): PipelineStep {
         switch (type) {
             case 'Repair':
@@ -94,7 +127,7 @@
             case 'Protect':
                 return {
                     type: 'Protect',
-                    password: 'password123',
+                    password: '', // no hidden default: the user types it, and a workflow with an empty one is refused
                     permissions: {
                         allow_print: true,
                         allow_copy: false,
@@ -152,6 +185,10 @@
         }
         if (activeSteps.length === 0) {
             executionMessage = 'Workflow must contain at least one transformation step.';
+            return;
+        }
+        if (activeSteps.some((st) => st.type === 'Protect' && !st.password)) {
+            executionMessage = 'Enter a password for the Protect step before running the workflow.';
             return;
         }
 
@@ -218,10 +255,10 @@
 <div class="workflows-container" data-testid="pipelines-view">
     <header class="header">
         <div class="header-title">
-            <span class="icon">🔀</span>
+            <span class="icon" aria-hidden="true">🔀</span>
             <div>
                 <h2>Workflows & Tool Chaining</h2>
-                <p class="subtitle">Chain multiple tools into sequential, fail-closed pipelines with built-in presets</p>
+                <p class="subtitle">Chain tools into sequential pipelines with built-in presets. A failed step stops the chain.</p>
             </div>
         </div>
     </header>
@@ -231,398 +268,255 @@
     {/if}
 
     {#if executionMessage}
-        <div class="alert-banner" data-testid="execution-message">
+        <div class="alert-banner" data-testid="execution-message" role="status">
             <span>{executionMessage}</span>
-            <button class="close-alert" aria-label="Dismiss this message" title="Dismiss this message" onclick={() => { executionMessage = null; }}>×</button>
+            <Button variant="plain" size="sm" ariaLabel="Dismiss this message" title="Dismiss this message" onclick={() => { executionMessage = null; }}>✕</Button>
         </div>
     {/if}
 
-    <!-- Preset Workflows Grid -->
+    <!-- Preset workflows -->
     <section class="section" data-testid="presets-section">
         <div class="section-header">
-            <h3>Built-in Presets (Workflows)</h3>
-            <span class="badge">iLovePDF Equivalent</span>
+            <h3>Built-in presets</h3>
         </div>
         <div class="presets-grid">
             <For items={presets}>
                 {#snippet children(preset)}
-                <div
-                    class="preset-card"
-                    class:selected={selectedPresetId === preset.id}
-                    onclick={() => applyPreset(preset)}
-                    data-testid={`preset-card-${preset.id}`}
-                    role="button"
-                    tabindex="0"
-                    aria-pressed={selectedPresetId === preset.id}
-                    onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); applyPreset(preset); } }}
-                >
-                    <div class="preset-header">
-                        <span class="preset-title">{preset.name}</span>
-                        {#if selectedPresetId === preset.id}
-                            <span class="preset-active-badge">Active</span>
-                        {/if}
-                    </div>
-                    <p class="preset-desc">{preset.description}</p>
-                    <div class="preset-steps-chips">
-                        <For items={preset.steps}>
-                            {#snippet children(step, idx)}
-                            <span class="step-chip">{step.type}</span>
-                            {#if idx < preset.steps.length - 1}
-                                <span class="chip-arrow">➔</span>
-                            {/if}
-                            {/snippet}
-                        </For>
-                    </div>
-                </div>
+                    <Button
+                        variant="secondary"
+                        block
+                        class="preset-card"
+                        pressed={selectedPresetId === preset.id}
+                        data-testid={`preset-card-${preset.id}`}
+                        onclick={() => applyPreset(preset)}
+                    >
+                        <span class="preset-body">
+                            <span class="preset-header">
+                                <span class="preset-title">{preset.name}</span>
+                                {#if selectedPresetId === preset.id}
+                                    <span class="preset-active-badge">Active</span>
+                                {/if}
+                            </span>
+                            <span class="preset-desc">{preset.description}</span>
+                            <span class="preset-steps-chips">
+                                <For items={preset.steps}>
+                                    {#snippet children(step, idx)}
+                                        <span class="step-chip">{step.type}</span>
+                                        {#if idx < preset.steps.length - 1}
+                                            <span class="chip-arrow" aria-hidden="true">➔</span>
+                                        {/if}
+                                    {/snippet}
+                                </For>
+                            </span>
+                        </span>
+                    </Button>
                 {/snippet}
             </For>
         </div>
     </section>
 
-    <!-- Interactive Pipeline Builder -->
+    <!-- Pipeline builder -->
     <section class="section builder-section" data-testid="builder-section">
         <div class="section-header">
-            <h3>Active Workflow Chain ({activeSteps.length} Steps)</h3>
+            <h3>Workflow chain ({activeSteps.length} steps)</h3>
             <div class="add-step-bar">
-                <select bind:value={newStepType} class="select-input" data-testid="select-new-step">
-                    <option value="Repair">🛠️ Repair</option>
-                    <option value="Compress">⚡ Compress</option>
-                    <option value="Ocr">🔍 OCR</option>
-                    <option value="Rotate">🔄 Rotate</option>
-                    <option value="FlattenComments">💬 Flatten Comments</option>
-                    <option value="FlattenForms">📝 Flatten Forms</option>
-                    <option value="Watermark">🏷️ Watermark</option>
-                    <option value="Protect">🔒 Protect</option>
-                    <option value="PdfToPdfA">🏛️ PDF/A Archival</option>
-                </select>
-                <button class="btn btn-secondary" onclick={handleAddStep} data-testid="btn-add-step">
-                    ➕ Add Step
-                </button>
+                <Select label="Step to add" hideLabel compact bind:value={newStepType} options={STEP_OPTIONS} data-testid="select-new-step" />
+                <Button variant="secondary" size="sm" onclick={handleAddStep} data-testid="btn-add-step">Add step</Button>
             </div>
         </div>
 
         {#if activeSteps.length === 0}
-            <div class="empty-steps">
-                <p>No steps in workflow. Select a preset above or add custom steps to begin.</p>
-            </div>
+            <EmptyState title="No steps yet" body="Select a preset above or add a step to begin." />
         {:else}
             <div class="steps-list" data-testid="active-steps-list">
                 <For items={activeSteps}>
                     {#snippet children(step, index)}
-                    <div class="step-card" data-testid="step-card">
-                        <div class="step-card-header">
-                            <div class="step-card-title">
-                                <span class="step-number">#{index + 1}</span>
-                                <span class="step-icon">{getStepIcon(step)}</span>
-                                <span class="step-name">{getStepTitle(step)}</span>
+                        <div class="step-card" data-testid="step-card">
+                            <div class="step-card-header">
+                                <div class="step-card-title">
+                                    <span class="step-number">#{index + 1}</span>
+                                    <span class="step-icon" aria-hidden="true">{getStepIcon(step)}</span>
+                                    <span class="step-name">{getStepTitle(step)}</span>
+                                </div>
+                                <div class="step-controls">
+                                    <Button variant="plain" size="sm" ariaLabel="Move step up" title="Move up" disabled={index === 0} disabledReason="This is the first step" data-testid={`btn-move-up-${index}`} onclick={() => handleMoveUp(index)}>▲</Button>
+                                    <Button variant="plain" size="sm" ariaLabel="Move step down" title="Move down" disabled={index === activeSteps.length - 1} disabledReason="This is the last step" data-testid={`btn-move-down-${index}`} onclick={() => handleMoveDown(index)}>▼</Button>
+                                    <Button variant="plain" size="sm" ariaLabel="Remove step" title="Remove step" data-testid={`btn-remove-${index}`} onclick={() => handleRemoveStep(index)}>✕</Button>
+                                </div>
                             </div>
-                            <div class="step-controls">
-                                <button
-                                    class="icon-btn"
-                                    onclick={() => handleMoveUp(index)}
-                                    disabled={index === 0}
-                                    title="Move Up"
-                                    data-testid={`btn-move-up-${index}`}
-                                >
-                                    ▲
-                                </button>
-                                <button
-                                    class="icon-btn"
-                                    onclick={() => handleMoveDown(index)}
-                                    disabled={index === activeSteps.length - 1}
-                                    title="Move Down"
-                                    data-testid={`btn-move-down-${index}`}
-                                >
-                                    ▼
-                                </button>
-                                <button
-                                    class="icon-btn btn-delete"
-                                    onclick={() => handleRemoveStep(index)}
-                                    title="Remove Step"
-                                    data-testid={`btn-remove-${index}`}
-                                >
-                                    ✕
-                                </button>
-                            </div>
-                        </div>
 
-                        <!-- Step Specific Configuration -->
-                        <div class="step-config-body">
-                            {#if step.type === 'Compress'}
-                                <label class="field-label">
-                                    Compression Profile:
-                                    <select bind:value={step.profile} class="select-input" data-testid="compress-profile-select">
-                                        <option value="Low">Low (Maximum Quality)</option>
-                                        <option value="Medium">Medium (Recommended)</option>
-                                        <option value="High">High (Maximum Compression)</option>
-                                    </select>
-                                </label>
-                            {:else if step.type === 'Rotate'}
-                                <label class="field-label">
-                                    Rotation Degrees:
-                                    <select bind:value={step.degrees} class="select-input">
-                                        <option value={90}>90° Clockwise</option>
-                                        <option value={180}>180° Half Turn</option>
-                                        <option value={270}>270° Counter-Clockwise</option>
-                                    </select>
-                                </label>
-                            {:else if step.type === 'Watermark'}
-                                <div class="field-row">
-                                    <label class="field-label">
-                                        Watermark Text:
-                                        <input
-                                            type="text"
-                                            bind:value={step.settings.text}
-                                            class="text-input"
-                                            placeholder="CONFIDENTIAL"
-                                            data-testid="watermark-text-input"
-                                        />
-                                    </label>
-                                    <label class="field-label">
-                                        Opacity:
-                                        <input
-                                            type="number"
-                                            step="0.05"
-                                            min="0.1"
-                                            max="1.0"
-                                            bind:value={step.settings.opacity}
-                                            class="text-input small"
-                                        />
-                                    </label>
-                                </div>
-                            {:else if step.type === 'Protect'}
-                                <div class="field-row">
-                                    <label class="field-label">
-                                        Password:
-                                        <input
-                                            type="password"
-                                            bind:value={step.password}
-                                            class="text-input"
-                                            placeholder="Password"
-                                        />
-                                    </label>
-                                    <div class="checkbox-group">
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" bind:checked={step.permissions.allow_print} />
-                                            Print
-                                        </label>
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" bind:checked={step.permissions.allow_copy} />
-                                            Copy
-                                        </label>
+                            <div class="step-config-body">
+                                {#if step.type === 'Compress'}
+                                    <Select label="Compression profile" options={PROFILE_OPTIONS} data-testid="compress-profile-select" bind:value={() => step.profile, (v) => (step.profile = v as typeof step.profile)} />
+                                {:else if step.type === 'Rotate'}
+                                    <Select label="Rotation" options={DEGREE_OPTIONS} bind:value={() => String(step.degrees), (v) => (step.degrees = Number(v))} />
+                                {:else if step.type === 'Watermark'}
+                                    <div class="field-row">
+                                        <Input label="Watermark text" placeholder="CONFIDENTIAL" data-testid="watermark-text-input" bind:value={step.settings.text} />
+                                        <Input type="number" label="Opacity" bind:value={() => String(step.settings.opacity), (v) => (step.settings.opacity = parseNumberOr(v, 0.35))} />
                                     </div>
-                                </div>
-                            {:else if step.type === 'PdfToPdfA'}
-                                <label class="field-label">
-                                    PDF/A Conformance Standard:
-                                    <select bind:value={step.conformance} class="select-input">
-                                        <option value="PdfA1b">PDF/A-1b (Basic)</option>
-                                        <option value="PdfA2b">PDF/A-2b (Recommended)</option>
-                                        <option value="PdfA3b">PDF/A-3b (Embedded Files)</option>
-                                    </select>
-                                </label>
-                            {:else}
-                                <span class="step-hint">Native self-contained transformation. No additional parameters needed.</span>
-                            {/if}
+                                {:else if step.type === 'Protect'}
+                                    <div class="field-row">
+                                        <Input type="password" label="Password" placeholder="Enter a password" autocomplete="off" data-testid="protect-password-input" bind:value={step.password} />
+                                        <div class="checkbox-group">
+                                            <Toggle label="Allow printing" bind:checked={step.permissions.allow_print} />
+                                            <Toggle label="Allow copying" bind:checked={step.permissions.allow_copy} />
+                                        </div>
+                                    </div>
+                                {:else if step.type === 'PdfToPdfA'}
+                                    <Select label="PDF/A conformance standard" options={CONFORMANCE_OPTIONS} bind:value={() => step.conformance, (v) => (step.conformance = v as typeof step.conformance)} />
+                                {:else}
+                                    <span class="step-hint">Built-in transformation. No extra parameters needed.</span>
+                                {/if}
+                            </div>
                         </div>
-                    </div>
                     {/snippet}
                 </For>
             </div>
         {/if}
     </section>
 
-    <!-- Execution Panel -->
+    <!-- Execution -->
     <section class="section execution-section" data-testid="execution-section">
-        <h3>Execute Workflow</h3>
+        <h3>Run the workflow</h3>
         <div class="execution-inputs">
-            <div class="input-group">
-                <label for="workflow-input-file">Input PDF File:</label>
-                <input
-                    id="workflow-input-file"
-                    type="text"
-                    bind:value={inputPath}
-                    placeholder="/path/to/source.pdf"
-                    class="text-input"
-                    data-testid="input-path-field"
-                />
-            </div>
-            <div class="input-group">
-                <label for="workflow-output-file">Output Destination:</label>
-                <input
-                    id="workflow-output-file"
-                    type="text"
-                    bind:value={outputPath}
-                    placeholder="/path/to/destination.pdf"
-                    class="text-input"
-                    data-testid="output-path-field"
-                />
-            </div>
+            <Input label="Input PDF file" placeholder="/path/to/source.pdf" data-testid="input-path-field" bind:value={inputPath} />
+            <Input label="Output destination" placeholder="/path/to/destination.pdf" data-testid="output-path-field" bind:value={outputPath} />
         </div>
 
         <div class="execution-footer">
-            <div class="fail-closed-notice">
-                <span>🛡️ Fail-closed execution: All intermediate steps execute in an isolated staging workspace. Destination will only be updated upon complete chain success.</span>
-            </div>
-            <button
-                class="btn btn-primary btn-large"
-                onclick={handleRunWorkflow}
-                disabled={isSubmitting || activeSteps.length === 0 || !inputPath}
+            <p class="fail-closed-notice">Intermediate steps run in a staging folder. The destination is only written when every step succeeds.</p>
+            <Button
+                variant="primary"
+                size="lg"
+                busy={isSubmitting}
+                disabled={activeSteps.length === 0 || !inputPath}
+                disabledReason={activeSteps.length === 0 ? 'Add at least one step' : 'Enter the input file'}
                 data-testid="btn-run-workflow"
+                onclick={handleRunWorkflow}
             >
-                🚀 Run Workflow ({activeSteps.length} Steps)
-            </button>
+                Run workflow ({activeSteps.length} steps)
+            </Button>
         </div>
     </section>
 </div>
 
 <style>
     .workflows-container {
-        padding: 2rem;
         display: flex;
         flex-direction: column;
-        gap: 1.5rem;
+        gap: var(--space-4);
+        padding: var(--space-4);
         color: var(--text-primary);
-        max-width: 1200px;
-        margin: 0 auto;
-        width: 100%;
     }
 
     .header-title {
         display: flex;
         align-items: center;
-        gap: 1rem;
-    }
-
-    .header-title .icon {
-        font-size: 2.2rem;
+        gap: var(--space-3);
     }
 
     .header-title h2 {
-        font-size: 1.75rem;
         margin: 0;
-        font-weight: 700;
-        color: var(--text-primary);
+        font-size: var(--font-size-title1);
+        color: var(--accent-primary);
     }
 
     .subtitle {
-        margin: 0.25rem 0 0;
-        font-size: 0.9rem;
+        margin: var(--space-1) 0 0;
         color: var(--text-secondary);
-    }
-
-    .alert-banner {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: var(--glass-bg-input);
-        border-left: 4px solid var(--accent-primary);
-        padding: 0.75rem 1rem;
-        border-radius: var(--radius-sm, 8px);
-        font-size: 0.9rem;
-        color: var(--text-primary);
-    }
-
-    .close-alert {
-        background: none;
-        border: none;
-        color: var(--text-secondary);
-        font-size: 1.25rem;
-        cursor: pointer;
+        font-size: var(--font-size-footnote);
     }
 
     .section {
         background: var(--glass-bg-surface);
         border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-lg, 14px);
-        box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-sm);
-        padding: 1.5rem;
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
         display: flex;
         flex-direction: column;
-        gap: 1.25rem;
+        gap: var(--space-3);
+    }
+
+    .section h3 {
+        margin: 0;
+        font-size: var(--font-size-title3);
     }
 
     .section-header {
         display: flex;
-        justify-content: space-between;
         align-items: center;
+        justify-content: space-between;
+        gap: var(--space-3);
         flex-wrap: wrap;
-        gap: 0.75rem;
     }
 
-    .section-header h3 {
-        margin: 0;
-        font-size: 1.2rem;
-        color: var(--text-primary);
+    .add-step-bar {
+        display: flex;
+        align-items: flex-end;
+        gap: var(--space-2);
     }
 
-    .badge {
-        font-size: 0.75rem;
-        background: var(--accent-primary);
-        color: var(--text-on-accent);
-        font-weight: 700;
-        padding: 0.25rem 0.5rem;
-        border-radius: var(--radius-xs, 6px);
-        text-transform: uppercase;
-    }
-
-    /* Presets Grid */
-    .presets-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 1rem;
-    }
-
-    .preset-card {
+    .alert-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-md);
         background: var(--glass-bg-input);
         border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-md, 10px);
-        padding: 1.25rem;
+        font-size: var(--font-size-footnote);
+    }
+
+    .presets-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: var(--space-3);
+    }
+
+    .presets-grid :global(.preset-card .lp-btn) {
+        height: auto;
+        min-height: 0;
+        justify-content: flex-start;
+        text-align: left;
+        padding: var(--space-3);
+        font-weight: 400;
+    }
+
+    .preset-body {
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
-        cursor: pointer;
-        transition: all var(--dur-fast, 120ms) ease;
-    }
-
-    .preset-card:hover {
-        border-color: var(--accent-primary);
-        background: var(--glass-bg-hover);
-        transform: translateY(-2px);
-    }
-
-    .preset-card.selected {
-        border-color: var(--accent-primary);
-        background: var(--glass-bg-active);
-        box-shadow: 0 0 12px var(--accent-ring);
+        gap: var(--space-2);
+        white-space: normal;
     }
 
     .preset-header {
         display: flex;
-        justify-content: space-between;
         align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2);
     }
 
     .preset-title {
-        font-weight: 700;
-        font-size: 1.05rem;
-        color: var(--text-primary);
+        font-weight: 600;
+        font-size: var(--font-size-body);
     }
 
-    .preset-active-badge {
-        background: var(--accent-primary);
-        color: var(--text-on-accent);
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 0.2rem 0.5rem;
-        border-radius: var(--radius-xs, 6px);
-        text-transform: uppercase;
+    .preset-active-badge,
+    .step-chip {
+        font-size: var(--font-size-caption);
+        padding: 0 var(--space-2);
+        border-radius: var(--radius-pill);
+        background: var(--glass-bg-active);
     }
 
-    .preset-desc {
-        font-size: 0.85rem;
-        color: var(--text-secondary);
+    .preset-desc,
+    .step-hint,
+    .fail-closed-notice {
         margin: 0;
+        color: var(--text-secondary);
+        font-size: var(--font-size-footnote);
         line-height: 1.4;
     }
 
@@ -630,253 +524,72 @@
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        gap: 0.4rem;
-        margin-top: auto;
+        gap: var(--space-1);
     }
 
-    .step-chip {
-        background: var(--glass-bg-input);
-        color: var(--accent-primary);
-        border: 1px solid var(--glass-border-subtle);
-        font-size: 0.75rem;
-        font-weight: 600;
-        padding: 0.2rem 0.5rem;
-        border-radius: var(--radius-xs, 6px);
-    }
-
-    .chip-arrow {
-        color: var(--text-tertiary);
-        font-size: 0.75rem;
-    }
-
-    /* Add Step Bar */
-    .add-step-bar {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-    }
-
-    /* Step Cards List */
     .steps-list {
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
+        gap: var(--space-3);
     }
 
     .step-card {
-        background: var(--glass-bg-surface);
         border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-md, 10px);
-        padding: 1rem;
+        border-radius: var(--radius-md);
+        background: var(--glass-bg-input);
+        padding: var(--space-3);
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
+        gap: var(--space-3);
     }
 
     .step-card-header {
         display: flex;
-        justify-content: space-between;
         align-items: center;
+        justify-content: space-between;
+        gap: var(--space-3);
     }
 
-    .step-card-title {
+    .step-card-title,
+    .step-controls {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: var(--space-2);
     }
 
     .step-number {
-        font-size: 0.8rem;
-        font-family: var(--font-mono, monospace);
-        color: var(--text-secondary);
-        background: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        padding: 0.15rem 0.4rem;
-        border-radius: var(--radius-xs, 6px);
-    }
-
-    .step-icon {
-        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--accent-primary);
     }
 
     .step-name {
         font-weight: 600;
-        color: var(--text-primary);
-        font-size: 0.95rem;
-    }
-
-    .step-controls {
-        display: flex;
-        gap: 0.35rem;
-    }
-
-    .icon-btn {
-        background: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        color: var(--text-primary);
-        padding: 0.3rem 0.6rem;
-        border-radius: var(--radius-xs, 6px);
-        cursor: pointer;
-        font-size: 0.8rem;
-        transition: background var(--dur-fast, 120ms) ease;
-    }
-
-    .icon-btn:hover:not(:disabled) {
-        background: var(--glass-bg-hover);
-    }
-
-    .icon-btn:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-    }
-
-    .btn-delete:hover:not(:disabled) {
-        background: var(--semantic-danger);
-        color: var(--text-on-accent);
-    }
-
-    .step-config-body {
-        border-top: 1px solid var(--glass-border-subtle);
-        padding-top: 0.6rem;
-        font-size: 0.85rem;
-    }
-
-    .step-hint {
-        color: var(--text-secondary);
-        font-style: italic;
-    }
-
-    .field-label {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: var(--text-secondary);
     }
 
     .field-row {
         display: flex;
-        gap: 1.5rem;
-        align-items: center;
+        gap: var(--space-3);
+        align-items: flex-end;
         flex-wrap: wrap;
     }
 
     .checkbox-group {
         display: flex;
-        gap: 1rem;
+        flex-direction: column;
+        gap: var(--space-2);
     }
 
-    .checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 0.35rem;
-        color: var(--text-primary);
-        cursor: pointer;
-    }
-
-    /* Execution Inputs */
     .execution-inputs {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .input-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-    }
-
-    .input-group label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--text-secondary);
-    }
-
-    .text-input {
-        background: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-sm, 8px);
-        padding: 0.6rem 0.85rem;
-        color: var(--text-primary);
-        font-size: 0.9rem;
-    }
-
-    .text-input.small {
-        width: 80px;
-    }
-
-    .select-input {
-        background: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-sm, 8px);
-        padding: 0.5rem 0.75rem;
-        color: var(--text-primary);
-        font-size: 0.85rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-3);
     }
 
     .execution-footer {
         display: flex;
+        align-items: center;
         justify-content: space-between;
-        align-items: center;
+        gap: var(--space-4);
         flex-wrap: wrap;
-        gap: 1rem;
-        border-top: 1px solid var(--glass-border-subtle);
-        padding-top: 1rem;
-    }
-
-    .fail-closed-notice {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        max-width: 600px;
-        line-height: 1.4;
-    }
-
-    .btn {
-        padding: 0.5rem 1rem;
-        border-radius: var(--radius-sm, 8px);
-        font-size: 0.9rem;
-        font-weight: 600;
-        cursor: pointer;
-        border: 1px solid transparent;
-        transition: all var(--dur-fast, 120ms) ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-    }
-
-    .btn:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-    }
-
-    .btn-primary {
-        background: var(--accent-primary);
-        color: var(--text-on-accent);
-    }
-    .btn-primary:hover:not(:disabled) {
-        opacity: 0.9;
-    }
-
-    .btn-secondary {
-        background: var(--glass-bg-input);
-        color: var(--text-primary);
-        border: 1px solid var(--glass-border-subtle);
-    }
-    .btn-secondary:hover:not(:disabled) {
-        background: var(--glass-bg-hover);
-    }
-
-    .btn-large {
-        padding: 0.75rem 1.5rem;
-        font-size: 1rem;
-    }
-
-    .empty-steps {
-        padding: 2rem;
-        text-align: center;
-        color: var(--text-secondary);
-        background: var(--glass-bg-surface);
-        border-radius: var(--radius-md, 10px);
-        border: 1px dashed var(--glass-border-subtle);
     }
 </style>

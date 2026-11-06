@@ -658,3 +658,4 @@ master/app-tauri/src/lib/views/__tests__/SecurityFormsViews.test.ts	Tests: Secur
 master/app-tauri/src/lib/views/__tests__/StaleNotices.test.ts	Tests: a new action clears the previous notice (Convert from/to, Pipelines); input-neutral "No file is selected"
 master/app-tauri/src/lib/components/PdfViewerLayout.test.ts	Tests: PdfViewer is not clipped inside tool views (left edge)
 master/crates/lpdf-engine-pdfcraft/tests/redact_page_tests.rs	Tests (BUG-053): redact refuses page 0 / > count / invalid regions (typed errors, nothing written); page N redacted, other pages intact (per-page text)
+master/app-tauri/src/lib/views/__tests__/PipelinesProtect.test.ts	Tests (BUG-057): Pipelines Protect step starts with no password, refuses an empty one, autocomplete off

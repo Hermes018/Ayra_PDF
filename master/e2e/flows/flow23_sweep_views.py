@@ -19,7 +19,9 @@ VIEWS = [("Convert", "convert", ".convert-container"),
          ("Optimize", "optimize", ".view-container"),
          ("Edit", "edit", ".view-container"),
          ("Security", "security", ".view-container"),
-         ("Forms", "forms", ".forms-view")]
+         ("Forms", "forms", ".forms-view"),
+         ("Markdown", "markdown", ".markdown-view-container"),
+         ("Workflows", "workflows", "[data-testid=pipelines-view]")]
 
 RAW_JS = ("return [...document.querySelectorAll(arguments[0] + ' button, ' + arguments[0] + ' input, ' + arguments[0] + ' select')]"
           ".filter(e => !e.closest('.lp-btnwrap, .lp-iconwrap, .lp-field, .lp-swatchwrap, .lp-togglewrap')).length")

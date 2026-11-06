@@ -1801,6 +1801,48 @@ mod tests {
         let _ = fs::remove_dir_all(&dir);
     }
 
+    // A batch with ONE invalid redaction page writes NOTHING (all-or-nothing): the valid redaction in the same
+    // commit must not be saved either.
+    #[test]
+    fn a_redaction_batch_with_one_invalid_page_writes_nothing() {
+        let dir = std::env::temp_dir().join(format!("lpdf_bug054b_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let input = dir.join("one-page.pdf");
+        create_sample_pdf(&input);
+        let before = fs::read(&input).unwrap();
+        let annot = |id: &str, page: u32| -> StudioAnnotationDto {
+            serde_json::from_value(serde_json::json!({
+                "id": id, "kind": "redact", "pageIndex": page,
+                "bboxPt": [10.0, 10.0, 200.0, 100.0]
+            }))
+            .unwrap()
+        };
+        let out = dir.join("out.pdf");
+        let r = studio_save_annotations(
+            input.to_string_lossy().to_string(),
+            out.to_string_lossy().to_string(),
+            vec![annot("ok", 0), annot("bad", 4)],
+            true,
+        );
+        assert!(
+            r.as_ref()
+                .is_err_and(|e| e.contains("REDACTION_PAGE_OUT_OF_RANGE")),
+            "{r:?}"
+        );
+        assert!(
+            !out.exists(),
+            "no output file, not even for the valid redaction"
+        );
+        assert!(!out.with_extension("tmp").exists());
+        assert_eq!(
+            fs::read(&input).unwrap(),
+            before,
+            "the original is untouched"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
     fn create_sample_pdf(path: &Path) {
         let pdf_bytes = b"%PDF-1.4\n\
 1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n\

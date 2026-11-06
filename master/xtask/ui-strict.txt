@@ -50,3 +50,5 @@ lib/views/SecurityView.svelte
 lib/components/PdfViewer.svelte
 lib/views/ConvertFromPdfView.svelte
 lib/views/ConvertToPdfView.svelte
+lib/views/MarkdownView.svelte
+lib/views/PipelinesView.svelte
