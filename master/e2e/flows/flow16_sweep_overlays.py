@@ -4,7 +4,7 @@ flows: run with `--flows 16`.
 For light and dark at 1200x800 and 1600x1000: Organize -> "Rotate pages" (page 2) raises a toast (completed or
 failed, both are shown); screenshot it; "Clear" dismisses it. Then Help and FAQ opens the dialog (focus inside,
 first topic expands), screenshot, Escape closes it. No console errors.
-Screenshots: <out>/screens/sweep_toast_<theme>_<WxH>.png and sweep_faq_<theme>_<WxH>.png
+Screenshots: <out>/runs/<run-id>/screens/sweep_toast_<theme>_<WxH>.png and sweep_faq_<theme>_<WxH>.png
 """
 import os
 import time

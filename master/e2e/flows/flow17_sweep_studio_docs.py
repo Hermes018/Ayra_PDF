@@ -5,7 +5,7 @@ Opens two PDFs (two tabs), then for light and dark at 1200x800 and 1600x1000 tak
 with its tab strip and pinned-tools bar. Checks: both tabs are ui/ Buttons with role=tab and exactly one
 selected; the tab close buttons and the pin bar controls are ui/ components; switching tabs by click works;
 no console errors. (The unsaved-changes close dialog is covered by StudioTabs.test.ts.)
-Screenshots: <out>/screens/sweep_studio-docs_<theme>_<WxH>.png
+Screenshots: <out>/runs/<run-id>/screens/sweep_studio-docs_<theme>_<WxH>.png
 """
 import os
 import time

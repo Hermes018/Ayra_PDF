@@ -4,7 +4,7 @@ flows: run with `--flows 15`.
 Opens a PDF, then for light and dark at 1200x800 and 1600x1000 takes a screenshot of the shell, and checks:
 every control in the sidebar and the help button is a ui/ component, the current view is marked
 aria-current, collapse and expand work through the buttons, and there are no console errors.
-Screenshots: <out>/screens/sweep_shell_<theme>_<WxH>.png
+Screenshots: <out>/runs/<run-id>/screens/sweep_shell_<theme>_<WxH>.png
 """
 import os
 import time

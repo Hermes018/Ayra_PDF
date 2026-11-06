@@ -4,7 +4,7 @@ run with `--flows 20`.
 For light and dark at 1200x800 and 1600x1000: the Ledger drawer is opened and screenshotted; the Paste-to-pages
 dialog is opened (focus inside, Escape closes) and screenshotted. Checks that every control in the drawer and the
 dialog is a ui/ component and that there are no console errors.
-Screenshots: <out>/screens/sweep_ledger_<theme>_<WxH>.png and sweep_ledger-dialog_<theme>_<WxH>.png
+Screenshots: <out>/runs/<run-id>/screens/sweep_ledger_<theme>_<WxH>.png and sweep_ledger-dialog_<theme>_<WxH>.png
 """
 import os
 import time

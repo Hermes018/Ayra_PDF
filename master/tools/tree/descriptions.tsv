@@ -630,6 +630,7 @@ master/app-tauri/src/lib/core/commandEngine.capture.test.ts	Tests: Escape during
 master/e2e/flows/flow20_sweep_ledger.py	E2E smoke (sweep): annotation ledger and its dialogs, light/dark screenshots at 2 sizes, no console errors
 master/app-tauri/src/lib/components/studio/AnnotationLedger.audio.test.ts	Tests: closing the audio-note dialog while recording asks "Discard recording?"; discard stops the recorder and mic
 master/e2e/flows/flow21_sweep_canvas_chrome.py	E2E smoke (sweep): Studio canvas chrome (toolbars, banners, overlays), light/dark screenshots at 2 sizes, no console errors
+master/e2e/test_screens_layout.py	Self-test (BUG-048): per-run screenshot folders survive later runs; out/screens points at the newest run
 master/app-tauri/src/lib/components/ui/ColorSwatch.svelte	Colour swatch button: aria-label names the colour, aria-pressed + ring for the selected one
 master/e2e/flows/flow22_sweep_pill.py	E2E smoke (sweep): property pill (compact selects, swatches, presets), light/dark screenshots at 2 sizes, no console errors
 master/app-tauri/src/lib/views/__tests__/StudioUndoTooltip.test.ts	Tests: Studio Undo tooltip text follows commands.undoLabel; aria-label stays "Undo"
