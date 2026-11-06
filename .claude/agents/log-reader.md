@@ -2,6 +2,7 @@
 name: log-reader
 description: Read build/test logs (master/logs/runs/*.log) and extract failures verbatim. Mechanical.
 model: claude-haiku-5-5
+effort: low
 tools: Read, Grep, Glob, Bash
 ---
 

@@ -2,6 +2,7 @@
 name: explorer
 description: Locate files, symbols and call sites; broad read-only search. Mechanical: output is checked by a later step.
 model: claude-haiku-5-5
+effort: low
 tools: Read, Grep, Glob, Bash
 ---
 

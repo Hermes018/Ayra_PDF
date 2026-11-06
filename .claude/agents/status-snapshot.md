@@ -2,6 +2,7 @@
 name: status-snapshot
 description: Run a script or status command (scheduler, disk, RAM, git) and report its output. Mechanical.
 model: claude-haiku-5-5
+effort: low
 tools: Read, Grep, Glob, Bash
 ---
 
