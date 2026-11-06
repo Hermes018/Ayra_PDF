@@ -189,3 +189,9 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 
 ## BUG-041 [P2] BUG-031 follow-ups — status: open
 - run.py: on SIGTERM/SIGINT, SystemExit skips the post-finally LEAK message and report["leak"] (leftovers are still killed, and the exit code is 128+sig). test_leak_check.py:51-62: check 4 uses an inline child script, so run.py's real signal handler and setsid are not exercised. Found by: release review. Owner: release
+
+## BUG-042 [P2] UI audit/triage follow-ups — status: open
+- `attachKeyboard(window)` is called in two places (+page.svelte:34 and SpatialCanvas.svelte:907), so Escape handlers can run twice; harmless today because the handler is idempotent. Escape no longer closes the FAQ during chord capture (arguably better; record it as intended). FaqModalKeys.test.ts lacks two cases: Escape with another dialog open, and Escape after unmount. Found by: A2 review. Owner: fixes
+
+## BUG-043 [P1] commandEngine swallows Space on focused buttons: Space can't press any button, anywhere in the app (keyboard accessibility) — status: open
+- Found by: C0 library builder. A global Space binding in commandEngine.svelte.ts calls preventDefault even when a button (or another native control) has focus. Fix (a bug fix, allowed under the freeze): skip the binding when the event target is an interactive element. Add a characterization test first, then a test that Space activates a focused Button. Owner: fixes (sweep batch)
