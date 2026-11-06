@@ -59,4 +59,11 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 11:26 | fixes-build | g7 fix round (autocomplete, audio close, reshoot) | sonnet/medium | ok | | |
 | 2026-11-06 11:30 | merge-verify | g7 password recheck (read-only) | opus/high | ok | | PASS |
 | 2026-11-06 11:30 | review+gate+visual | g7 fix round | sonnet/medium | ok | | GREEN; ledger visual minors → g8 |
-| 2026-11-06 11:30 | fixes-build | sweep group 8 (SpatialCanvas chrome + ledger visual + signature labels) | sonnet/medium | running | | |
+| 2026-11-06 11:30 | fixes-build | sweep group 8 (SpatialCanvas chrome + ledger visual + signature labels) | sonnet/medium | ok | | 124→0; save/redaction flagged |
+| 2026-11-06 11:37 | review+gate+visual | sweep g8 | sonnet/medium | fail | | gate GREEN; 2 majors (undo label, dark bar contrast) |
+| 2026-11-06 11:37 | merge-verify | g8 save/flatten/redaction + flows 8,11 | opus/high | ok | | handlers unchanged; flows 8,11 PASS |
+| 2026-11-06 11:45 | fixes-build | g8 fix round (undo tooltip, dark bar contrast, stale tooltip) | sonnet/medium | ok | | |
+| 2026-11-06 11:49 | review+gate | g8 fix delta | sonnet/medium | ok | | PASS, GREEN |
+| 2026-11-06 11:49 | fixes-build | sweep group 9 PropertyPill (+ undo wiring test) | sonnet/medium | ok | | last main-flow screen; app total 808 in 14 non-main files |
+| 2026-11-06 11:54 | review+gate+visual | sweep g9 | sonnet/medium | running | | |
+| 2026-11-06 11:54 | release-build | BUG-048 per-run screenshots | sonnet/medium (agent file) | running | | |
