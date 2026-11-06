@@ -198,3 +198,6 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 
 ## BUG-044 [P2] Tooltip covers neighbouring text (e.g. the "Activations" caption in the gallery) even though it stays on-screen — status: open
 - tooltipPlacement.ts clamps to the viewport and flips correctly but does not avoid neighbouring content. Also, contrast.test.ts covers only the dialog, although its header mentions Tooltip. Found by: C0 delta recheck. Owner: fixes
+
+## BUG-045 [P2] The "PINS" toolbar at bottom-left overlaps the page (seen in the shell screenshots; it predates the sweep) — status: open
+- Found by: sweep g2 visual review. Candidate for the Studio chrome sweep group, or UI_BACKLOG.md. Owner: fixes
