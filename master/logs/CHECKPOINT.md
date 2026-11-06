@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 11:30 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 11:49 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -10,9 +10,9 @@ Updated 2026-11-06 11:30 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 ## Worktrees
 | Worktree | HEAD | State |
 |---|---|---|
-| main | 388f396 (tags sweep-g7-green, release-bug046-green, …) | lead |
+| main | f8ef981 (tags sweep-g8-green … sweep-g1-green, ui-library-green, …) | lead |
 | wt/engines | 9919398 + CP3 uncommitted | PARKED; target dir deleted (owner 08:50) — rebuild needed before CP3 tests |
-| wt/fixes | 388f396 | RUNNING (sonnet/med): ledger visual fixes (dark contrast, clipped select, wrap) → sweep g8 SpatialCanvas chrome + signature labels/flow 7 selectors; then g9 PropertyPill |
+| wt/fixes | f8ef981 | RUNNING (sonnet/med): sweep g9 PropertyPill (last main-flow screen) + undo-label wiring test; then inventory totals |
 | wt/release | daa2bb4 (merged) | idle until Sat AM packaging (D); follow-ups BUG-041/047/048 |
 | android | 644caf3 | paused until Sun |
 
