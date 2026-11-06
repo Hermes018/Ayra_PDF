@@ -18,11 +18,11 @@ Updated 2026-11-06 16:12 Asia/Dhaka by the lead (Sonnet 5.5). If this disagrees 
 ## E2E on main 83fd51c (golden run 20261106T144532)
 - PASS: 2–11, 14–23, 13 (needs VITE_LPDF_GALLERY=1 build, binary e2e/out/bin/localpdf-studio-gallery). BLOCKED: 1 (no rpm until packaging). FAIL: 12 soak.
 - **BUG-061** soak memory +13 MB/min (745→1,460 MB, 1.9×; FDs flat): diagnostic queued (close tabs per iteration, short soaks, idle check). **BUG-062** driver disconnect: implement counted retry (release).
-- **BUG-063 (P0 until triaged):** real-PDF rerun regressed steps 3/5/6 (markup save 8/8, Edit Text DF-01, redaction DF-04). Leading hypothesis: dogfood driver predates the sweep's renamed selectors. Triage RUNNING (release builder, evidence first, no app edits).
+- **BUG-063 closed — driver drift** (stale post-sweep labels in the dogfood driver; app fine: markup 8/8, redaction DF-04, Edit Text DF-01 PASS with current selectors; step 3 text coverage = known P2 BUG-038).
 
 ## Next actions
-1. BUG-063 verdict → if app regression: fix test-first (Opus-high); if drift: fix the driver and rerun steps 3/5/6.
-2. Then BUG-062 retry policy + BUG-061 diagnostic (one release-builder job; app instance is shared).
+1. BUG-062 retry + BUG-061 diagnostic (release job below).
+2. Then the full 1 h soak on the RC package (in B2).
 3. Packaging: B1 building (above); then B2 = no-network clean-install + network-isolated run + docs (README, QUICKSTART, CHANGELOG, KNOWN_ISSUES) → RC verifier (Opus high) → tag v0.2.0-rc1 → READY TO PUSH.
 
 ## Standing rules
