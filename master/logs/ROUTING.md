@@ -41,4 +41,7 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 10:31 | review+verify+visual | sweep g2 | sonnet/medium | ok | | PASS, gate GREEN |
 | 2026-11-06 10:32 | fixes-build | sweep group 3 (Toast, FAQ) | sonnet/medium | ok | | |
 | 2026-11-06 10:42 | review+verify+visual | sweep g3 | sonnet/medium | ok | | PASS; audit overclaim gap found |
-| 2026-11-06 10:44 | fixes-build | sweep group 4 (+ footer wording, overclaim audit gap) | sonnet/medium | running | | |
+| 2026-11-06 10:44 | fixes-build | sweep group 4 (+ footer wording, overclaim audit gap) | sonnet/medium | ok | | close dialog flagged (save path) |
+| 2026-11-06 10:54 | reviewer | sweep g4 | sonnet/medium | ok | | PASS, a11y minors |
+| 2026-11-06 10:54 | merge-verify | sweep g4 (close/save dialog) | opus/high | ok | | GREEN; found untested guard (probe proved) |
+| 2026-11-06 10:58 | fixes-build | sweep group 5 (+ Escape-during-save test, alert Dialog, Button attrs) | sonnet/medium | running | | |
