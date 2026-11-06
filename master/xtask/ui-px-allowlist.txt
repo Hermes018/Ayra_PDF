@@ -1,0 +1,14 @@
+# raw-px exemptions: canvas / geometry code. Tokens apply only to UI chrome (spacing, type, radii, control sizes).
+# Format: path[:line-range|:symbol] — reason     (path relative to workspace master/; reason is REQUIRED)
+# symbol = substring of the offending source line (the declaration line itself).
+app-tauri/src/lib/components/studio/RadialMenu.svelte:335 — SVG text sized to the radial hub geometry
+app-tauri/src/lib/components/studio/RadialMenu.svelte:377 — SVG text sized to the wedge geometry
+app-tauri/src/lib/components/studio/RadialMenu.svelte:415 — SVG text sized to the flyout geometry
+# local-key deferred -> after release: element-scoped Enter/Space activation on role=button elements,
+# bound to component-local state/handlers (handleBrowse, selectMode, applyPreset); not global shortcuts.
+app-tauri/src/lib/components/Dropzone.svelte:71 — element-level Enter/Space activation of role=button, calls local handleBrowse
+app-tauri/src/lib/components/Dropzone.svelte:92 — element-level Enter/Space activation of role=button, calls local handleBrowse
+app-tauri/src/lib/views/AiSummarizeView.svelte:230 — mode card Enter/Space activation, local selectMode and isLlmReady state
+app-tauri/src/lib/views/AiSummarizeView.svelte:284 — mode card Enter/Space activation, local selectMode and isLlmReady state
+app-tauri/src/lib/views/PipelinesView.svelte:213 — preset card Enter/Space activation, local applyPreset state
+app-tauri/src/lib/components/FaqModal.svelte:38 — backdrop Enter activation mirroring its click handler, uses local onBackdropClick (event.target check)

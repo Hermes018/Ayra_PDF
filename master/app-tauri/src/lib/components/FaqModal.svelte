@@ -1,5 +1,7 @@
 <script lang="ts">
     import { faqStore, SUPPORTED_LANGUAGES, type SupportedFaqLang } from '$lib/i18n/faqStore.svelte';
+    import { onMount } from 'svelte';
+    import { commands } from '$lib/core/commandEngine.svelte';
     import For from '$lib/components/For.svelte';
 
     let expandedId = $state<string | null>(null);
@@ -8,11 +10,14 @@
         expandedId = expandedId === id ? null : id;
     }
 
-    function handleKeydown(event: KeyboardEvent) {
-        if (event.key === 'Escape' && faqStore.isOpen) {
+    // Escape is routed through the single keyboard entry point (commandEngine).
+    onMount(() =>
+        commands.registerEscape(() => {
+            if (!faqStore.isOpen) return false;
             faqStore.close();
-        }
-    }
+            return true;
+        })
+    );
 
     function onBackdropClick(event: MouseEvent) {
         if (event.target === event.currentTarget) {
@@ -25,8 +30,6 @@
         faqStore.loadLanguage(target.value as SupportedFaqLang);
     }
 </script>
-
-<svelte:window onkeydown={handleKeydown} />
 
 {#if faqStore.isOpen}
     <div

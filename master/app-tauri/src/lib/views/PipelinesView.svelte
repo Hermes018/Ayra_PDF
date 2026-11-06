@@ -189,7 +189,7 @@
     {#if executionMessage}
         <div class="alert-banner" data-testid="execution-message">
             <span>{executionMessage}</span>
-            <button class="close-alert" onclick={() => { executionMessage = null; }}>×</button>
+            <button class="close-alert" aria-label="Dismiss this message" title="Dismiss this message" onclick={() => { executionMessage = null; }}>×</button>
         </div>
     {/if}
 

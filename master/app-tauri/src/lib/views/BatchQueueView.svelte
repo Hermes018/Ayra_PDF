@@ -285,7 +285,7 @@
     {#if actionMessage}
         <div class="alert-banner">
             <span>{actionMessage}</span>
-            <button class="close-alert" onclick={() => { actionMessage = null; }}>×</button>
+            <button class="close-alert" aria-label="Dismiss this message" title="Dismiss this message" onclick={() => { actionMessage = null; }}>×</button>
         </div>
     {/if}
 

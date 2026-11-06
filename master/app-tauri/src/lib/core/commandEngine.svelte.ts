@@ -67,6 +67,19 @@ export class CommandBusAndShortcutEngine {
   spaceSpringActive = $state(false);
   readonly journal: ControlMessage[] = []; // headless replay/verification trace (cleared per session)
 
+  #escapeHandlers = new Set<() => boolean>();
+
+  /**
+   * Register an Escape handler (e.g. a modal). Runs before the typing-target guard, so Escape works
+   * while focus is in an input. Return true when the key was consumed. Returns an unregister fn.
+   */
+  registerEscape(h: () => boolean): () => void {
+    this.#escapeHandlers.add(h);
+    return () => {
+      this.#escapeHandlers.delete(h);
+    };
+  }
+
   register(id: string, h: CommandHandler): void {
     this.#handlers.set(id, h);
   }
@@ -232,6 +245,9 @@ export class CommandBusAndShortcutEngine {
         this.#chordCaptureResolver = null;
         resolver(chord);
         return;
+      }
+      if (e.key === 'Escape') {
+        for (const h of this.#escapeHandlers) h();
       }
       const el = e.target as HTMLElement | null;
       if (el && (el.isContentEditable || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;

@@ -490,7 +490,7 @@
   >
     <div class="modal-head">
       <span>{MATH_TEXT_LABS.name} <span class="labs-badge" data-testid="labs-badge">{LABS_BADGE}</span></span>
-      <button type="button" class="icon-close-btn" onclick={() => (inserts.latexModalOpen = false)}>
+      <button type="button" class="icon-close-btn" aria-label="Close the math text dialog" title="Close the math text dialog" onclick={() => (inserts.latexModalOpen = false)}>
         <StudioIcon name="close" size={12} />
       </button>
     </div>
@@ -552,7 +552,7 @@
       <span>Architectural Signature Stamp</span>
       <button
         type="button"
-        class="icon-close-btn"
+        class="icon-close-btn" aria-label="Close the signature stamp dialog" title="Close the signature stamp dialog"
         onclick={() => (inserts.signatureModalOpen = false)}
       >
         <StudioIcon name="close" size={12} />
@@ -678,7 +678,7 @@
   >
     <div class="modal-head">
       <span>Voice Audio Note (PDF /Sound Attachment)</span>
-      <button type="button" class="icon-close-btn" onclick={() => (inserts.audioModalOpen = false)}>
+      <button type="button" class="icon-close-btn" aria-label="Close the voice note dialog" title="Close the voice note dialog" onclick={() => (inserts.audioModalOpen = false)}>
         <StudioIcon name="close" size={12} />
       </button>
     </div>
@@ -721,7 +721,7 @@
       <span>Paste Selected Markup to Pages...</span>
       <button
         type="button"
-        class="icon-close-btn"
+        class="icon-close-btn" aria-label="Close the paste-to-pages dialog" title="Close the paste-to-pages dialog"
         onclick={() => (inserts.pastePagesModalOpen = false)}
       >
         <StudioIcon name="close" size={12} />

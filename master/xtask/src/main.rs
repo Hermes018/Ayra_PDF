@@ -4,6 +4,7 @@ use std::path::Path;
 use std::process::{exit, Command};
 
 mod notices;
+mod ui_audit;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -15,7 +16,7 @@ fn main() {
     match args[1].as_str() {
         "protocol-lint" => run_protocol_lint(),
         "feature-map-check" => run_feature_map_check(),
-        "studio-audit" => run_studio_audit(args.get(2).map(|s| s.as_str()) == Some("--strict")),
+        "studio-audit" => run_studio_audit(&args[2..]),
         "gate" => run_gate(),
         "test-offline" => run_test_offline(),
         "fuzz" | "hostile" => run_fuzz(&args[2..]),
@@ -577,7 +578,22 @@ fn run_feature_map_check() {
     println!("feature-map-check passed! All {} features cross-checked with valid status tags and evidence.", total);
 }
 
-fn run_studio_audit(strict: bool) {
+/// `studio-audit [--strict [<glob-list-file>]] [--list] [--write-inventory]`
+///
+/// - Studio checks (keydown / placeholder / deliverables): unchanged; `--strict` fails on any.
+/// - UI-consistency scan of every `.svelte` (ui_audit.rs): report-only by default (totals per rule
+///   and per file); `--list` prints every `file:line rule message`; `--strict <file>` additionally
+///   fails on any violation in the files matched by the glob list; `--write-inventory` writes
+///   `docs/UI_CONSISTENCY_INVENTORY.md`.
+fn run_studio_audit(args: &[String]) {
+    let strict = args.iter().any(|a| a == "--strict");
+    let strict_file = args
+        .iter()
+        .position(|a| a == "--strict")
+        .and_then(|i| args.get(i + 1))
+        .filter(|a| !a.starts_with("--"));
+    let list = args.iter().any(|a| a == "--list");
+    let write_inventory = args.iter().any(|a| a == "--write-inventory");
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
     let mut warnings = Vec::new();
 
@@ -662,6 +678,8 @@ fn run_studio_audit(strict: bool) {
         println!("  - {}", w);
     }
 
+    let ui_failed = run_ui_audit(workspace_root, strict_file, list, write_inventory);
+
     if strict && !warnings.is_empty() {
         eprintln!(
             "studio-audit failed in --strict mode with {} findings.",
@@ -669,4 +687,110 @@ fn run_studio_audit(strict: bool) {
         );
         exit(1);
     }
+    if ui_failed {
+        exit(1);
+    }
+}
+
+/// UI-consistency part of studio-audit. Returns true when `--strict <file>` found violations in
+/// swept files.
+fn run_ui_audit(
+    workspace_root: &Path,
+    strict_file: Option<&String>,
+    list: bool,
+    write_inventory: bool,
+) -> bool {
+    use std::collections::BTreeMap;
+    use ui_audit::Rule;
+
+    let patterns = match strict_file {
+        Some(f) => {
+            let path = Path::new(f);
+            let path = if path.is_absolute() || path.exists() {
+                path.to_path_buf()
+            } else {
+                workspace_root.join(f)
+            };
+            match fs::read_to_string(&path) {
+                Ok(c) => ui_audit::parse_patterns(&c),
+                Err(e) => {
+                    eprintln!(
+                        "studio-audit: cannot read strict list {}: {}",
+                        path.display(),
+                        e
+                    );
+                    exit(2);
+                }
+            }
+        }
+        None => Vec::new(),
+    };
+
+    let scan = ui_audit::scan_tree(workspace_root);
+    let mut per_file: BTreeMap<&str, usize> = BTreeMap::new();
+    for v in &scan.violations {
+        *per_file.entry(v.file.as_str()).or_insert(0) += 1;
+    }
+    println!(
+        "ui-audit: {} violations in {} of {} .svelte files (report-only unless --strict <list>)",
+        scan.violations.len(),
+        per_file.len(),
+        scan.files.len()
+    );
+    println!("  per rule:");
+    for r in Rule::ALL {
+        let n = scan.violations.iter().filter(|v| v.rule == r).count();
+        println!("    {:<18} {}", r.id(), n);
+    }
+    let mut ranked: Vec<(&&str, &usize)> = per_file.iter().collect();
+    ranked.sort_by(|a, b| b.1.cmp(a.1).then(a.0.cmp(b.0)));
+    println!("  per file:");
+    for (f, n) in &ranked {
+        println!("    {:>5}  {}", n, f);
+    }
+    if list {
+        for v in &scan.violations {
+            println!("{}", v.render());
+        }
+    }
+
+    if write_inventory {
+        let md = ui_audit::render_inventory_with(
+            &scan.violations,
+            &scan.files,
+            &ui_audit::inventory_notes(&scan),
+        );
+        let out = workspace_root.join("docs/UI_CONSISTENCY_INVENTORY.md");
+        match fs::write(&out, md) {
+            Ok(()) => println!("ui-audit: wrote {}", out.display()),
+            Err(e) => {
+                eprintln!("ui-audit: cannot write {}: {}", out.display(), e);
+                exit(2);
+            }
+        }
+    }
+
+    if strict_file.is_some() {
+        let swept: Vec<&ui_audit::Violation> = scan
+            .violations
+            .iter()
+            .filter(|v| ui_audit::is_swept(&patterns, &v.file))
+            .collect();
+        println!(
+            "ui-audit strict: {} swept pattern(s), {} violation(s) in swept files",
+            patterns.len(),
+            swept.len()
+        );
+        if !swept.is_empty() {
+            for v in &swept {
+                eprintln!("{}", v.render());
+            }
+            eprintln!(
+                "studio-audit failed: {} violation(s) in swept files.",
+                swept.len()
+            );
+            return true;
+        }
+    }
+    false
 }

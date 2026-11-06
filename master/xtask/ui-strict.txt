@@ -1,0 +1,3 @@
+# Files the UI-consistency sweep has finished (globs, one per line, relative to app-tauri/src).
+# `cargo xtask studio-audit --strict master/xtask/ui-strict.txt` fails on any violation in these.
+# Empty for now; add a path when its sweep lands, never remove one.

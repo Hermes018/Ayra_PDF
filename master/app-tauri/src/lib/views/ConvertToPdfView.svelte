@@ -123,7 +123,7 @@
             ext: '.docx',
             targetExt: '.pdf',
             icon: '📝',
-            desc: 'Converts Word documents (.docx/.odt) with pixel-perfect pagination and typography via headless Office sidecar.',
+            desc: 'Converts Word documents (.docx/.odt) using LibreOffice running locally in the background. Page breaks and fonts can differ slightly from Word.',
             badge: 'High-Fidelity',
             engine: 'Headless Office Sidecar (LibreOffice)',
             kind: 'office',

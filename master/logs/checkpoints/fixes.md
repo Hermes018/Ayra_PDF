@@ -39,3 +39,9 @@
   looks damaged or hostile and was not opened"; Completed{degraded} → "Opened in repair mode" (non-blocking);
   path_exists replaces read_file_bytes probe in outputNames.pathExistsOnDisk; delete_organize_intermediate
   after successful Organize apply (log on error, keep KI-002, never fail the apply).
+- **A2 (design-consistency, tooling only) — uncommitted:** `cargo xtask studio-audit` now scans all 37 .svelte (new
+  xtask/src/ui_audit.rs; main.rs run_studio_audit parses `--strict [list]`, `--list`, `--write-inventory`). Rules: raw-colour,
+  raw-px, local-key, shared-component, icon-only-label, title-case, overclaim. Legacy Studio checks + `--strict` (no file) exit
+  code unchanged. Red: logs/runs/xtask-ui-red-keep.log (10/17 fail), xtask-ui-red2.log (emoji label); green: xtask-ui-green2.log 17/17.
+  New files: xtask/src/ui_audit.rs, xtask/ui-strict.txt (empty), docs/UI_CONSISTENCY_INVENTORY.md. Next: verify.sh gate, report.
+- **A2 batch (uncommitted):** px allowlist (xtask/ui-px-allowlist.txt, tests red->green t1/t3); raw-px 286->283; FaqModal Escape moved to commandEngine.registerEscape (FaqModalKeys.test.ts green before+after); 5 icon buttons labelled; ConvertToPdf wording; 6 local-key deferred (allowlisted). verify GREEN.
