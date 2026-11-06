@@ -11,7 +11,7 @@ Updated 2026-11-06 16:12 Asia/Dhaka by the lead (Sonnet 5.5). If this disagrees 
 | Worktree | State |
 |---|---|
 | main (7987e45) | all code merged through the UI sweep (tag ui-sweep-complete) + ARGON_TASKS. Untracked LOCALPDF_MASTER_HANDOVER.md in the repo root is NOT ours: left alone |
-| wt/fixes (warm target) | idle; packaging prep A merged (tag packaging-prep-a-green) |
+| wt/fixes (warm target) | RUNNING (sonnet/med): BUG-062 counted retry + BUG-061 diagnostic (soak closes tabs; 20 min runs + idle; harness only) |
 | wt/release | RUNNING (sonnet/med): packaging B1 — measure LTO peak, build AppImage/deb/rpm → ~/LocalPDF-rc1/, SHA256SUMS, SBOM, KI-006 offline proof (no app instance) |
 | wt/engines | parked (CP3 uncommitted, target deleted); android paused |
 

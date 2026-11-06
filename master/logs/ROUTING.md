@@ -111,3 +111,4 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 16:04 | release-build | triage: real-PDF regressions (driver drift vs app regression) | sonnet/medium | ok | | verdict DRIFT with evidence; driver patched outside the repo |
 | 2026-11-06 16:09 | review+verify (combined) | packaging prep A (reset_preferences, Cargo.lock, build hash, About) | opus/high | ok | | GREEN 260/543; minors → BUG-064 |
 | 2026-11-06 16:12 | release-build | packaging B1: measure LTO, build rpm/deb/AppImage, SHA256SUMS, SBOM, KI-006 offline proof | sonnet/medium | running | | no app instance; wt/release cold target |
+| 2026-11-06 16:14 | release-build | BUG-062 counted retry + BUG-061 close-tabs soak diagnostic (in wt/fixes) | sonnet/medium | running | | harness; shares the app instance with nobody (B1 builds only) |
