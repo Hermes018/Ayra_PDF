@@ -622,3 +622,5 @@ master/e2e/flows/flow16_sweep_overlays.py	E2E smoke (sweep): toasts and the FAQ 
 master/docs/UI_BACKLOG.md	UI items deferred to after the release (need behaviour or redesign beyond the consistency sweep)
 master/e2e/flows/flow17_sweep_studio_docs.py	E2E smoke (sweep): document tabs, favourites bar and split layout, light/dark screenshots at 2 sizes, no console errors
 master/e2e/flows/flow18_sweep_studio_panels.py	E2E smoke (sweep): calibration dialog and shortcut settings, light/dark screenshots at 2 sizes, no console errors
+master/e2e/ink_match.py	Matcher for content-less annotations (drawn signature): one /Ink or /Stamp with non-empty InkList or AP, /Rect on page and covering the drawn stroke, enough points (BUG-046)
+master/e2e/test_flow07_matcher.py	Self-test for ink_match.py: 9 synthetic cases (empty, duplicate, off-page, too few points fail; real strokes pass)

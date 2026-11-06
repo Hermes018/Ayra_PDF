@@ -8,6 +8,7 @@ import os
 import time
 
 import common
+import ink_match
 
 NUM = 7
 TITLE = "Insert"
@@ -34,6 +35,31 @@ def _text_editor(app, text):
     btn.click()
     time.sleep(0.3)
     return True
+
+
+N_STROKE_POINTS = 20  # points the flow draws for the signature
+
+
+def _saved_view(path):
+    """(page /MediaBox, annotations with /AP/N and indirect /Length resolved) via qpdf, not the app."""
+    objs, pages = common.qpdf_objects(path)
+    box = [float(v) for v in objs[pages[0]].get("/MediaBox", [0, 0, 612, 792])]
+    annots = common.page_annotations(path)[0]
+
+    def res(v):
+        return objs.get(v, v) if isinstance(v, str) and v.endswith(" R") else v
+    out = []
+    for a in annots:
+        a = dict(a)
+        ap = res(a.get("/AP"))
+        if isinstance(ap, dict):
+            n = res(ap.get("/N"))
+            if isinstance(n, dict):
+                n = dict(n); n["/Length"] = res(n.get("/Length"))
+            a["/AP"] = {"/N": n}
+        a["/InkList"] = [res(s) for s in (res(a.get("/InkList")) or [])]
+        out.append(a)
+    return box, out
 
 
 def run(flow):
@@ -80,7 +106,7 @@ def run(flow):
             return False
         r = pad.rect()
         sx, sy = r["x"] + 20, r["y"] + r["height"] / 2
-        app.s.mouse_path([(sx + i * 10, sy + (12 if i % 2 else -12)) for i in range(20)], step_ms=8)
+        app.s.mouse_path([(sx + i * 10, sy + (12 if i % 2 else -12)) for i in range(N_STROKE_POINTS)], step_ms=8)
         time.sleep(0.2)
         app.click_button("Stamp Signature")
         time.sleep(0.4)
@@ -111,6 +137,17 @@ def run(flow):
               "stamp": {"/Stamp"}, "signature (draw)": {"/Ink", "/Stamp"}}
     for label, node in made.items():
         want = (node or {}).get("text") or ""
+        if label == "signature (draw)" and not want:
+            # content-less (no /Contents): match by subtype + ink/AP content + geometry, from the saved file
+            box, resolved = _saved_view(out)
+            sc = pr["w"] / (box[2] - box[0])
+            nx, ny, nw, nh = node["x"], node["y"], node["w"], node["h"]
+            expect = [box[0] + (nx - pr["x"]) / sc, box[3] - (ny + nh - pr["y"]) / sc,
+                      box[0] + (nx + nw - pr["x"]) / sc, box[3] - (ny - pr["y"]) / sc]
+            ok, detail = ink_match.match_drawn(resolved, box, expect, N_STROKE_POINTS)
+            flow.check(f"{label}: exactly one saved annotation carries it (ink/AP + rect)", ok,
+                       f"{detail}; expected box {[round(v) for v in expect]}; saved {saved}")
+            continue
         hits = [st for st, c in saved if want and c == want]
         flow.check(f"{label}: exactly one saved annotation carries it", len(hits) == 1,
                    f"content {want!r} matched {len(hits)} annotation(s); saved {saved}")
