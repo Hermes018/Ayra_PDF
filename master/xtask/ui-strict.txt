@@ -24,3 +24,7 @@ lib/components/MainLayout.svelte
 # Sweep group 3: Global overlays
 lib/components/ToastContainer.svelte
 lib/components/FaqModal.svelte
+# Sweep group 4: Studio documents
+lib/components/studio/DocumentTabs.svelte
+lib/components/studio/FavoritesBar.svelte
+lib/views/studio/SplitLayout.svelte

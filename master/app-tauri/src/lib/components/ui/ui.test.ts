@@ -71,6 +71,24 @@ describe('Button', () => {
     render(Button, { variant: 'plain', expanded: false, onclick: () => {}, children: text('Topic') });
     expect(screen.getByRole('button', { name: 'Topic' })).toHaveAttribute('aria-expanded', 'false');
   });
+  it('tab / toggle semantics: role, selected, pressed, title and data attributes reach the native button', () => {
+    render(Button, {
+      variant: 'plain',
+      role: 'tab',
+      selected: true,
+      title: 'a.pdf in /docs',
+      attrs: { 'data-path': '/docs/a.pdf' },
+      onclick: () => {},
+      children: text('a.pdf'),
+    });
+    const t = screen.getByRole('tab', { name: 'a.pdf' });
+    expect(t).toHaveAttribute('aria-selected', 'true');
+    expect(t).toHaveAttribute('title', 'a.pdf in /docs');
+    expect(t).toHaveAttribute('data-path', '/docs/a.pdf');
+    cleanup();
+    render(Button, { variant: 'plain', pressed: false, onclick: () => {}, children: text('Pen') });
+    expect(screen.getByRole('button', { name: 'Pen' })).toHaveAttribute('aria-pressed', 'false');
+  });
   it('disabled: ignores clicks, stays focusable, exposes the reason via aria-describedby', async () => {
     const onclick = vi.fn();
     render(Button, { variant: 'primary', onclick, disabled: true, disabledReason: 'Open a PDF to enable Save', children: text('Save') });

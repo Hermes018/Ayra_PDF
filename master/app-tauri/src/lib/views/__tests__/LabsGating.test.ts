@@ -263,7 +263,7 @@ describe('Labs gating (2.16 math text, 8.10 shape guess)', () => {
             tools.favorites = ['preset.pen.a', 'preset.insert.latex'];
             render(FavoritesBar);
             flushSync();
-            const bar = screen.getByRole('toolbar', { name: 'Pinned Tool Presets' });
+            const bar = screen.getByRole('toolbar', { name: 'Pinned tool presets' });
             const pins = within(bar).getAllByRole('button', { pressed: false });
             expect(pins).toHaveLength(1);
             expect(bar.innerHTML).not.toContain(MATH_TEXT_LABS.label);
@@ -361,7 +361,7 @@ describe('Labs gating (2.16 math text, 8.10 shape guess)', () => {
             tools.favorites = ['preset.pen.a', 'preset.insert.latex'];
             render(FavoritesBar);
             flushSync();
-            const bar = screen.getByRole('toolbar', { name: 'Pinned Tool Presets' });
+            const bar = screen.getByRole('toolbar', { name: 'Pinned tool presets' });
             expect(within(bar).getAllByRole('button', { pressed: false })).toHaveLength(2);
             expect(bar.innerHTML).toContain(MATH_TEXT_LABS.label);
         });

@@ -18,6 +18,15 @@
       block?: boolean;
       /** Disclosure (accordion header): exposes aria-expanded. */
       expanded?: boolean;
+      /** Toggle button (aria-pressed). */
+      pressed?: boolean;
+      /** Tab pattern: pass role="tab" with `selected` (aria-selected). */
+      role?: 'tab';
+      selected?: boolean;
+      /** Native tooltip text (use for extra detail; the accessible name still comes from the children). */
+      title?: string;
+      /** Extra data-* attributes for the native button. */
+      attrs?: Record<string, string>;
     };
 
   let {
@@ -32,6 +41,11 @@
     current = false,
     block = false,
     expanded,
+    pressed,
+    role,
+    selected,
+    title,
+    attrs,
     class: klass = '',
     'data-testid': testid,
   }: Props = $props();
@@ -60,6 +74,11 @@
     class:is-current={current}
     aria-current={current ? 'page' : undefined}
     aria-expanded={expanded}
+    aria-pressed={pressed}
+    {role}
+    aria-selected={role === 'tab' ? !!selected : undefined}
+    {title}
+    {...attrs}
     aria-disabled={disabled || undefined}
     aria-busy={busy || undefined}
     aria-describedby={disabled ? tipId : undefined}

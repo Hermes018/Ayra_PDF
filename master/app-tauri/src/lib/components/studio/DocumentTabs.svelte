@@ -10,7 +10,9 @@
   } from '$lib/views/studio/documentSessions';
   // The store's one saver (registered when this module loads); its message explains a refusal.
   import { lastSaveMessage } from '$lib/views/studio/studioSave';
-  import StudioIcon from './StudioIcon.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
+  import IconButton from '$lib/components/ui/IconButton.svelte';
+  import Dialog from '$lib/components/ui/Dialog.svelte';
 
   // Known limit (prototype): undo history is per visit; switching tabs clears it.
   const TAB_NOTE = 'Switching tabs clears Undo history.';
@@ -19,6 +21,15 @@
   let pendingClose = $state<string | null>(null);
   let saving = $state(false);
   let closeError = $state<string | null>(null);
+  // ui/Dialog is driven by `pendingClose`. Escape / backdrop cancel the close, except while a save runs.
+  let dialogOpen = $state(false);
+  $effect(() => {
+    dialogOpen = pendingClose !== null;
+  });
+  function onDialogClose() {
+    if (saving) dialogOpen = true;
+    else pendingClose = null;
+  }
 
   function fileName(path: string): string {
     return path.split(/[\\/]/).pop() || path;
@@ -72,67 +83,72 @@
     {#each appState.activeFiles as path (path)}
       {@const selected = path === appState.currentFile}
       <div class="doc-tab-wrap" class:selected>
-        <button
-          type="button"
+        <Button
+          variant="plain"
+          size="sm"
           role="tab"
-          class="doc-tab"
-          aria-selected={selected}
+          {selected}
           title="{path} — {TAB_NOTE}"
           data-testid="doc-tab"
-          data-path={path}
+          attrs={{ 'data-path': path }}
           onclick={() => appState.setActiveFile(path)}
         >
-          {fileName(path)}
-        </button>
-        <button
-          type="button"
-          class="doc-tab-close"
-          aria-label="Close {fileName(path)}"
-          title="Close {fileName(path)}"
+          <span class="doc-tab-name">{fileName(path)}</span>
+        </Button>
+        <IconButton
+          icon="close"
+          size="sm"
+          ariaLabel="Close {fileName(path)}"
           data-testid="doc-tab-close"
           onclick={() => requestClose(path)}
-        >
-          <StudioIcon name="close" size={10} />
-        </button>
+        />
       </div>
     {/each}
   </div>
 {/if}
 
 {#if pendingClose}
-  <div class="close-tab-backdrop" role="presentation">
-    <div
-      class="close-tab-dialog"
-      role="alertdialog"
-      aria-modal="true"
-      aria-labelledby="close-tab-title"
-      data-testid="close-tab-dialog"
-    >
-      <strong id="close-tab-title">Close "{fileName(pendingClose)}"?</strong>
-      <span>It has unsaved markups or measurements. Save them to a new file first?</span>
-      {#if closeError}
-        <span class="close-tab-error" role="alert">{closeError}</span>
-      {/if}
-      <div class="close-tab-actions">
-        <button type="button" data-testid="close-tab-cancel" disabled={saving} onclick={() => (pendingClose = null)}>
-          Cancel
-        </button>
-        <button type="button" class="danger" data-testid="close-tab-discard" disabled={saving} onclick={discardAndClose}>
-          Discard
-        </button>
-        <button type="button" class="primary" data-testid="close-tab-save" disabled={saving} onclick={saveThenClose}>
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-      </div>
-    </div>
-  </div>
+  <Dialog
+    bind:open={dialogOpen}
+    title={`Close "${fileName(pendingClose)}"?`}
+    onclose={onDialogClose}
+    data-testid="close-tab-dialog"
+  >
+    <p class="close-tab-body">It has unsaved markups or measurements. Save them to a new file first?</p>
+    {#if closeError}
+      <p class="close-tab-error" role="alert">{closeError}</p>
+    {/if}
+    {#snippet actions()}
+      <Button
+        variant="secondary"
+        data-testid="close-tab-cancel"
+        disabled={saving}
+        disabledReason="Saving. Wait for it to finish."
+        onclick={() => (pendingClose = null)}
+      >
+        Cancel
+      </Button>
+      <Button
+        variant="destructive"
+        data-testid="close-tab-discard"
+        disabled={saving}
+        disabledReason="Saving. Wait for it to finish."
+        onclick={discardAndClose}
+      >
+        Discard changes
+      </Button>
+      <Button variant="primary" data-testid="close-tab-save" busy={saving} onclick={saveThenClose}>
+        {saving ? 'Saving…' : 'Save a copy'}
+      </Button>
+    {/snippet}
+  </Dialog>
 {/if}
 
 <style>
   .doc-tabs {
     display: flex;
-    gap: 2px;
-    padding: 4px 8px 0;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2) 0;
     overflow-x: auto;
     flex-shrink: 0;
     background: var(--glass-bg);
@@ -144,7 +160,7 @@
     align-items: center;
     border: 1px solid var(--glass-border);
     border-bottom: none;
-    border-radius: 6px 6px 0 0;
+    border-radius: var(--radius-xs) var(--radius-xs) 0 0;
     background: var(--canvas-bg);
     color: var(--glass-text);
     opacity: 0.75;
@@ -155,82 +171,20 @@
     border-color: var(--accent);
   }
 
-  .doc-tab {
+  .doc-tab-name {
     max-width: 220px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    padding: 4px 8px;
-    font-size: 12px;
-    background: none;
-    border: none;
-    color: inherit;
-    cursor: pointer;
   }
 
-  .doc-tab-close {
-    display: flex;
-    align-items: center;
-    padding: 4px 6px 4px 2px;
-    background: none;
-    border: none;
-    color: inherit;
-    cursor: pointer;
-  }
-
-  .close-tab-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 300;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding-top: 120px;
-    background: color-mix(in srgb, var(--canvas-bg) 60%, transparent);
-  }
-
-  .close-tab-dialog {
-    width: 360px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 16px;
-    border-radius: 12px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    color: var(--glass-text);
+  .close-tab-body,
+  .close-tab-error {
+    margin: 0;
   }
 
   .close-tab-error {
     color: var(--danger);
-    font-size: 12px;
-  }
-
-  .close-tab-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-
-  .close-tab-actions button {
-    padding: 4px 12px;
-    border-radius: 6px;
-    border: 1px solid var(--glass-border);
-    background: var(--canvas-bg);
-    color: var(--glass-text);
-    cursor: pointer;
-  }
-
-  .close-tab-actions button.primary {
-    border-color: var(--accent);
-  }
-
-  .close-tab-actions button.danger {
-    border-color: var(--danger);
-  }
-
-  .doc-tab:focus-visible,
-  .doc-tab-close:focus-visible {
-    outline: 2px solid var(--focus-ring);
+    font-size: var(--font-size-footnote);
   }
 </style>

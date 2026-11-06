@@ -170,7 +170,7 @@ def run(flow):
                f"tabs={tabs[:6]}, canvases={split}, studio still shows {app.page_count()} page(s) "
                f"(B has 1); view A transform {'kept' if app.transform() == view_a else 'changed'}")
     # Switch A -> B, give B its own view, then B -> A -> B: each must come back exactly.
-    tab_css = "[role=tab], .tab, .doc-tab, .document-tab, [data-testid*=tab]"
+    tab_css = "[role=tab]"  # the tab buttons themselves (the strip container carries data-testid=doc-tabs)
     name_a = os.path.basename(path_a)
 
     def show(name, pages):
@@ -201,6 +201,8 @@ def run(flow):
                    f"B view {view_b} -> after A and back {got_b}")
 
     # --- thumbnails (Studio strip, else the Organize page grid) ---------------------------
+    if has_tab_b:
+        show(name_a, pages_a)  # the check below counts A's pages; the tab switching above ended on B
     studio_thumbs = app.s.js("""
         return [...document.querySelectorAll('[class*=thumb] img, [class*=thumb] canvas, [aria-label*=humbnail] img, [aria-label*=humbnail] canvas')]
             .filter(e => e.getBoundingClientRect().width > 0).length;
@@ -211,8 +213,9 @@ def run(flow):
         btn = app.s.find_text("nav[aria-label='Primary Navigation'] button", "Organize")
         if btn:
             btn.click()
-            app.s.wait("return document.querySelectorAll('.grid-layout .page-card img').length", 30)
-            time.sleep(1.0)
+            # thumbnails are added page by page: wait for all of them, not just the first
+            app.s.wait("return document.querySelectorAll('.grid-layout .page-card img').length >= arguments[0]", 30, 0.2, args=(pages_a,))
+            time.sleep(0.5)
             count = app.s.js("return [...document.querySelectorAll('.grid-layout .page-card img')]"
                              ".filter(i => i.complete && i.naturalWidth > 0).length")
             imgs = app.s.js("return [...document.querySelectorAll('.grid-layout .page-card img')]"

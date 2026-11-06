@@ -1,6 +1,8 @@
 <script lang="ts">
   import { tools } from '$lib/core/toolEngine.svelte';
   import StudioIcon, { type StudioIconName } from './StudioIcon.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
+  import IconButton from '$lib/components/ui/IconButton.svelte';
   import { labsVisible, selectToolIfAllowed, studioToolLabel } from './labs.svelte';
 
   let { onPersistPrefs }: { onPersistPrefs?: () => void } = $props();
@@ -46,20 +48,20 @@
   class="favorites-bar glass-panel"
   role="toolbar"
   tabindex={0}
-  aria-label="Pinned Tool Presets"
+  aria-label="Pinned tool presets"
   onpointerdown={(e) => e.stopPropagation()}
 >
   <span class="fav-title">Pins</span>
   <div class="fav-items">
     {#each favoritePresets as preset (preset.id)}
       {@const active = tools.currentToolId === preset.tool}
-      <button
-        type="button"
+      <Button
+        variant="plain"
+        size="sm"
         class="fav-btn"
-        class:active
-        aria-pressed={active}
-        onclick={() => selectFavorite(preset.id, preset.tool)}
+        pressed={active}
         title="{studioToolLabel(preset.tool, preset.label)} ({preset.stroke.widthPt} pt)"
+        onclick={() => selectFavorite(preset.id, preset.tool)}
       >
         <StudioIcon name={resolveIcon(preset.tool)} size={14} />
         <span
@@ -67,36 +69,32 @@
           style:background-color={preset.stroke.colorHex}
           style:opacity={preset.stroke.opacity}
         ></span>
-      </button>
+      </Button>
     {/each}
   </div>
 
   {#if tools.activePreset}
-    <button
-      type="button"
-      class="fav-pin-toggle"
-      class:pinned={isCurrentPinned}
+    <IconButton
+      icon={isCurrentPinned ? 'star.filled' : 'star'}
+      size="sm"
+      ariaLabel={isCurrentPinned ? 'Unpin active preset' : 'Pin active preset'}
       onclick={toggleCurrentPin}
-      title={isCurrentPinned ? 'Unpin active preset from Favorites' : 'Pin active preset to Favorites'}
-      aria-label={isCurrentPinned ? 'Unpin active preset' : 'Pin active preset'}
-    >
-      <StudioIcon name="pin" size={12} />
-    </button>
+    />
   {/if}
 </div>
 
 <style>
   .favorites-bar {
     position: absolute;
-    bottom: 16px;
-    left: 16px;
+    bottom: var(--space-4);
+    left: var(--space-4);
     z-index: 150;
     pointer-events: auto;
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 5px 10px;
-    border-radius: 999px;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
     background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
@@ -106,70 +104,31 @@
   }
 
   .fav-title {
-    font-size: 10px;
+    font-size: var(--font-size-caption);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     opacity: 0.65;
-    padding-right: 4px;
+    padding-right: var(--space-1);
   }
 
   .fav-items {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--space-1);
   }
 
-  .fav-btn {
+  :global(.fav-btn) {
     position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    border: 1px solid transparent;
-    background: transparent;
-    color: var(--glass-text);
-    cursor: pointer;
-  }
-
-  .fav-btn:hover {
-    background: var(--canvas-grid-minor);
-  }
-
-  .fav-btn.active {
-    background: var(--accent);
-    color: var(--laser-core);
   }
 
   .fav-swatch {
     position: absolute;
-    bottom: 3px;
-    right: 3px;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
+    bottom: var(--space-1);
+    right: var(--space-1);
+    width: var(--space-2);
+    height: var(--space-2);
+    border-radius: var(--radius-pill);
     border: 1px solid var(--glass-border);
-  }
-
-  .fav-pin-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    border: 1px solid var(--glass-border);
-    background: transparent;
-    color: var(--glass-text);
-    font-size: 12px;
-    cursor: pointer;
-    opacity: 0.75;
-  }
-
-  .fav-pin-toggle.pinned {
-    color: var(--accent);
-    opacity: 1;
   }
 </style>

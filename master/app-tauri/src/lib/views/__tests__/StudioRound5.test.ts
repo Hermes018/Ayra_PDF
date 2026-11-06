@@ -120,7 +120,7 @@ function drawStroke(y: number) {
 const ids = () => ink.completedStrokes.map((s) => s.id);
 const tabNamed = (name: string) => screen.getAllByTestId('doc-tab').find((t) => t.textContent?.trim() === name)!;
 const closeBtnOf = (name: string) =>
-    within(tabNamed(name).parentElement as HTMLElement).getByTestId('doc-tab-close');
+    within(tabNamed(name).closest('.doc-tab-wrap') as HTMLElement).getByTestId('doc-tab-close');
 const settle = (ms = 60) => new Promise((r) => setTimeout(r, ms));
 
 describe('Review r5', () => {

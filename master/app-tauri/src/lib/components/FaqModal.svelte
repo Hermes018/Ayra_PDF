@@ -60,6 +60,7 @@
                             >
                                 <span class="feature-tag">{item.feature}</span>
                                 <span class="question-text">{item.question}</span>
+                                <span class="chevron" aria-hidden="true">{expandedId === item.id ? '▲' : '▼'}</span>
                             </Button>
                             {#if expandedId === item.id}
                                 <div class="faq-details">
@@ -88,7 +89,7 @@
     </div>
 
     {#snippet actions()}
-        <span class="offline-note">100% local and offline. No network activity.</span>
+        <span class="offline-note">Local and offline. No network activity.</span>
         <Button variant="primary" onclick={() => faqStore.close()}>Close</Button>
     {/snippet}
 </Dialog>
@@ -125,6 +126,12 @@
         background: var(--glass-bg-active);
         border-radius: var(--radius-pill);
         padding: var(--space-1) var(--space-2);
+    }
+
+    .chevron {
+        margin-left: auto;
+        font-size: var(--font-size-caption);
+        color: var(--text-secondary);
     }
 
     .question-text {

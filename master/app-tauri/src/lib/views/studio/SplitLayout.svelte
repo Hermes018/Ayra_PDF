@@ -1,5 +1,6 @@
 <script lang="ts">
   import SpatialCanvas from './SpatialCanvas.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
   import DocumentTabs from '$lib/components/studio/DocumentTabs.svelte';
   import { SPLIT_VIEW_ID, SPLIT_VIEW_LABS, LABS_BADGE, labsVisible } from '$lib/components/studio/labs.svelte';
 
@@ -49,16 +50,18 @@
 <div class="studio-shell">
 <DocumentTabs />
 {#if labsVisible(SPLIT_VIEW_ID)}
-  <button
-    type="button"
-    class="split-toggle"
-    data-testid="split-view-toggle"
-    title="{SPLIT_VIEW_LABS.label}: {SPLIT_VIEW_LABS.note}"
-    aria-pressed={effectiveMode !== 'single'}
-    onclick={() => (mode = mode === 'single' ? 'horizontal' : 'single')}
-  >
-    {SPLIT_VIEW_LABS.name} <span class="labs-badge">{LABS_BADGE}</span>
-  </button>
+  <div class="split-toggle">
+    <Button
+      variant="secondary"
+      size="sm"
+      data-testid="split-view-toggle"
+      title="{SPLIT_VIEW_LABS.label}: {SPLIT_VIEW_LABS.note}"
+      pressed={effectiveMode !== 'single'}
+      onclick={() => (mode = mode === 'single' ? 'horizontal' : 'single')}
+    >
+      {SPLIT_VIEW_LABS.name} <span class="labs-badge">{LABS_BADGE}</span>
+    </Button>
+  </div>
 {/if}
 <div class="split-layout mode-{effectiveMode}" bind:this={containerEl}>
   {#if effectiveMode === 'single'}
@@ -72,7 +75,7 @@
     <div
       class="split-handle vertical"
       role="separator"
-      aria-label="Split Divider"
+      aria-label="Split divider"
       onpointerdown={onDividerDown}
       onpointermove={onDividerMove}
       onpointerup={onDividerUp}
@@ -88,7 +91,7 @@
     <div
       class="split-handle horizontal"
       role="separator"
-      aria-label="Split Divider"
+      aria-label="Split divider"
       onpointerdown={onDividerDown}
       onpointermove={onDividerMove}
       onpointerup={onDividerUp}
@@ -112,22 +115,15 @@
 
   .split-toggle {
     align-self: flex-end;
-    margin: 2px 8px;
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 6px;
-    border: 1px solid var(--glass-border);
-    background: var(--glass-bg);
-    color: var(--glass-text);
-    cursor: pointer;
+    margin: var(--space-1) var(--space-2);
   }
 
   .labs-badge {
-    font-size: 9px;
+    font-size: var(--font-size-caption);
     font-weight: 700;
     text-transform: uppercase;
-    padding: 0 4px;
-    border-radius: 999px;
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-pill);
     border: 1px solid var(--accent);
     color: var(--accent);
   }

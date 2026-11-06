@@ -614,7 +614,7 @@ pub fn is_title_case(label: &str) -> bool {
     caps >= 1
 }
 
-fn overclaim_hits(lower: &str) -> Vec<String> {
+fn overclaim_hits(lower: &str, allow_hundred_percent: bool) -> Vec<String> {
     let mut hits = Vec::new();
     for w in OVERCLAIM_WORDS {
         for (i, _) in lower.match_indices(w) {
@@ -632,7 +632,8 @@ fn overclaim_hits(lower: &str) -> Vec<String> {
             }
         }
     }
-    // "100% accurate": only when followed by a word; "100% offline" is the About statement.
+    // "100% <word>" is a claim everywhere except the About component (ADR-005 statement); a bare
+    // "100%" (zoom, CSS) is not a claim.
     for (i, _) in lower.match_indices("100%") {
         if lower[..i]
             .chars()
@@ -642,11 +643,18 @@ fn overclaim_hits(lower: &str) -> Vec<String> {
             continue;
         }
         let next = lower[i + 4..].trim_start().chars().next();
-        if next.is_some_and(char::is_alphabetic) && !lower.contains("offline") {
+        if next.is_some_and(char::is_alphabetic) && !allow_hundred_percent {
             hits.push("100%".to_string());
         }
     }
     hits
+}
+
+/// The About component is the only place "100% offline" may appear.
+fn is_about_file(file: &str) -> bool {
+    file.rsplit('/')
+        .next()
+        .is_some_and(|n| n.starts_with("About"))
 }
 
 fn has_label_attr(attrs: &str) -> bool {
@@ -726,7 +734,7 @@ pub fn audit_source(file: &str, src: &str, shared_tags: &[&str]) -> Vec<Violatio
                 );
             }
             // (f2) overclaiming words (visible strings live in markup and script).
-            for w in overclaim_hits(&l.text.to_lowercase()) {
+            for w in overclaim_hits(&l.text.to_lowercase(), is_about_file(file)) {
                 push(
                     l.no,
                     Rule::Overclaim,
@@ -1597,7 +1605,7 @@ mod tests {
     }
     #[test]
     fn overclaim_negative() {
-        assert_eq!(count("<p>Runs 100% offline.</p>", Rule::Overclaim), 0);
+        // "100%" is allowed only in the About component (DESIGN_LANGUAGE section 5, ADR-005).
         assert_eq!(
             count("<style>\n.a { width: 100%; }\n</style>", Rule::Overclaim),
             0
@@ -1620,6 +1628,23 @@ mod tests {
             count("<script>\n // instantly fast\n</script>", Rule::Overclaim),
             0
         );
+    }
+
+    #[test]
+    fn hundred_percent_only_in_about() {
+        for s in [
+            "<p>100% local and offline</p>",
+            "<p>Runs 100% offline.</p>",
+            "<span>100% Offline & Private</span>",
+        ] {
+            assert_eq!(count(s, Rule::Overclaim), 1, "{s}");
+        }
+        for file in ["lib/views/AboutView.svelte", "lib/components/About.svelte"] {
+            let v = audit_source(file, "<p>100% local and offline</p>", &[]);
+            assert!(v.iter().all(|v| v.rule != Rule::Overclaim), "{file}");
+        }
+        // zoom / CSS percentages are not claims
+        assert_eq!(count("<button>100%</button>", Rule::Overclaim), 0);
     }
 
     // strict-mode globs

@@ -107,7 +107,7 @@ describe('Second document is shown as a tab (BUG-016)', () => {
         render(SplitLayout);
         await waitFor(() => expect(viewport.pages).toHaveLength(3));
         const tabB = screen.getAllByTestId('doc-tab')[1];
-        await fireEvent.click(within(tabB.parentElement as HTMLElement).getByTestId('doc-tab-close'));
+        await fireEvent.click(within(tabB.closest('.doc-tab-wrap') as HTMLElement).getByTestId('doc-tab-close'));
         await waitFor(() => expect(viewport.pages).toHaveLength(1));
         expect(appState.activeFiles).toEqual(['/docs/a.pdf']);
         expect(appState.currentFile).toBe('/docs/a.pdf');
