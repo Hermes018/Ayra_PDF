@@ -86,4 +86,5 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 13:09 | merge-verify | g11 security/redaction/password + flows 2,8 | opus/high | fail | | password not cleared on file change; blank regions default |
 | 2026-11-06 13:09 | reviewer (read-only) | g11 frontend + visual | sonnet/medium | fail | | P0 redaction page off-by-one |
 | 2026-11-06 13:13 | fixes-build | g11 fix round (BUG-053 P0 page, blanks, password on file change, tests, layout) | sonnet/medium | ok | | |
-| 2026-11-06 13:20 | review+verify (combined) | BUG-053 + g11 (callers page base, flows 2,8, CLI redact check) | opus/high | running | | security |
+| 2026-11-06 13:20 | review+verify (combined) | BUG-053 + g11 (callers page base, flows 2,8, CLI redact check) | opus/high | ok | | GREEN 243; CLI page-2 check exact |
+| 2026-11-06 13:25 | fixes-build | BUG-054 Studio redact clamp + BUG-055, then remaining sweep | sonnet/medium | running | | BUG-054 → opus |

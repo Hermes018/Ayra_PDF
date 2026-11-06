@@ -229,3 +229,8 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 
 ## BUG-053 [P0] Security → Redact can redact the WRONG page: the UI says "Page (starts at 0)", the engine does page.saturating_sub(1) — status: fixing
 - Found by: g11 reviewer. Typing 0 or 1 both redact page 1, so a user following the label redacts the page before the one they meant, and the text they meant to hide stays visible. Flow 8 covers only Studio's Commit Redactions, not SecurityView. Fix: 1-based page number end to end, validated against the page count; the backend refuses 0 or > count with a typed error; a Rust test checks per-page text after redaction. Same round, from the g11 Opus check: blank region fields must be refused (they now silently default to 0/100), and retained passwords must be cleared when the input file changes. Owner: fixes. Opus-high verification.
+
+## BUG-054 [P1] Studio Commit redactions clamps an out-of-range page to the LAST page instead of refusing (studio.rs:401 `.min(page_total-1)`) — status: fixing
+- Found by: BUG-053 Opus pass. Pages come from the canvas, so unlikely in practice, but a silent clamp can redact the wrong page. Fix: refuse with REDACTION_PAGE_OUT_OF_RANGE and write nothing. Owner: fixes. Opus-high verification.
+## BUG-055 [P2] Redaction/security follow-ups — status: open
+- lpdf-cli/src/lib.rs:105: `localpdf redact` help doesn't say pages start at 1. Security/Forms: if the file changes while a job runs, a later Retry can send the current (possibly blank) password; disable Retry after a file change. Owner: fixes
