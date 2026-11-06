@@ -12,3 +12,6 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 07:39 | release-build | release follow-ups (6 minors) | sonnet/medium | running | | first Sonnet release spawn |
 | 2026-11-06 07:43 | fixes-build | fixes R5 (tabs final) + engines contract | opus/high (legacy spawn) | ok | | vitest 253/254: stale BUG-022 golden → regen approved |
 | 2026-11-06 07:50 | release-build | release follow-ups (6 minors) | sonnet/medium | ok | | 5/6 done; item 4 (AppImage offline proof) stopped by lead for tier/slot; KI-006 unproven |
+| 2026-11-06 07:54 | fixes-build | fixes R5 golden+polyline test | opus/high (legacy) | ok | | |
+| 2026-11-06 07:54 | reviewer | fixes R5 | sonnet/medium | ok | | |
+| 2026-11-06 07:54 | merge-verify | fixes R5 (save path) | opus/high | ok | | |

@@ -1590,3 +1590,6 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 
 ## [2026-11-06 07:37] Routing setup
 - 13 role files in .claude/agents (not loaded until a session restart — the first agents dir in this scope; meanwhile routed via per-call model/effort); ROUTING.md + tools/routing-stats.py; CLAUDE.md sections 'Lead role' and 'Model routing'.
+
+## [2026-11-06 07:54] Merge: fixes P0 batch — DONE
+- 263bb7e, tag fixes-p0-green. Five review rounds; R5: reviewer sonnet/medium PASS (minors), merge-verifier opus/high verify.sh GREEN (nextest 186/186, vitest 255/255); save-path checks a–e each covered by a failing-if-reverted test. Tabs kept (no single-document fallback). New: BUG-032, 033 (P1), 034 (P2).

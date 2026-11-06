@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 07:52 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 07:54 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -10,22 +10,21 @@ Updated 2026-11-06 07:52 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 ## Worktrees
 | Worktree | HEAD | State |
 |---|---|---|
-| main | ad484fd (tags engines-cp2b-green, release-cp2-green) | lead; routing files uncommitted, verify pending |
+| main | 263bb7e (tags fixes-p0-green, engines-cp2b-green, release-cp2-green) | lead |
 | wt/engines | 9919398 + CP3 uncommitted (BUG-029/030 + minors; compiles, tests NOT run) | PARKED (tier). NOTE: CP3 changes path_exists to Result<bool,String>; fixes must adapt when CP3 merges |
-| wt/fixes | 9919398 + R5 staged (44 files), builder verify GREEN, vitest 255 | reviewer (sonnet/med) + merge-verifier (opus/high, save path) RUNNING |
+| wt/fixes | 263bb7e (merged) | idle; after restart: ERR-007 (BUG-015) on Sonnet high, then BUG-032/033 |
 | wt/release | 6fa23a8 WIP (follow-ups 1,2,3,5,6; unverified) | PAUSED. After restart: verify + merge; then BUG-031 (P1, process-group reap + no-leftover check). KI-006 offline AppImage proof → Saturday packaging, before RC |
 | android | 644caf3 | paused until Sun |
 
 ## P0 (BUGS.md)
-- **Fixed on wt/fixes, not merged** (round 4 verifier PASS; reviewer FAIL → round 5): BUG-011, 012, 013, 014, 016, 017, 019, 020.
-- **BUG-018:** backend merged (F4 guard, degraded flag); UI wiring in fixes round 5.
+- Merged 263bb7e: BUG-011..014, 016..022 fixed. Only BUG-015 (ERR-007) is open.
 - **BUG-015 / ERR-007:** NOT fixed in the shipped build. Cadcraft is merged behind a switch (off); the switch patch is ready (wt/engines logs/runs/hatch-default-switch.patch). **Unblocked (owner 07:40):** licence-clean clip port + own parametric patterns, engines round after the restart.
 - **P1 open:** 021, 022 (fixes, done in wt/fixes), 028 (fixes), 029, 030 (engines). BUG-010, 023, 024 fixed (merged).
 
 ## Next 3 actions
-1. Wait for fixes R5 (merge or single-doc fallback), engines BUG-029/030 and release follow-ups to finish; no new long rounds → "SAFE TO RESTART". After restart: restore check, status-snapshot proof, Haiku effort check.
-2. Fixes round 5 → reviewer (Sonnet medium) + merge-verifier (Opus high; save path) → merge. If the review fails: single-document mode, and flow 3's two-document check is cut.
-3. After restart: ERR-007 round (engines, Sonnet high: licence-clean clip + own patterns); full E2E on main; DOGFOOD build.
+1. Owner restarts the session. Then: check the restore hook, spawn status-snapshot to prove routing is live, check and log the Haiku agents' actual effort.
+2. ERR-007 on the fixes builder (Sonnet high), with a merge-verifier on Opus high because the output is saved geometry.
+3. E2E flows 1, 2, 4, 6 and 11 on main, then the DOGFOOD build. Release WIP 6fa23a8: verify + merge, and BUG-031.
 
 ## Cuts (KNOWN_ISSUES.md)
 KI-001 tab switch clears undo · KI-002 Organize intermediate file · KI-003 Labs · KI-004 split view → Labs · KI-005 no LTO, version 0.1.0 · KI-006 AppImage tools pinned, prefetch once · KI-007 no Close document.
