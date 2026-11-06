@@ -1600,3 +1600,9 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 ## [2026-11-06 08:20] E2E P0 subset on main (52b7a17): flows 2, 4, 6, 11 PASS; flow 1 BLOCKED (no bundle yet)
 - Debug binary build 18 s (sccache). Report: e2e/out/runs/20261106T081925-online-f1_2_4_6_11/report.json. Flow 4 WARN: one leftover process killed by reap. No leftovers after the run.
 - Next: DOGFOOD AppImage build + pkg_smoke (flows 1–2) running.
+
+## [2026-11-06 08:52] DOGFOOD build ready (main 5f43889, code = 52b7a17)
+- AppImage: master/target/release/bundle/appimage/LocalPDF Studio_0.1.0_amd64.AppImage (119.9 MB, sha256 81ae84e0898cb26295199975b5d3a9c7a4af1b02b3cc31a8fc4b843cd52009c4). LTO off, version string 0.1.0 (KI-005).
+- pkg_smoke (fresh HOME): flow 1 PASS, flow 2 PASS; contents check OK (GUI, CLI, worker, .desktop with PDF MimeType, icon); no leftovers.
+- With the earlier main run: flows 1, 2, 4, 6, 11 all PASS (the tier's E2E subset).
+- Disk: 19 GB free (< 22 GB owner threshold): target dirs to revisit with the owner.

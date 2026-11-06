@@ -20,4 +20,4 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 08:15 | reviewer | ERR-007 | sonnet/medium (agent file) | ok | | |
 | 2026-11-06 08:15 | merge-verify | ERR-007 (engine + saved geometry) | opus/high (agent file) | ok | | |
 | 2026-11-06 08:18 | e2e-run | flows 1,2,4,6,11 on main | haiku/low (agent file) | ok | | 4 PASS, flow 1 BLOCKED (no bundle); build 18 s |
-| 2026-11-06 08:20 | dogfood-build | AppImage + pkg smoke (flows 1-2) | haiku/low (agent file) | running | | |
+| 2026-11-06 08:20 | dogfood-build | AppImage + pkg smoke (flows 1-2) | haiku/low (agent file) | ok | | built + smoke PASS; final report never delivered (lead read summary.json) |
