@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 14:40 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 14:44 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -10,10 +10,10 @@ Updated 2026-11-06 14:40 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 ## Worktrees
 | Worktree | HEAD | State |
 |---|---|---|
-| main | 280a6c5 (tag ui-sweep-complete: whole-app sweep done, audit 0) | lead |
+| main | 83fd51c (tags fixes-bug060-green, ui-sweep-complete, …) | lead; E2E rerun on main RUNNING (all 12 + sweep 13–23, 1 h soak) |
 | wt/engines | 9919398 + CP3 uncommitted | PARKED; target dir deleted (owner 08:50) — rebuild needed before CP3 tests |
-| wt/fixes | 280a6c5 | RUNNING (sonnet/med): BUG-060 FAQ text + audit all locales; then STOP at 16:45 (worktree frozen for E2E) |
-| wt/release | main | 280a6c5 (tag ui-sweep-complete: whole-app sweep done, audit 0) | lead |
+| wt/fixes | 83fd51c (merged) | idle (sweep done); next: owner DOGFOOD findings, then Sat D packaging support |
+| wt/release | main | 83fd51c (tags fixes-bug060-green, ui-sweep-complete, …) | lead; E2E rerun on main RUNNING (all 12 + sweep 13–23, 1 h soak) |
 | android | 644caf3 | paused until Sun |
 
 ## P0 (BUGS.md)
