@@ -53,6 +53,23 @@
   let selectedPresetId = $state<string>('custom');
   let applyScope = $state<'page' | 'all'>('page');
 
+  // Escape / backdrop click: if the user changed anything since the modal opened, ask before dropping it.
+  let initial = $state<string>('');
+  let confirming = $state(false);
+  const fingerprint = () => JSON.stringify([realDistance, unit, precision, depthValue, selectedPresetId, applyScope]);
+  let dirty = $derived(initial !== '' && fingerprint() !== initial);
+  function onDialogClose() {
+    if (confirming) {
+      confirming = false; // Escape on the confirm = keep editing
+      dialogOpen = true;
+    } else if (dirty) {
+      confirming = true;
+      dialogOpen = true;
+    } else {
+      measureEngine.closeCalibrationModal();
+    }
+  }
+
   $effect(() => {
     const modal = measureEngine.calibrationModal;
     if (modal?.open) {
@@ -63,6 +80,9 @@
       const ratio = existing.realDistance / Math.max(existing.ptDistance, 1e-6);
       realDistance = String(Number((modal.measuredPt * ratio).toFixed(3)));
       selectedPresetId = 'custom';
+      applyScope = 'page';
+      confirming = false;
+      initial = untrack(fingerprint);
     }
   });
 
@@ -106,11 +126,14 @@
 <div class="calibration-host" onpointerdown={(e) => e.stopPropagation()}>
   <Dialog
     bind:open={dialogOpen}
-    title="Calibrate page scale (page {(measureEngine.calibrationModal?.pageIndex ?? 0) + 1})"
-    onclose={() => measureEngine.closeCalibrationModal()}
+    variant={confirming ? 'alert' : 'dialog'}
+    title={confirming ? 'Discard calibration?' : `Calibrate page scale (page ${(measureEngine.calibrationModal?.pageIndex ?? 0) + 1})`}
+    onclose={onDialogClose}
     data-testid="calibration-dialog"
   >
-    {#if measureEngine.calibrationModal}
+    {#if confirming}
+      <p class="measured-summary">The values you entered will not be saved.</p>
+    {:else if measureEngine.calibrationModal}
       <div class="calibration-body">
         <p class="measured-summary">
           <StudioIcon name="measure" size={14} />
@@ -140,8 +163,13 @@
       </div>
     {/if}
     {#snippet actions()}
-      <Button variant="secondary" onclick={() => measureEngine.closeCalibrationModal()}>Cancel</Button>
-      <Button variant="primary" data-testid="calibration-save" onclick={commitCalibration}>Save calibrated scale</Button>
+      {#if confirming}
+        <Button variant="secondary" onclick={() => (confirming = false)}>Keep editing</Button>
+        <Button variant="destructive" onclick={() => measureEngine.closeCalibrationModal()}>Discard calibration</Button>
+      {:else}
+        <Button variant="secondary" onclick={() => measureEngine.closeCalibrationModal()}>Cancel</Button>
+        <Button variant="primary" data-testid="calibration-save" onclick={commitCalibration}>Save calibrated scale</Button>
+      {/if}
     {/snippet}
   </Dialog>
 </div>

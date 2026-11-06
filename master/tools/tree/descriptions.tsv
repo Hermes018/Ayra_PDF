@@ -624,3 +624,6 @@ master/e2e/flows/flow17_sweep_studio_docs.py	E2E smoke (sweep): document tabs, f
 master/e2e/flows/flow18_sweep_studio_panels.py	E2E smoke (sweep): calibration dialog and shortcut settings, light/dark screenshots at 2 sizes, no console errors
 master/e2e/ink_match.py	Matcher for content-less annotations (drawn signature): one /Ink or /Stamp with non-empty InkList or AP, /Rect on page and covering the drawn stroke, enough points (BUG-046)
 master/e2e/test_flow07_matcher.py	Self-test for ink_match.py: 9 synthetic cases (empty, duplicate, off-page, too few points fail; real strokes pass)
+master/e2e/flows/flow19_sweep_toolbar.py	E2E smoke (sweep): dockable toolbar, radial menu and measure overlay, light/dark screenshots at 2 sizes, no console errors
+master/app-tauri/src/lib/components/studio/CalibrationModal.test.ts	Tests: calibration dialog asks "Discard calibration?" on Escape/backdrop only when values changed
+master/app-tauri/src/lib/core/commandEngine.capture.test.ts	Tests: Escape during chord capture cancels capture only (characterization + fix)

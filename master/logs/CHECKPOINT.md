@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 11:07 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 11:16 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -10,10 +10,10 @@ Updated 2026-11-06 11:07 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 ## Worktrees
 | Worktree | HEAD | State |
 |---|---|---|
-| main | e49089d (tags sweep-g5-green … ui-library-green, …) | lead |
+| main | ef3ed13 (tags sweep-g6-green … ui-library-green, …) | lead |
 | wt/engines | 9919398 + CP3 uncommitted | PARKED; target dir deleted (owner 08:50) — rebuild needed before CP3 tests |
-| wt/fixes | e49089d | RUNNING (sonnet/med): sweep group 6 + Escape-during-capture fix + calibration discard confirm; asked for ETA to finish main-flow screens by 16:30 |
-| wt/release | 0291a99 (merged: WIP follow-ups + BUG-031) | idle; next: Sat AM packaging (D) incl. KI-006, .rpm |
+| wt/fixes | ef3ed13 | RUNNING (sonnet/med): sweep g7 AnnotationLedger + password dialog → ui/Dialog top layer (security path → Opus-high check); then g8 SpatialCanvas chrome, g9 PropertyPill; ETA ~15:30 |
+| wt/release | main | RUNNING (sonnet/med): BUG-046 flow 7 matcher false-fail (P1); then idle until Sat AM packaging |
 | android | 644caf3 | paused until Sun |
 
 ## P0 (BUGS.md)

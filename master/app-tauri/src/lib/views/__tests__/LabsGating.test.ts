@@ -51,7 +51,7 @@ function expectNoOverclaims() {
 function openInsertDrawer() {
     fireEvent.click(screen.getByTestId('category-btn-insert'));
     flushSync();
-    return screen.getByRole('menu', { name: /Insert Suite & Media Tools/ });
+    return screen.getByRole('menu', { name: /Insert Suite & Media tools/i });
 }
 
 function openLedger() {

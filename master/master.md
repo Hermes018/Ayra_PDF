@@ -101,6 +101,7 @@ master/
 │   │   │   │   ├── studio/                                   # Components of the spatial "Studio" editor
 │   │   │   │   │   ├── AnnotationLedger.svelte               # Side drawer: annotation list, takeoff CSV, markup library, LaTeX/signature/audio dialogs
 │   │   │   │   │   ├── CalibrationModal.svelte               # Set a page's drawing scale for measurements
+│   │   │   │   │   ├── CalibrationModal.test.ts              # Tests: calibration dialog asks "Discard calibration?" on Escape/backdrop only when values changed
 │   │   │   │   │   ├── DockableToolbar.svelte                # Main tool rail with grouped tool drawers, shortcuts, favourites
 │   │   │   │   │   ├── DocumentTabs.svelte                   # Document tabs for multiple open PDFs in Studio (BUG-016)
 │   │   │   │   │   ├── FavoritesBar.svelte                   # Pinned favourite tools/presets
@@ -155,6 +156,7 @@ master/
 │   │   │   │   │   ├── snap-geometry.standard-form.p0.golden.json  # Golden: snap segments extracted from corpus standard-form.pdf page 1
 │   │   │   │   │   ├── snap.standard-form.p0.golden.json     # Golden: snap results on corpus geometry
 │   │   │   │   │   └── snap.synthetic.golden.json            # Golden: snap results on synthetic geometry
+│   │   │   │   ├── commandEngine.capture.test.ts             # Tests: Escape during chord capture cancels capture only (characterization + fix)
 │   │   │   │   ├── commandEngine.space.test.ts               # Tests (BUG-043): Space activates focused interactive elements; canvas Space behaviour characterized and kept
 │   │   │   │   ├── commandEngine.svelte.ts                   # Central keyboard shortcut/command dispatcher (only place keydown is handled)
 │   │   │   │   ├── core.test.ts                              # Tests: viewport zoom/pan/fit and engine basics
@@ -444,7 +446,8 @@ master/
 │   │   ├── flow15_sweep_shell.py                             # E2E smoke (sweep): app shell (Sidebar, StatusBar, MainLayout) light/dark screenshots at 2 sizes, no console errors
 │   │   ├── flow16_sweep_overlays.py                          # E2E smoke (sweep): toasts and the FAQ dialog, light/dark screenshots at 2 sizes, no console errors
 │   │   ├── flow17_sweep_studio_docs.py                       # E2E smoke (sweep): document tabs, favourites bar and split layout, light/dark screenshots at 2 sizes, no console errors
-│   │   └── flow18_sweep_studio_panels.py                     # E2E smoke (sweep): calibration dialog and shortcut settings, light/dark screenshots at 2 sizes, no console errors
+│   │   ├── flow18_sweep_studio_panels.py                     # E2E smoke (sweep): calibration dialog and shortcut settings, light/dark screenshots at 2 sizes, no console errors
+│   │   └── flow19_sweep_toolbar.py                           # E2E smoke (sweep): dockable toolbar, radial menu and measure overlay, light/dark screenshots at 2 sizes, no console errors
 │   ├── .gitignore                                            # Ignores e2e/out/ (reports, screenshots, copied binary)
 │   ├── common.py                                             # Ground-truth helpers (poppler/qpdf/hashes), process sampling, isolation (private D-Bus/XDG)
 │   ├── ink_match.py                                          # Matcher for content-less annotations (drawn signature): one /Ink or /Stamp with non-empty InkList or AP, /Rect on page and covering the drawn stroke, enough points (BUG-046)

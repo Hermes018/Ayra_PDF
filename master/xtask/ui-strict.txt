@@ -31,3 +31,7 @@ lib/views/studio/SplitLayout.svelte
 # Sweep group 5: Studio panels (PropertyPill deferred, see docs/UI_BACKLOG.md)
 lib/components/studio/CalibrationModal.svelte
 lib/components/studio/ShortcutSettings.svelte
+# Sweep group 6: Studio toolbar and tools (RadialMenu, MeasureOverlay already clean)
+lib/components/studio/DockableToolbar.svelte
+lib/components/studio/RadialMenu.svelte
+lib/components/studio/MeasureOverlay.svelte

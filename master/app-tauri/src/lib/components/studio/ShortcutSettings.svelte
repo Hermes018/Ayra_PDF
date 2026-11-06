@@ -40,7 +40,7 @@
 
     try {
       const newChord = await commands.captureNextChord();
-      if (!recordingCommand) return;
+      if (newChord === null || !recordingCommand) return; // cancelled (Escape or the dialog closed)
 
       // Find if old chord was bound to this command
       const oldEntry = Object.entries(commands.shortcuts).find(([_, c]) => c === recordingCommand);
