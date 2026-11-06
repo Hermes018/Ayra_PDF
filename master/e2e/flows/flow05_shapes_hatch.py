@@ -14,7 +14,7 @@ NUM = 5
 TITLE = "Shapes and hatching"
 PATTERNS = ["diagonal-steel", "crosshatch", "concrete", "timber", "tiling", "masonry", "earth",
             "insulation"]
-HATCH_SELECT = 'select[aria-label="Select Hatch Pattern"]'
+HATCH_SELECT = 'select[data-testid="hatch-pattern"]'
 HATCH_AUTHOR = "LocalPDF Studio Hatch"
 
 

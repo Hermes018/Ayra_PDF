@@ -1614,3 +1614,9 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - OrganizeView/GridEditor/Dropzone on ui/ components and tokens (25→0 violations), ErrorState/Progress/Cancel, sentence case; flow 14 smoke; flow 10 glob fixed.
 - Accepted behaviour changes (for the CHANGELOG): the Dropzone picker opens via the "Browse files" button only (drag-and-drop unchanged); Organize tools await runJob (Progress/Cancel/ErrorState, 120 s stall); overlay buttons show on keyboard focus.
 - Verifier (opus/high, save path): Apply path unchanged; flow 10 PASS 18/18. Next: group 2.
+
+## [2026-11-06 11:55] UI consistency sweep: all main-flow screens done — 3c8cd91, tag sweep-mainflows-green
+- Groups 1–9: Organize, app shell, toasts/FAQ, document tabs/favourites/split, calibration/shortcuts, toolbar/radial/measure, annotation ledger (+ 4 dialogs, password prompt), canvas chrome, property pill. Every swept file is in ui-strict.txt (the gate fails on new violations).
+- New shared pieces along the way: alert Dialog variant, ColorSwatch, compact Select/Input, IconButton tooltip, Tooltip clamp/flip, opaque dark surfaces (contrast tests ≥ 4.5:1).
+- Bugs fixed during the sweep: BUG-043 (Space on focused buttons), Escape during chord capture, autocomplete=off on the password field (a regression caught by Opus), plus data-safety tests (Escape/backdrop during save).
+- Remaining: 808 audit hits in 14 non-main-flow files (raw-px 616, shared-component 147, title-case 35, raw-colour 7). Sweep continues until 16:45, then E2E + screenshots 17:00–18:00.

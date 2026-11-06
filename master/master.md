@@ -116,6 +116,7 @@ master/
 │   │   │   │   │   └── StudioIcon.svelte                     # SVG icon registry for studio tools
 │   │   │   │   ├── ui/                                       # Shared UI component library (DESIGN_LANGUAGE.md): tokens only, strict audit; used by the sweep
 │   │   │   │   │   ├── Button.svelte                         # Button: primary/secondary/destructive/plain, sizes, loading; disabled requires a reason (tooltip)
+│   │   │   │   │   ├── ColorSwatch.svelte                    # Colour swatch button: aria-label names the colour, aria-pressed + ring for the selected one
 │   │   │   │   │   ├── contrast.test.ts                      # Tests: dialog/title/body text contrast from tokens meets 4.5:1 (body) and 3:1 (large), light and dark
 │   │   │   │   │   ├── Dialog.svelte                         # Dialog/Sheet: focus trap, Escape via commandEngine registerEscape
 │   │   │   │   │   ├── EmptyState.svelte                     # Empty state: title, explanation, primary action
@@ -221,6 +222,7 @@ master/
 │   │   │   │   │   ├── StudioRound5.test.ts                  # Tests (P0 round 5): close via store leaves no session, inserts blocked until restored, save refuses without page geometry, one save in flight
 │   │   │   │   │   ├── StudioSaveNames.test.ts               # Tests: repeated saves use new collision-safe names (BUG-021)
 │   │   │   │   │   ├── StudioTabs.test.ts                    # Tests: second document opens in a tab, view state kept per tab (BUG-016)
+│   │   │   │   │   ├── StudioUndoTooltip.test.ts             # Tests: Studio Undo tooltip text follows commands.undoLabel; aria-label stays "Undo"
 │   │   │   │   │   ├── TauriCsp.test.ts                      # Tests: CSP allows data:/blob: images, connect-src still IPC-only (BUG-012)
 │   │   │   │   │   └── ViewportFit.test.ts                   # Tests: Fit Width/Page use real page size and offset (BUG-020)
 │   │   │   │   ├── studio/                                   # The spatial Studio editor (default view)
@@ -450,7 +452,8 @@ master/
 │   │   ├── flow18_sweep_studio_panels.py                     # E2E smoke (sweep): calibration dialog and shortcut settings, light/dark screenshots at 2 sizes, no console errors
 │   │   ├── flow19_sweep_toolbar.py                           # E2E smoke (sweep): dockable toolbar, radial menu and measure overlay, light/dark screenshots at 2 sizes, no console errors
 │   │   ├── flow20_sweep_ledger.py                            # E2E smoke (sweep): annotation ledger and its dialogs, light/dark screenshots at 2 sizes, no console errors
-│   │   └── flow21_sweep_canvas_chrome.py                     # E2E smoke (sweep): Studio canvas chrome (toolbars, banners, overlays), light/dark screenshots at 2 sizes, no console errors
+│   │   ├── flow21_sweep_canvas_chrome.py                     # E2E smoke (sweep): Studio canvas chrome (toolbars, banners, overlays), light/dark screenshots at 2 sizes, no console errors
+│   │   └── flow22_sweep_pill.py                              # E2E smoke (sweep): property pill (compact selects, swatches, presets), light/dark screenshots at 2 sizes, no console errors
 │   ├── .gitignore                                            # Ignores e2e/out/ (reports, screenshots, copied binary)
 │   ├── common.py                                             # Ground-truth helpers (poppler/qpdf/hashes), process sampling, isolation (private D-Bus/XDG)
 │   ├── ink_match.py                                          # Matcher for content-less annotations (drawn signature): one /Ink or /Stamp with non-empty InkList or AP, /Rect on page and covering the drawn stroke, enough points (BUG-046)

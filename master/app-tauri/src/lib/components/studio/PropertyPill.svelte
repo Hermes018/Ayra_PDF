@@ -16,6 +16,10 @@
     type CadUnit,
   } from '$lib/core/measureEngine.svelte';
   import { snapEngine } from '$lib/core/snapEngine.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
+  import ColorSwatch from '$lib/components/ui/ColorSwatch.svelte';
+  import Select from '$lib/components/ui/Select.svelte';
+  import Input from '$lib/components/ui/Input.svelte';
   import { MATH_TEXT_LABS, labsVisible, selectToolIfAllowed, studioToolLabel } from './labs.svelte';
 
   // Swatch tokens mapped strictly to the theme contract (zero hex literals)
@@ -36,13 +40,13 @@
     { id: 'solid', label: 'Solid' },
     { id: 'dashed', label: 'Dashed' },
     { id: 'dotted', label: 'Dotted' },
-    { id: 'dash-dot', label: 'Dash-Dot' },
+    { id: 'dash-dot', label: 'Dash-dot' },
   ];
 
   const LINE_ENDINGS: { id: LineEnding; label: string }[] = [
     { id: 'none', label: 'None' },
-    { id: 'open-arrow', label: 'Open Arrow' },
-    { id: 'closed-arrow', label: 'Closed Arrow' },
+    { id: 'open-arrow', label: 'Open arrow' },
+    { id: 'closed-arrow', label: 'Closed arrow' },
     { id: 'circle', label: 'Circle' },
     { id: 'diamond', label: 'Diamond' },
     { id: 'slash', label: 'Slash' },
@@ -50,9 +54,9 @@
   ];
 
   const HATCH_PATTERNS: { id: HatchPatternExtendedId; label: string }[] = [
-    { id: 'none', label: 'No Hatch' },
-    { id: 'solid', label: 'Solid Fill' },
-    { id: 'diagonal-steel', label: 'Diagonal Steel' },
+    { id: 'none', label: 'No hatch' },
+    { id: 'solid', label: 'Solid fill' },
+    { id: 'diagonal-steel', label: 'Diagonal steel' },
     { id: 'crosshatch', label: 'Crosshatch' },
     { id: 'concrete', label: 'Concrete' },
     { id: 'timber', label: 'Timber' },
@@ -95,13 +99,13 @@
   );
 
   const INSERT_TOOLS: { id: ToolId; label: string }[] = [
-    { id: 'insert.textBox', label: 'Text Box' },
-    { id: 'insert.note', label: 'Sticky Note' },
+    { id: 'insert.textBox', label: 'Text box' },
+    { id: 'insert.note', label: 'Sticky note' },
     { id: 'callout.single', label: 'Callout' },
-    { id: 'callout.multi', label: 'Multi-Callout' },
+    { id: 'callout.multi', label: 'Multi-callout' },
     { id: 'insert.latex', label: MATH_TEXT_LABS.label },
     { id: 'insert.signature', label: 'Signature' },
-    { id: 'insert.audio', label: 'Audio Note' },
+    { id: 'insert.audio', label: 'Audio note' },
     { id: 'insert.stamp', label: 'Stamp' },
     { id: 'insert.image', label: 'Image' },
   ];
@@ -118,8 +122,8 @@
     { id: 'measure.calibrate', label: 'Calibrate' },
     { id: 'measure.length', label: 'Length' },
     { id: 'measure.polylength', label: 'Polylength' },
-    { id: 'measure.rectArea', label: 'Rect Area' },
-    { id: 'measure.polyArea', label: 'Poly Area' },
+    { id: 'measure.rectArea', label: 'Rect area' },
+    { id: 'measure.polyArea', label: 'Poly area' },
     { id: 'measure.perimeter', label: 'Perimeter' },
     { id: 'measure.protractor', label: 'Protractor' },
   ];
@@ -148,6 +152,29 @@
     });
   }
 
+  // ui/Select works with strings; these option lists are built once from the tables above.
+  const toOptions = <T extends { id: string; label: string }>(list: T[]) => list.map((x) => ({ value: x.id, label: x.label }));
+  const LINE_STYLE_OPTIONS = toOptions(LINE_STYLES);
+  const START_ENDING_OPTIONS = LINE_ENDINGS.map((l) => ({ value: l.id, label: `Start: ${l.label}` }));
+  const END_ENDING_OPTIONS = LINE_ENDINGS.map((l) => ({ value: l.id, label: `End: ${l.label}` }));
+  const HATCH_OPTIONS = toOptions(HATCH_PATTERNS);
+  const HATCH_SCALE_OPTIONS = HATCH_SCALES.map((v) => ({ value: String(v), label: `${v}x` }));
+  const MEASURE_TOOL_OPTIONS = toOptions(MEASURE_TOOLS);
+  const UNIT_OPTIONS = CAD_UNITS.map((u) => ({ value: u, label: u }));
+  const PRECISION_OPTIONS = [
+    { value: '0', label: '0' },
+    { value: '1', label: '0.1' },
+    { value: '2', label: '0.01' },
+    { value: '3', label: '0.001' },
+  ];
+  const TICK_OPTIONS = [
+    { value: 'tick', label: '45° tick' },
+    { value: 'open-arrow', label: 'Open arrow' },
+    { value: 'closed-arrow', label: 'Closed arrow' },
+    { value: 'circle', label: 'Dot' },
+  ];
+  let insertOptions = $derived(toOptions(INSERT_TOOLS.filter((it) => labsVisible(it.id))));
+
   function selectColorToken(token: TokenName) {
     const resolvedColor = theme.token(token);
     updateStroke({ colorToken: token, colorHex: resolvedColor });
@@ -158,7 +185,7 @@
   class="property-pill glass-panel"
   role="toolbar"
   tabindex={0}
-  aria-label="Tool Property Pill"
+  aria-label="Tool property pill"
   onpointerdown={(e) => e.stopPropagation()}
 >
   <!-- Active Tool Badge -->
@@ -170,277 +197,216 @@
     <div class="pill-divider"></div>
 
     <!-- Color Swatches (Theme Contract Driven) -->
-    <div class="pill-section color-section" aria-label="Color Palette">
+    <div class="pill-section color-section" role="group" aria-label="Color palette">
       {#each SWATCH_TOKENS as swatch}
-        <button
-          type="button"
-          class="swatch-btn"
-          class:active={tools.activePreset.stroke.colorToken === swatch.token}
-          style:background="var({swatch.token})"
+        <ColorSwatch
+          color="var({swatch.token})"
+          label="{swatch.label} color"
+          pressed={tools.activePreset.stroke.colorToken === swatch.token}
           onclick={() => selectColorToken(swatch.token)}
-          title="{swatch.label} Color"
-          aria-label="{swatch.label} Color"
-        ></button>
+        />
       {/each}
     </div>
 
     <div class="pill-divider"></div>
 
     <!-- Stroke Width Presets -->
-    <div class="pill-section width-section" aria-label="Stroke Thickness">
+    <div class="pill-section width-section" role="group" aria-label="Stroke thickness">
       {#each WIDTH_PRESETS as w}
-        <button
-          type="button"
-          class="width-btn"
-          class:active={Math.abs(tools.activePreset.stroke.widthPt - w) < 0.1}
-          onclick={() => updateStroke({ widthPt: w })}
+        <Button
+          variant="plain"
+          size="sm"
+          pressed={Math.abs(tools.activePreset.stroke.widthPt - w) < 0.1}
+          ariaLabel="{w} pt stroke"
           title="{w} pt stroke"
-          aria-label="{w} pt stroke"
+          onclick={() => updateStroke({ widthPt: w })}
         >
           <span
             class="width-dot"
             style:width="{Math.min(18, Math.max(3, w * 1.5))}px"
             style:height="{Math.min(18, Math.max(3, w * 1.5))}px"
           ></span>
-        </button>
+        </Button>
       {/each}
     </div>
 
     <div class="pill-divider"></div>
 
     <!-- Opacity Selector -->
-    <div class="pill-section opacity-section" aria-label="Opacity Presets">
+    <div class="pill-section opacity-section" role="group" aria-label="Opacity presets">
       {#each OPACITY_PRESETS as op}
-        <button
-          type="button"
-          class="opacity-btn"
-          class:active={Math.abs(tools.activePreset.stroke.opacity - op) < 0.05}
+        <Button
+          variant="plain"
+          size="sm"
+          pressed={Math.abs(tools.activePreset.stroke.opacity - op) < 0.05}
+          ariaLabel="{Math.round(op * 100)}% opacity"
+          title="{Math.round(op * 100)}% opacity"
           onclick={() => updateStroke({ opacity: op })}
-          title="{Math.round(op * 100)}% Opacity"
-          aria-label="{Math.round(op * 100)}% Opacity"
         >
           {Math.round(op * 100)}%
-        </button>
+        </Button>
       {/each}
     </div>
 
     <!-- Line Style Selector for Shapes & Polylines -->
     {#if showLineStyleControls}
       <div class="pill-divider"></div>
-      <div class="pill-section line-style-section" aria-label="Line Style">
-        <select
-          class="hatch-select"
-          value={tools.activePreset.stroke.lineStyle ?? 'solid'}
-          onchange={(e) =>
-            updateStroke({ lineStyle: (e.target as HTMLSelectElement).value as LineStyleId })}
-          aria-label="Select Line Style"
-        >
-          {#each LINE_STYLES as ls}
-            <option value={ls.id}>{ls.label}</option>
-          {/each}
-        </select>
+      <div class="pill-section line-style-section" role="group" aria-label="Line style">
+        <Select
+          compact
+          hideLabel
+          label="Line style"
+          options={LINE_STYLE_OPTIONS}
+          bind:value={() => tools.activePreset?.stroke.lineStyle ?? 'solid', (v) => updateStroke({ lineStyle: v as LineStyleId })}
+        />
       </div>
     {/if}
 
     <!-- Line Endings Selector for Lines, Arrows & Polylines -->
     {#if showLineEndingControls}
       <div class="pill-divider"></div>
-      <div class="pill-section line-ending-section" aria-label="Line Endings">
-        <select
-          class="hatch-select"
-          value={tools.activePreset.stroke.startEnd}
-          onchange={(e) =>
-            updateStroke({ startEnd: (e.target as HTMLSelectElement).value as LineEnding })}
-          aria-label="Select Start Line Ending"
-          title="Start Ending"
-        >
-          {#each LINE_ENDINGS as le}
-            <option value={le.id}>Start: {le.label}</option>
-          {/each}
-        </select>
-        <select
-          class="hatch-select"
-          value={tools.activePreset.stroke.endEnd}
-          onchange={(e) =>
-            updateStroke({ endEnd: (e.target as HTMLSelectElement).value as LineEnding })}
-          aria-label="Select End Line Ending"
-          title="End Ending"
-        >
-          {#each LINE_ENDINGS as le}
-            <option value={le.id}>End: {le.label}</option>
-          {/each}
-        </select>
+      <div class="pill-section line-ending-section" role="group" aria-label="Line endings">
+        <Select
+          compact
+          hideLabel
+          label="Start line ending"
+          options={START_ENDING_OPTIONS}
+          bind:value={() => tools.activePreset?.stroke.startEnd ?? 'none', (v) => updateStroke({ startEnd: v as LineEnding })}
+        />
+        <Select
+          compact
+          hideLabel
+          label="End line ending"
+          options={END_ENDING_OPTIONS}
+          bind:value={() => tools.activePreset?.stroke.endEnd ?? 'none', (v) => updateStroke({ endEnd: v as LineEnding })}
+        />
       </div>
     {/if}
 
     <!-- Procedural Hatch Pattern & Scale Selector for Closed Shapes / Hatch Tool -->
     {#if showHatchControls}
       <div class="pill-divider"></div>
-      <div class="pill-section hatch-section" aria-label="Hatch Pattern">
-        <select
-          class="hatch-select"
-          value={tools.activePreset.fill.hatch}
-          onchange={(e) => {
-            const val = (e.target as HTMLSelectElement).value as HatchPatternExtendedId;
+      <div class="pill-section hatch-section" role="group" aria-label="Hatch pattern">
+        <Select
+          compact
+          hideLabel
+          label="Hatch pattern"
+          data-testid="hatch-pattern"
+          options={HATCH_OPTIONS}
+          bind:value={() => tools.activePreset?.fill.hatch ?? 'none', (val) =>
             updateFill({
-              hatch: val,
+              hatch: val as HatchPatternExtendedId,
               kind: val === 'none' ? 'none' : val === 'solid' ? 'solid' : 'hatch',
-            });
-          }}
-          aria-label="Select Hatch Pattern"
-        >
-          {#each HATCH_PATTERNS as pat}
-            <option value={pat.id}>{pat.label}</option>
-          {/each}
-        </select>
-        <select
-          class="hatch-select"
-          value={tools.activePreset.fill.hatchScale}
-          onchange={(e) =>
-            updateFill({ hatchScale: parseFloat((e.target as HTMLSelectElement).value) || 1.0 })}
-          aria-label="Select Hatch Scale"
-          title="Hatch Scale"
-        >
-          {#each HATCH_SCALES as sc}
-            <option value={sc}>{sc}x</option>
-          {/each}
-        </select>
+            })}
+        />
+        <Select
+          compact
+          hideLabel
+          label="Hatch scale"
+          options={HATCH_SCALE_OPTIONS}
+          bind:value={() => String(tools.activePreset?.fill.hatchScale ?? 1), (v) => updateFill({ hatchScale: parseFloat(v) || 1.0 })}
+        />
       </div>
     {/if}
 
     <!-- Phase D5 CAD Calibration, Measurement, OSNAP & Digital Ruler Controls -->
     {#if showMeasureControls}
       <div class="pill-divider"></div>
-      <div class="pill-section measure-controls-section" aria-label="CAD Measurement Controls">
-        <!-- Sub-tool selector -->
-        <select
-          class="hatch-select"
-          value={tools.currentToolId === 'measure' ? 'measure.length' : tools.currentToolId}
-          onchange={(e) => tools.selectTool((e.target as HTMLSelectElement).value as ToolId)}
-          aria-label="Select Measurement Tool"
-          title="Measurement Mode"
-        >
-          {#each MEASURE_TOOLS as mt}
-            <option value={mt.id}>{mt.label}</option>
-          {/each}
-        </select>
-
-        <!-- Scale Status Badge (click to open Calibration Modal) -->
-        <button
-          type="button"
-          class="toggle-btn"
-          onclick={() => measureEngine.openCalibrationModal(0, activePageScale.ptDistance)}
-          title="Calibrate Page Scale"
-        >
-          Scale: {activePageScale.scalePresetLabel ?? `${activePageScale.realDistance} ${activePageScale.unit}`}
-        </button>
-
-        <!-- Unit Switcher -->
-        <select
-          class="hatch-select"
-          value={activePageScale.unit}
-          onchange={(e) =>
-            measureEngine.updateCurrentPageScalePatch(0, {
-              unit: (e.target as HTMLSelectElement).value as CadUnit,
-            })}
-          aria-label="Select CAD Unit"
-          title="Measurement Unit"
-        >
-          {#each CAD_UNITS as u}
-            <option value={u}>{u}</option>
-          {/each}
-        </select>
-
-        <!-- Precision Selector -->
-        <select
-          class="hatch-select"
-          value={activePageScale.precision}
-          onchange={(e) =>
-            measureEngine.updateCurrentPageScalePatch(0, {
-              precision: Number((e.target as HTMLSelectElement).value) as 0 | 1 | 2 | 3,
-            })}
-          aria-label="Select Decimal Precision"
-          title="Decimal Precision"
-        >
-          <option value={0}>0</option>
-          <option value={1}>0.1</option>
-          <option value={2}>0.01</option>
-          <option value={3}>0.001</option>
-        </select>
-
-        <!-- Depth Input for Volume Calculation -->
-        <input
-          type="number"
-          step="any"
-          min="0"
-          class="depth-input"
-          value={activePageScale.depthValue}
-          onchange={(e) =>
-            measureEngine.updateCurrentPageScalePatch(0, {
-              depthValue: Math.max(0, parseFloat((e.target as HTMLInputElement).value) || 0),
-            })}
-          aria-label="Volume Depth"
-          title="Volume Depth ({activePageScale.unit})"
+      <div class="pill-section measure-controls-section" role="group" aria-label="CAD measurement controls">
+        <Select
+          compact
+          hideLabel
+          label="Measurement tool"
+          options={MEASURE_TOOL_OPTIONS}
+          bind:value={() => (tools.currentToolId === 'measure' ? 'measure.length' : tools.currentToolId), (v) => tools.selectTool(v as ToolId)}
         />
 
-        <!-- Endpoint Tick Style -->
-        <select
-          class="hatch-select"
-          value={measureEngine.endpointStyle}
-          onchange={(e) => {
-            measureEngine.endpointStyle = (e.target as HTMLSelectElement)
-              .value as typeof measureEngine.endpointStyle;
+        <!-- Scale status (click to open the calibration dialog) -->
+        <Button
+          variant="secondary"
+          size="sm"
+          title="Calibrate page scale"
+          onclick={() => measureEngine.openCalibrationModal(0, activePageScale.ptDistance)}
+        >
+          Scale: {activePageScale.scalePresetLabel ?? `${activePageScale.realDistance} ${activePageScale.unit}`}
+        </Button>
+
+        <Select
+          compact
+          hideLabel
+          label="Measurement unit"
+          options={UNIT_OPTIONS}
+          bind:value={() => activePageScale.unit, (v) => measureEngine.updateCurrentPageScalePatch(0, { unit: v as CadUnit })}
+        />
+
+        <Select
+          compact
+          hideLabel
+          label="Decimal precision"
+          options={PRECISION_OPTIONS}
+          bind:value={() => String(activePageScale.precision), (v) =>
+            measureEngine.updateCurrentPageScalePatch(0, { precision: Number(v) as 0 | 1 | 2 | 3 })}
+        />
+
+        <!-- Depth for volume calculation -->
+        <Input
+          compact
+          hideLabel
+          type="number"
+          label="Volume depth ({activePageScale.unit})"
+          class="depth-field"
+          bind:value={() => String(activePageScale.depthValue), (v) =>
+            measureEngine.updateCurrentPageScalePatch(0, { depthValue: Math.max(0, parseFloat(v) || 0) })}
+        />
+
+        <Select
+          compact
+          hideLabel
+          label="Dimension tick style"
+          options={TICK_OPTIONS}
+          bind:value={() => measureEngine.endpointStyle, (v) => {
+            measureEngine.endpointStyle = v as typeof measureEngine.endpointStyle;
             measureEngine.recalculateAllMeasurements();
           }}
-          aria-label="Select Dimension Tick Style"
-          title="Dimension Tick Style"
-        >
-          <option value="tick">45° Tick</option>
-          <option value="open-arrow">Open Arrow</option>
-          <option value="closed-arrow">Closed Arrow</option>
-          <option value="circle">Dot</option>
-        </select>
+        />
 
-        <!-- Tape Mode Toggle -->
-        <button
-          type="button"
-          class="toggle-btn"
-          class:active={measureEngine.tapeMode}
+        <Button
+          variant="plain"
+          size="sm"
+          pressed={measureEngine.tapeMode}
+          title="Transient tape measure (does not persist on release)"
           onclick={() => {
             measureEngine.tapeMode = !measureEngine.tapeMode;
           }}
-          title="Transient Tape Measure (Does not persist on release)"
         >
           Tape
-        </button>
+        </Button>
 
-        <!-- OSNAP Toggle -->
-        <button
-          type="button"
-          class="toggle-btn"
-          class:active={snapEngine.enabled}
+        <Button
+          variant="plain"
+          size="sm"
+          pressed={snapEngine.enabled}
+          title="Toggle vector snapping (endpoint, midpoint, intersection, perpendicular)"
           onclick={() => {
             snapEngine.enabled = !snapEngine.enabled;
             if (!snapEngine.enabled) snapEngine.clearSnap();
           }}
-          title="Toggle CAD Vector OSNAP (Endpoint, Midpoint, Intersection, Perpendicular)"
         >
           OSNAP
-        </button>
+        </Button>
 
-        <!-- Digital Ruler Toggle -->
-        <button
-          type="button"
-          class="toggle-btn"
-          class:active={measureEngine.ruler.visible}
+        <Button
+          variant="plain"
+          size="sm"
+          pressed={measureEngine.ruler.visible}
+          title="Toggle the interactive digital ruler"
           onclick={() => measureEngine.toggleRuler()}
-          title="Toggle Interactive Digital Ruler"
         >
           Ruler
-        </button>
+        </Button>
 
-        <!-- Live Takeoff Summary Pill -->
-        <span class="takeoff-summary-badge" title="Quantity Takeoff Totals">
+        <!-- Live takeoff summary -->
+        <span class="takeoff-summary-badge" title="Quantity takeoff totals">
           Σ {takeoffSummaryText}
         </span>
       </div>
@@ -449,39 +415,21 @@
     <!-- Phase D6 Insert Suite Sub-Tool Switcher -->
     {#if showInsertControls}
       <div class="pill-divider"></div>
-      <div class="pill-section insert-controls-section" aria-label="Insert and Callout Suite">
-        <select
-          class="hatch-select"
-          value={tools.currentToolId}
-          onchange={(e) => selectToolIfAllowed((e.target as HTMLSelectElement).value)}
-          aria-label="Select Insert or Callout Tool"
-          title="Insert / Callout Mode"
-        >
-          {#each INSERT_TOOLS.filter((it) => labsVisible(it.id)) as it}
-            <option value={it.id}>{it.label}</option>
-          {/each}
-        </select>
+      <div class="pill-section insert-controls-section" role="group" aria-label="Insert and callout suite">
+        <Select
+          compact
+          hideLabel
+          label="Insert or callout tool"
+          options={insertOptions}
+          bind:value={() => tools.currentToolId, (v) => selectToolIfAllowed(v)}
+        />
       </div>
     {/if}
   {:else if tools.supportsEraserMode}
     <div class="pill-divider"></div>
-    <div class="pill-section eraser-mode-section" aria-label="Eraser Mode Toggle">
-      <button
-        type="button"
-        class="toggle-btn"
-        class:active={tools.activeToolId === 'eraser.partial'}
-        onclick={() => tools.selectTool('eraser.partial')}
-      >
-        Partial
-      </button>
-      <button
-        type="button"
-        class="toggle-btn"
-        class:active={tools.activeToolId === 'eraser.whole'}
-        onclick={() => tools.selectTool('eraser.whole')}
-      >
-        Whole
-      </button>
+    <div class="pill-section eraser-mode-section" role="group" aria-label="Eraser mode">
+      <Button variant="plain" size="sm" pressed={tools.activeToolId === 'eraser.partial'} onclick={() => tools.selectTool('eraser.partial')}>Partial</Button>
+      <Button variant="plain" size="sm" pressed={tools.activeToolId === 'eraser.whole'} onclick={() => tools.selectTool('eraser.whole')}>Whole</Button>
     </div>
   {:else if tools.activeToolId === 'pan'}
     <div class="pill-divider"></div>
@@ -490,31 +438,10 @@
     </div>
   {:else if tools.activeToolId.startsWith('select')}
     <div class="pill-divider"></div>
-    <div class="pill-section eraser-mode-section" aria-label="Selection Mode Toggle">
-      <button
-        type="button"
-        class="toggle-btn"
-        class:active={tools.activeToolId === 'select' || tools.activeToolId === 'select.marquee'}
-        onclick={() => tools.selectTool('select.marquee')}
-      >
-        Marquee
-      </button>
-      <button
-        type="button"
-        class="toggle-btn"
-        class:active={tools.activeToolId === 'select.lasso'}
-        onclick={() => tools.selectTool('select.lasso')}
-      >
-        Lasso
-      </button>
-      <button
-        type="button"
-        class="toggle-btn"
-        class:active={tools.activeToolId === 'select.snapshot'}
-        onclick={() => tools.selectTool('select.snapshot')}
-      >
-        Snapshot
-      </button>
+    <div class="pill-section eraser-mode-section" role="group" aria-label="Selection mode">
+      <Button variant="plain" size="sm" pressed={tools.activeToolId === 'select' || tools.activeToolId === 'select.marquee'} onclick={() => tools.selectTool('select.marquee')}>Marquee</Button>
+      <Button variant="plain" size="sm" pressed={tools.activeToolId === 'select.lasso'} onclick={() => tools.selectTool('select.lasso')}>Lasso</Button>
+      <Button variant="plain" size="sm" pressed={tools.activeToolId === 'select.snapshot'} onclick={() => tools.selectTool('select.snapshot')}>Snapshot</Button>
     </div>
   {:else if tools.activeToolId === 'laser'}
     <div class="pill-divider"></div>
@@ -527,42 +454,39 @@
 <style>
   .property-pill {
     position: absolute;
-    bottom: 24px;
+    bottom: var(--space-6);
     left: 50%;
     transform: translateX(-50%);
     z-index: 150;
     pointer-events: auto;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-dialog);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
-    border-radius: 9999px;
-    color: var(--glass-text);
-    font-size: 12px;
+    border-radius: var(--radius-pill);
+    color: var(--text-primary);
+    font-size: var(--font-size-footnote);
   }
 
   .pill-section {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--space-1);
   }
 
   .tool-label {
     font-weight: 600;
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    opacity: 0.8;
+    letter-spacing: 0.04em;
   }
 
   .status-hint {
-    font-size: 11px;
-    opacity: 0.7;
+    font-size: var(--font-size-caption);
+    color: var(--text-secondary);
     white-space: nowrap;
   }
 
@@ -572,134 +496,26 @@
     background: var(--glass-border);
   }
 
-  /* Color Swatches */
-  .swatch-btn {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    cursor: pointer;
-    box-shadow: 0 1px 3px var(--glass-border);
-    transition: transform 0.1s ease, border-color 0.1s ease;
-  }
-
-  .swatch-btn:hover {
-    transform: scale(1.15);
-  }
-
-  .swatch-btn.active {
-    border-color: var(--focus-ring);
-    transform: scale(1.25);
-    box-shadow: 0 0 0 2px var(--glass-bg), 0 0 0 4px var(--accent);
-  }
-
-  /* Width Dots */
-  .width-btn {
-    width: 22px;
-    height: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.1s ease;
-  }
-
-  .width-btn:hover {
-    background: var(--canvas-selection);
-  }
-
-  .width-btn.active {
-    background: var(--accent);
+  /* Pressed preset buttons read as primary text on the tint (the accent blue is under 4.5:1 on dark). */
+  .property-pill :global(.lp-btn.lp-btn--plain) {
+    color: var(--text-primary);
   }
 
   .width-dot {
-    background: var(--glass-text);
-    border-radius: 50%;
-    transition: background 0.1s ease;
+    background: var(--text-primary);
+    border-radius: var(--radius-pill);
   }
 
-  .width-btn.active .width-dot {
-    background: var(--laser-core);
-  }
-
-  /* Opacity Buttons */
-  .opacity-btn {
-    border: none;
-    background: transparent;
-    color: var(--glass-text);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.1s ease;
-  }
-
-  .opacity-btn:hover {
-    background: var(--canvas-selection);
-  }
-
-  .opacity-btn.active {
-    background: var(--accent);
-    color: var(--laser-core);
-    font-weight: 600;
-  }
-
-  /* Eraser Toggle Buttons */
-  .toggle-btn {
-    border: none;
-    background: transparent;
-    color: var(--glass-text);
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.1s ease;
-  }
-
-  .toggle-btn:hover {
-    background: var(--canvas-selection);
-  }
-
-  .toggle-btn.active {
-    background: var(--accent);
-    color: var(--laser-core);
-    font-weight: 600;
-  }
-
-  /* Hatch Select */
-  .hatch-select {
-    background: var(--canvas-selection);
-    color: var(--glass-text);
-    border: 1px solid var(--glass-border);
-    border-radius: 6px;
-    padding: 2px 6px;
-    font-size: 11px;
-    cursor: pointer;
-    outline: none;
-  }
-
-  .depth-input {
-    width: 48px;
-    background: var(--canvas-selection);
-    color: var(--glass-text);
-    border: 1px solid var(--glass-border);
-    border-radius: 6px;
-    padding: 2px 6px;
-    font-size: 11px;
-    outline: none;
+  :global(.depth-field) {
+    width: 5.5em;
   }
 
   .takeoff-summary-badge {
-    padding: 2px 8px;
-    background: var(--canvas-selection);
+    padding: var(--space-1) var(--space-2);
+    background: var(--glass-bg-input);
     border: 1px solid var(--glass-border);
-    border-radius: 9999px;
-    font-size: 10.5px;
+    border-radius: var(--radius-pill);
+    font-size: var(--font-size-caption);
     font-weight: 600;
     white-space: nowrap;
   }

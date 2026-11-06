@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 11:49 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 11:55 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -10,10 +10,10 @@ Updated 2026-11-06 11:49 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 ## Worktrees
 | Worktree | HEAD | State |
 |---|---|---|
-| main | f8ef981 (tags sweep-g8-green … sweep-g1-green, ui-library-green, …) | lead |
+| main | 3c8cd91 (tag sweep-mainflows-green; all main-flow screens swept) | lead |
 | wt/engines | 9919398 + CP3 uncommitted | PARKED; target dir deleted (owner 08:50) — rebuild needed before CP3 tests |
-| wt/fixes | f8ef981 | RUNNING (sonnet/med): sweep g9 PropertyPill (last main-flow screen) + undo-label wiring test; then inventory totals |
-| wt/release | daa2bb4 (merged) | idle until Sat AM packaging (D); follow-ups BUG-041/047/048 |
+| wt/fixes | 3c8cd91 | RUNNING (sonnet/med): sweep of the remaining 14 non-main-flow files in groups; HARD STOP 16:45 |
+| wt/release | main | RUNNING (sonnet/med): BUG-048 per-run screenshots (needed for the 17:00 screenshot run) |
 | android | 644caf3 | paused until Sun |
 
 ## P0 (BUGS.md)

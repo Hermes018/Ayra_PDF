@@ -7,6 +7,8 @@
       value: string;
       label: string;
       options: { value: string; label: string }[];
+      /** Small control for toolbars and pills. */
+      compact?: boolean;
       /** Visually hide the label (compact toolbars); it still names the control for assistive tech. */
       hideLabel?: boolean;
     };
@@ -16,6 +18,7 @@
     label,
     options,
     hideLabel = false,
+    compact = false,
     disabled = false,
     disabledReason,
     class: klass = '',
@@ -33,6 +36,7 @@
   <select
     id={selectId}
     class="lp-select"
+    class:lp-select--compact={compact}
     {disabled}
     bind:value
     aria-describedby={disabled && disabledReason ? tipId : undefined}
@@ -47,6 +51,7 @@
 
 <style>
   .lp-field { position: relative; display: flex; flex-direction: column; gap: var(--space-1); }
+  .lp-select.lp-select--compact { min-height: var(--control-height-sm); padding: 0 var(--space-2); font-size: var(--font-size-footnote); border-radius: var(--radius-sm); }
   .lp-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .lp-label { font-size: var(--font-size-footnote); font-weight: 600; color: var(--text-secondary); }
   .lp-select {

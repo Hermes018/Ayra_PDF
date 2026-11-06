@@ -38,3 +38,4 @@ lib/components/studio/MeasureOverlay.svelte
 # Sweep group 7: Studio ledger (chrome only)
 lib/components/studio/AnnotationLedger.svelte
 lib/views/studio/SpatialCanvas.svelte
+lib/components/studio/PropertyPill.svelte

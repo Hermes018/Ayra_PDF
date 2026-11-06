@@ -12,6 +12,8 @@
       type?: 'text' | 'number' | 'password' | 'search' | 'email' | 'range';
       /** Native autocomplete hint, e.g. "off" for secrets. */
       autocomplete?: 'off' | 'on' | 'new-password' | 'current-password';
+      /** Small control for toolbars and pills. */
+      compact?: boolean;
       /** Visually hide the label (compact toolbars); it still names the control for assistive tech. */
       hideLabel?: boolean;
       /** For type="range". */
@@ -29,6 +31,7 @@
     hint,
     type = 'text',
     hideLabel = false,
+    compact = false,
     autocomplete,
     min,
     max,
@@ -54,6 +57,7 @@
   <input
     id={inputId}
     class="lp-input"
+    class:lp-input--compact={compact}
     class:has-error={!!error}
     {type}
     {placeholder}
@@ -77,6 +81,7 @@
 
 <style>
   .lp-field { position: relative; display: flex; flex-direction: column; gap: var(--space-1); }
+  .lp-input.lp-input--compact { min-height: var(--control-height-sm); padding: 0 var(--space-2); font-size: var(--font-size-footnote); border-radius: var(--radius-sm); }
   .lp-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .lp-label { font-size: var(--font-size-footnote); font-weight: 600; color: var(--text-secondary); }
   .lp-input {
