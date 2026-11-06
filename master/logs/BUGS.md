@@ -168,3 +168,18 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 - Add a clean-room statement to fill.rs and UPSTREAM_MANIFEST: generic sweep/crossings code, nothing copied from cadcraft.
 - Found by: ERR-007 reviewer
 - Owner: fixes
+
+## BUG-037 [P1] Peak RSS 2.9 GB on a 648-page, 2.2 MB file (DF-03), above the 2 GiB budget — status: open
+- Peak RSS 2930 MB (app + WebKit children) across open / markup / save / reopen / sampled pan. Other files 0.65-1.2 GB. All 648 canvases appear to be created at open. First step: measure open-only RSS.
+- Found by: automated dogfood (DOGFOOD_AUTO.md)
+- Owner: fixes
+
+## BUG-038 [P2] Edit Text hotspot labels cover little of the poppler text on page 1 (DF-02..08) — status: open
+- Word coverage vs pdftotext page 1 is 0.03-0.66 on 7 files (precision 0.75-0.95); DF-03 yields a single block. Possible causes: aria-label truncation, tokenisation, or missing blocks. No data loss.
+- Found by: automated dogfood (DOGFOOD_AUTO.md)
+- Owner: fixes
+
+## BUG-039 [P2] Coverage gap: no fillable form in the dogfood set — status: open
+- No fillable, encrypted or damaged file in the 8 files, so forms (step 4) was N/A and the error-message path is untested. Need a blank public fillable form.
+- Found by: automated dogfood (DOGFOOD_AUTO.md)
+- Owner: release

@@ -438,6 +438,7 @@ master/
 │   ├── CHECKPOINT_HISTORY.md                                 # Older CHECKPOINT snapshots (append-only), moved out to keep CHECKPOINT short
 │   ├── DECISIONS_ADR.md                                      # Decision register (all ADRs, including the ID erratum)
 │   ├── DOGFOOD.md                                            # Owner's hands-on testing notes; lead triages into BUGS.md
+│   ├── DOGFOOD_AUTO.md                                       # Automated real-world PDF dogfood results (files by anonymised DF-xx ID only; mapping kept outside the repo)
 │   ├── ERROR_LOG.md                                          # Errors, root causes and fixes
 │   ├── FLAKY.md                                              # Tests that passed only on rerun, with cause and action
 │   ├── PLAN_LOG.md                                           # Plans written before each phase

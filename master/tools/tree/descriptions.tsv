@@ -583,3 +583,4 @@ master/app-tauri/src/lib/core/hatchPatterns.json	Hatch pattern parameters genera
 master/app-tauri/src/lib/core/hatchPatterns.ts	Typed loader for hatchPatterns.json used by HatchDefs.svelte
 master/app-tauri/src/lib/components/studio/HatchDefs.test.ts	Tests: hatch preview tiles are drawn from the same pattern parameters as the saved output
 master/docs/DESIGN_LANGUAGE.md	App-wide design language: principles, tokens (themeContract + NEW), shared ui/ components (create vs reuse), patterns, wording guide, sweep "done" rules
+master/logs/DOGFOOD_AUTO.md	Automated real-world PDF dogfood results (files by anonymised DF-xx ID only; mapping kept outside the repo)
