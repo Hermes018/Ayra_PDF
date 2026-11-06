@@ -25,7 +25,7 @@ Updated 2026-11-06 09:28 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 3. Pace check at ~09:00 (owner %); then P1s, if the tier allows.
 
 ## UI consistency workstream (owner 2026-11-06 09:28; feature freeze holds)
-A inventory (explorer haiku running; audit ext. fixes) → B docs/DESIGN_LANGUAGE.md (Opus medium, one pass) → C sweep main-flow screens (Sonnet medium, strict audit, screenshots) by 17:00 → 17–18 E2E + screenshots → Sat AM D packaging (0.2.0, LTO, rpm/deb/AppImage, SBOM, offline run) → RC 18:00. Owner dogfood findings beat sweep work. If weekly > 80 % before Sat noon: stop sweep at main-flow screens, finish D, rest → UI_BACKLOG.md.
+A inventory (done: 12 screens, no shared ui components, E2E only Organize) + A2 audit ext. (fixes, running) → B docs/DESIGN_LANGUAGE.md (Opus medium, running) → **C0 shared component library first (owner): headless Svelte 5 lib (Bits UI/Melt UI) vetted MIT/Apache + offline, our tokens; 10 base components + unit tests; dev-only gallery route (excluded from release) + E2E screenshot; decision in reuse matrix; checkpoint commit before the dependency** → C sweep main-flow screens (+ per-screen E2E smoke; ErrorState on every long-job/file-I/O screen) (Sonnet medium, strict audit, screenshots) by 17:00 → 17–18 E2E + screenshots → Sat AM D packaging (0.2.0, LTO, rpm/deb/AppImage, SBOM, offline run) → RC 18:00. Owner dogfood findings beat sweep work. If weekly > 80 % before Sat noon: stop sweep at main-flow screens, finish D, rest → UI_BACKLOG.md.
 - Weekly 66 % at 09:28 (≈0.7 %/h since 07:47): tier stays 85–92 %; owner un-paused release builder. DOGFOOD copy: ~/LocalPDF-dogfood/ (+SHA256SUMS).
 
 ## Cuts (KNOWN_ISSUES.md)
