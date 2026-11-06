@@ -201,3 +201,6 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 
 ## BUG-045 [P2] The "PINS" toolbar at bottom-left overlaps the page (seen in the shell screenshots; it predates the sweep) — status: open
 - Found by: sweep g2 visual review. Candidate for the Studio chrome sweep group, or UI_BACKLOG.md. Owner: fixes
+
+## BUG-046 [P0] Flow 7: a drawn signature is saved as an empty /Ink annotation (the drawing is lost) — status: open (triage)
+- Found by: sweep group 6 builder. E2E flow 7 fails the same way on the merged main binary (logs/runs/sweep-e2e7-base.log in wt/fixes), so this predates the sweep. Possible regression of BUG-017; flow 7 is not in the 85–92 % tier E2E subset, so it was not run after the P0 merge. Data loss → P0. Owner: fixes (next, ahead of the sweep). Opus-high verification (save path).
