@@ -35,6 +35,6 @@ KI-001 tab switch clears undo · KI-002 Organize intermediate file · KI-003 Lab
 - **AR-CONC hatch scale** ×1/16 (undoes upstream's coarsening): keep, or follow upstream?
 
 ## Standing rules / exceptions
-- RAM: training first; HEAVY needs 5 GiB + 6 GiB reserve; 1 slot in practice. Disk: own target per worktree; refuse < 15 GB; now ~36 GB free.
+- RAM: training first; HEAVY needs 5 GiB + 6 GiB reserve; 1 slot in practice. Disk: own target per worktree; refuse < 15 GB; ~32 GB free. **Owner 07:45: keep all target dirs (engines needed for ERR-007); delete only old release e2e/out runs by name, keeping the latest report, after the release builder finishes; revisit targets only below 22 GB free.**
 - One-time rm -rf master/target/debug (ERR-008), approved. guard.py ALLOW_BUILD_LOCK=True (transitional).
 - Unpushed: everything since origin/main 2fa8927 (the owner pushes).
