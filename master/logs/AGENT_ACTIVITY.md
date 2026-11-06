@@ -200,3 +200,7 @@
 - 2026-11-06T11:07:03+06:00 SubagentStop general-purpose#ab17304f session=c9df49d5 cwd=master
 - 2026-11-06T11:07:30+06:00 Stop lead session=c9df49d5 cwd=Ayra_PDF
 - 2026-11-06T11:14:55+06:00 SubagentStop fixes-builder#aa06605b session=c9df49d5 cwd=Ayra_PDF
+- 2026-11-06T11:15:36+06:00 Stop lead session=c9df49d5 cwd=Ayra_PDF
+- 2026-11-06T11:15:41+06:00 SubagentStop log-reader#a0b5e7f2 session=c9df49d5 cwd=Ayra_PDF
+- 2026-11-06T11:15:44+06:00 SubagentStop log-reader#a0b5e7f2 session=c9df49d5 cwd=Ayra_PDF
+- 2026-11-06T11:16:25+06:00 SubagentStop reviewer#acdcde5d session=c9df49d5 cwd=Ayra_PDF

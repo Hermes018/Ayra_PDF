@@ -50,4 +50,5 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 11:05 | gate-rerun | g5 verify.sh + flow18 reshoot | sonnet/low (escalation rule) | ok | | GREEN vitest 330; reshoot PASS |
 | 2026-11-06 11:07 | fixes-build | sweep group 6 (+ capture-Escape fix, calibration discard confirm) | sonnet/medium | ok | | found flow 7 signature failure on base |
 | 2026-11-06 11:15 | review+verify+visual | sweep g6 | sonnet/medium | running | | |
-| 2026-11-06 11:15 | log-read | flow 7 signature failure | haiku/low (agent file) | running | | read-only, safe alongside gate |
+| 2026-11-06 11:15 | log-read | flow 7 signature failure | haiku/low (agent file) | ok | | verbatim; lead triaged harness false-fail |
+| 2026-11-06 11:16 | release-build | BUG-046 flow 7 matcher | sonnet/medium (agent file) | running | | |
