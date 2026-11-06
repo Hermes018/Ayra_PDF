@@ -136,5 +136,6 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 ## BUG-030 [P1] Every load reads the whole file into RAM (twice per RenderPage) — status: open
 - Found by: engines CP2b reviewer. engine-switcher lib.rs:83 calls `std::fs::read` before the guard, which contradicts the "cheap, bounded" doc. Fine for the 1k-page corpus (253 KB); bad for 100 MB+ scans. Fix: a fixed-buffer streaming scan. Owner: engines
 
-## BUG-031 [P2] E2E harness leaves its private dbus-daemon running after the run — status: open
+## BUG-031 [P1] E2E harness leaves its private dbus-daemon running after the run — status: open
 - Found by: lead (scope run-racc58…, dbus-daemon with /tmp/lpdf-bus-*/bus.conf alive 1h23m after pkg_smoke started at 06:24). reap() covers app/driver/WebKitWebDriver but not the private bus. Owner: release (paused by the throttle tier)
+- Raised to P1 (owner). Fix: run each harness run in its own process group/session and kill the whole group on exit, dbus included; add a post-run check that no harness processes remain. Assigned: release builder, after the session restart.

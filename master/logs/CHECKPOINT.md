@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 07:36 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 07:52 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -11,9 +11,9 @@ Updated 2026-11-06 07:36 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 | Worktree | HEAD | State |
 |---|---|---|
 | main | ad484fd (tags engines-cp2b-green, release-cp2-green) | lead; routing files uncommitted, verify pending |
-| wt/engines | 9919398 | RUNNING CP3: BUG-030 streaming guard, BUG-029 bypasses, path_exists→Result, minors (Opus/high, legacy spawn) |
-| wt/fixes | 9919398 + round 4 staged (40 files) | RUNNING round 5 (FINAL tabs round): close re-stash blocker, undo/A4/reset majors + wire engines contract (Opus/high, legacy spawn) |
-| wt/release | ad484fd | idle; follow-ups: pkg_smoke reap RuntimeError, flaky-only reason, cache names offline-proof, cargo --locked, 2 CHANGELOG lines |
+| wt/engines | 9919398 + CP3 uncommitted (BUG-029/030 + minors; compiles, tests NOT run) | PARKED (tier). NOTE: CP3 changes path_exists to Result<bool,String>; fixes must adapt when CP3 merges |
+| wt/fixes | 9919398 + R5 staged (44 files), builder verify GREEN, vitest 255 | reviewer (sonnet/med) + merge-verifier (opus/high, save path) RUNNING |
+| wt/release | 6fa23a8 WIP (follow-ups 1,2,3,5,6; unverified) | PAUSED. After restart: verify + merge; then BUG-031 (P1, process-group reap + no-leftover check). KI-006 offline AppImage proof → Saturday packaging, before RC |
 | android | 644caf3 | paused until Sun |
 
 ## P0 (BUGS.md)
