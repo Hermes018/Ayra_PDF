@@ -1532,3 +1532,10 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
 - **Fixed with red→green tests:** BUG-011, 012, 013, 014, 016, 017, 018 (UI), 019, 020, 021, 022 (vitest 191).
 - **Review FAIL:** blocker = tab close drops unsaved markups (F11); major = a GetInfo probe causes false success toasts; 6 minors (Organize names overwrite, no on-disk collision check, runJob has no timeout, a test that can't fail, a hidden error).
 - The verifier was stopped early (its result would be invalidated) to free the HEAVY slot. Round 2 is in progress.
+
+## [2026-11-06 07:15] Fixes P0 batch round 2 — review FAIL, round 3 started
+- **Fixed per reviewer:** claims 3–8 (silent probe skips encrypted files; Organize collision-safe names and on-disk check; Cancel + 120 s stall timeout; render-error logging; undo tooltip). The CSP change is only `img-src data: blob:` (BUG-012); `connect-src` is still IPC only.
+- **Blocker:** a tab switch or close while a document is still rendering stashes empty engines over the session, losing markups and skipping the prompt (SpatialCanvas.svelte:739/902, documentSessions.ts:117).
+- **Major:** strokes drawn during the first load are replaced by the restored ones (SpatialCanvas.svelte:403).
+- **Minors (6):** no timeout on whenDocumentLive; probe leak; stall timer counts queue time; GridEditor onDestroy doesn't abort; mark-clean after await; intermediate file left (→ KI-002, engines cleanup IPC).
+- The fresh verifier was stopped while queued; it never ran.
