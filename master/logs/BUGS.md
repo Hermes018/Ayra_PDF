@@ -214,5 +214,11 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 ## BUG-049 [P2] Per-run screenshot layout: small races — status: open
 - common.py:365-372: the one-time move of an old real out/screens leaves the path briefly missing; two overlapping first runs could race. run.py:111: run ids have 1 s resolution, so identical runs in the same second share a folder. Only one E2E run happens at a time today. Found by: BUG-048 review. Owner: release
 
-## BUG-050 [P0] Optimize/Edit (and any view naming outputs by `.replace(/\.pdf$/i, …)`) can write over the ORIGINAL when the input has no .pdf extension — status: fixing
+## BUG-050 [P0] Optimize/Edit (and any view naming outputs by `.replace(/\.pdf$/i, …)`) can write over the ORIGINAL when the input has no .pdf extension — status: fixed (tag fixes-bug050-green)
 - Found by: g10 Opus-high read-only check. EditView/OptimizeView build the output path from the input path with a `.pdf` suffix replace; with no extension the output equals the input, so the job writes over the original (hard rule: originals are never modified). It predates the sweep. Fix: collision-safe output naming (outputNames/freeOutputPath) in every view, plus a backend guard that refuses output==input or an existing output in the job/save entry points (also closes BUG-032). Failing tests first. Owner: fixes. Opus-high verification.
+
+## BUG-051 [P1] BUG-050 follow-ups — status: fixing
+- Regression from the guard: Convert/Pipelines/AiSummarize/Markdown names are not collision-safe, so a second run fails with OUTPUT_PATH_UNSAFE (loud and safe, no data loss). MarkdownView.svelte:39 `.replace(/\.md$/)` can yield the input (only the backend refuses it).
+- Unguarded writers: studio_export_takeoff_csv, export_diagnostics (user-chosen path), convert_pdf, extract_text (exposed, unused). App-owned files (page-scales sidecar, prefs/settings/library) are exempt by design.
+- Tests: OutputPathsBug050.test.ts covers only 2 of 9 views; Rust `an_existing_output_file_is_never_replaced` can't fail (Repair errors on non-PDF input anyway).
+- Found by: BUG-050 Opus verifier + reviewer. Owner: fixes. Opus-high verification (backend writers).
