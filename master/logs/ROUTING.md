@@ -78,5 +78,6 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 12:37 | merge-verify | BUG-051 (writers, naming, flows 2,6,8,10,11) | opus/high | ok | | GREEN; diagnostics can replace a non-open .pdf |
 | 2026-11-06 12:37 | reviewer (read-only) | BUG-051 frontend naming | sonnet/medium | fail | | UX: refusal not shown, submit races |
 | 2026-11-06 12:41 | fixes-build | BUG-052 robustness (refusal ErrorState, submit races, -N naming, focus, diagnostics .pdf) | sonnet/medium | ok | | |
-| 2026-11-06 12:49 | merge-verify | BUG-052 backend + error path + flows 10,11 | opus/high | running | | sole runner |
-| 2026-11-06 12:49 | reviewer (read-only) | BUG-052 frontend | sonnet/medium | running | | |
+| 2026-11-06 12:49 | merge-verify | BUG-052 backend + error path + flows 10,11 | opus/high | ok | | GREEN; symlink-to-pdf note |
+| 2026-11-06 12:49 | reviewer (read-only) | BUG-052 frontend | sonnet/medium | fail | | BLOCKER Convert status banner deleted (silent errors) |
+| 2026-11-06 12:53 | fixes-build | BUG-052 fix round (banner, toast, pipelines banner, diag canonical) | sonnet/medium | running | | |
