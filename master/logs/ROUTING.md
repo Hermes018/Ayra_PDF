@@ -103,5 +103,7 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 14:33 | review+verify (combined) | g14 last items + gate + flows 10,11,23 | opus/high | ok | | functional PASS; bn.json + FAQ permissions claim → BUG-060 |
 | 2026-11-06 14:40 | fixes-build | BUG-060 FAQ text (bn military-grade, permissions claim) + audit all locales | sonnet/medium | ok | | |
 | 2026-11-06 14:44 | review+verify (combined) | BUG-060 text | sonnet/low | fail | | skipped 2 of 4 checks; lead covered with 2 greps (1st Sonnet miss on this task) |
-| 2026-11-06 14:44 | e2e-run | full E2E on main: flows 1-12 (1 h soak) + sweep 13-23 | sonnet/low (escalation rule) | running | | |
+| 2026-11-06 14:44 | e2e-run | full E2E on main: flows 1-12 (1 h soak) + sweep 13-23 | sonnet/low (escalation rule) | ok | | ran all; built flow 13 binary without VITE_LPDF_GALLERY (procedure miss, flag is in the flow header) |
 | 2026-11-06 15:14 | docs | ARGON_TASKS.md (step 4, doc-only) | sonnet/medium | ok | | lead removed AT-08/16/17, restricted AT-15 (SpatialCanvas holds save code) |
+| 2026-11-06 15:54 | log-read | flow 12 soak data + flow 13 reason | haiku/low | running | | |
+| 2026-11-06 15:54 | release-build | flow 13 rerun (flagged build) + real-PDF rerun | sonnet/medium | running | | |

@@ -1,5 +1,5 @@
 # CHECKPOINT — living handoff (< 150 lines, < 5,000 chars; history in CHECKPOINT_HISTORY.md)
-Updated 2026-11-06 15:14 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
+Updated 2026-11-06 15:54 Asia/Dhaka by the lead. If this disagrees with STATE_AUTO.md, trust STATE_AUTO.
 
 ## Sprint
 - **Goal:** v0.2.0-prototype (Linux), tag by Sat 2026-11-07 23:59. Scope: docs/PROTOTYPE_SCOPE.md. Feature freeze.
@@ -11,10 +11,10 @@ Updated 2026-11-06 15:14 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 ## Worktrees
 | Worktree | HEAD | State |
 |---|---|---|
-| main | 83fd51c (tags fixes-bug060-green, ui-sweep-complete, …) | lead; E2E rerun on main RUNNING (all 12 + sweep 13–23, 1 h soak) |
+| main | 77b50dd (docs: ARGON_TASKS.md) | E2E rerun DONE: 2-11 + 14-23 PASS; 1 BLOCKED (no rpm); 12 soak FAIL (1 driver disconnect @123/408, RSS 1.9x); 13 needs VITE_LPDF_GALLERY build (rerunning). Real-PDF rerun running |
 | wt/engines | 9919398 + CP3 uncommitted | PARKED; target dir deleted (owner 08:50) — rebuild needed before CP3 tests |
 | wt/fixes | 83fd51c (merged) | idle (sweep done); next: owner DOGFOOD findings, then Sat D packaging support |
-| wt/release | main | 83fd51c (tags fixes-bug060-green, ui-sweep-complete, …) | lead; E2E rerun on main RUNNING (all 12 + sweep 13–23, 1 h soak) |
+| wt/release | daa2bb4 (merged) | idle; target dir deleted 15:5x (disk 21.9→38.5 GiB). Packaging builds from main |
 | android | 644caf3 | paused until Sun |
 
 ## P0 (BUGS.md)
