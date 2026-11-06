@@ -49,6 +49,7 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 11:04 | merge-verify (narrow) | g5 DocumentTabs alert + data-safety test | opus/high | ok | | red/green proven; tree restored |
 | 2026-11-06 11:05 | gate-rerun | g5 verify.sh + flow18 reshoot | sonnet/low (escalation rule) | ok | | GREEN vitest 330; reshoot PASS |
 | 2026-11-06 11:07 | fixes-build | sweep group 6 (+ capture-Escape fix, calibration discard confirm) | sonnet/medium | ok | | found flow 7 signature failure on base |
-| 2026-11-06 11:15 | review+verify+visual | sweep g6 | sonnet/medium | running | | |
+| 2026-11-06 11:15 | review+verify+visual | sweep g6 | sonnet/medium | ok | | PASS, gate GREEN |
 | 2026-11-06 11:15 | log-read | flow 7 signature failure | haiku/low (agent file) | ok | | verbatim; lead triaged harness false-fail |
 | 2026-11-06 11:16 | release-build | BUG-046 flow 7 matcher | sonnet/medium (agent file) | running | | |
+| 2026-11-06 11:16 | fixes-build | sweep group 7 (AnnotationLedger + password dialog top layer) | sonnet/medium | running | | security path flagged |
