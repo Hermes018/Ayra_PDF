@@ -97,5 +97,6 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 14:06 | review+verify (combined) | g14 (Settings persistence, Batch/AI honesty, audit 0) | opus/high | fail | | settings save after load error writes defaults; i18n overclaims |
 | 2026-11-06 14:06 | visual review | final sweep screenshots | sonnet/medium | fail | | Batch header/emoji, settings dark renders light, stuck tooltip |
 | 2026-11-06 14:11 | fixes-build | g14 fix round (BUG-059 settings fail-closed, i18n overclaims, visual) | sonnet/medium | ok | | |
-| 2026-11-06 14:22 | review+verify (combined) | g14 fix round (settings writers, theme, i18n keys) | opus/high | running | | |
-| 2026-11-06 14:22 | visual recheck | g14 screenshots | sonnet/medium | running | | images only |
+| 2026-11-06 14:22 | review+verify (combined) | g14 fix round (settings writers, theme, i18n keys) | opus/high | fail | | model import fails open; military-grade |
+| 2026-11-06 14:22 | visual recheck | g14 screenshots | sonnet/medium | ok | | 4/4 fixed |
+| 2026-11-06 14:28 | fixes-build | g14 last items (model import fail-closed, handler test, military-grade) | sonnet/medium | running | | |
