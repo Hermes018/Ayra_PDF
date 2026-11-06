@@ -19,7 +19,7 @@ Updated 2026-11-06 07:36 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 ## P0 (BUGS.md)
 - **Fixed on wt/fixes, not merged** (round 4 verifier PASS; reviewer FAIL → round 5): BUG-011, 012, 013, 014, 016, 017, 019, 020.
 - **BUG-018:** backend merged (F4 guard, degraded flag); UI wiring in fixes round 5.
-- **BUG-015 / ERR-007:** NOT fixed in the shipped build. Cadcraft is merged behind a switch (off); the switch patch is ready (wt/engines logs/runs/hatch-default-switch.patch). **Blocked on the owner's R3 licence decision.**
+- **BUG-015 / ERR-007:** NOT fixed in the shipped build. Cadcraft is merged behind a switch (off); the switch patch is ready (wt/engines logs/runs/hatch-default-switch.patch). **Unblocked (owner 07:40):** licence-clean clip port + own parametric patterns, engines round after the restart.
 - **P1 open:** 021, 022 (fixes, done in wt/fixes), 028 (fixes), 029, 030 (engines). BUG-010, 023, 024 fixed (merged).
 
 ## Next 3 actions
