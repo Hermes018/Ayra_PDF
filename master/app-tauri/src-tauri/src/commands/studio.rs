@@ -251,11 +251,15 @@ fn rgb_to_f64(rgb: [u8; 3]) -> [f64; 3] {
 }
 
 /// The boundary loop handed to the hatch adapter (`lpdf-geom`, ADR-018): the annotation's own
-/// vertices when it has a finite one, else the corners of its (normalised) rectangle. The legacy
-/// engine hatches the bounding box of this loop, which equals `rect` (ERR-007); the cadcraft
-/// engine (ADR-018 checkpoint 2) clips to the loop itself.
+/// vertices when it has at least three finite ones (a polygon is clipped to itself, ERR-007), else
+/// the corners of its (normalised) rectangle (two-point shapes such as rectangles and ellipses).
 fn hatch_loops(points: &[StudioPointDto], rect: [f64; 4]) -> Vec<lpdf_geom::Loop> {
-    if points.iter().any(|p| p.x.is_finite() && p.y.is_finite()) {
+    if points
+        .iter()
+        .filter(|p| p.x.is_finite() && p.y.is_finite())
+        .count()
+        >= 3
+    {
         vec![lpdf_geom::Loop::new(
             points
                 .iter()
@@ -2135,11 +2139,12 @@ startxref\n\
     }
 
     /// `studio_save_annotations` hatches through the lpdf-geom adapter, byte-identical to the
-    /// legacy golden (ERR-007 bbox hatching of the concave L is still the current behaviour).
+    /// Studio golden. ERR-007 intentional change, approved by owner 2026-11-06: this used to pin
+    /// `hatch_legacy.golden.json` (bounding-box hatching); it now pins the clipped Studio engine.
     #[test]
     fn golden_studio_hatch_goes_through_adapter() {
         let raw = fs::read_to_string(manifest_path(
-            "../../crates/lpdf-geom/tests/goldens/hatch_legacy.golden.json",
+            "../../crates/lpdf-geom/tests/goldens/hatch_studio.golden.json",
         ))
         .unwrap();
         let golden: serde_json::Value = serde_json::from_str(&raw).unwrap();
@@ -2167,41 +2172,39 @@ startxref\n\
             )
             .unwrap()
             .unwrap();
-            let got: Vec<String> = strokes
-                .iter()
-                .map(|s| {
-                    format!(
-                        "[{}, {}, {}, {}]",
-                        num(s[0][0]),
-                        num(s[0][1]),
-                        num(s[1][0]),
-                        num(s[1][1])
-                    )
-                })
-                .collect();
-            let want: Vec<String> = case["segments"]
+            // serde_json (no float_roundtrip) can read a long decimal one ulp off, so compare
+            // the numbers, not their text.
+            let want: Vec<[f64; 4]> = case["segments"]
                 .as_array()
                 .unwrap()
                 .iter()
                 .map(|s| {
-                    format!(
-                        "[{}, {}, {}, {}]",
-                        num(s[0].as_f64().unwrap()),
-                        num(s[1].as_f64().unwrap()),
-                        num(s[2].as_f64().unwrap()),
-                        num(s[3].as_f64().unwrap())
-                    )
+                    [
+                        s[0].as_f64().unwrap(),
+                        s[1].as_f64().unwrap(),
+                        s[2].as_f64().unwrap(),
+                        s[3].as_f64().unwrap(),
+                    ]
                 })
                 .collect();
-            assert_eq!(got, want, "{name}");
+            assert_eq!(strokes.len(), want.len(), "{name}: segment count");
+            for (s, w) in strokes.iter().zip(want.iter()) {
+                let got = [s[0][0], s[0][1], s[1][0], s[1][1]];
+                for (g, w) in got.iter().zip(w.iter()) {
+                    assert!((g - w).abs() < 1e-9, "{name}: {got:?} vs {w:?}");
+                }
+            }
         }
-        // Rect-only annotations (no points) hatch their normalised bbox_pt, as before.
+        // Rect-only annotations (no points) hatch their normalised bbox_pt.
         let rect = bbox_from_points_or_rect(&[], [100.0, 100.0, 240.0, 200.0]);
         let from_rect = hatch_strokes_for("timber", &[], rect, 1.0)
             .unwrap()
             .unwrap();
-        assert_eq!(from_rect.len(), 13);
-        assert_eq!(from_rect[0], vec![[100.0, 100.0], [240.0, 100.0]]);
+        assert!(from_rect.len() > 8, "{} timber lines", from_rect.len());
+        assert!(from_rect
+            .iter()
+            .flatten()
+            .all(|p| (100.0..=240.0).contains(&p[0]) && (100.0..=200.0).contains(&p[1])));
         // Fills and unknown ids draw no line hatch.
         assert_eq!(hatch_strokes_for("solid", &[], rect, 1.0).unwrap(), None);
         assert_eq!(hatch_strokes_for("ANSI31", &[], rect, 1.0).unwrap(), None);

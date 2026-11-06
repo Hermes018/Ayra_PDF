@@ -1,9 +1,14 @@
 <script lang="ts">
   import SpatialCanvas from './SpatialCanvas.svelte';
+  import DocumentTabs from '$lib/components/studio/DocumentTabs.svelte';
+  import { SPLIT_VIEW_ID, SPLIT_VIEW_LABS, LABS_BADGE, labsVisible } from '$lib/components/studio/labs.svelte';
 
   export type SplitMode = 'single' | 'horizontal' | 'vertical';
 
   let { mode = $bindable<SplitMode>('single') } = $props<{ mode?: SplitMode }>();
+  // Review r4: multi-pane split view is Labs-only (off by default). Without Labs the Studio always
+  // has exactly one canvas; a second document opens as a tab.
+  let effectiveMode = $derived<SplitMode>(labsVisible(SPLIT_VIEW_ID) ? mode : 'single');
   let splitRatio = $state(0.5);
   let containerEl: HTMLDivElement | null = $state(null);
   let dragging = $state(false);
@@ -41,14 +46,28 @@
   }
 </script>
 
-<div class="split-layout mode-{mode}" bind:this={containerEl}>
-  {#if mode === 'single'}
+<div class="studio-shell">
+<DocumentTabs />
+{#if labsVisible(SPLIT_VIEW_ID)}
+  <button
+    type="button"
+    class="split-toggle"
+    data-testid="split-view-toggle"
+    title="{SPLIT_VIEW_LABS.label}: {SPLIT_VIEW_LABS.note}"
+    aria-pressed={effectiveMode !== 'single'}
+    onclick={() => (mode = mode === 'single' ? 'horizontal' : 'single')}
+  >
+    {SPLIT_VIEW_LABS.name} <span class="labs-badge">{LABS_BADGE}</span>
+  </button>
+{/if}
+<div class="split-layout mode-{effectiveMode}" bind:this={containerEl}>
+  {#if effectiveMode === 'single'}
     <div class="pane primary">
       <SpatialCanvas viewId="main-canvas" />
     </div>
-  {:else if mode === 'horizontal'}
+  {:else if effectiveMode === 'horizontal'}
     <div class="pane left" style:flex="{splitRatio}">
-      <SpatialCanvas viewId="pane-left" />
+      <SpatialCanvas viewId="main-canvas" />
     </div>
     <div
       class="split-handle vertical"
@@ -60,11 +79,11 @@
       onpointercancel={onDividerUp}
     ></div>
     <div class="pane right" style:flex="{1 - splitRatio}">
-      <SpatialCanvas viewId="pane-right" />
+      <SpatialCanvas viewId="pane-right" follower />
     </div>
-  {:else if mode === 'vertical'}
+  {:else if effectiveMode === 'vertical'}
     <div class="pane top" style:flex="{splitRatio}">
-      <SpatialCanvas viewId="pane-top" />
+      <SpatialCanvas viewId="main-canvas" />
     </div>
     <div
       class="split-handle horizontal"
@@ -76,16 +95,48 @@
       onpointercancel={onDividerUp}
     ></div>
     <div class="pane bottom" style:flex="{1 - splitRatio}">
-      <SpatialCanvas viewId="pane-bottom" />
+      <SpatialCanvas viewId="pane-bottom" follower />
     </div>
   {/if}
 </div>
+</div>
 
 <style>
+  .studio-shell {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .split-toggle {
+    align-self: flex-end;
+    margin: 2px 8px;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    color: var(--glass-text);
+    cursor: pointer;
+  }
+
+  .labs-badge {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0 4px;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+  }
+
   .split-layout {
     display: flex;
     width: 100%;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
   }
 

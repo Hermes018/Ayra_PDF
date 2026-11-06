@@ -8,7 +8,7 @@
     import type { OutputPolicy } from '$lib/bindings/OutputPolicy';
     import type { ThemePreference } from '$lib/bindings/ThemePreference';
     import type { AiModelInfo } from '$lib/bindings/AiModelInfo';
-    import { INK_GUESS_LABS, MATH_TEXT_LABS, isLabsOn, setLabs } from '$lib/components/studio/labs.svelte';
+    import { INK_GUESS_LABS, MATH_TEXT_LABS, SPLIT_VIEW_LABS, isLabsOn, setLabs } from '$lib/components/studio/labs.svelte';
 
     // State via Svelte 5 runes
     let settings = $state<AppSettings>({
@@ -339,6 +339,7 @@
             <ul class="labs-list" data-testid="labs-feature-list">
                 <li><strong>{MATH_TEXT_LABS.label}</strong> — {MATH_TEXT_LABS.note}</li>
                 <li><strong>{INK_GUESS_LABS.label}</strong> — {INK_GUESS_LABS.note}</li>
+                <li><strong>{SPLIT_VIEW_LABS.label}</strong> — {SPLIT_VIEW_LABS.note}</li>
             </ul>
         </section>
 

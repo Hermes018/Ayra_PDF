@@ -90,3 +90,11 @@ Rule: 3 distinct failed fixes => status escalated-to-user, stop, ask.
 - **Approved exception to "never cargo clean"** (owner, 2026-11-06): a one-time `rm -rf master/target/debug` (54 GB, mostly stale after the dev-profile change). Disk went from 26 GB free to 78 GB free.
 - Follow-up: earlier gates in worktrees may have used cross-tree artifacts. main is re-verified after the split, and each pending merge gets a fresh verify in its own target.
 - Status: fixed
+
+## [2026-11-06 07:37] ERR-009 — SessionStart restore hook output truncated to a preview
+- Phase: sprint infra   Severity: major (context loss after compaction)
+- Symptom: after the 07:00 compaction most of CHECKPOINT never reached the lead's context.
+- Root cause: the SessionStart restore hook output was 14 KB. Claude Code stores hook output over ~10k chars in a file and injects only a 2 KB preview.
+- Fix: restore-context.sh caps output at ~9k chars (CHECKPOINT 5,600, STATE_AUTO 2,600, with a truncation note that points to the real file); snapshot-state.sh prints a compact worktree status; CHECKPOINT ≤ 5,000 chars (CLAUDE.md).
+- Tested: restore output is now 6,500 chars.
+- Status: fixed

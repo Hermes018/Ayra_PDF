@@ -534,3 +534,51 @@ master/vendor/patches/cadcraft-render/LICENSE-MIT	Upstream cadcraft-render MIT l
 master/vendor/patches/cadcraft-render/NOTICE	Upstream NOTICE file, reproduced in THIRD_PARTY_NOTICES.md (Apache-2.0 §4(d))
 master/xtask/src/notices.rs	xtask notices: generates THIRD_PARTY_NOTICES.md from cargo metadata (Linux graph) + npm licences
 master/KNOWN_ISSUES.md	Cuts and known limitations shipped in v0.2.0-prototype, with workarounds (KI-xxx)
+master/app-tauri/src/lib/components/organizeApply.ts	Organize Apply: runs reorder/delete/rotate jobs in sequence and reports the true result (BUG-014)
+master/app-tauri/src/lib/components/studio/DocumentTabs.svelte	Document tabs for multiple open PDFs in Studio (BUG-016)
+master/app-tauri/src/lib/views/studio/documentSessions.ts	Per-document Studio session state (view, page) for tab switching
+master/app-tauri/src/lib/views/studio/outputNames.ts	Collision-safe output file names, never overwrite previous outputs (BUG-021)
+master/app-tauri/src/lib/views/__tests__/MeasurePerimeter.test.ts	Tests: perimeter closes the shape (BUG-022)
+master/app-tauri/src/lib/views/__tests__/OrganizeApply.test.ts	Tests: Organize Apply keeps rotation, reports failures (BUG-014)
+master/app-tauri/src/lib/views/__tests__/SignatureDraw.test.ts	Tests: drawn signature saved as ink, not text (BUG-017)
+master/app-tauri/src/lib/views/__tests__/StudioDamagedPdf.test.ts	Tests: malformed PDFs show an error/degraded notice (BUG-018)
+master/app-tauri/src/lib/views/__tests__/StudioEditText.test.ts	Tests: Edit Text hotspots reachable by pointer (BUG-013)
+master/app-tauri/src/lib/views/__tests__/StudioEraserUndo.test.ts	Tests: erasers are undoable, undo restores the right stroke (BUG-019)
+master/app-tauri/src/lib/views/__tests__/StudioPassword.test.ts	Tests: encrypted PDFs prompt for a password (BUG-011)
+master/app-tauri/src/lib/views/__tests__/StudioSaveNames.test.ts	Tests: repeated saves use new collision-safe names (BUG-021)
+master/app-tauri/src/lib/views/__tests__/StudioTabs.test.ts	Tests: second document opens in a tab, view state kept per tab (BUG-016)
+master/app-tauri/src/lib/views/__tests__/TauriCsp.test.ts	Tests: CSP allows data:/blob: images, connect-src still IPC-only (BUG-012)
+master/app-tauri/src/lib/views/__tests__/ViewportFit.test.ts	Tests: Fit Width/Page use real page size and offset (BUG-020)
+master/logs/checkpoints/fixes.md	Fixes builder state: task, files, tests, next step, blockers
+master/app-tauri/src/lib/views/__tests__/IpcAndSessionTimeouts.test.ts	Tests: whenDocumentLive/probe timeouts, stall timer starts at dequeue, listener cleanup
+master/app-tauri/src/lib/views/__tests__/StudioLoadRaces.test.ts	Tests: tab switch/close mid-render keeps markups and still prompts; draw-during-load merge
+master/app-tauri/src/lib/views/__tests__/StudioDocumentStore.test.ts	Tests: document store activate(), Organize round trip, save refuses on switch, per-document scales, split view Labs-only
+master/app-tauri/src/lib/views/studio/studioSave.ts	The single Studio saver: snapshots path/seq/revision, refuses ("Nothing was written") if the document changed or is still loading
+master/app-tauri/src/lib/views/studio/pageGeometry.ts	Page geometry shared by the canvas and the saver: world (laid-out CSS px) to PDF user space (pt, y up) conversion
+master/app-tauri/src/lib/views/__tests__/StudioRound5.test.ts	Tests (P0 round 5): close via store leaves no session, inserts blocked until restored, save refuses without page geometry, one save in flight
+master/app-tauri/src/lib/views/__tests__/EngineReset.test.ts	Tests: every engine field is classified and reset on document switch (fails when a new field is unclassified)
+.claude/agents/	Claude Code subagent role files (model and effort per role; see master/logs/ROUTING.md)
+.claude/agents/bug-triager.md	Subagent role (sonnet-5-5/low): Triage findings into master/logs/BUGS.md (P0/P1/P2 per docs/PROTOTYPE_SCOPE.md) and summarize reviewer findings.
+.claude/agents/checkpoint-writer.md	Subagent role (sonnet-5-5/low): Update master/logs/CHECKPOINT.md or a per-worktree checkpoint from facts the lead provides. Small judgment, low blast radius.
+.claude/agents/engines-builder.md	Subagent role (opus-5-5/medium): Engines builder in ~/Desktop/Ayra_PDF-wt/engines: ADR-018 adapters and engine swaps behind goldens/parity.
+.claude/agents/escalation.md	Subagent role (opus-5-5/high): Escalated task: redo work that failed twice on Sonnet or once on Haiku+Sonnet (see logs/ROUTING.md).
+.claude/agents/explorer.md	Subagent role (haiku-5-5): Locate files, symbols and call sites; broad read-only search. Mechanical: output is checked by a later step.
+.claude/agents/fixes-builder.md	Subagent role (sonnet-5-5/high): Fixes builder in ~/Desktop/Ayra_PDF-wt/fixes: P0/P1 bug fixes, failing test first.
+.claude/agents/log-reader.md	Subagent role (haiku-5-5): Read build/test logs (master/logs/runs/*.log) and extract failures verbatim. Mechanical.
+.claude/agents/merge-verifier.md	Subagent role (opus-5-5/high): Fresh merge-gate verifier: gets only spec + staged diff + verify.sh; runs the gate itself. Always used for engine code, save/atomic-write/redaction paths.
+.claude/agents/provenance-auditor.md	Subagent role (sonnet-5-5/medium): Audit vendored/upstream code provenance: pins, licences, NOTICE files, UPSTREAM_MANIFEST.toml, deny.toml.
+.claude/agents/rc-verifier.md	Subagent role (opus-5-5/high): Release-candidate verifier: full gate, 12/12 E2E flows, package smoke, on the RC tag.
+.claude/agents/release-builder.md	Subagent role (sonnet-5-5/medium): Release builder in ~/Desktop/Ayra_PDF-wt/release: E2E harness (master/e2e), corpus, packaging scripts, CHANGELOG.
+.claude/agents/reviewer.md	Subagent role (sonnet-5-5/medium): Read-only code reviewer for a staged diff in a worktree. Use for every non-engine merge (engine swaps and RC also get an Opus-high verifier).
+.claude/agents/status-snapshot.md	Subagent role (haiku-5-5): Run a script or status command (scheduler, disk, RAM, git) and report its output. Mechanical.
+master/logs/ROUTING.md	Model routing table, escalation log and per-milestone routing tuning notes
+master/tools/routing-stats.py	Escalation rate per task type from logs/ROUTING.md, with tier-move suggestions (> 25 % up; Sonnet-high 0/10+ down)
+master/crates/lpdf-geom/src/fill.rs	Studio hatch clipping (original work): every hatch line clipped to the polygon by even-odd rule over multiple rings (holes); half-open vertex rule; work cap
+master/crates/lpdf-geom/src/patterns.rs	Studio hatch pattern definitions (original work): 9 patterns as line families (angle, pitch, offset, phase, dash)
+master/crates/lpdf-geom/tests/studio_hatch.rs	Tests (ERR-007): segments inside rect/concave L/star/holed polygon, no edge crossings, all patterns distinct
+master/crates/lpdf-geom/tests/studio_golden.rs	Tests: Studio hatch output vs hatch_studio golden
+master/crates/lpdf-geom/tests/goldens/hatch_studio.golden.json	Golden: Studio hatch segments per pattern (ERR-007 intentional change, approved by owner 2026-11-06)
+master/app-tauri/src-tauri/tests/hatch_save_e2e.rs	Tests (ERR-007 flow 5): save a hatched concave polygon to a new PDF, re-extract segments from the content stream, all inside
+master/app-tauri/src/lib/core/hatchPatterns.json	Hatch pattern parameters generated from lpdf-geom patterns.rs (single source for the on-screen preview)
+master/app-tauri/src/lib/core/hatchPatterns.ts	Typed loader for hatchPatterns.json used by HatchDefs.svelte
+master/app-tauri/src/lib/components/studio/HatchDefs.test.ts	Tests: hatch preview tiles are drawn from the same pattern parameters as the saved output

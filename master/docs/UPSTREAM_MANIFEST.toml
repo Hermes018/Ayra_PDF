@@ -3,7 +3,7 @@
 # or KEEP-PORT source file. Read by `cargo xtask upstream-check` (offline: compares `rev` with the
 # ~/craft-ref clones after a manual `git fetch` there). Bump procedure: docs/UPGRADING.md.
 #
-# kind = "dependency" | "patch" | "port"
+# kind = "dependency" | "patch" | "port" | "original" (own work; no upstream)
 # vendored = path of the vendored copy (cargo source replacement in .cargo/config.toml), if any
 
 [[upstream]]
@@ -39,6 +39,10 @@ last_checked = "2026-11-06"
 
 # --- cadcraft (ERR-007 hatch; docs/ENGINE_REUSE_MATRIX.md R1/R2) -----------------------------------
 
+# RULE (owner, 2026-11-06): never edit upstream pattern data; adjust scale only in our adapter.
+# Every cadcraft pattern definition stays upstream-exact (also under vendor/patches/). Display scales, e.g.
+# AR-CONC x1/16 (upstream draws it 16x coarser), live in crates/lpdf-geom/src/cadcraft.rs
+# (AR_CONC_DISPLAY_SCALE, display_scale) and are pinned by tests/cadcraft_parity.rs. See docs/UPGRADING.md step 3a.
 [[upstream]]
 name = "cadcraft-doc"
 kind = "dependency"
@@ -90,6 +94,18 @@ local = "vendor/patches/cadcraft-render"
 paths = ["crates/render/src/lib.rs", "crates/render/src/hatch.rs", "crates/render/Cargo.toml"]
 notes = "vendor/patches/cadcraft-render/PATCH_NOTES.md"
 upstream_request = "docs/upstream/cadcraft-render-reexport-pattern-lines.md (to draft)"
+last_checked = "2026-11-06"
+
+# --- original work (no upstream) -------------------------------------------------------------------
+
+[[upstream]]
+name = "lpdf-geom studio hatch patterns"       # ERR-007 / BUG-015: the default hatch engine (HatchEngine::Studio)
+kind = "original"                                # written here, not ported: no upstream source, no upstream licence
+license = "MIT"                                  # this project's own licence (workspace)
+local = "crates/lpdf-geom/src/patterns.rs"       # pattern definitions: line families (angle, pitch, offset, phase, dash)
+paths = ["crates/lpdf-geom/src/fill.rs"]         # even-odd clipping of the families to the real loops
+preview = "app-tauri/src/lib/core/hatchPatterns.json"   # generated from the definitions; HatchDefs.svelte draws it
+notes = "cadcraft is NOT a dependency of this path. Clipping approach (intersect line with every edge, sort crossings, keep inside spans) is the standard even-odd scanline method, written from scratch; cadcraft crates/render/src/hatch.rs @ df65974 was read for behaviour only, no code ported. The `cadcraft` feature stays off."
 last_checked = "2026-11-06"
 
 # --- KEEP-PORT sources (TS stays; provenance only) -------------------------------------------------

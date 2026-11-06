@@ -59,3 +59,10 @@ Two numbers per job:
 The sccache server daemon inherited the flock file descriptor and held the single build lock indefinitely, blocking all builds for about 8 minutes. Fixed in two ways:
 - `flock -o` closes the lock fd in the child (the scheduler likewise closes slot fds for the job's child);
 - `run.sh` starts sccache outside any lock.
+
+## Recompute 2026-11-06 08:05 (owner: switch to 2 HEAVY slots if 2× peak fits)
+- Budget = MemTotal 31,859 MiB − training peak (kernel hwm) 3,233 MiB − reserve 6,144 MiB = **22,482 MiB**.
+- Measured HEAVY peak: nextest-full 3,972 MiB (others: gate 3,042, cascade build 2,986, vitest-full 925). 2 × 3,972 = 7,944 MiB ≤ 22,482 MiB → fits.
+- **Decision: 2 HEAVY slots.** PEAK_HEAVY_MIB 5,120 → 4,096 (the measured max rounded up; the 1.25 margin is dropped). The live rule is unchanged: slot 2 opens only when MemAvailable ≥ 2 × 4,096 + 6,144 = 14,336 MiB (it was 16,384, which never opened at ~16.0 GiB available). The per-job cgroup cap is unchanged.
+- E2E peak is still unmeasured, so `LPDF_PRIO=e2e` jobs take both slots (sched.sh) until it is measured.
+- Live test 08:04: two concurrent HEAVY jobs admitted on separate slots at 16,033 MiB available.

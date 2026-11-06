@@ -314,6 +314,8 @@ describe('golden: measureEngine', () => {
     const before = m.measurements.map(strip);
     // Re-scaling recalculates every stored measurement.
     m.updateCurrentPageScalePatch(0, { unit: 'ft', realDistance: 8.2, precision: 1 });
+    // BUG-022 intentional change: closed-shape perimeter includes the closing edge (was 216 → 288); approved by lead 2026-11-06.
+    // (Regenerated with `vitest run -u -t "records a calibrated measuring session"`; the ft total rises by the same edge.)
     await golden('measure.session', {
       calibration: { measuredPt: modal?.measuredPt, scale: m.getScaleForPage(0) },
       committed: records.map(strip),

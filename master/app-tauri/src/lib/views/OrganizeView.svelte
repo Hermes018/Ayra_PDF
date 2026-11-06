@@ -258,7 +258,7 @@
                             {/snippet}
                         </For>
                     </ul>
-                    <button class="merge-button" onclick={handleMerge} disabled={activeFiles.length < 2}>
+                    <button class="merge-button" data-testid="organize-merge-btn" onclick={handleMerge} disabled={activeFiles.length < 2}>
                         Merge All
                     </button>
                 {:else}

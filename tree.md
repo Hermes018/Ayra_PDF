@@ -46,7 +46,21 @@ Ayra_PDF/
 
 ```text
 .claude/
-└── settings.json  # Project hooks: Bash guard (PreToolUse), auto-format (PostToolUse), activity log (Stop/SubagentStop)
+├── agents/                    # Claude Code subagent role files (model and effort per role; see master/logs/ROUTING.md)
+│   ├── bug-triager.md         # Subagent role (sonnet-5-5/low): Triage findings into master/logs/BUGS.md (P0/P1/P2 per docs/PROTOTYPE_SCOPE.md) and summarize reviewer findings.
+│   ├── checkpoint-writer.md   # Subagent role (sonnet-5-5/low): Update master/logs/CHECKPOINT.md or a per-worktree checkpoint from facts the lead provides. Small judgment, low blast radius.
+│   ├── engines-builder.md     # Subagent role (opus-5-5/medium): Engines builder in ~/Desktop/Ayra_PDF-wt/engines: ADR-018 adapters and engine swaps behind goldens/parity.
+│   ├── escalation.md          # Subagent role (opus-5-5/high): Escalated task: redo work that failed twice on Sonnet or once on Haiku+Sonnet (see logs/ROUTING.md).
+│   ├── explorer.md            # Subagent role (haiku-5-5): Locate files, symbols and call sites; broad read-only search. Mechanical: output is checked by a later step.
+│   ├── fixes-builder.md       # Subagent role (sonnet-5-5/high): Fixes builder in ~/Desktop/Ayra_PDF-wt/fixes: P0/P1 bug fixes, failing test first.
+│   ├── log-reader.md          # Subagent role (haiku-5-5): Read build/test logs (master/logs/runs/*.log) and extract failures verbatim. Mechanical.
+│   ├── merge-verifier.md      # Subagent role (opus-5-5/high): Fresh merge-gate verifier: gets only spec + staged diff + verify.sh; runs the gate itself. Always used for engine code, save/atomic-write/redaction paths.
+│   ├── provenance-auditor.md  # Subagent role (sonnet-5-5/medium): Audit vendored/upstream code provenance: pins, licences, NOTICE files, UPSTREAM_MANIFEST.toml, deny.toml.
+│   ├── rc-verifier.md         # Subagent role (opus-5-5/high): Release-candidate verifier: full gate, 12/12 E2E flows, package smoke, on the RC tag.
+│   ├── release-builder.md     # Subagent role (sonnet-5-5/medium): Release builder in ~/Desktop/Ayra_PDF-wt/release: E2E harness (master/e2e), corpus, packaging scripts, CHANGELOG.
+│   ├── reviewer.md            # Subagent role (sonnet-5-5/medium): Read-only code reviewer for a staged diff in a worktree. Use for every non-engine merge (engine swaps and RC also get an Opus-high verifier).
+│   └── status-snapshot.md     # Subagent role (haiku-5-5): Run a script or status command (scheduler, disk, RAM, git) and report its output. Mechanical.
+└── settings.json              # Project hooks: Bash guard (PreToolUse), auto-format (PostToolUse), activity log (Stop/SubagentStop)
 ```
 
 ## `.github/`
@@ -88,9 +102,10 @@ master/
 │   │   │   ├── lib.rs                                        # App setup, job manager wiring, core IPC commands, file dialogs (kdialog/zenity), window commands
 │   │   │   └── main.rs                                       # Binary entry point (calls lib::run)
 │   │   ├── tests/                                            # Integration tests for the desktop shell crate
-│   │   │   └── goldens/                                      # Characterization goldens for Rust studio commands (ADR-018 strangler step 1)
-│   │   │       ├── takeoff.golden.json                       # Golden: takeoff CSV export bytes
-│   │   │       └── text-blocks.standard-text.p0.golden.json  # Golden: text-block extract/edit on corpus standard-text.pdf page 1
+│   │   │   ├── goldens/                                      # Characterization goldens for Rust studio commands (ADR-018 strangler step 1)
+│   │   │   │   ├── takeoff.golden.json                       # Golden: takeoff CSV export bytes
+│   │   │   │   └── text-blocks.standard-text.p0.golden.json  # Golden: text-block extract/edit on corpus standard-text.pdf page 1
+│   │   │   └── hatch_save_e2e.rs                             # Tests (ERR-007 flow 5): save a hatched concave polygon to a new PDF, re-extract segments from the content stream, all inside
 │   │   ├── .gitignore                                        # Ignores Tauri generated schemas/build output
 │   │   ├── build.rs                                          # Tauri build script
 │   │   ├── Cargo.toml                                        # Desktop binary crate manifest (Tauri plugins, workspace crates, Windows-only deps)
@@ -141,8 +156,10 @@ master/
 │   │   │   │   │   ├── AnnotationLedger.svelte               # Side drawer: annotation list, takeoff CSV, markup library, LaTeX/signature/audio dialogs
 │   │   │   │   │   ├── CalibrationModal.svelte               # Set a page's drawing scale for measurements
 │   │   │   │   │   ├── DockableToolbar.svelte                # Main tool rail with grouped tool drawers, shortcuts, favourites
+│   │   │   │   │   ├── DocumentTabs.svelte                   # Document tabs for multiple open PDFs in Studio (BUG-016)
 │   │   │   │   │   ├── FavoritesBar.svelte                   # Pinned favourite tools/presets
 │   │   │   │   │   ├── HatchDefs.svelte                      # SVG pattern definitions for CAD hatching fills
+│   │   │   │   │   ├── HatchDefs.test.ts                     # Tests: hatch preview tiles are drawn from the same pattern parameters as the saved output
 │   │   │   │   │   ├── labs.svelte.ts                        # Labs gate: the one place that decides if Labs tools (math text, shape-to-character) are visible/selectable; honest copy
 │   │   │   │   │   ├── MeasureOverlay.svelte                 # Draws measurement lines, labels, ruler/protractor
 │   │   │   │   │   ├── PropertyPill.svelte                   # Floating style panel for the active tool (colour, width, line style)
@@ -154,6 +171,7 @@ master/
 │   │   │   │   ├── For.svelte                                # Tiny generic keyed list helper component
 │   │   │   │   ├── GridEditor.svelte                         # Page-thumbnail grid for organizing pages (reorder, rotate, delete)
 │   │   │   │   ├── MainLayout.svelte                         # App frame: sidebar + content + status bar, sidebar collapse
+│   │   │   │   ├── organizeApply.ts                          # Organize Apply: runs reorder/delete/rotate jobs in sequence and reports the true result (BUG-014)
 │   │   │   │   ├── PdfViewer.svelte                          # Read-only page preview using pdf.js
 │   │   │   │   ├── Sidebar.svelte                            # Left navigation between tool groups
 │   │   │   │   ├── StatusBar.svelte                          # Bottom status line (engine, job state)
@@ -178,6 +196,8 @@ master/
 │   │   │   │   ├── defaultPresets.json                       # Default pen/highlighter/shape presets
 │   │   │   │   ├── defaultShortcuts.json                     # Default keyboard shortcuts
 │   │   │   │   ├── engineGoldens.test.ts                     # Tests: compare current TS engine outputs with the goldens
+│   │   │   │   ├── hatchPatterns.json                        # Hatch pattern parameters generated from lpdf-geom patterns.rs (single source for the on-screen preview)
+│   │   │   │   ├── hatchPatterns.ts                          # Typed loader for hatchPatterns.json used by HatchDefs.svelte
 │   │   │   │   ├── inkEngine.svelte.ts                       # Freehand ink strokes, smoothing, shape recognition, laser pointer
 │   │   │   │   ├── insertAndTakeoff.test.ts                  # Tests: insert suite and takeoff CSV export
 │   │   │   │   ├── insertEngine.svelte.ts                    # Insert tools: images, stamps, signatures, audio, "LaTeX" (Unicode-only), workspace library
@@ -210,14 +230,34 @@ master/
 │   │   │   │   │   ├── BatchQueueView.test.ts                # Tests: batch queue view
 │   │   │   │   │   ├── ConvertFromPdfView.test.ts            # Tests: convert-from view
 │   │   │   │   │   ├── ConvertToPdfView.test.ts              # Tests: convert-to view
+│   │   │   │   │   ├── EngineReset.test.ts                   # Tests: every engine field is classified and reset on document switch (fails when a new field is unclassified)
+│   │   │   │   │   ├── IpcAndSessionTimeouts.test.ts         # Tests: whenDocumentLive/probe timeouts, stall timer starts at dequeue, listener cleanup
 │   │   │   │   │   ├── LabsGating.test.ts                    # Tests: Labs off by default, all Labs entry points hidden, honest labels derived from the classifier
+│   │   │   │   │   ├── MeasurePerimeter.test.ts              # Tests: perimeter closes the shape (BUG-022)
+│   │   │   │   │   ├── OrganizeApply.test.ts                 # Tests: Organize Apply keeps rotation, reports failures (BUG-014)
 │   │   │   │   │   ├── OrganizeView.test.ts                  # Tests: organize view
 │   │   │   │   │   ├── PipelinesView.test.ts                 # Tests: pipelines view
 │   │   │   │   │   ├── SettingsView.test.ts                  # Tests: settings view
-│   │   │   │   │   └── StudioEmptyState.test.ts              # Tests: Studio empty state, no phantom pages, document-only actions disabled (UI-BUG-006)
+│   │   │   │   │   ├── SignatureDraw.test.ts                 # Tests: drawn signature saved as ink, not text (BUG-017)
+│   │   │   │   │   ├── StudioDamagedPdf.test.ts              # Tests: malformed PDFs show an error/degraded notice (BUG-018)
+│   │   │   │   │   ├── StudioDocumentStore.test.ts           # Tests: document store activate(), Organize round trip, save refuses on switch, per-document scales, split view Labs-only
+│   │   │   │   │   ├── StudioEditText.test.ts                # Tests: Edit Text hotspots reachable by pointer (BUG-013)
+│   │   │   │   │   ├── StudioEmptyState.test.ts              # Tests: Studio empty state, no phantom pages, document-only actions disabled (UI-BUG-006)
+│   │   │   │   │   ├── StudioEraserUndo.test.ts              # Tests: erasers are undoable, undo restores the right stroke (BUG-019)
+│   │   │   │   │   ├── StudioLoadRaces.test.ts               # Tests: tab switch/close mid-render keeps markups and still prompts; draw-during-load merge
+│   │   │   │   │   ├── StudioPassword.test.ts                # Tests: encrypted PDFs prompt for a password (BUG-011)
+│   │   │   │   │   ├── StudioRound5.test.ts                  # Tests (P0 round 5): close via store leaves no session, inserts blocked until restored, save refuses without page geometry, one save in flight
+│   │   │   │   │   ├── StudioSaveNames.test.ts               # Tests: repeated saves use new collision-safe names (BUG-021)
+│   │   │   │   │   ├── StudioTabs.test.ts                    # Tests: second document opens in a tab, view state kept per tab (BUG-016)
+│   │   │   │   │   ├── TauriCsp.test.ts                      # Tests: CSP allows data:/blob: images, connect-src still IPC-only (BUG-012)
+│   │   │   │   │   └── ViewportFit.test.ts                   # Tests: Fit Width/Page use real page size and offset (BUG-020)
 │   │   │   │   ├── studio/                                   # The spatial Studio editor (default view)
+│   │   │   │   │   ├── documentSessions.ts                   # Per-document Studio session state (view, page) for tab switching
+│   │   │   │   │   ├── outputNames.ts                        # Collision-safe output file names, never overwrite previous outputs (BUG-021)
+│   │   │   │   │   ├── pageGeometry.ts                       # Page geometry shared by the canvas and the saver: world (laid-out CSS px) to PDF user space (pt, y up) conversion
 │   │   │   │   │   ├── SpatialCanvas.svelte                  # Studio canvas: page rendering, pointer input, layers, responsive top bar, empty state (largest file)
-│   │   │   │   │   └── SplitLayout.svelte                    # Side-by-side document panes with draggable divider
+│   │   │   │   │   ├── SplitLayout.svelte                    # Side-by-side document panes with draggable divider
+│   │   │   │   │   └── studioSave.ts                         # The single Studio saver: snapshots path/seq/revision, refuses ("Nothing was written") if the document changed or is still loading
 │   │   │   │   ├── AiSummarizeView.svelte                    # PDF Intelligence: summarize / translate (basic mode + optional local model)
 │   │   │   │   ├── BatchQueueView.svelte                     # Batch job queue
 │   │   │   │   ├── ConvertFromPdfView.svelte                 # PDF → images/Word/HTML/text/Office/PDF-A
@@ -334,14 +374,19 @@ master/
 │   ├── lpdf-geom/                                            # Geometry adapter crate (ADR-018): hatching behind our own API; legacy impl now, cadcraft next
 │   │   ├── src/                                              # Crate source
 │   │   │   ├── cadcraft.rs                                   # Cadcraft-backed hatch implementation (HatchEngine::Cadcraft): real polygon clipping (ERR-007)
+│   │   │   ├── fill.rs                                       # Studio hatch clipping (original work): every hatch line clipped to the polygon by even-odd rule over multiple rings (holes); half-open vertex rule; work cap
 │   │   │   ├── legacy.rs                                     # Legacy hatch implementation moved from studio.rs (byte-identical)
-│   │   │   └── lib.rs                                        # Adapter API: hatch_segments, HatchEngine switch, GeomError codes
+│   │   │   ├── lib.rs                                        # Adapter API: hatch_segments, HatchEngine switch, GeomError codes
+│   │   │   └── patterns.rs                                   # Studio hatch pattern definitions (original work): 9 patterns as line families (angle, pitch, offset, phase, dash)
 │   │   ├── tests/                                            # Integration tests
 │   │   │   ├── goldens/                                      # Hatch goldens
 │   │   │   │   ├── hatch_cadcraft.golden.json                # Golden: cadcraft hatch segments per pattern (rect + concave L), all inside the loop
-│   │   │   │   └── hatch_legacy.golden.json                  # Golden: legacy hatch segments per pattern (rect + concave L)
+│   │   │   │   ├── hatch_legacy.golden.json                  # Golden: legacy hatch segments per pattern (rect + concave L)
+│   │   │   │   └── hatch_studio.golden.json                  # Golden: Studio hatch segments per pattern (ERR-007 intentional change, approved by owner 2026-11-06)
 │   │   │   ├── cadcraft_parity.rs                            # Tests: cadcraft hatch inside concave polygons, all patterns distinct, parity notes vs legacy
-│   │   │   └── hatch_golden.rs                               # Tests: hatch output vs goldens (ERR-007 cases marked known-wrong)
+│   │   │   ├── hatch_golden.rs                               # Tests: hatch output vs goldens (ERR-007 cases marked known-wrong)
+│   │   │   ├── studio_golden.rs                              # Tests: Studio hatch output vs hatch_studio golden
+│   │   │   └── studio_hatch.rs                               # Tests (ERR-007): segments inside rect/concave L/star/holed polygon, no edge crossings, all patterns distinct
 │   │   └── Cargo.toml                                        # Crate manifest
 │   ├── lpdf-hw/                                              # Hardware detection → tier L/M/H and budgets
 │   │   ├── src/                                              # Crate source
@@ -436,6 +481,7 @@ master/
 ├── logs/                                                     # Project logs (append-only, except CHECKPOINT which is overwritten)
 │   ├── checkpoints/                                          # Per-worktree builder checkpoints (each builder keeps its own current)
 │   │   ├── engines.md                                        # Engines builder state: task, files, tests, next step, blockers
+│   │   ├── fixes.md                                          # Fixes builder state: task, files, tests, next step, blockers
 │   │   └── release.md                                        # Release builder state: task, files, tests, next step, blockers
 │   ├── ADR-008-sveltekit-spa.md                              # Detail for the SvelteKit SPA exception (registered as ADR-011 in DECISIONS_ADR)
 │   ├── ADR-009-vendored-pdfjs.md                             # Detail for the vendored pdf.js exception (registered as ADR-012 in DECISIONS_ADR)
@@ -450,6 +496,7 @@ master/
 │   ├── PLAN_LOG.md                                           # Plans written before each phase
 │   ├── PROGRESS_LOG.md                                       # What was done per phase, with verification evidence
 │   ├── PROMPT_LOG.md                                         # User prompts and how they were interpreted
+│   ├── ROUTING.md                                            # Model routing table, escalation log and per-milestone routing tuning notes
 │   ├── sbom.cdx.json                                         # Software bill of materials (regenerated by `cargo xtask sbom`)
 │   └── UI_AUDIT_LOG.md                                       # UI bug register and verification notes
 ├── protocol/                                                 # Project rules (read-only except where noted)
@@ -495,6 +542,7 @@ master/
 │   ├── protect.sh                                            # Wraps each agent job: cgroup MemoryMax/High from live MemAvailable, OOM preference, nice/ionice
 │   ├── ram-budget.env                                        # Measured peak inputs for the scheduler (HEAVY/LIGHT MiB)
 │   ├── restore-context.sh                                    # SessionStart hook (compact/resume/startup): prints CHECKPOINT + STATE_AUTO back into context
+│   ├── routing-stats.py                                      # Escalation rate per task type from logs/ROUTING.md, with tier-move suggestions (> 25 % up; Sonnet-high 0/10+ down)
 │   ├── run.sh                                                # Runs one heavy command under the build lock, full log to logs/runs/, prints a short summary
 │   ├── sample-training.sh                                    # Read-only sampler of the training job's total RSS every 30 s
 │   ├── sb.sh                                                 # Runs a command under CPU/RAM limits (systemd-run) for low-memory hosts

@@ -177,7 +177,7 @@
     <g class="measurement-item" data-kind={m.kind}>
       <!-- Dimension / Polyline / Area Path -->
       <path
-        d={generatePolylineSvgPath(m.points, isClosedArea)}
+        d={generatePolylineSvgPath(m.points, isClosedArea || (m.kind === 'perimeter' && m.points.length >= 3))}
         fill={isClosedArea ? 'url(\x23hatch-diagonal-steel)' : 'none'}
         fill-opacity={isClosedArea ? 0.28 : 0}
         stroke="var(--measure-line)"

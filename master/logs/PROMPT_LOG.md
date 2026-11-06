@@ -267,3 +267,11 @@ The safest and simplest way to resolve this blocker is to run the system-level p
 ## [2026-11-06 05:45] Prompt #21 — RAM-aware parallelism (summary)
 - Training has absolute priority. Measure training and per-class RAM into docs/RAM_BUDGET.md; budget = MemTotal − training peak − 6 GiB; scheduler in run.sh (LIGHT/HEAVY, MemAvailable admission, priority FIFO, 1–2 HEAVY slots, scheduler.log); cgroup MemoryHigh/Max, choom 800, nice/ionice; single re-queue on memory kill; footprint settings; report at the next milestone.
 - Actions: done (sched.sh, protect.sh, measure-ram.sh, sample-training.sh, RAM_BUDGET.md). Deferred: split-debuginfo (avoids a cold rebuild in all worktrees before 08:00). Fixed along the way: sccache held the build lock (fd inheritance).
+
+## [2026-11-06 07:37] Prompt #21 — Model routing (summary)
+- Static routing by role in .claude/agents (Haiku, Sonnet low/med/high, Opus med/high, never Fable); escalation cascade logged in ROUTING.md; self-tuning per milestone; idle-token rules; throttle tiers by the weekly %.
+- Actions: done (13 role files, ROUTING.md, routing-stats.py).
+
+## [2026-11-06 07:37] Prompt #22 — Lead role (summary)
+- The lead only orchestrates and delegates reading, searching, editing and builds.
+- Actions: done (CLAUDE.md 'Lead role').

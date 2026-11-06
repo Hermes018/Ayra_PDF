@@ -381,6 +381,7 @@
                     class="item-left"
                     role="button"
                     tabindex="0"
+                    data-testid="toolbar-tool-{tool.id}"
                     onclick={() => handleSelectToolFromPopover(tool.id, cat.id)}
                   >
                     <StudioIcon name={tool.icon} size={15} />

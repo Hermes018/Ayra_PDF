@@ -2,7 +2,7 @@
     import { onMount, onDestroy } from 'svelte';
     import { invoke } from '@tauri-apps/api/core';
     import { IpcClient } from '$lib/ipc';
-    import type { JobRequest } from '$lib/bindings/JobRequest';
+    import { applyOrganize } from './organizeApply';
 
     let { filePath } = $props<{ filePath: string | null }>();
 
@@ -20,6 +20,12 @@
     let currentPdfDoc: any = null;
 
     let dragIndex = $state<number | null>(null);
+
+    // BUG-014: truthful outcome of the last Apply (never "success" after a failed step).
+    let applyStatus = $state<{ state: 'idle' | 'running' | 'success' | 'error'; message: string }>({
+        state: 'idle',
+        message: '',
+    });
 
     async function loadPdf(path: string) {
         if (!path) return;
@@ -66,6 +72,8 @@
     });
 
     onDestroy(() => {
+        // Review r3: leaving the view stops a running Apply (cancel_job), no orphan work.
+        applyAbort?.abort();
         if (currentPdfDoc) currentPdfDoc.destroy();
     });
 
@@ -105,83 +113,23 @@
         pages[index].rotation = (pages[index].rotation + 90) % 360;
     }
 
+    let applyAbort: AbortController | null = null;
+
     async function applyChanges() {
-        if (!filePath) return;
-        
-        let currentFile = filePath;
-        
-        const isReordered = pages.some((p, i) => p.originalIndex !== i + 1);
-        const hasDeleted = pages.some(p => p.deleted);
-        
-        try {
-            // 1. If only deletions occurred in original order
-            if (hasDeleted && !isReordered) {
-                const deletedIndices = pages.filter(p => p.deleted).map(p => p.originalIndex);
-                if (deletedIndices.length === pages.length) {
-                    alert("Cannot delete all pages.");
-                    return;
-                }
-                const outDel = currentFile.replace(/\.pdf$/i, '_deleted.pdf');
-                const delReq: JobRequest = {
-                    op: "DeletePages",
-                    input_path: currentFile,
-                    output_path: outDel,
-                    pages: deletedIndices
-                };
-                await IpcClient.submitJob(delReq);
-                currentFile = outDel;
-            } 
-            // 2. If reordering or mixed deletion and reordering
-            else if (isReordered || hasDeleted) {
-                const activePages = pages.filter(p => !p.deleted);
-                if (activePages.length === 0) {
-                    alert("Cannot extract zero pages.");
-                    return;
-                }
-                const extractionIndices = activePages.map(p => p.originalIndex);
-                const outExt = currentFile.replace(/\.pdf$/i, '_organized.pdf');
-                const extractReq: JobRequest = {
-                    op: "ExtractPages",
-                    input_path: currentFile,
-                    output_path: outExt,
-                    pages: extractionIndices
-                };
-                await IpcClient.submitJob(extractReq);
-                currentFile = outExt;
-            }
-
-            // 3. Apply rotations based on the new active pages order
-            const activePages = pages.filter(p => !p.deleted);
-            const byDegree: Record<number, number[]> = {};
-            
-            activePages.forEach((p, newIndex) => {
-                if (p.rotation !== 0) {
-                    let deg = p.rotation;
-                    if (deg > 180) deg -= 360; // Normalize to -90, 90, 180
-                    
-                    if (!byDegree[deg]) byDegree[deg] = [];
-                    byDegree[deg].push(newIndex + 1); // 1-indexed
-                }
-            });
-
-            for (const [degStr, pgs] of Object.entries(byDegree)) {
-                const degrees = parseInt(degStr, 10);
-                const outRot = currentFile.replace(/\.pdf$/i, `_rot${degrees}.pdf`);
-                const rotReq: JobRequest = {
-                    op: "RotatePages",
-                    input_path: currentFile,
-                    output_path: outRot,
-                    pages: pgs,
-                    degrees
-                };
-                await IpcClient.submitJob(rotReq);
-                currentFile = outRot;
-            }
-
-            alert("Changes applied successfully!");
-        } catch (err: any) {
-            console.error(err);
-            alert("Error applying changes: " + err.message);
+        if (!filePath || applyStatus.state === 'running') return;
+        applyStatus = { state: 'running', message: 'Applying changes…' };
+        applyAbort = new AbortController();
+        const signal = applyAbort.signal;
+        const outcome = await applyOrganize(filePath, pages, (req) => IpcClient.runJob(req, { signal }).then(() => undefined));
+        applyAbort = null;
+        if (outcome.ok) {
+            applyStatus = outcome.outputPath
+                ? { state: 'success', message: `Saved as a new file: ${outcome.outputPath}` }
+                : { state: 'success', message: 'Nothing to apply: no pages were moved, deleted or rotated.' };
+        } else {
+            const where = outcome.failedStep ? `"${outcome.failedStep}" failed` : 'Could not apply';
+            const kept = outcome.completedSteps.length > 0 ? ` Completed before the failure: ${outcome.completedSteps.join('; ')}.` : '';
+            applyStatus = { state: 'error', message: `${where}: ${outcome.error}.${kept} The original file is unchanged.` };
         }
     }
 </script>
@@ -194,14 +142,41 @@
     {:else if pages.length > 0}
         <div class="toolbar">
             <span class="info">{pages.filter(p => !p.deleted).length} of {pages.length} pages selected</span>
-            <button class="apply-btn" onclick={applyChanges} disabled={pages.length === 0}>Apply Changes</button>
+            <button
+                class="apply-btn"
+                data-testid="organize-apply-btn"
+                onclick={applyChanges}
+                disabled={pages.length === 0 || applyStatus.state === 'running'}
+            >
+                {applyStatus.state === 'running' ? 'Applying…' : 'Apply Changes'}
+            </button>
+            {#if applyStatus.state === 'running'}
+                <button class="apply-btn cancel" data-testid="organize-cancel-btn" onclick={() => applyAbort?.abort()}>
+                    Cancel
+                </button>
+            {/if}
         </div>
+        {#if applyStatus.state !== 'idle'}
+            <div
+                class="apply-status {applyStatus.state}"
+                role="status"
+                aria-live="polite"
+                data-testid="organize-status"
+                data-state={applyStatus.state}
+            >
+                {applyStatus.message}
+            </div>
+        {/if}
         
         <div class="grid-layout">
             {#each pages as page, i (page.id)}
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div 
                     class="page-card {page.deleted ? 'deleted' : ''} {dragIndex === i ? 'dragging' : ''}" 
+                    data-testid="organize-page-card"
+                    data-original-page={page.originalIndex}
+                    data-rotation={page.rotation}
+                    data-deleted={page.deleted}
                     draggable="true"
                     ondragstart={(e) => handleDragStart(e, i)}
                     ondragover={(e) => handleDragOver(e, i)}
@@ -219,8 +194,8 @@
                     </div>
 
                     <div class="page-overlay">
-                        <button class="action-btn" onclick={() => rotatePage(i)} title="Rotate">↻</button>
-                        <button class="action-btn {page.deleted ? 'restore' : 'danger'}" onclick={() => toggleDelete(i)} title="Delete/Restore">
+                        <button class="action-btn" data-testid="organize-rotate-btn" onclick={() => rotatePage(i)} title="Rotate" aria-label="Rotate page {i + 1}">↻</button>
+                        <button class="action-btn {page.deleted ? 'restore' : 'danger'}" data-testid="organize-delete-btn" onclick={() => toggleDelete(i)} title="Delete/Restore" aria-label="{page.deleted ? 'Restore' : 'Delete'} page {i + 1}">
                             {page.deleted ? '↩' : '×'}
                         </button>
                     </div>
@@ -233,6 +208,22 @@
 </div>
 
 <style>
+    .apply-status {
+        margin: 0 0 12px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        border: 1px solid var(--glass-border-subtle);
+        background: var(--glass-bg-elevated);
+        color: var(--text-primary);
+    }
+    .apply-status.success {
+        border-color: var(--semantic-success);
+    }
+    .apply-status.error {
+        border-color: var(--semantic-danger);
+        color: var(--semantic-danger);
+    }
     .grid-editor-container {
         display: flex;
         flex-direction: column;
@@ -266,6 +257,13 @@
         font-weight: bold;
         cursor: pointer;
         transition: opacity 0.2s;
+    }
+
+    .apply-btn.cancel {
+        background-color: var(--glass-bg-elevated);
+        color: var(--text-primary);
+        border: 1px solid var(--glass-border-subtle);
+        margin-left: 0.5rem;
     }
 
     .apply-btn:disabled {

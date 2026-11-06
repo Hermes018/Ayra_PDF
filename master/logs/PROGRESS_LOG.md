@@ -1577,3 +1577,32 @@ An exhaustive audit of the `vendor/pdfcraft/crates/` directory reveals deep, nat
   - CHANGELOG claims features with open P0s.
   - Verifier: tree-map RED; the lead's descriptions were missing (fixed by the lead). Round 3 sent.
 - **BUG-028 (P1) logged:** empty voice recording → synthetic tone.
+
+## [2026-11-06 07:30] Merge: engines CP2b — DONE (9919398, tag engines-cp2b-green)
+- Reviewer: PASS conditional, no blockers. Majors → BUG-029 (guard bypasses / coverage) and BUG-030 (full-file read). Minors → engines CP3.
+- Verifier: verify.sh GREEN (nextest 186/186, vitest 165/165). Guard trips only on hostile-bombs across 9 corpus PDFs; cadcraft is absent from the shipped dependency tree.
+- Merge of main into wt/engines: descriptions.tsv conflict resolved by union; tree-map check OK; fast-forward to main.
+- **BUG-015 / ERR-007 is NOT fixed in the shipped build.** Cadcraft stays off until the owner decides on R3 licence wording. The switch patch is ready.
+
+## [2026-11-06 07:37] Merge: release CP1+2+R3 — DONE (ad484fd, tag release-cp2-green)
+- Reviewer R3 (sonnet/medium) PASS, minors; verifier R3 (opus/high) verify.sh GREEN, nextest 155.
+- Follow-ups: pkg_smoke reap RuntimeError not caught; flaky-only reason misleading; AppImage cache filenames not proven offline; cargo build without --locked; CHANGELOG lines 51-53 not E2E-tested.
+
+## [2026-11-06 07:37] Routing setup
+- 13 role files in .claude/agents (not loaded until a session restart — the first agents dir in this scope; meanwhile routed via per-call model/effort); ROUTING.md + tools/routing-stats.py; CLAUDE.md sections 'Lead role' and 'Model routing'.
+
+## [2026-11-06 07:54] Merge: fixes P0 batch — DONE
+- 263bb7e, tag fixes-p0-green. Five review rounds; R5: reviewer sonnet/medium PASS (minors), merge-verifier opus/high verify.sh GREEN (nextest 186/186, vitest 255/255); save-path checks a–e each covered by a failing-if-reverted test. Tabs kept (no single-document fallback). New: BUG-032, 033 (P1), 034 (P2).
+
+## [2026-11-06 08:18] Merge: ERR-007 / BUG-015 — DONE
+- 52b7a17, tag fixes-err007-green. Our own even-odd polygon clipping with holes, plus 9 original parametric patterns; Studio hatch is the default; cadcraft stays off. Reviewer sonnet/medium PASS with minors (BUG-035 P1, BUG-036 P2). Merge-verifier opus/high: verify.sh GREEN, nextest 202/202. An independent parse of the saved PDFs found 498 segments, 0 outside the concave L, and 9 pairwise-distinct patterns. Legacy would fail (118/207 outside). No licence-unclear crates are in the shipped tree. AR-CONC ×1/16 is an adapter display scale; upstream data is unmodified (owner rule, UPSTREAM_MANIFEST + UPGRADING 3a).
+
+## [2026-11-06 08:20] E2E P0 subset on main (52b7a17): flows 2, 4, 6, 11 PASS; flow 1 BLOCKED (no bundle yet)
+- Debug binary build 18 s (sccache). Report: e2e/out/runs/20261106T081925-online-f1_2_4_6_11/report.json. Flow 4 WARN: one leftover process killed by reap. No leftovers after the run.
+- Next: DOGFOOD AppImage build + pkg_smoke (flows 1–2) running.
+
+## [2026-11-06 08:52] DOGFOOD build ready (main 5f43889, code = 52b7a17)
+- AppImage: master/target/release/bundle/appimage/LocalPDF Studio_0.1.0_amd64.AppImage (119.9 MB, sha256 81ae84e0898cb26295199975b5d3a9c7a4af1b02b3cc31a8fc4b843cd52009c4). LTO off, version string 0.1.0 (KI-005).
+- pkg_smoke (fresh HOME): flow 1 PASS, flow 2 PASS; contents check OK (GUI, CLI, worker, .desktop with PDF MimeType, icon); no leftovers.
+- With the earlier main run: flows 1, 2, 4, 6, 11 all PASS (the tier's E2E subset).
+- Disk: 19 GB free (< 22 GB owner threshold): target dirs to revisit with the owner.

@@ -74,40 +74,41 @@ Entry format:
 
 Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, insertEngine, viewportEngine and measureEngine for these bug fixes. **engines** owns Rust (crates/, src-tauri), hatching (HatchDefs) and new adapter files. Order = work order.
 
-## BUG-011 [P0] Encrypted PDF never prompts for a password — status: open
+## BUG-011 [P0] Encrypted PDF never prompts for a password — status: fixed (263bb7e, tag fixes-p0-green)
 - Flow 2. Found by: e2e. Repro: open corpus/encrypted.pdf (user pw lpdf-test). pdf.js throws PasswordException; 0 pages, no prompt. Owner: fixes
 
-## BUG-012 [P0] CSP blocks data:/blob: images, so Organize thumbnails are blank — status: open
+## BUG-012 [P0] CSP blocks data:/blob: images, so Organize thumbnails are blank — status: fixed (263bb7e, tag fixes-p0-green)
 - Flow 3. Found by: e2e. CSP `default-src 'self'` has no img-src. Fix: `img-src 'self' data: blob:` in tauri.conf.json. connect-src stays IPC-only (DON'T-1 unaffected); the lead approves this as a low-risk CSP change (images only). Check that snapshot and webcam images are fixed too. Owner: fixes
 
-## BUG-013 [P0] Edit Text hotspot unreachable by pointer — status: open
+## BUG-013 [P0] Edit Text hotspot unreachable by pointer — status: fixed (263bb7e, tag fixes-p0-green)
 - Flow 9. Found by: e2e. `#wet-layer` covers `.pdf-text-block-hotspot`, and the default Pan tool takes the click. The edit itself writes correctly. Owner: fixes
 
-## BUG-014 [P0] Organize Grid "Apply" drops rotation but reports success — status: open
+## BUG-014 [P0] Organize Grid "Apply" drops rotation but reports success — status: fixed (263bb7e, tag fixes-p0-green)
 - Flow 10 (silent data loss). Found by: e2e. Reorder + delete + rotate: the rotation is lost and success is still alerted. The sidebar Rotate tool works. Owner: fixes
 
-## BUG-015 [P0] ERR-007: saved hatch outside the polygon; only 3/8 patterns distinct — status: open
+## BUG-015 [P0] ERR-007: saved hatch outside the polygon; only 3/8 patterns distinct — status: fixed (52b7a17, tag fixes-err007-green)
 - Flow 5. Found by: e2e (37/56 segments outside the concave polygon) and survey. Owner: engines (checkpoint 2: cadcraft via lpdf-geom)
+- ERR-007 fix moves to the fixes builder after the restart (throttle tier 85–92 %): licence-clean clipping port + own parametric patterns (owner 07:40).
 
-## BUG-016 [P0] A second document is added but never shown (no tabs or split panes) — status: open
+## BUG-016 [P0] A second document is added but never shown (no tabs or split panes) — status: fixed (263bb7e, tag fixes-p0-green)
 - Flow 3. Found by: e2e. A second file opened via CLI/"open with" goes into activeFiles but isn't displayed. The checklist claims multi-tab/split (SplitLayout.svelte). Make the existing split/tab path work; this is a fix, not a new feature. Owner: fixes
 
-## BUG-017 [P0] Draw-mode signature loses the drawn strokes and stamps text instead — status: open
+## BUG-017 [P0] Draw-mode signature loses the drawn strokes and stamps text instead — status: fixed (263bb7e, tag fixes-p0-green)
 - Flow 7 (data loss). Found by: e2e. Stamps "Signed: A. Architect, PE" instead of the drawing. Owner: fixes
 
-## BUG-018 [P0] Malformed/hostile PDFs open silently with no error or degraded notice — status: open
+## BUG-018 [P0] Malformed/hostile PDFs open silently with no error or degraded notice — status: fixed (263bb7e, tag fixes-p0-green)
 - Flow 2(c). Found by: e2e. broken-xref gives an empty canvas; bombs gives 1 page; no message. Owner: fixes (UI notice) plus engines if the backend must report degraded mode
 
-## BUG-019 [P0] Erasers aren't in undo history; Undo removes a different stroke — status: open
+## BUG-019 [P0] Erasers aren't in undo history; Undo removes a different stroke — status: fixed (263bb7e, tag fixes-p0-green)
 - Flow 4 (wrong undo = data loss). Found by: e2e. Owner: fixes
 
-## BUG-020 [P0] Fit Width / Fit Page assume A4 and ignore the page's 32 px offset (page overflows the 990 px canvas) — status: open
+## BUG-020 [P0] Fit Width / Fit Page assume A4 and ignore the page's 32 px offset (page overflows the 990 px canvas) — status: fixed (263bb7e, tag fixes-p0-green)
 - Flow 3. Found by: e2e. Owner: fixes
 
-## BUG-021 [P1] Repeated saves overwrite `<orig>.annotated.pdf`; RenderingCancelledException logged on every save — status: open
+## BUG-021 [P1] Repeated saves overwrite `<orig>.annotated.pdf`; RenderingCancelledException logged on every save — status: fixed (263bb7e, tag fixes-p0-green)
 - Flow 11. Found by: e2e. Protocol output rule: new file by default, collision-safe naming. Owner: fixes
 
-## BUG-022 [P1] Perimeter of a 72 pt square measures 216, not 288 (shape not closed) — status: open
+## BUG-022 [P1] Perimeter of a 72 pt square measures 216, not 288 (shape not closed) — status: fixed (263bb7e, tag fixes-p0-green)
 - Found by: engines goldens. Owner: fixes (measureEngine)
 
 ## BUG-023 [P1] studio_detect_tables_and_fields fabricates an "auto" field when nothing is found (DON'T-5) — status: open
@@ -127,3 +128,43 @@ Ownership for fixes: **fixes** owns UI components/views plus core/inkEngine, ins
 
 ## BUG-028 [P1] Voice note with an empty recording saves a made-up 440 Hz tone instead of failing (DON'T-5) — status: open
 - Found by: engines builder (matrix row T42). `buildOfflineWavBytes` (insertEngine.svelte.ts:~412) substitutes a synthetic tone when the recording yields no bytes. It must refuse with a clear "Nothing was recorded" error instead. Owner: fixes (after the P0 merge)
+
+## BUG-029 [P1] F4 guard is trivially bypassed and covers only GetInfo/RenderPage — status: open
+- Found by: engines CP2b reviewer. guard.rs:53-93 checks only a direct, literal `/Length`.
+  - Bypasses: an indirect `/Length 9 0 R`; a hex-escaped name `/L#65ngth`; a real flate bomb with an honest small /Length (the F4 decompression-ratio cap is missing).
+  - Coverage gap: the guard runs only in `load()` (engine-switcher lib.rs:83). Merge, extract, compress and the studio.rs pdfcraft Session paths skip it.
+  - The corpus `hostile-bombs.pdf` is caught. Owner: engines
+## BUG-030 [P1] Every load reads the whole file into RAM (twice per RenderPage) — status: open
+- Found by: engines CP2b reviewer. engine-switcher lib.rs:83 calls `std::fs::read` before the guard, which contradicts the "cheap, bounded" doc. Fine for the 1k-page corpus (253 KB); bad for 100 MB+ scans. Fix: a fixed-buffer streaming scan. Owner: engines
+
+## BUG-031 [P1] E2E harness leaves its private dbus-daemon running after the run — status: open
+- Found by: lead (scope run-racc58…, dbus-daemon with /tmp/lpdf-bus-*/bus.conf alive 1h23m after pkg_smoke started at 06:24). reap() covers app/driver/WebKitWebDriver but not the private bus. Owner: release (paused by the throttle tier)
+- Raised to P1 (owner). Fix: run each harness run in its own process group/session and kill the whole group on exit, dbus included; add a post-run check that no harness processes remain. Assigned: release builder, after the session restart.
+
+## BUG-032 [P1] Backend `studio_save_annotations` does not refuse output==input or an existing output path — status: open
+- Found by: R5 merge-verifier. The guard is frontend-only, so the "originals are never modified" rule rests on one layer. Owner: fixes
+
+## BUG-033 [P1] Close dialog: "Save" then close discards strokes drawn while the save is in flight, with no prompt — status: open
+- Found by: R5 reviewer. DocumentTabs.svelte saveThenClose. Unlikely, because the dialog is modal. Owner: fixes
+
+## BUG-034 [P2] R5 hardening leftovers — status: open
+- Save geometry check compares page counts only, so an out-of-range pageIndex falls back to A4.
+- EngineReset.test.ts sees only getter/setter fields (plain fields such as eraseGestureBefore are not covered).
+- No test that a single-step or failed Organize apply deletes nothing.
+- Discard during an in-flight save still opens the saved copy as a tab and leaves a stale baseline entry.
+- svelte-check a11y warning: `<form role=dialog>` at SpatialCanvas.svelte:1760.
+- Owner: fixes
+
+## BUG-035 [P1] Hatch pitch and dash lengths stretch at 45/135° — status: open
+- fill.rs:108-125 measures hatch pitch vertically (the b offset), not perpendicular to the line, and measures dash lengths along the x or y axis. Spacing and dashes stretch at 45/135°. Fix it, or document it and update the golden.
+- Found by: ERR-007 reviewer
+- Owner: fixes
+
+## BUG-036 [P2] ERR-007 test and edge leftovers — status: open
+- studio_hatch.rs ~370: the 1e17 case uses `let _ =`, so it cannot fail.
+- hatch_save_e2e.rs: the `want ⊆ drawn` check runs one way only; the trailing `let _ = Path::new` is dead code.
+- studio.rs hatch_loops: a polygon with only 2 finite points silently falls back to a bounding-box hatch, and only one loop is passed.
+- The preview pattern phase can differ from the saved PDF by up to one tile.
+- Add a clean-room statement to fill.rs and UPSTREAM_MANIFEST: generic sweep/crossings code, nothing copied from cadcraft.
+- Found by: ERR-007 reviewer
+- Owner: fixes

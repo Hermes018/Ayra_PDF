@@ -114,6 +114,7 @@
         <span>Architectural Scale Preset:</span>
         <select
           class="modal-select"
+          data-testid="calibration-preset"
           value={selectedPresetId}
           onchange={(e) => applyPreset((e.target as HTMLSelectElement).value)}
         >
@@ -132,13 +133,14 @@
             step="any"
             min="0.001"
             class="modal-input"
+            data-testid="calibration-distance"
             bind:value={realDistance}
           />
         </label>
 
         <label class="field-row">
           <span>Measurement Unit:</span>
-          <select class="modal-select" bind:value={unit}>
+          <select class="modal-select" data-testid="calibration-unit" bind:value={unit}>
             {#each UNITS as u}
               <option value={u.id}>{u.label}</option>
             {/each}
@@ -151,6 +153,7 @@
           <span>Decimal Precision:</span>
           <select
             class="modal-select"
+            data-testid="calibration-precision"
             value={precision}
             onchange={(e) => {
               precision = Number((e.target as HTMLSelectElement).value) as 0 | 1 | 2 | 3;
@@ -169,6 +172,7 @@
             step="any"
             min="0"
             class="modal-input"
+            data-testid="calibration-depth"
             bind:value={depthValue}
           />
         </label>
@@ -205,7 +209,7 @@
         >
           Cancel
         </button>
-        <button type="button" class="action-btn primary" onclick={commitCalibration}>
+        <button type="button" class="action-btn primary" data-testid="calibration-save" onclick={commitCalibration}>
           Save Calibrated Scale
         </button>
       </div>

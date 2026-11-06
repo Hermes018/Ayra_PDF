@@ -26,6 +26,8 @@ function readStoredBoolean(key: string): boolean {
 
 class AppState {
     activeFiles = $state<string[]>([]);
+    /** BUG-016: index into activeFiles of the document shown (the selected tab). */
+    activeIndex = $state<number>(0);
     themePreference = $state<ThemePreference>('System');
     effectiveTheme = $state<'light' | 'dark'>('dark');
     toasts = $state<ToastItem[]>([]);
@@ -48,7 +50,8 @@ class AppState {
     private jobListenerInitialized = false;
 
     get currentFile(): string | null {
-        return this.activeFiles.length > 0 ? this.activeFiles[0] : null;
+        if (this.activeFiles.length === 0) return null;
+        return this.activeFiles[Math.min(Math.max(0, this.activeIndex), this.activeFiles.length - 1)];
     }
 
     constructor() {
@@ -59,16 +62,37 @@ class AppState {
         }
     }
 
+    /** Adds files; the last one given becomes the shown document (opening a file shows it). */
     addFiles(paths: string[]) {
         for (const path of paths) {
             if (!this.activeFiles.includes(path)) {
                 this.activeFiles.push(path);
             }
         }
+        const last = paths.at(-1);
+        if (last !== undefined) this.setActiveFile(last);
+    }
+
+    setActiveFile(path: string) {
+        const idx = this.activeFiles.indexOf(path);
+        if (idx >= 0) this.activeIndex = idx;
+    }
+
+    closeFile(path: string) {
+        const idx = this.activeFiles.indexOf(path);
+        if (idx < 0) return;
+        const shown = this.currentFile;
+        this.activeFiles = this.activeFiles.filter((p) => p !== path);
+        if (shown && shown !== path) {
+            this.activeIndex = Math.max(0, this.activeFiles.indexOf(shown));
+        } else {
+            this.activeIndex = Math.min(idx, Math.max(0, this.activeFiles.length - 1));
+        }
     }
 
     clear() {
         this.activeFiles = [];
+        this.activeIndex = 0;
     }
 
     /* ---------- Toast Management ---------- */
@@ -141,7 +165,11 @@ class AppState {
         this.jobListenerInitialized = true;
 
         try {
-            await IpcClient.onJobEvent((event) => {
+            await IpcClient.onJobEvent(async (event) => {
+                // Internal jobs (e.g. the open-time GetInfo probe) never toast. Their event can
+                // arrive before submit_job has returned the id, so wait for silent submits first.
+                await IpcClient.silentSubmitsSettled();
+                if (IpcClient.isSilentJob(event.data.job_id)) return;
                 if (event.kind === 'Completed') {
                     const out = (event as any)?.data?.output_path;
                     this.addToast(

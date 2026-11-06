@@ -128,6 +128,40 @@ export class ViewportCoordinateEngine {
     this.panBy(viewId, -dxScreen, -dyScreen);
   }
 
+  /**
+   * BUG-020: fit one laid-out page (`this.pages[pageIndex]`: its real size, rotation and world
+   * offset) into a viewport of `viewportWidthPx` × `viewportHeightPx` screen px.
+   * 'width' fills the width (top of the page near the top edge); 'page' shows the whole page centred.
+   * Returns false when the view or page does not exist.
+   */
+  fitPageInView(
+    viewId: string,
+    viewportWidthPx: number,
+    viewportHeightPx: number,
+    pageIndex: number,
+    mode: 'width' | 'page',
+    marginPx = 24
+  ): boolean {
+    const v = this.views[viewId];
+    const g = this.pages[pageIndex];
+    if (!v || !g || viewportWidthPx <= 0 || viewportHeightPx <= 0) return false;
+    const swap = g.rotation === 90 || g.rotation === 270;
+    const pageW = (swap ? g.heightPt : g.widthPt) * PT_TO_CSS;
+    const pageH = (swap ? g.widthPt : g.heightPt) * PT_TO_CSS;
+    const availW = Math.max(1, viewportWidthPx - 2 * marginPx);
+    const availH = Math.max(1, viewportHeightPx - 2 * marginPx);
+    const fit = mode === 'width' ? availW / pageW : Math.min(availW / pageW, availH / pageH);
+    const zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, fit));
+    // screen = pan + world * zoom, so subtract the page's world offset.
+    const panX = (viewportWidthPx - pageW * zoom) / 2 - g.worldX * zoom;
+    const panY =
+      mode === 'width'
+        ? marginPx - g.worldY * zoom
+        : (viewportHeightPx - pageH * zoom) / 2 - g.worldY * zoom;
+    this.#apply(v, { zoom, panX, panY });
+    return true;
+  }
+
   /** Fit active view to page width */
   fitToWidth(viewportWidthPx: number, pageWidthPt = 595.28, viewId = 'main-canvas'): void {
     const v = this.views[viewId];
