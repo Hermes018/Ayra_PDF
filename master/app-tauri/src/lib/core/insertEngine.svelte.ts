@@ -326,6 +326,10 @@ export function compileLatexToVector(latexInput: string): LatexVectorOutput {
  * and sets pixels brighter than `threshold` (0-255) to transparent (`alpha = 0`), while ink pixels
  * become crisp dark ink (`alpha = 255`).
  */
+/** Canvas pixel colours for the webcam-threshold simulation (pixel processing, not UI chrome). */
+export const THRESHOLD_SIM_PAPER = 'rgb(245, 245, 245)';
+export const THRESHOLD_SIM_INK = 'rgb(18, 24, 38)';
+
 export function applyGrayscaleThresholdToRgba(
   rgba: Uint8ClampedArray,
   threshold = 168
@@ -841,6 +845,24 @@ class InsertEngine {
         // Fallback to offline synthesized PCM WAV when running headless or without mic permission
       }
     }
+  }
+
+  /** Stops a running recording, releases the microphone and throws the audio away (nothing is attached). */
+  discardAudioRecording(): void {
+    const rec = this.mediaRecorder as (MediaRecorder & { stream?: MediaStream }) | null;
+    if (rec && rec.state !== 'inactive') {
+      try {
+        rec.stop();
+      } catch {
+        // already stopped
+      }
+    }
+    rec?.stream?.getTracks?.().forEach((t) => t.stop());
+    this.mediaRecorder = null;
+    this.recordedChunks = [];
+    this.isRecordingAudio = false;
+    this.audioDurationSec = 0;
+    this.audioModalOpen = false;
   }
 
   /**

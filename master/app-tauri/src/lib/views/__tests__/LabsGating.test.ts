@@ -234,7 +234,7 @@ describe('Labs gating (2.16 math text, 8.10 shape guess)', () => {
         test('ledger has no shape-guess button and never opens the math-text dialog', () => {
             inserts.latexModalOpen = true;
             openLedger();
-            expect(screen.getByRole('button', { name: /Auto-Detect Tables/ })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /Detect tables/ })).toBeInTheDocument();
             expect(screen.queryByTestId('ledger-ink-guess-btn')).not.toBeInTheDocument();
             expect(screen.queryByText(INK_GUESS_LABS.name)).not.toBeInTheDocument();
             expect(screen.queryByTestId('math-text-dialog')).not.toBeInTheDocument();

@@ -9,7 +9,16 @@
       placeholder?: string;
       error?: string;
       hint?: string;
-      type?: 'text' | 'number' | 'password' | 'search' | 'email';
+      type?: 'text' | 'number' | 'password' | 'search' | 'email' | 'range';
+      /** Native autocomplete hint, e.g. "off" for secrets. */
+      autocomplete?: 'off' | 'on' | 'new-password' | 'current-password';
+      /** Visually hide the label (compact toolbars); it still names the control for assistive tech. */
+      hideLabel?: boolean;
+      /** For type="range". */
+      min?: number;
+      max?: number;
+      /** Native change event (fires on commit / release). */
+      onchange?: () => void;
     };
 
   let {
@@ -19,6 +28,11 @@
     error,
     hint,
     type = 'text',
+    hideLabel = false,
+    autocomplete,
+    min,
+    max,
+    onchange,
     disabled = false,
     disabledReason,
     class: klass = '',
@@ -36,13 +50,17 @@
 </script>
 
 <div class="lp-field lp-tipwrap {klass}">
-  <label class="lp-label" for={inputId}>{label}</label>
+  <label class="lp-label" class:lp-sr-only={hideLabel} for={inputId}>{label}</label>
   <input
     id={inputId}
     class="lp-input"
     class:has-error={!!error}
     {type}
     {placeholder}
+    {autocomplete}
+    {min}
+    {max}
+    {onchange}
     {disabled}
     bind:value
     aria-invalid={error ? true : undefined}
@@ -59,6 +77,7 @@
 
 <style>
   .lp-field { position: relative; display: flex; flex-direction: column; gap: var(--space-1); }
+  .lp-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .lp-label { font-size: var(--font-size-footnote); font-weight: 600; color: var(--text-secondary); }
   .lp-input {
     font: inherit;

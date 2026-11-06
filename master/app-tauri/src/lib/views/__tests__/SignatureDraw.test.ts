@@ -78,7 +78,7 @@ describe('Draw-mode signature (BUG-017)', () => {
 
     test('the type and webcam tabs are reachable by test id', async () => {
         await fireEvent.click(screen.getByTestId('signature-tab-type'));
-        expect(screen.getByRole('textbox', { name: 'Typed Signature Name' })).toBeInTheDocument();
+        expect(screen.getByRole('textbox', { name: 'Typed signature name' })).toBeInTheDocument();
         await fireEvent.click(screen.getByTestId('signature-tab-webcam'));
         expect(screen.getByTestId('signature-tab-webcam')).toHaveAttribute('aria-pressed', 'true');
     });

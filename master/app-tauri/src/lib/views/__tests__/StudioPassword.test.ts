@@ -20,6 +20,7 @@ vi.mock('@tauri-apps/api/core', () => ({
     }),
 }));
 
+import { commands } from '$lib/core/commandEngine.svelte';
 import SpatialCanvas from '../studio/SpatialCanvas.svelte';
 import { appState } from '$lib/state.svelte';
 import { viewport } from '$lib/core/viewportEngine.svelte';
@@ -103,5 +104,56 @@ describe('Encrypted PDF password prompt (BUG-011)', () => {
         await fireEvent.click(screen.getByTestId('pdf-password-cancel'));
         expect(screen.queryByTestId('pdf-password-dialog')).not.toBeInTheDocument();
         expect(await screen.findByTestId('studio-status-banner')).toHaveTextContent(/password/i);
+    });
+
+    // SECURITY (presentation-only move to ui/Dialog): Escape is the same as Cancel, the typed password
+    // never reaches pdf.js on cancel, and the field is empty when the prompt comes back (DO-15).
+    test('Escape cancels exactly like Cancel and no password attempt is made with typed text', async () => {
+        const detach = commands.attachKeyboard(window);
+        try {
+            render(SpatialCanvas);
+            await screen.findByTestId('pdf-password-dialog');
+            await fireEvent.input(screen.getByTestId('pdf-password-input'), { target: { value: 'half-typed' } });
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+            await waitFor(() => expect(screen.queryByTestId('pdf-password-dialog')).not.toBeInTheDocument());
+            expect(await screen.findByTestId('studio-status-banner')).toHaveTextContent(/password/i);
+            expect(attempts).toEqual([undefined]); // only the first, password-less attempt
+            expect(viewport.pages).toHaveLength(0);
+        } finally {
+            detach();
+        }
+    });
+
+    test('submitting the form (Enter in the field) opens with the typed password; the field starts empty on a retry', async () => {
+        render(SpatialCanvas);
+        await screen.findByTestId('pdf-password-dialog');
+        await fireEvent.input(screen.getByTestId('pdf-password-input'), { target: { value: 'wrong' } });
+        await fireEvent.submit(screen.getByTestId('pdf-password-input').closest('form') as HTMLFormElement);
+        await waitFor(() => expect(screen.getByTestId('pdf-password-error')).toBeInTheDocument());
+        expect((screen.getByTestId('pdf-password-input') as HTMLInputElement).value).toBe('');
+        await fireEvent.input(screen.getByTestId('pdf-password-input'), { target: { value: PASSWORD } });
+        await fireEvent.submit(screen.getByTestId('pdf-password-input').closest('form') as HTMLFormElement);
+        await waitFor(() => expect(viewport.pages).toHaveLength(2));
+        expect(attempts).toEqual([undefined, 'wrong', PASSWORD]);
+    });
+
+    // SECURITY: the field must not offer browser autofill / saved passwords for a document password.
+    test('the password field has autocomplete="off" and is a password input', async () => {
+        render(SpatialCanvas);
+        await screen.findByTestId('pdf-password-dialog');
+        const input = screen.getByTestId('pdf-password-input') as HTMLInputElement;
+        expect(input.type).toBe('password');
+        expect(input).toHaveAttribute('autocomplete', 'off');
+    });
+
+    test('a backdrop click cancels the prompt with no password attempt', async () => {
+        render(SpatialCanvas);
+        const dialog = await screen.findByTestId('pdf-password-dialog');
+        await fireEvent.input(screen.getByTestId('pdf-password-input'), { target: { value: 'half-typed' } });
+        await fireEvent.click(dialog.parentElement as HTMLElement); // the backdrop
+        await waitFor(() => expect(screen.queryByTestId('pdf-password-dialog')).not.toBeInTheDocument());
+        expect(await screen.findByTestId('studio-status-banner')).toHaveTextContent(/password/i);
+        expect(attempts).toEqual([undefined]);
+        expect(viewport.pages).toHaveLength(0);
     });
 });

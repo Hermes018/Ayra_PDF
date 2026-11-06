@@ -6,9 +6,16 @@
     inserts,
     compileLatexToVector,
     applyGrayscaleThresholdToRgba,
+    THRESHOLD_SIM_PAPER,
+    THRESHOLD_SIM_INK,
     type SignatureMode,
   } from '$lib/core/insertEngine.svelte';
   import StudioIcon from './StudioIcon.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
+  import IconButton from '$lib/components/ui/IconButton.svelte';
+  import Input from '$lib/components/ui/Input.svelte';
+  import Select from '$lib/components/ui/Select.svelte';
+  import Dialog from '$lib/components/ui/Dialog.svelte';
   import { INK_GUESS_ID, INK_GUESS_LABS, LABS_BADGE, MATH_TEXT_LABS, labsVisible } from './labs.svelte';
 
   let {
@@ -23,8 +30,8 @@
 
   let activeTab = $state<'ledger' | 'library' | 'workspace'>('ledger');
   let filterQuery = $state<string>('');
-  let filterKind = $state<'all' | 'annotations' | 'measurements'>('all');
-  let sortBy = $state<'page' | 'type'>('page');
+  let filterKind = $state<string>('all');
+  let sortBy = $state<string>('page');
   let newLibraryTitle = $state<string>('Custom Markup Stamp');
   let docTagsInput = $state<string>('structural, rev-2');
   let docFolderInput = $state<string>('Project Blueprints');
@@ -35,6 +42,42 @@
   let sigNotice = $state<string | null>(null);
   let isDrawingSig = $state(false);
   let webcamPreviewDataUrl = $state<string | null>(null);
+
+  // flow07 (BUG-046) clicks these exact texts; rename them together with that flow.
+  const STAMP_SIGNATURE_TEXT = 'Stamp Signature';
+  const SIGNATURE_MODES: SignatureMode[] = ['draw', 'type', 'webcam'];
+
+  let kindOptions = $derived([
+    { value: 'all', label: 'All items' },
+    { value: 'annotations', label: `Markups (${ink.completedStrokes.length})` },
+    { value: 'measurements', label: `Takeoff (${measureEngine.measurements.length})` },
+  ]);
+  let authorOptions = $derived([
+    { value: 'ALL', label: 'Author: all' },
+    ...inserts.getAvailableAuthors().map((a: string) => ({ value: a, label: a })),
+  ]);
+  const SORT_OPTIONS = [
+    { value: 'page', label: 'Sort: page' },
+    { value: 'type', label: 'Sort: tool' },
+  ];
+  // Closing the audio dialog while recording must not leave a hidden running recording: ask first.
+  let audioConfirming = $state(false);
+  function onAudioClose() {
+    if (audioConfirming) {
+      audioConfirming = false; // Escape on the confirm = keep recording
+      inserts.audioModalOpen = true;
+    } else if (inserts.isRecordingAudio) {
+      audioConfirming = true;
+      inserts.audioModalOpen = true;
+    } else {
+      inserts.audioModalOpen = false;
+    }
+  }
+  // Select / Input work with strings; the engine stores the threshold as a number.
+  let thresholdText = $state(String(inserts.signatureThreshold));
+  $effect(() => {
+    inserts.signatureThreshold = Number(thresholdText) || inserts.signatureThreshold;
+  });
 
   let latexPreview = $derived(compileLatexToVector(inserts.latexDraft));
   // Library items that insert a Labs tool (e.g. the built-in equation) are hidden while Labs is off.
@@ -166,9 +209,9 @@
     if (!ctx) return;
 
     // Paint paper background + dark signature ink, then run `applyGrayscaleThresholdToRgba`
-    ctx.fillStyle = 'rgb(245, 245, 245)';
+    ctx.fillStyle = THRESHOLD_SIM_PAPER;
     ctx.fillRect(0, 0, 180, 56);
-    ctx.fillStyle = 'rgb(18, 24, 38)';
+    ctx.fillStyle = THRESHOLD_SIM_INK;
     ctx.font = 'italic 20px serif';
     ctx.fillText(inserts.signatureTypedName || 'Verified Sign', 12, 36);
 
@@ -180,7 +223,7 @@
   }
 </script>
 
-<!-- Collapsible Left-Side Annotation History & Quantity Takeoff Drawer -->
+<!-- Collapsible left-side annotation history and quantity takeoff drawer -->
 {#if inserts.ledgerOpen}
   <aside
     class="annotation-ledger-drawer glass-panel"
@@ -189,93 +232,58 @@
   >
     <header class="drawer-header">
       <div class="drawer-tabs">
-        <button
-          type="button"
-          class="tab-btn"
-          class:active={activeTab === 'ledger'}
-          onclick={() => (activeTab = 'ledger')}
-        >
+        <Button variant="plain" size="sm" pressed={activeTab === 'ledger'} onclick={() => (activeTab = 'ledger')}>
           Ledger ({ledgerRows.length})
-        </button>
-        <button
-          type="button"
-          class="tab-btn"
-          class:active={activeTab === 'library'}
+        </Button>
+        <Button
+          variant="plain"
+          size="sm"
+          pressed={activeTab === 'library'}
           onclick={() => {
             activeTab = 'library';
             inserts.loadMarkupLibraryFromBackend();
           }}
         >
           Vault ({visibleLibrary.length})
-        </button>
-        <button
-          type="button"
-          class="tab-btn"
-          class:active={activeTab === 'workspace'}
+        </Button>
+        <Button
+          variant="plain"
+          size="sm"
+          pressed={activeTab === 'workspace'}
           onclick={() => {
             activeTab = 'workspace';
             inserts.loadWorkspaceDocuments();
           }}
         >
           Docs ({inserts.workspaceDocs.length})
-        </button>
+        </Button>
       </div>
-      <button
-        type="button"
-        class="icon-close-btn"
-        onclick={() => (inserts.ledgerOpen = false)}
-        aria-label="Close Annotation Ledger"
-      >
-        <StudioIcon name="close" size={13} />
-      </button>
+      <IconButton icon="close" size="sm" ariaLabel="Close annotation ledger" onclick={() => (inserts.ledgerOpen = false)} />
     </header>
 
     {#if activeTab === 'ledger'}
       <div class="ledger-controls">
-        <input
+        <Input
           type="search"
-          class="ledger-search"
+          label="Filter annotations and measurements"
+          hideLabel
           placeholder="Filter by tool, label, or page..."
           bind:value={filterQuery}
-          aria-label="Filter Annotations and Measurements"
         />
         <div class="ledger-filter-row">
-          <select
-            class="ledger-select"
-            bind:value={filterKind}
-            aria-label="Filter Category"
-          >
-            <option value="all">All Items</option>
-            <option value="annotations">Markups ({ink.completedStrokes.length})</option>
-            <option value="measurements">Takeoff ({measureEngine.measurements.length})</option>
-          </select>
-          <select
-            class="ledger-select"
-            bind:value={inserts.authorFilter}
-            aria-label="Filter by Author"
-          >
-            <option value="ALL">Author: All</option>
-            {#each inserts.getAvailableAuthors() as authorName}
-              <option value={authorName}>{authorName}</option>
-            {/each}
-          </select>
-          <select
-            class="ledger-select"
-            bind:value={sortBy}
-            aria-label="Sort Ledger By"
-          >
-            <option value="page">Sort: Page</option>
-            <option value="type">Sort: Tool</option>
-          </select>
+          <Select label="Filter category" hideLabel bind:value={filterKind} options={kindOptions} />
+          <Select label="Filter by author" hideLabel bind:value={inserts.authorFilter} options={authorOptions} />
+          <Select label="Sort ledger by" hideLabel bind:value={sortBy} options={SORT_OPTIONS} />
         </div>
         <div class="ledger-filter-row">
           {#if labsVisible(INK_GUESS_ID)}
             <!-- Labs-only (8.10): see ./labs.ts -->
-            <button
-              type="button"
-              class="ledger-action-btn"
+            <Button
+              variant="secondary"
+              size="sm"
               data-testid="ledger-ink-guess-btn"
-              aria-label={INK_GUESS_LABS.label}
+              ariaLabel={INK_GUESS_LABS.label}
+              title={`${INK_GUESS_LABS.label}: ${INK_GUESS_LABS.note}`}
               onclick={() => {
                 const converted = inserts.convertSelectedInkToText();
                 if (converted) {
@@ -284,23 +292,22 @@
                   onNotice?.('Draw or select a freehand ink stroke first.');
                 }
               }}
-              title={`${INK_GUESS_LABS.label}: ${INK_GUESS_LABS.note}`}
             >
               {INK_GUESS_LABS.name}
               <span class="labs-badge" data-testid="labs-badge">{LABS_BADGE}</span>
-            </button>
+            </Button>
           {/if}
-          <button
-            type="button"
-            class="ledger-action-btn"
+          <Button
+            variant="secondary"
+            size="sm"
+            title="Find tables and fillable form fields on the page (8.12)"
             onclick={async () => {
               const regions = await inserts.detectTablesAndFields(activePdfPath, 0);
               onNotice?.(`Detected ${regions.length} table/form regions on page.`);
             }}
-            title="Auto-detect tables and fillable form fields on page (8.12)"
           >
-            Auto-Detect Tables
-          </button>
+            Detect tables
+          </Button>
         </div>
       </div>
 
@@ -313,7 +320,7 @@
               <tr>
                 <th>Pg</th>
                 <th>Type</th>
-                <th>Value / Content</th>
+                <th>Value / content</th>
               </tr>
             </thead>
             <tbody>
@@ -325,14 +332,23 @@
                   data-category={row.category}
                   data-type={row.typeLabel}
                   data-page={row.pageIndex + 1}
-                  onclick={() => {
-                    if (row.category === 'annotation') {
-                      selection.selectedIds = [row.id];
-                    }
-                  }}
                 >
                   <td>P{row.pageIndex + 1}</td>
-                  <td><span class="type-pill">{row.typeLabel}</span></td>
+                  <td>
+                    <!-- The row is selected from this button (keyboard and pointer). -->
+                    <Button
+                      variant="plain"
+                      size="sm"
+                      title="Select this item on the page"
+                      onclick={() => {
+                        if (row.category === 'annotation') {
+                          selection.selectedIds = [row.id];
+                        }
+                      }}
+                    >
+                      <span class="type-pill">{row.typeLabel}</span>
+                    </Button>
+                  </td>
                   <td class="summary-cell">{row.summary}</td>
                 </tr>
               {/each}
@@ -342,40 +358,28 @@
       </div>
 
       <footer class="drawer-footer">
-        <button
-          type="button"
-          class="ledger-action-btn primary"
+        <Button
+          variant="primary"
+          size="sm"
+          title="Export all calibrated measurements to a CSV spreadsheet"
           onclick={handleExportTakeoffCsv}
-          title="Export all calibrated measurements to CSV spreadsheet"
         >
-          Export Takeoff (CSV)
-        </button>
-        <button
-          type="button"
-          class="ledger-action-btn"
-          onclick={() => (inserts.pastePagesModalOpen = true)}
+          Export takeoff (CSV)
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           title="Stamp selected markup across page ranges"
+          onclick={() => (inserts.pastePagesModalOpen = true)}
         >
-          Paste to Pages...
-        </button>
+          Paste to pages…
+        </Button>
       </footer>
     {:else if activeTab === 'library'}
-      <!-- Reusable Markup Library Vault -->
+      <!-- Reusable markup library vault -->
       <div class="library-controls">
-        <input
-          type="text"
-          class="ledger-search"
-          placeholder="Name for selected markup..."
-          bind:value={newLibraryTitle}
-          aria-label="New Markup Library Preset Title"
-        />
-        <button
-          type="button"
-          class="ledger-action-btn primary"
-          onclick={handleSaveSelectedToLibrary}
-        >
-          + Save Current Markup to Vault
-        </button>
+        <Input label="Name for selected markup" bind:value={newLibraryTitle} placeholder="Name for selected markup..." />
+        <Button variant="primary" size="sm" onclick={handleSaveSelectedToLibrary}>Save current markup to vault</Button>
       </div>
 
       <div class="library-list">
@@ -385,9 +389,9 @@
               <span class="lib-title">{item.title}</span>
               <span class="lib-sub">{item.category} • {item.tool_id}</span>
             </div>
-            <button
-              type="button"
-              class="ledger-action-btn"
+            <Button
+              variant="secondary"
+              size="sm"
               onclick={() => {
                 if (!inserts.insertGuard()) {
                   onNotice?.('The document is still loading its markups. Try again in a moment.');
@@ -398,30 +402,18 @@
               }}
             >
               Stamp
-            </button>
+            </Button>
           </div>
         {/each}
       </div>
     {:else}
-      <!-- Workspace Document Tags, Folders, Favorites & Watch-Folder Auto-Ingest (7.10 & 8.7) -->
+      <!-- Workspace document tags, folders, favorites and watch-folder auto-ingest (7.10 and 8.7) -->
       <div class="library-controls">
-        <input
-          type="text"
-          class="ledger-search"
-          placeholder="Folder name (e.g. Project Blueprints)..."
-          bind:value={docFolderInput}
-          aria-label="Workspace Document Folder"
-        />
-        <input
-          type="text"
-          class="ledger-search"
-          placeholder="Comma-separated tags (e.g. structural, rev-2)..."
-          bind:value={docTagsInput}
-          aria-label="Workspace Document Tags"
-        />
-        <button
-          type="button"
-          class="ledger-action-btn primary"
+        <Input label="Workspace document folder" bind:value={docFolderInput} placeholder="Folder name (e.g. Project Blueprints)..." />
+        <Input label="Workspace document tags" bind:value={docTagsInput} placeholder="Comma-separated tags (e.g. structural, rev-2)..." />
+        <Button
+          variant="primary"
+          size="sm"
           onclick={async () => {
             const path = activePdfPath || 'untitled-drawing.pdf';
             const title = path.split(/[\\/]/).pop() || path;
@@ -440,27 +432,21 @@
             onNotice?.(`Tagged & favorited "${title}" in ${docFolderInput}.`);
           }}
         >
-          ★ Favorite & Tag Active PDF
-        </button>
+          Favorite and tag active PDF
+        </Button>
 
         <div class="ledger-filter-row">
-          <input
-            type="text"
-            class="ledger-search"
-            placeholder="Local watch folder path..."
-            bind:value={inserts.watchFolderPath}
-            aria-label="Watch Folder Path"
-          />
-          <button
-            type="button"
-            class="ledger-action-btn"
+          <Input label="Watch folder path" bind:value={inserts.watchFolderPath} placeholder="Local watch folder path..." />
+          <Button
+            variant="secondary"
+            size="sm"
             onclick={async () => {
               const found = await inserts.scanWatchFolder();
               onNotice?.(`Watch folder scanned: ${found.length} PDFs ingested.`);
             }}
           >
             Scan
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -479,297 +465,216 @@
 {/if}
 
 <!-- Labs-only (2.16) math text dialog (`insert.latex`); see ./labs.ts -->
-{#if inserts.latexModalOpen && labsVisible('insert.latex')}
-  <div
-    class="studio-modal-card glass-panel"
-    role="dialog"
-    tabindex="-1"
-    aria-label={MATH_TEXT_LABS.label}
-    data-testid="math-text-dialog"
-    onpointerdown={(e) => e.stopPropagation()}
-  >
-    <div class="modal-head">
-      <span>{MATH_TEXT_LABS.name} <span class="labs-badge" data-testid="labs-badge">{LABS_BADGE}</span></span>
-      <button type="button" class="icon-close-btn" aria-label="Close the math text dialog" title="Close the math text dialog" onclick={() => (inserts.latexModalOpen = false)}>
-        <StudioIcon name="close" size={12} />
-      </button>
-    </div>
-    <input
-      type="text"
-      class="ledger-search"
-      bind:value={inserts.latexDraft}
-      aria-label={MATH_TEXT_LABS.inputLabel}
-    />
-    <p class="labs-note" data-testid="math-text-note">{MATH_TEXT_LABS.note}</p>
-    <div class="latex-preview-box">
-      <svg
-        width={latexPreview.widthPt}
-        height={latexPreview.heightPt}
-        viewBox="0 0 {latexPreview.widthPt} {latexPreview.heightPt}"
-      >
-        <path
-          d={latexPreview.svgPathD}
-          fill="none"
-          stroke="var(--accent)"
-          stroke-width="1.5"
-        />
-        <text
-          x="14"
-          y={Math.round(latexPreview.heightPt / 2) + 5}
-          fill="var(--glass-text)"
-          font-size="14"
-          font-family="serif"
-        >
-          {latexPreview.formattedDisplay}
-        </text>
-      </svg>
-    </div>
-    <div class="modal-actions">
-      <button type="button" class="ledger-action-btn" onclick={() => (inserts.latexModalOpen = false)}>
-        Cancel
-      </button>
-      <button
-        type="button"
-        class="ledger-action-btn primary"
-        onclick={() => inserts.stampLatexEquation()}
-      >
-        {MATH_TEXT_LABS.insertAction}
-      </button>
-    </div>
+{#if labsVisible('insert.latex')}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div onpointerdown={(e) => e.stopPropagation()}>
+    <Dialog
+      bind:open={inserts.latexModalOpen}
+      title={MATH_TEXT_LABS.label}
+      onclose={() => (inserts.latexModalOpen = false)}
+      data-testid="math-text-dialog"
+    >
+      <div class="modal-stack">
+        <span class="labs-badge" data-testid="labs-badge">{LABS_BADGE}</span>
+        <Input label={MATH_TEXT_LABS.inputLabel} bind:value={inserts.latexDraft} />
+        <p class="labs-note" data-testid="math-text-note">{MATH_TEXT_LABS.note}</p>
+        <div class="latex-preview-box">
+          <svg
+            width={latexPreview.widthPt}
+            height={latexPreview.heightPt}
+            viewBox="0 0 {latexPreview.widthPt} {latexPreview.heightPt}"
+          >
+            <path d={latexPreview.svgPathD} fill="none" stroke="var(--accent)" stroke-width="1.5" />
+            <text
+              x="14"
+              y={Math.round(latexPreview.heightPt / 2) + 5}
+              fill="var(--glass-text)"
+              font-size="14"
+              font-family="serif"
+            >
+              {latexPreview.formattedDisplay}
+            </text>
+          </svg>
+        </div>
+      </div>
+      {#snippet actions()}
+        <Button variant="secondary" onclick={() => (inserts.latexModalOpen = false)}>Cancel</Button>
+        <Button variant="primary" onclick={() => inserts.stampLatexEquation()}>{MATH_TEXT_LABS.insertAction}</Button>
+      {/snippet}
+    </Dialog>
   </div>
 {/if}
 
-<!-- Signature Modal (`insert.signature`: Draw / Type / Webcam Threshold) -->
-{#if inserts.signatureModalOpen}
-  <div
-    class="studio-modal-card glass-panel"
-    role="dialog"
-    tabindex="-1"
-    aria-label="Signature Capture Modal"
-    onpointerdown={(e) => e.stopPropagation()}
+<!-- Signature modal (`insert.signature`: draw / type / webcam threshold) -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div onpointerdown={(e) => e.stopPropagation()}>
+  <Dialog
+    bind:open={inserts.signatureModalOpen}
+    title="Architectural signature stamp"
+    ariaLabel="Signature Capture Modal"
+    onclose={() => (inserts.signatureModalOpen = false)}
   >
-    <div class="modal-head">
-      <span>Architectural Signature Stamp</span>
-      <button
-        type="button"
-        class="icon-close-btn" aria-label="Close the signature stamp dialog" title="Close the signature stamp dialog"
-        onclick={() => (inserts.signatureModalOpen = false)}
-      >
-        <StudioIcon name="close" size={12} />
-      </button>
-    </div>
-    <div class="drawer-tabs">
-      {#each ['draw', 'type', 'webcam'] as mode}
-        <button
-          type="button"
-          class="tab-btn"
-          class:active={inserts.signatureMode === mode}
-          aria-pressed={inserts.signatureMode === mode}
-          data-testid="signature-tab-{mode}"
-          onclick={() => (inserts.signatureMode = mode as SignatureMode)}
-        >
-          {mode.toUpperCase()}
-        </button>
-      {/each}
-    </div>
-
-    {#if inserts.signatureMode === 'draw'}
-      <svg
-        class="sig-pad"
-        width="260"
-        height="76"
-        data-testid="signature-pad"
-        onpointerdown={handleSigPointerDown}
-        onpointermove={handleSigPointerMove}
-        onpointerup={handleSigPointerUp}
-        onpointercancel={handleSigPointerUp}
-        role="img"
-        aria-label="Freehand Signature Pad"
-      >
-        {#each sigStrokes as st, i (i)}
-          {#if st.length > 1}
-            <path
-              d={sigPathD(st)}
-              fill="none"
-              stroke="var(--accent)"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          {/if}
+    <div class="modal-stack">
+      <div class="drawer-tabs">
+        {#each SIGNATURE_MODES as mode}
+          <Button
+            variant="plain"
+            size="sm"
+            pressed={inserts.signatureMode === mode}
+            data-testid="signature-tab-{mode}"
+            onclick={() => (inserts.signatureMode = mode)}
+          >
+            {mode.toUpperCase()}
+          </Button>
         {/each}
-      </svg>
-      <div class="sig-pad-row">
-        <span class="sig-hint" data-testid="signature-draw-hint" role={sigNotice ? 'alert' : undefined}>
-          {sigNotice ?? 'Draw your signature in the box.'}
-        </span>
-        <button
-          type="button"
-          class="ledger-action-btn"
-          data-testid="signature-clear-btn"
-          onclick={() => {
-            sigStrokes = [];
-            sigNotice = null;
-          }}
-        >
-          Clear
-        </button>
       </div>
-    {:else if inserts.signatureMode === 'type'}
-      <input
-        type="text"
-        class="ledger-search"
-        bind:value={inserts.signatureTypedName}
-        aria-label="Typed Signature Name"
-      />
-    {:else}
-      <div class="webcam-controls">
-        <label class="thresh-label">
-          BG Removal Threshold ({inserts.signatureThreshold}):
-          <input
+
+      {#if inserts.signatureMode === 'draw'}
+        <svg
+          class="sig-pad"
+          width="260"
+          height="76"
+          data-testid="signature-pad"
+          onpointerdown={handleSigPointerDown}
+          onpointermove={handleSigPointerMove}
+          onpointerup={handleSigPointerUp}
+          onpointercancel={handleSigPointerUp}
+          role="img"
+          aria-label="Freehand Signature Pad"
+        >
+          {#each sigStrokes as st, i (i)}
+            {#if st.length > 1}
+              <path
+                d={sigPathD(st)}
+                fill="none"
+                stroke="var(--accent)"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            {/if}
+          {/each}
+        </svg>
+        <div class="sig-pad-row">
+          <span class="sig-hint" data-testid="signature-draw-hint" role={sigNotice ? 'alert' : undefined}>
+            {sigNotice ?? 'Draw your signature in the box.'}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            data-testid="signature-clear-btn"
+            onclick={() => {
+              sigStrokes = [];
+              sigNotice = null;
+            }}
+          >
+            Clear
+          </Button>
+        </div>
+      {:else if inserts.signatureMode === 'type'}
+        <Input label="Typed signature name" bind:value={inserts.signatureTypedName} />
+      {:else}
+        <div class="webcam-controls">
+          <Input
             type="range"
-            min="60"
-            max="230"
-            bind:value={inserts.signatureThreshold}
+            min={60}
+            max={230}
+            label="Background removal threshold ({thresholdText})"
+            bind:value={thresholdText}
             onchange={runThresholdScanSimulation}
           />
-        </label>
-        <button type="button" class="ledger-action-btn" onclick={runThresholdScanSimulation}>
-          Capture & Threshold Scan
-        </button>
-        {#if webcamPreviewDataUrl}
-          <img
-            src={webcamPreviewDataUrl}
-            alt="Thresholded transparent signature preview"
-            class="sig-img-preview"
-          />
-        {/if}
+          <Button variant="secondary" size="sm" onclick={runThresholdScanSimulation}>Capture and threshold scan</Button>
+          {#if webcamPreviewDataUrl}
+            <img src={webcamPreviewDataUrl} alt="Thresholded transparent signature preview" class="sig-img-preview" />
+          {/if}
+        </div>
+      {/if}
+    </div>
+    {#snippet actions()}
+      <Button variant="secondary" onclick={() => (inserts.signatureModalOpen = false)}>Cancel</Button>
+      <Button variant="primary" data-testid="signature-stamp-btn" onclick={handleStampSignature}>
+        {STAMP_SIGNATURE_TEXT}
+      </Button>
+    {/snippet}
+  </Dialog>
+</div>
+
+<!-- Voice audio note modal (`insert.audio`: MediaRecorder + PDF `/Sound`) -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div onpointerdown={(e) => e.stopPropagation()}>
+  <Dialog
+    bind:open={inserts.audioModalOpen}
+    variant={audioConfirming ? 'alert' : 'dialog'}
+    title={audioConfirming ? 'Discard recording?' : 'Voice audio note (PDF /Sound attachment)'}
+    ariaLabel="Voice Audio Note Recorder"
+    onclose={onAudioClose}
+  >
+    {#if audioConfirming}
+      <p class="labs-note">The recording in progress will be thrown away and nothing is added to the page.</p>
+    {:else}
+      <div class="waveform-bars">
+        {#each inserts.liveWaveform as bar}
+          <span class="wave-bar" style:height="{Math.max(6, Math.round(bar * 0.36))}px"></span>
+        {/each}
       </div>
     {/if}
-
-    <div class="modal-actions">
-      <button
-        type="button"
-        class="ledger-action-btn"
-        onclick={() => (inserts.signatureModalOpen = false)}
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
-        class="ledger-action-btn primary"
-        data-testid="signature-stamp-btn"
-        onclick={handleStampSignature}
-      >
-        Stamp Signature
-      </button>
-    </div>
-  </div>
-{/if}
-
-<!-- Voice Audio Note Modal (`insert.audio`: MediaRecorder + PDF `/Sound`) -->
-{#if inserts.audioModalOpen}
-  <div
-    class="studio-modal-card glass-panel"
-    role="dialog"
-    tabindex="-1"
-    aria-label="Voice Audio Note Recorder"
-    onpointerdown={(e) => e.stopPropagation()}
-  >
-    <div class="modal-head">
-      <span>Voice Audio Note (PDF /Sound Attachment)</span>
-      <button type="button" class="icon-close-btn" aria-label="Close the voice note dialog" title="Close the voice note dialog" onclick={() => (inserts.audioModalOpen = false)}>
-        <StudioIcon name="close" size={12} />
-      </button>
-    </div>
-    <div class="waveform-bars">
-      {#each inserts.liveWaveform as bar}
-        <span class="wave-bar" style:height="{Math.max(6, Math.round(bar * 0.36))}px"></span>
-      {/each}
-    </div>
-    <div class="modal-actions">
-      {#if !inserts.isRecordingAudio}
-        <button
-          type="button"
-          class="ledger-action-btn"
-          onclick={() => inserts.startAudioRecording()}
-        >
-          ● Start Recording
-        </button>
+    {#snippet actions()}
+      {#if audioConfirming}
+        <Button variant="secondary" onclick={() => (audioConfirming = false)}>Keep recording</Button>
+        <Button variant="destructive" onclick={() => { audioConfirming = false; inserts.discardAudioRecording(); }}>Discard recording</Button>
+      {:else}
+        <Button variant="secondary" onclick={onAudioClose}>Cancel</Button>
+        {#if !inserts.isRecordingAudio}
+          <Button variant="secondary" onclick={() => inserts.startAudioRecording()}>Start recording</Button>
+        {/if}
+        <Button variant="primary" onclick={() => inserts.stopAndAttachAudioNote(activePdfPath)}>Add audio note to page</Button>
       {/if}
-      <button
-        type="button"
-        class="ledger-action-btn primary"
-        onclick={() => inserts.stopAndAttachAudioNote(activePdfPath)}
-      >
-        ■ Commit Audio Note to Page
-      </button>
-    </div>
-  </div>
-{/if}
+    {/snippet}
+  </Dialog>
+</div>
 
-<!-- Multi-Page Advanced Paste Modal (`Paste to Pages...`) -->
-{#if inserts.pastePagesModalOpen}
-  <div
-    class="studio-modal-card glass-panel"
-    role="dialog"
-    tabindex="-1"
-    aria-label="Multi-Page Advanced Paste"
-    onpointerdown={(e) => e.stopPropagation()}
+<!-- Multi-page advanced paste modal (`Paste to pages…`) -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div onpointerdown={(e) => e.stopPropagation()}>
+  <Dialog
+    bind:open={inserts.pastePagesModalOpen}
+    title="Paste selected markup to pages"
+    ariaLabel="Multi-Page Advanced Paste"
+    onclose={() => (inserts.pastePagesModalOpen = false)}
   >
-    <div class="modal-head">
-      <span>Paste Selected Markup to Pages...</span>
-      <button
-        type="button"
-        class="icon-close-btn" aria-label="Close the paste-to-pages dialog" title="Close the paste-to-pages dialog"
-        onclick={() => (inserts.pastePagesModalOpen = false)}
-      >
-        <StudioIcon name="close" size={12} />
-      </button>
+    <div class="modal-stack">
+      <div class="drawer-tabs">
+        {#each ['All', 'Even', 'Odd', '1-5'] as presetRange}
+          <Button
+            variant="plain"
+            size="sm"
+            pressed={inserts.pasteRangeSpec === presetRange}
+            onclick={() => (inserts.pasteRangeSpec = presetRange)}
+          >
+            {presetRange}
+          </Button>
+        {/each}
+      </div>
+      <Input
+        label="Target page range"
+        bind:value={inserts.pasteRangeSpec}
+        placeholder="All, Even, Odd, or 1-5, 8"
+      />
     </div>
-    <div class="drawer-tabs">
-      {#each ['All', 'Even', 'Odd', '1-5'] as presetRange}
-        <button
-          type="button"
-          class="tab-btn"
-          class:active={inserts.pasteRangeSpec === presetRange}
-          onclick={() => (inserts.pasteRangeSpec = presetRange)}
-        >
-          {presetRange}
-        </button>
-      {/each}
-    </div>
-    <input
-      type="text"
-      class="ledger-search"
-      bind:value={inserts.pasteRangeSpec}
-      placeholder="All, Even, Odd, or 1-5, 8"
-      aria-label="Target Page Range Specification"
-    />
-    <div class="modal-actions">
-      <button
-        type="button"
-        class="ledger-action-btn"
-        onclick={() => (inserts.pastePagesModalOpen = false)}
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
-        class="ledger-action-btn primary"
+    {#snippet actions()}
+      <Button variant="secondary" onclick={() => (inserts.pastePagesModalOpen = false)}>Cancel</Button>
+      <Button
+        variant="primary"
         onclick={() => {
-          const created = inserts.pasteStrokesToPages(
-            inserts.pasteRangeSpec,
-            Math.max(2, totalPages)
-          );
+          const created = inserts.pasteStrokesToPages(inserts.pasteRangeSpec, Math.max(2, totalPages));
           onNotice?.(`Pasted ${created.length} markup copies across (${inserts.pasteRangeSpec}).`);
         }}
       >
-        Apply Multi-Page Stamp
-      </button>
-    </div>
-  </div>
-{/if}
+        Apply multi-page stamp
+      </Button>
+    {/snippet}
+  </Dialog>
+</div>
 
 <style>
   .annotation-ledger-drawer {
@@ -781,183 +686,110 @@
     z-index: 165;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 12px;
+    gap: var(--space-2);
+    padding: var(--space-3);
     background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
-    border-radius: 14px;
+    border-radius: var(--radius-lg);
     color: var(--glass-text);
     pointer-events: auto;
-    font-size: 11.5px;
+    font-size: var(--font-size-caption);
   }
 
-  .drawer-header,
-  .modal-head {
+  .drawer-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     font-weight: 600;
-    font-size: 12px;
+    font-size: var(--font-size-footnote);
   }
 
   .drawer-tabs {
     display: flex;
-    gap: 4px;
-    background: var(--canvas-selection);
-    padding: 2px;
-    border-radius: 8px;
-  }
-
-  .tab-btn {
-    border: none;
-    background: transparent;
-    color: var(--glass-text);
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .tab-btn.active {
-    background: var(--accent);
-    color: var(--laser-core);
-  }
-
-  .icon-close-btn {
-    border: none;
-    background: transparent;
-    color: var(--glass-text);
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
+    gap: var(--space-1);
   }
 
   .ledger-controls,
-  .library-controls {
+  .library-controls,
+  .modal-stack,
+  .webcam-controls {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-  }
-
-  .ledger-search {
-    width: 100%;
-    background: var(--canvas-bg);
-    color: var(--glass-text);
-    border: 1px solid var(--glass-border);
-    border-radius: 6px;
-    padding: 5px 8px;
-    font-size: 11px;
+    gap: var(--space-2);
   }
 
   .ledger-filter-row {
     display: flex;
-    gap: 6px;
+    gap: var(--space-1);
+    align-items: flex-end;
   }
 
-  .ledger-select {
-    flex: 1;
-    background: var(--canvas-selection);
-    color: var(--glass-text);
-    border: 1px solid var(--glass-border);
-    border-radius: 6px;
-    padding: 4px 6px;
-    font-size: 11px;
-  }
-
-  .ledger-table-wrap,
   .library-list {
-    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
     overflow-y: auto;
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    padding: 4px;
+  }
+
+  .ledger-table-wrap {
+    flex: 1;
+    overflow: auto;
   }
 
   .ledger-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 11px;
+    font-size: var(--font-size-caption);
   }
 
   .ledger-table th {
     text-align: left;
-    padding: 4px 6px;
+    padding: var(--space-1) var(--space-2);
+    color: var(--text-secondary);
     border-bottom: 1px solid var(--glass-border);
-    opacity: 0.75;
-  }
-
-  .ledger-row {
-    cursor: pointer;
-  }
-
-  .ledger-row:hover {
-    background: var(--canvas-selection);
   }
 
   .ledger-row td {
-    padding: 5px 6px;
+    padding: var(--space-1) var(--space-2);
     border-bottom: 1px solid var(--glass-border);
   }
 
   .type-pill {
-    padding: 1px 5px;
-    border-radius: 4px;
-    background: var(--canvas-selection);
-    font-size: 10px;
     font-weight: 600;
   }
 
   .summary-cell {
-    max-width: 140px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    word-break: break-word;
   }
 
   .empty-ledger {
-    padding: 18px;
+    padding: var(--space-4);
     text-align: center;
-    opacity: 0.65;
+    opacity: 0.7;
   }
 
-  .drawer-footer,
-  .modal-actions {
+  .drawer-footer {
     display: flex;
-    gap: 6px;
+    gap: var(--space-2);
     justify-content: flex-end;
-  }
-
-  .ledger-action-btn {
-    border: 1px solid var(--glass-border);
-    background: var(--canvas-selection);
-    color: var(--glass-text);
-    padding: 5px 10px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .ledger-action-btn.primary {
-    background: var(--accent);
-    color: var(--laser-core);
   }
 
   .library-card {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 8px;
-    border-bottom: 1px solid var(--glass-border);
+    gap: var(--space-2);
+    padding: var(--space-2);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
   }
 
   .lib-meta {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    min-width: 0;
   }
 
   .lib-title {
@@ -965,39 +797,19 @@
   }
 
   .lib-sub {
-    font-size: 10px;
+    font-size: var(--font-size-caption);
     opacity: 0.7;
-  }
-
-  .studio-modal-card {
-    position: absolute;
-    top: 130px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 175;
-    width: 340px;
-    padding: 14px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    border-radius: 14px;
-    color: var(--glass-text);
-    pointer-events: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
   }
 
   .labs-badge {
     display: inline-block;
-    margin-left: 4px;
-    font-size: 9px;
+    margin-left: var(--space-1);
+    font-size: var(--font-size-caption);
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    padding: 1px 5px;
-    border-radius: 999px;
+    padding: 1px var(--space-1);
+    border-radius: var(--radius-pill);
     border: 1px solid var(--accent);
     color: var(--accent);
     vertical-align: middle;
@@ -1005,7 +817,7 @@
 
   .labs-note {
     margin: 0;
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     line-height: 1.4;
     opacity: 0.8;
   }
@@ -1014,59 +826,46 @@
   .sig-pad {
     background: var(--canvas-bg);
     border: 1px solid var(--glass-border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px;
+    padding: var(--space-2);
   }
 
   .sig-pad-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    font-size: 11px;
+    gap: var(--space-2);
+    font-size: var(--font-size-caption);
   }
 
   .sig-hint {
     opacity: 0.8;
   }
 
-  .webcam-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 11px;
-  }
-
-  .thresh-label {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
   .sig-img-preview {
     max-width: 180px;
     height: 56px;
     border: 1px dashed var(--accent);
-    border-radius: 6px;
+    border-radius: var(--radius-xs);
   }
 
   .waveform-bars {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: var(--space-1);
     height: 44px;
     background: var(--canvas-bg);
     border: 1px solid var(--glass-border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
   }
 
   .wave-bar {
-    width: 5px;
+    width: var(--space-1);
     background: var(--measure-line);
-    border-radius: 3px;
+    border-radius: var(--radius-xs);
   }
 </style>

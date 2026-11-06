@@ -23,6 +23,8 @@
       /** Tab pattern: pass role="tab" with `selected` (aria-selected). */
       role?: 'tab';
       selected?: boolean;
+      /** Accessible name when the content is decorated (badges, glyphs). */
+      ariaLabel?: string;
       /** Native tooltip text (use for extra detail; the accessible name still comes from the children). */
       title?: string;
       /** Extra data-* attributes for the native button (other keys are ignored). */
@@ -45,6 +47,7 @@
     role,
     selected,
     title,
+    ariaLabel,
     attrs,
     class: klass = '',
     'data-testid': testid,
@@ -83,6 +86,7 @@
     {role}
     aria-selected={role === 'tab' ? !!selected : undefined}
     {title}
+    aria-label={ariaLabel}
     aria-disabled={disabled || undefined}
     aria-busy={busy || undefined}
     aria-describedby={disabled ? tipId : undefined}

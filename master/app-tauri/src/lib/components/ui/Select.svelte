@@ -7,12 +7,15 @@
       value: string;
       label: string;
       options: { value: string; label: string }[];
+      /** Visually hide the label (compact toolbars); it still names the control for assistive tech. */
+      hideLabel?: boolean;
     };
 
   let {
     value = $bindable(),
     label,
     options,
+    hideLabel = false,
     disabled = false,
     disabledReason,
     class: klass = '',
@@ -26,7 +29,7 @@
 </script>
 
 <div class="lp-field lp-tipwrap {klass}">
-  <label class="lp-label" for={selectId}>{label}</label>
+  <label class="lp-label" class:lp-sr-only={hideLabel} for={selectId}>{label}</label>
   <select
     id={selectId}
     class="lp-select"
@@ -44,6 +47,7 @@
 
 <style>
   .lp-field { position: relative; display: flex; flex-direction: column; gap: var(--space-1); }
+  .lp-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .lp-label { font-size: var(--font-size-footnote); font-weight: 600; color: var(--text-secondary); }
   .lp-select {
     font: inherit;

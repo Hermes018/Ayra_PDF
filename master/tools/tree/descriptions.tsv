@@ -625,3 +625,5 @@ master/e2e/flows/flow18_sweep_studio_panels.py	E2E smoke (sweep): calibration di
 master/e2e/flows/flow19_sweep_toolbar.py	E2E smoke (sweep): dockable toolbar, radial menu and measure overlay, light/dark screenshots at 2 sizes, no console errors
 master/app-tauri/src/lib/components/studio/CalibrationModal.test.ts	Tests: calibration dialog asks "Discard calibration?" on Escape/backdrop only when values changed
 master/app-tauri/src/lib/core/commandEngine.capture.test.ts	Tests: Escape during chord capture cancels capture only (characterization + fix)
+master/e2e/flows/flow20_sweep_ledger.py	E2E smoke (sweep): annotation ledger and its dialogs, light/dark screenshots at 2 sizes, no console errors
+master/app-tauri/src/lib/components/studio/AnnotationLedger.audio.test.ts	Tests: closing the audio-note dialog while recording asks "Discard recording?"; discard stops the recorder and mic

@@ -153,6 +153,7 @@ master/
 │   │   │   │   └── WatermarkSettings.ts                      # Generated type: watermark settings
 │   │   │   ├── components/                                   # Shared UI components
 │   │   │   │   ├── studio/                                   # Components of the spatial "Studio" editor
+│   │   │   │   │   ├── AnnotationLedger.audio.test.ts        # Tests: closing the audio-note dialog while recording asks "Discard recording?"; discard stops the recorder and mic
 │   │   │   │   │   ├── AnnotationLedger.svelte               # Side drawer: annotation list, takeoff CSV, markup library, LaTeX/signature/audio dialogs
 │   │   │   │   │   ├── CalibrationModal.svelte               # Set a page's drawing scale for measurements
 │   │   │   │   │   ├── CalibrationModal.test.ts              # Tests: calibration dialog asks "Discard calibration?" on Escape/backdrop only when values changed
@@ -501,7 +502,8 @@ master/
 │   │   ├── flow16_sweep_overlays.py                          # E2E smoke (sweep): toasts and the FAQ dialog, light/dark screenshots at 2 sizes, no console errors
 │   │   ├── flow17_sweep_studio_docs.py                       # E2E smoke (sweep): document tabs, favourites bar and split layout, light/dark screenshots at 2 sizes, no console errors
 │   │   ├── flow18_sweep_studio_panels.py                     # E2E smoke (sweep): calibration dialog and shortcut settings, light/dark screenshots at 2 sizes, no console errors
-│   │   └── flow19_sweep_toolbar.py                           # E2E smoke (sweep): dockable toolbar, radial menu and measure overlay, light/dark screenshots at 2 sizes, no console errors
+│   │   ├── flow19_sweep_toolbar.py                           # E2E smoke (sweep): dockable toolbar, radial menu and measure overlay, light/dark screenshots at 2 sizes, no console errors
+│   │   └── flow20_sweep_ledger.py                            # E2E smoke (sweep): annotation ledger and its dialogs, light/dark screenshots at 2 sizes, no console errors
 │   ├── .gitignore                                            # Ignores e2e/out/ (reports, screenshots, copied binary)
 │   ├── common.py                                             # Ground-truth helpers (poppler/qpdf/hashes), process sampling, isolation (private D-Bus/XDG)
 │   ├── pkg_smoke.py                                          # Clean-user install smoke test for rpm/deb/AppImage (flows 1-2 against the packaged binary, fresh HOME)

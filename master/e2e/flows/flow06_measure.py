@@ -101,7 +101,7 @@ def run(flow):
     csv_path = os.path.splitext(path)[0] + ".takeoff.csv"
     if os.path.exists(csv_path):
         os.remove(csv_path)
-    clicked = app.click_button("Export Takeoff (CSV)")
+    clicked = app.click_button("Export takeoff (CSV)")
     for _ in range(50):
         if os.path.exists(csv_path):
             break

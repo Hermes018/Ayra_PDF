@@ -13,6 +13,8 @@
     /** 'sheet' docks to the bottom edge; 'dialog' is centred; 'alert' is a centred destructive/blocking confirm
      * (role=alertdialog, the body is its description). */
     variant?: 'dialog' | 'sheet' | 'alert';
+    /** Optional aria-label attribute kept alongside the title (stable hook for automation). */
+    ariaLabel?: string;
   };
 
   let {
@@ -22,6 +24,7 @@
     children,
     actions,
     variant = 'dialog',
+    ariaLabel,
     class: klass = '',
     'data-testid': testid,
   }: Props = $props();
@@ -101,6 +104,7 @@
       role={variant === 'alert' ? 'alertdialog' : 'dialog'}
       aria-modal="true"
       aria-labelledby={titleId}
+      aria-label={ariaLabel}
       aria-describedby={variant === 'alert' ? bodyId : undefined}
       tabindex="-1"
       data-testid={testid}

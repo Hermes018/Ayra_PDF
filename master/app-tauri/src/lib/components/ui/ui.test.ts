@@ -109,6 +109,10 @@ describe('Button', () => {
     expect(t).not.toHaveAttribute('aria-current');
     expect(t).toHaveAttribute('data-path', '/x'); // data-* still passes through
   });
+  it('ariaLabel names a button whose content is decorated (badge) and wins over the text', () => {
+    render(Button, { variant: 'secondary', ariaLabel: 'Guess text from ink (Labs)', onclick: () => {}, children: text('Guess text Labs') });
+    expect(screen.getByRole('button', { name: 'Guess text from ink (Labs)' })).toBeInTheDocument();
+  });
   it('disabled: ignores clicks, stays focusable, exposes the reason via aria-describedby', async () => {
     const onclick = vi.fn();
     render(Button, { variant: 'primary', onclick, disabled: true, disabledReason: 'Open a PDF to enable Save', children: text('Save') });
@@ -169,6 +173,41 @@ describe('IconButton', () => {
     expect(describedText(b)).toContain('Nothing to undo');
     await fireEvent.click(b);
     expect(onclick).not.toHaveBeenCalled();
+  });
+});
+
+describe('hidden-label (compact toolbar) variants', () => {
+  it('Select hideLabel: still labelled for assistive tech, label visually hidden', () => {
+    render(Select, { value: 'a', label: 'Sort by', hideLabel: true, options: [{ value: 'a', label: 'A' }] });
+    const sel = screen.getByLabelText('Sort by');
+    expect(sel.tagName).toBe('SELECT');
+    expect(document.querySelector('label.lp-label')).toHaveClass('lp-sr-only');
+  });
+  it('Input hideLabel: still labelled, label visually hidden', () => {
+    render(Input, { value: '', label: 'Filter markups', hideLabel: true, type: 'search' });
+    expect(screen.getByLabelText('Filter markups')).toHaveAttribute('type', 'search');
+    expect(document.querySelector('label.lp-label')).toHaveClass('lp-sr-only');
+  });
+  it('Input range: min / max / value, and onchange fires on release', async () => {
+    const onchange = vi.fn();
+    render(Input, { value: '120', label: 'Threshold', type: 'range', min: 60, max: 230, onchange });
+    const r = screen.getByLabelText('Threshold') as HTMLInputElement;
+    expect(r.type).toBe('range');
+    expect(r.min).toBe('60');
+    expect(r.max).toBe('230');
+    await fireEvent.change(r, { target: { value: '150' } });
+    expect(onchange).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Input autocomplete', () => {
+  it('passes autocomplete through to the native input', () => {
+    render(Input, { value: '', label: 'Document password', type: 'password', autocomplete: 'off' });
+    expect(screen.getByLabelText('Document password')).toHaveAttribute('autocomplete', 'off');
+  });
+  it('has no autocomplete attribute unless asked', () => {
+    render(Input, { value: '', label: 'Name' });
+    expect(screen.getByLabelText('Name')).not.toHaveAttribute('autocomplete');
   });
 });
 
@@ -260,6 +299,10 @@ describe('Dialog', () => {
     expect(body).not.toBeNull();
     expect(body).toHaveTextContent('This removes them from the new file.');
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+  it('ariaLabel is passed through as an attribute (stable test / automation hook)', () => {
+    mount({ ariaLabel: 'Signature Capture Modal' });
+    expect(document.querySelector('[aria-label="Signature Capture Modal"]')).toHaveAttribute('role', 'dialog');
   });
   it('plain dialog has no aria-describedby', () => {
     mount();

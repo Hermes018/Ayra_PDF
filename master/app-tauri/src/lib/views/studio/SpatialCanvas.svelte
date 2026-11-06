@@ -32,6 +32,9 @@
   import defaultPresets from '$lib/core/defaultPresets.json';
   import DockableToolbar from '$lib/components/studio/DockableToolbar.svelte';
   import PropertyPill from '$lib/components/studio/PropertyPill.svelte';
+  import Dialog from '$lib/components/ui/Dialog.svelte';
+  import Button from '$lib/components/ui/Button.svelte';
+  import Input from '$lib/components/ui/Input.svelte';
   import RadialMenu from '$lib/components/studio/RadialMenu.svelte';
   import ShortcutSettings from '$lib/components/studio/ShortcutSettings.svelte';
   import FavoritesBar from '$lib/components/studio/FavoritesBar.svelte';
@@ -1756,38 +1759,39 @@
   {/if}
 
   {#if passwordPrompt}
-    <div class="modal-backdrop" role="presentation">
+    <!-- Keeps canvas pointer gestures from starting under the dialog. -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div onpointerdown={(e) => e.stopPropagation()}>
       <form
-        class="pdf-password-dialog glass-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Password required"
-        data-testid="pdf-password-dialog"
         onsubmit={(e) => {
           e.preventDefault();
           finishPasswordPrompt(true);
         }}
       >
-        <strong>Password required</strong>
-        <span>"{passwordPrompt.fileName}" is encrypted. Enter its password to open it.</span>
-        <!-- svelte-ignore a11y_autofocus -->
-        <input
-          type="password"
-          autocomplete="off"
-          autofocus
-          aria-label="Document password"
-          data-testid="pdf-password-input"
-          bind:value={passwordValue}
-        />
-        {#if passwordPrompt.incorrect}
-          <span class="pdf-password-error" role="alert" data-testid="pdf-password-error">Incorrect password. Try again.</span>
-        {/if}
-        <div class="pdf-password-actions">
-          <button type="button" class="top-btn" data-testid="pdf-password-cancel" onclick={() => finishPasswordPrompt(false)}>
-            Cancel
-          </button>
-          <button type="submit" class="top-btn primary-btn" data-testid="pdf-password-submit">Open</button>
-        </div>
+        <!-- Presentation only (ui/Dialog sits above every toolbar layer): same prompt, same retry and cancel paths. -->
+        <Dialog
+          open={true}
+          title="Password required"
+          ariaLabel="Password required"
+          onclose={() => finishPasswordPrompt(false)}
+          data-testid="pdf-password-dialog"
+        >
+          <p class="pdf-password-text">"{passwordPrompt.fileName}" is encrypted. Enter its password to open it.</p>
+          <Input
+            type="password"
+            label="Document password"
+            autocomplete="off"
+            bind:value={passwordValue}
+            data-testid="pdf-password-input"
+          />
+          {#if passwordPrompt.incorrect}
+            <span class="pdf-password-error" role="alert" data-testid="pdf-password-error">Incorrect password. Try again.</span>
+          {/if}
+          {#snippet actions()}
+            <Button variant="secondary" data-testid="pdf-password-cancel" onclick={() => finishPasswordPrompt(false)}>Cancel</Button>
+            <Button variant="primary" type="submit" data-testid="pdf-password-submit" onclick={() => {}}>Open</Button>
+          {/snippet}
+        </Dialog>
       </form>
     </div>
   {/if}
@@ -2516,41 +2520,13 @@
     z-index: 5;
   }
 
-  .pdf-password-dialog {
-    position: absolute;
-    top: 120px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 200;
-    width: 340px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 16px;
-    border-radius: 12px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    color: var(--glass-text);
-    pointer-events: auto;
-  }
-
-  .pdf-password-dialog input {
-    padding: 6px 8px;
-    border-radius: 6px;
-    border: 1px solid var(--glass-border);
-    background: var(--canvas-bg);
-    color: var(--glass-text);
+  .pdf-password-text {
+    margin: 0;
   }
 
   .pdf-password-error {
     color: var(--danger);
-    font-size: 12px;
-  }
-
-  .pdf-password-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
+    font-size: var(--font-size-footnote);
   }
 
   .wet-layer {
