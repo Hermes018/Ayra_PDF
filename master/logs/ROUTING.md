@@ -93,4 +93,6 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 13:42 | review+verify (combined) | g13 + BUG-057 (secrets sweep) | opus/high | ok | | GREEN; found BUG-058 password in debug log |
 | 2026-11-06 13:46 | fixes-build | BUG-058 secrets redaction (+ wording, opacity limits, temp test) | sonnet/medium | ok | | encrypted-open password not listed → opus checks |
 | 2026-11-06 13:52 | review+verify (combined) | BUG-058 secrets (all password holders, log path, flow 2 grep) | opus/high | ok | | no leaks; owner logs clean |
-| 2026-11-06 13:57 | fixes-build | sweep group 14 (AiSummarize, Batch, Settings) — last | sonnet/medium | running | | hard stop 16:45 |
+| 2026-11-06 13:57 | fixes-build | sweep group 14 (AiSummarize, Batch, Settings) — last | sonnet/medium | ok | | inventory 0 in 52 files |
+| 2026-11-06 14:06 | review+verify (combined) | g14 (Settings persistence, Batch/AI honesty, audit 0) | opus/high | running | | atomic writes |
+| 2026-11-06 14:06 | visual review | final sweep screenshots | sonnet/medium | running | | images only |
