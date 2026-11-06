@@ -22,7 +22,7 @@ Updated: 2026-11-06 07:05 Asia/Dhaka by the lead. If this disagrees with logs/ST
 | ~/Desktop/Ayra_PDF (main) | main | 7dc56c8 engines CP1 (tag engines-cp1-green) | logs | lead: coordinating merges; Fri 08:00 report | lead |
 | ~/Desktop/Ayra_PDF-wt/engines | wt/engines | 7dc56c8 (merged) | none | **RUNNING** CP2b: parity hardening, THIRD_PARTY_NOTICES, doc fixes, default-switch diff prepared but not flipped, BUG-023/024/010/018 backend, path_exists IPC, delete organizing-intermediate | engines builder |
 | ~/Desktop/Ayra_PDF-wt/fixes | wt/fixes | ed3b5a2 | P0 round 2 staged (33 files); round 3 review FAIL (new-canvas stale merge) | **RUNNING** round 4: structural session store; split view → Labs (KI-004); fallback single-doc | fixes builder |
-| ~/Desktop/Ayra_PDF-wt/release | wt/release | 81ae676 | checkpoint 1 staged; verifier PASS, reviewer FAIL (4 major harness issues) | **RUNNING**: harness fixes, then checkpoint 2 packaging | release builder |
+| ~/Desktop/Ayra_PDF-wt/release | wt/release | 81ae676 | CP1+CP2 staged (27 files): harness fixed; rpm/deb/AppImage; E2E offline 3P+1SP/7F/1B | fresh reviewer + verifier RUNNING | idle / release builder |
 | ~/Desktop/Ayra_PDF-wt/android | track/android | 644caf3 ADR-019 DRAFT | none | paused | paused |
 
 **Running subagents:** 4 review agents (fixes reviewer+verifier, engines reviewer+verifier); release builder (harness fixes). The fixes and engines builders are idle awaiting merge.
