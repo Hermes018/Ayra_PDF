@@ -21,7 +21,7 @@ Updated: 2026-11-06 07:05 Asia/Dhaka by the lead. If this disagrees with logs/ST
 |---|---|---|---|---|---|
 | ~/Desktop/Ayra_PDF (main) | main | 7dc56c8 engines CP1 (tag engines-cp1-green) | logs | lead: coordinating merges; Fri 08:00 report | lead |
 | ~/Desktop/Ayra_PDF-wt/engines | wt/engines | 7dc56c8 (merged) | none | **RUNNING** CP2b: parity hardening, THIRD_PARTY_NOTICES, doc fixes, default-switch diff prepared but not flipped, BUG-023/024/010/018 backend, path_exists IPC, delete organizing-intermediate | engines builder |
-| ~/Desktop/Ayra_PDF-wt/fixes | wt/fixes | ed3b5a2 | P0 round 2 staged (33 files); review FAIL (tab switch mid-render loses markups) | **RUNNING** round 3 | fixes builder |
+| ~/Desktop/Ayra_PDF-wt/fixes | wt/fixes | ed3b5a2 | P0 round 2 staged (33 files); round 3 staged (35 files); builder verify GREEN, vitest 216 | fresh reviewer + verifier RUNNING | idle / fixes builder |
 | ~/Desktop/Ayra_PDF-wt/release | wt/release | 81ae676 | checkpoint 1 staged; verifier PASS, reviewer FAIL (4 major harness issues) | **RUNNING**: harness fixes, then checkpoint 2 packaging | release builder |
 | ~/Desktop/Ayra_PDF-wt/android | track/android | 644caf3 ADR-019 DRAFT | none | paused | paused |
 
