@@ -169,3 +169,9 @@
 - 2026-11-06T10:09:35+06:00 SubagentStop reviewer#a0599463 session=c9df49d5 cwd=Ayra_PDF
 - 2026-11-06T10:09:42+06:00 Stop lead session=c9df49d5 cwd=Ayra_PDF
 - 2026-11-06T10:10:22+06:00 SubagentStop reviewer#a0599463 session=c9df49d5 cwd=Ayra_PDF
+- 2026-11-06T10:11:17+06:00 Stop lead session=c9df49d5 cwd=Ayra_PDF
+- 2026-11-06T10:20:28+06:00 SubagentStop fixes-builder#aa06605b session=c9df49d5 cwd=Ayra_PDF
+- 2026-11-06T10:21:08+06:00 Stop lead session=c9df49d5 cwd=Ayra_PDF
+- 2026-11-06T10:21:20+06:00 SubagentStop reviewer#adf0fded session=c9df49d5 cwd=Ayra_PDF
+- 2026-11-06T10:21:29+06:00 Stop lead session=c9df49d5 cwd=Ayra_PDF
+- 2026-11-06T10:24:18+06:00 SubagentStop merge-verifier#a79d6800 session=c9df49d5 cwd=Ayra_PDF
