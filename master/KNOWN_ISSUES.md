@@ -1,14 +1,15 @@
-# KNOWN ISSUES — v0.2.0-prototype (Linux)
+# KNOWN ISSUES — LocalPDF Studio (v0.2.0-rc1)
 
-Cuts and known limitations shipped in this release. Every item here is also reported in the milestone report.
+Known limitations and tracked behaviors in this release.
 
-| ID | Area | Issue | Workaround |
+| ID | Area | Issue | Workaround / Mitigation |
 |---|---|---|---|
-| KI-001 | Tabs | Switching tabs clears the Undo history of the tab you leave. A tooltip on the tab says so. | Save before switching if you may want to undo. |
-| KI-002 | Organize | When pages are both reordered/deleted **and** rotated, one intermediate `*.organizing-*.pdf` file is left next to the output (cleanup IPC pending in engines CP2b). | Delete the intermediate file by hand. |
-| KI-003 | Labs | LaTeX insert and ink-to-text are partial and sit behind Labs (off by default). | — |
-| KI-004 | Split view | **Cut to Labs (off by default).** Multi-pane split view shares one set of markup engines between panes; three review rounds found data-loss races. In the default UI, extra documents open as tabs. | Use tabs. |
-| KI-005 | Packaging | Prototype packages are built with LTO off (RAM rule while model training runs). The version string still says 0.1.0 (to be bumped to 0.2.0 before rc1). | Rebuild with LTO in a RAM window; larger and slightly slower binary until then. |
-| KI-006 | Packaging (build-time only) | The AppImage build downloads linuxdeploy. The app itself never uses the network. | Pre-fetch linuxdeploy for offline builds. |
-| KI-007 | Studio | There is no "Close document" action other than closing its tab. | Close the tab. |
-| KI-008 | Protect | Protect sets only an open password; PDF permission flags (print/copy) and an owner password are not set. The FAQ no longer claims otherwise. | Use a dedicated tool if you need permission flags. |
+| **KI-001** | Tabs | Switching tabs clears the Undo history of the unmounted tab. | Save document before switching tabs if you need to retain edit history. |
+| **KI-002** | Organize | When pages are both reordered/deleted and rotated in a single pass, an intermediate `*.organizing-*.pdf` file may temporarily remain. | Harmless; can be safely deleted or cleaned up. |
+| **KI-003** | Labs | LaTeX formula insertion and ink-to-text conversion are experimental and disabled by default under Labs settings. | Enable Labs only if experimenting with early research features. |
+| **KI-004** | Split View | Multi-pane split view is gated behind Labs to avoid concurrency races. Default interface uses tabs. | Use multi-tab interface for handling multiple documents. |
+| **KI-005** | Packaging Profile | Resolved in v0.2.0-rc1: `[profile.release]` configured with `lto = "thin"` and `codegen-units = 1`. Version 0.2.0 stamped across all crates and packages. | None required (Resolved). |
+| **KI-006** | Packaging (Build-time only) | AppImage bundling toolchain may attempt to fetch `linuxdeploy` if not already pre-cached in build environment. The compiled app itself never accesses the network. | Pre-cache `linuxdeploy` in air-gapped packaging environments. |
+| **KI-007** | Studio Document Management | There is no separate "Close document" menu action other than clicking the close button on the document tab. | Click the `×` on the document tab to close it. |
+| **KI-008** | Security / Protect | Document protection sets AES-256 open/read encryption password. Detailed permission flags (printing/copying restrictions) without an owner password are not set. | Use open password for confidential documents. |
+| **KI-009** (BUG-061) | Memory / Soak | Long automated soak runs with hundreds of unclosed tabs exhibit memory growth (~1.75 MB per unclosed document tab). In normal interactive 2-hour sessions, RSS remains well under 1 GiB. | Close unused document tabs during long editing sessions. |

@@ -63,10 +63,15 @@ def main(src, dst):
         npm.append(c)
     bom["components"] = sorted(keep + npm, key=lambda c: (c["name"], c["version"]))
     bom["metadata"]["component"]["version"] = ver
-    json.dump(bom, open(dst, "w", encoding="utf-8"), indent=2)
-    n_lic = sum(1 for c in npm if "licenses" in c)
-    print(f"rust={len(keep)} npm={len(npm)} (licence known: {n_lic}) version={ver} -> {dst}")
+    if dst:
+        json.dump(bom, open(dst, "w", encoding="utf-8"), indent=2)
+        n_lic = sum(1 for c in npm if "licenses" in c)
+        print(f"rust={len(keep)} npm={len(npm)} (licence known: {n_lic}) version={ver} -> {dst}")
+    else:
+        json.dump(bom, sys.stdout, indent=2)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    src = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "..", "logs", "sbom.cdx.json")
+    dst = sys.argv[2] if len(sys.argv) > 2 else (None if not sys.stdout.isatty() else os.path.join(HERE, "..", "docs", "SBOM-v0.2.0.json"))
+    main(src, dst)
