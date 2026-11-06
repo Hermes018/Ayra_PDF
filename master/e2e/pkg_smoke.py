@@ -136,14 +136,17 @@ def judge(rc, timed_out, report):
         return "FAIL", f"run.py exited {rc} (crash/abort, not a test verdict)"
     if not report:
         return "FAIL", "no report.json"
-    flows = {r["flow"]: r["status"] for r in report.get("flows", [])}
+    try:
+        flows = {r["flow"]: r["status"] for r in report.get("flows", [])}
+    except (AttributeError, KeyError, TypeError):
+        return "FAIL", "malformed report.json"
     missing = [n for n in (1, 2) if n not in flows]
     if missing:
         return "FAIL", f"flows missing from report: {missing}"
     if rc == 0 and not all(v == "PASS" for v in flows.values()):
         return "FAIL", "exit 0 but non-PASS flows (inconsistent report)"
     if rc == 1 and all(v == "PASS" for v in flows.values()):
-        return "FAIL", "exit 1 with all flows PASS (inconsistent report)"
+        return "FAIL", "flaky retry (run.py exit 1, every flow PASS): not a clean PASS"
     statuses = list(flows.values())
     if "FAIL" in statuses or any(v not in ("PASS", "BLOCKED") for v in statuses):
         return "FAIL", f"flows {flows}"
@@ -177,7 +180,14 @@ def main():
     pats = {"rpm": "rpm/*.rpm", "deb": "deb/*.deb", "appimage": "appimage/*.AppImage"}
     summary = {"bundle_dir": a.bundle_dir, "packages": []}
     os.makedirs(OUT, exist_ok=True)
-    for kind in [k.strip() for k in a.kinds.split(",") if k.strip()]:
+    kinds = [k.strip() for k in a.kinds.split(",") if k.strip()]
+    bad = [k for k in kinds if k not in pats]
+    if bad or not kinds:
+        reason = f"unknown --kinds {bad}; valid: {sorted(pats)}" if bad else "no --kinds given"
+        summary["packages"].append({"kind": ",".join(bad) or "-", "status": "FAIL", "why": reason})
+        print("FAIL:", reason)
+        kinds = []
+    for kind in kinds:
         hits = sorted(glob.glob(os.path.join(a.bundle_dir, pats[kind])), key=os.path.getmtime)
         entry = {"kind": kind, "package": hits[-1] if hits else None}
         summary["packages"].append(entry)
@@ -221,18 +231,30 @@ def main():
             os.killpg(proc.pid, signal.SIGKILL)
             stdout, stderr = proc.communicate()
         # Always reap by the env marker: tauri-driver lives in its own session.
-        killed = reap(f"LPDF_E2E_PACKAGE={marker_val}".encode())
-        entry["reaped_pids"] = killed
+        reap_err = None
+        try:
+            entry["reaped_pids"] = reap(f"LPDF_E2E_PACKAGE={marker_val}".encode())
+        except RuntimeError as e:
+            reap_err = str(e)
+            entry["reaped_pids"] = []
         print("\n".join("   " + ln for ln in stdout.splitlines() if ln.startswith(("==", "    ["))))
         try:
             with open(os.path.join(work, "e2e", "report.json")) as f:
                 rep = json.load(f)
+            if not isinstance(rep, dict):
+                rep = {"flows": 0}
         except (OSError, ValueError):
             rep = None
         entry["run_rc"] = proc.returncode
-        entry["flows"] = {r["flow"]: {"status": r["status"], "reason": r["reason"][:300]}
-                          for r in (rep or {}).get("flows", [])}
+        try:
+            entry["flows"] = {r["flow"]: {"status": r["status"], "reason": str(r.get("reason", ""))[:300]}
+                              for r in (rep or {}).get("flows", [])}
+        except (AttributeError, KeyError, TypeError):
+            entry["flows"] = {}
+            rep = {"flows": 0}  # forces judge() to report a malformed report
         verdict, why = judge(proc.returncode, timed_out, rep)
+        if reap_err:
+            verdict, why = "FAIL", f"reap failed: {reap_err}"
         if not all(entry["contents"].values()):
             verdict, why = "FAIL", "package contents check failed"
         entry["status"], entry["why"] = verdict, why

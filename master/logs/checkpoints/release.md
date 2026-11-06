@@ -1,4 +1,5 @@
 # checkpoints/release.md — release builder (wt/release). Builder keeps this current; < 150 lines.
+- **Round-3 follow-ups (lead):** done+light-tested: pkg_smoke reap error->FAIL w/ summary, 'flaky retry' reason, malformed report/unknown --kinds -> FAIL; build-appimage cargo --locked --offline; CHANGELOG (not E2E-tested) x2. Offline AppImage proof (item 4) STILL RUNNING (compile phase, ~8h, not yet at bundling): run.sh job appimage-offline-proof, log master/logs/runs/appimage-offline-proof.log. Check the log for 'download'/'Network' errors vs a produced .AppImage; KI-006 stays UNPROVEN until then. verify.sh skipped (no checked Rust/web files touched).
 - **Task:** release-review round 2 (4 majors + 5 minors, lead 2026-11-06) DONE in code, each tested
   light; `verify.sh` running (LPDF_PRIO=other). No full E2E re-run (lead schedules it after P0 merges).
 - **Round-2 fixes:** pkg_smoke verdict needs run.py rc in {0,1} + flows 1 AND 2 in the report (+ consistency),

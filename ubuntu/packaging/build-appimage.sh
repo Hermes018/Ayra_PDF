@@ -91,7 +91,7 @@ command -v pnpm >/dev/null || { echo "pnpm not on PATH: run 'corepack enable' on
 install_tools
 
 cd "$MASTER"
-"$RUN" appimage-cargo cargo build --release -p lpdf-cli -p lpdf-worker
+"$RUN" appimage-cargo cargo build --locked --offline --release -p lpdf-cli -p lpdf-worker
 # Offline install from the existing pnpm store, exactly the locked versions.
 "$RUN" appimage-pnpm-install corepack pnpm --dir app-tauri install --offline --frozen-lockfile
 # NO_STRIP: linuxdeploy's bundled (older) strip is known to fail on newer distro libraries
