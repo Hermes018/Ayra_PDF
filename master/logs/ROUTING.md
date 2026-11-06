@@ -15,3 +15,4 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 07:54 | fixes-build | fixes R5 golden+polyline test | opus/high (legacy) | ok | | |
 | 2026-11-06 07:54 | reviewer | fixes R5 | sonnet/medium | ok | | |
 | 2026-11-06 07:54 | merge-verify | fixes R5 (save path) | opus/high | ok | | |
+| 2026-11-06 08:00 | status-snapshot | routing proof after restart | haiku (agent file) | ok | | requestedModel=claude-haiku-5-5 ×4; effort=medium (inherited from ~/.claude/settings.json effortLevel; no effort field in file) |
