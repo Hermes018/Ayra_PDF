@@ -19,6 +19,7 @@
       /** For type="range". */
       min?: number;
       max?: number;
+      step?: number | 'any';
       /** Native change event (fires on commit / release). */
       onchange?: () => void;
     };
@@ -35,6 +36,7 @@
     autocomplete,
     min,
     max,
+    step,
     onchange,
     disabled = false,
     disabledReason,
@@ -64,6 +66,7 @@
     {autocomplete}
     {min}
     {max}
+    {step}
     {onchange}
     {disabled}
     bind:value

@@ -187,6 +187,10 @@
             executionMessage = 'Workflow must contain at least one transformation step.';
             return;
         }
+        if (activeSteps.some((st) => st.type === 'Watermark' && (!(st.settings.opacity >= 0.1) || st.settings.opacity > 1))) {
+            executionMessage = 'Watermark opacity must be between 0.1 and 1.';
+            return;
+        }
         if (activeSteps.some((st) => st.type === 'Protect' && !st.password)) {
             executionMessage = 'Enter a password for the Protect step before running the workflow.';
             return;
@@ -353,7 +357,7 @@
                                 {:else if step.type === 'Watermark'}
                                     <div class="field-row">
                                         <Input label="Watermark text" placeholder="CONFIDENTIAL" data-testid="watermark-text-input" bind:value={step.settings.text} />
-                                        <Input type="number" label="Opacity" bind:value={() => String(step.settings.opacity), (v) => (step.settings.opacity = parseNumberOr(v, 0.35))} />
+                                        <Input type="number" label="Opacity" min={0.1} max={1} step={0.05} bind:value={() => String(step.settings.opacity), (v) => (step.settings.opacity = parseNumberOr(v, 0.35))} />
                                     </div>
                                 {:else if step.type === 'Protect'}
                                     <div class="field-row">

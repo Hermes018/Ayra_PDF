@@ -68,3 +68,22 @@ describe('Pipelines Protect step', () => {
         expect(req.steps.find((s) => s.type === 'Protect')?.password).toBe('my-own-pw');
     });
 });
+
+describe('Pipelines watermark opacity limits (0.1 to 1)', () => {
+    test('the field carries min 0.1 / max 1 and an out-of-range value is refused', async () => {
+        const submit = vi.spyOn(IpcClient, 'submitJob').mockResolvedValue('job-1');
+        render(PipelinesView);
+        await fireEvent.change(screen.getByTestId('select-new-step'), { target: { value: 'Watermark' } });
+        await click(screen.getByTestId('btn-add-step'));
+        const o = screen.getByLabelText('Opacity') as HTMLInputElement;
+        expect(o).toHaveAttribute('min', '0.1');
+        expect(o).toHaveAttribute('max', '1');
+        await fireEvent.input(o, { target: { value: '3' } });
+        await click(screen.getByTestId('btn-run-workflow'));
+        expect(submit).not.toHaveBeenCalled();
+        expect(screen.getByTestId('execution-message')).toHaveTextContent(/between 0\.1 and 1/);
+        await fireEvent.input(o, { target: { value: '0.5' } });
+        await click(screen.getByTestId('btn-run-workflow'));
+        expect(submit).toHaveBeenCalledTimes(1);
+    });
+});

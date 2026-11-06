@@ -659,3 +659,7 @@ master/app-tauri/src/lib/views/__tests__/StaleNotices.test.ts	Tests: a new actio
 master/app-tauri/src/lib/components/PdfViewerLayout.test.ts	Tests: PdfViewer is not clipped inside tool views (left edge)
 master/crates/lpdf-engine-pdfcraft/tests/redact_page_tests.rs	Tests (BUG-053): redact refuses page 0 / > count / invalid regions (typed errors, nothing written); page N redacted, other pages intact (per-page text)
 master/app-tauri/src/lib/views/__tests__/PipelinesProtect.test.ts	Tests (BUG-057): Pipelines Protect step starts with no password, refuses an empty one, autocomplete off
+master/app-tauri/src/lib/views/__tests__/MarkdownWording.test.ts	Tests: Markdown view wording matches what each operation does (new file vs. replace)
+master/app-tauri/src/lib/views/__tests__/NoPasswordInConsole.test.ts	Tests (BUG-058): no console call ever contains an entered password
+master/crates/lpdf-core-types/src/secret.rs	Secret: wrapper for passwords and other secrets; Debug/Display print [redacted]; value only via expose()
+master/crates/lpdf-jobs/tests/secret_redaction_tests.rs	Tests (BUG-058): passwords absent from Debug, Display, Progress events, log lines and the job list

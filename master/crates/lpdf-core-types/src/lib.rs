@@ -2,6 +2,7 @@
 
 pub mod config;
 pub mod error;
+pub mod secret;
 
 pub use config::{
     compute_sha256_hex, compute_sha256_hex_from_reader, inspect_ai_model, AiModelInfo,
@@ -9,3 +10,4 @@ pub use config::{
     ThemePreference,
 };
 pub use error::{LpdfError, Result};
+pub use secret::Secret;

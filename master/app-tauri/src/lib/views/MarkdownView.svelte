@@ -315,7 +315,7 @@
                     <li><strong>Runs locally:</strong> Pandoc and the built-in engine convert on this computer with no network calls.</li>
                     <li><strong>Asset isolation:</strong> Embedded images are extracted into an `assets/` subfolder.</li>
                     <li><strong>Front-matter:</strong> Generates Obsidian/Hugo-compatible YAML front-matter blocks.</li>
-                    <li><strong>Safe writes:</strong> Existing files are never overwritten; a new name is used.</li>
+                    <li><strong>Safe writes:</strong> Single-file conversions never overwrite an existing file; they use a new name. A folder batch writes into the folder you choose.</li>
                 </ul>
             </div>
         </div>

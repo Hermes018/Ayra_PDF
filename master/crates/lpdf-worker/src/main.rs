@@ -225,7 +225,7 @@ fn execute_request(request: &JobRequest) -> Result<String, String> {
             engine
                 .protect(
                     Path::new(input_path),
-                    password,
+                    password.expose(),
                     permissions.clone(),
                     Path::new(output_path),
                 )
@@ -238,7 +238,11 @@ fn execute_request(request: &JobRequest) -> Result<String, String> {
             password,
         } => {
             engine
-                .unlock(Path::new(input_path), password, Path::new(output_path))
+                .unlock(
+                    Path::new(input_path),
+                    password.expose(),
+                    Path::new(output_path),
+                )
                 .map_err(|e| e.to_string())?;
             Ok(output_path.clone())
         }

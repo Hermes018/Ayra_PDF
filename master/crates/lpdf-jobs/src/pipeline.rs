@@ -22,12 +22,30 @@ pub enum PipelineStep {
         settings: lpdf_engine_port::WatermarkSettings,
     },
     Protect {
-        password: String,
+        #[ts(type = "string")]
+        password: lpdf_core_types::Secret,
         permissions: lpdf_engine_port::Permissions,
     },
     PdfToPdfA {
         conformance: lpdf_engine_port::PdfAConformance,
     },
+}
+
+impl PipelineStep {
+    /// A short human label for progress messages and logs. Never the step's `Debug` output (it can carry a secret).
+    pub fn label(&self) -> &'static str {
+        match self {
+            PipelineStep::Repair => "Repair",
+            PipelineStep::Compress { .. } => "Compress",
+            PipelineStep::Ocr => "OCR",
+            PipelineStep::Rotate { .. } => "Rotate",
+            PipelineStep::FlattenComments => "Flatten comments",
+            PipelineStep::FlattenForms => "Flatten forms",
+            PipelineStep::Watermark { .. } => "Watermark",
+            PipelineStep::Protect { .. } => "Protect",
+            PipelineStep::PdfToPdfA { .. } => "PDF/A conversion",
+        }
+    }
 }
 
 /// A named workflow preset comprising ordered transformation steps.

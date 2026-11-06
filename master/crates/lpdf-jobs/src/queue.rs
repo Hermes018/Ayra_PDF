@@ -110,7 +110,8 @@ pub enum JobRequest {
     ProtectDocument {
         input_path: String,
         output_path: String,
-        password: String,
+        #[ts(type = "string")]
+        password: lpdf_core_types::Secret,
         permissions: lpdf_engine_port::Permissions,
     },
 
@@ -118,7 +119,8 @@ pub enum JobRequest {
     UnlockDocument {
         input_path: String,
         output_path: String,
-        password: String,
+        #[ts(type = "string")]
+        password: lpdf_core_types::Secret,
     },
 
     /// Add an annotation to the document.
@@ -158,7 +160,8 @@ pub enum JobRequest {
         input_path: String,
         output_path: String,
         p12_path: String,
-        password: String,
+        #[ts(type = "string")]
+        password: lpdf_core_types::Secret,
     },
 
     /// Apply semantic redactions to the document.
@@ -305,7 +308,34 @@ pub struct JobRecord {
     pub error_code: Option<String>,
     pub error_message: Option<String>,
     pub created_at_epoch_ms: u64,
+    // Serialized with every `password` redacted: the job list is read by the UI and must never carry a secret.
+    #[serde(serialize_with = "serialize_request_redacted")]
     pub request: JobRequest,
+}
+
+/// Serialize a `JobRequest` for display (job list): the JSON with every `password` value replaced.
+fn serialize_request_redacted<S: serde::Serializer>(
+    req: &JobRequest,
+    serializer: S,
+) -> std::result::Result<S::Ok, S::Error> {
+    fn scrub(v: &mut serde_json::Value) {
+        match v {
+            serde_json::Value::Object(m) => {
+                for (k, val) in m.iter_mut() {
+                    if k == "password" {
+                        *val = serde_json::Value::String("[redacted]".into());
+                    } else {
+                        scrub(val);
+                    }
+                }
+            }
+            serde_json::Value::Array(a) => a.iter_mut().for_each(scrub),
+            _ => {}
+        }
+    }
+    let mut value = serde_json::to_value(req).map_err(serde::ser::Error::custom)?;
+    scrub(&mut value);
+    serde::Serialize::serialize(&value, serializer)
 }
 
 impl JobRequest {
@@ -1572,7 +1602,7 @@ impl JobManager {
                 let path = PathBuf::from(input_path);
                 let out = PathBuf::from(output_path);
 
-                engine.protect(&path, password, permissions.clone(), &out)?;
+                engine.protect(&path, password.expose(), permissions.clone(), &out)?;
 
                 if cancel_token.is_cancelled() {
                     return Err(LpdfError::Engine("Job cancelled".into()));
@@ -1610,7 +1640,7 @@ impl JobManager {
                 let path = PathBuf::from(input_path);
                 let out = PathBuf::from(output_path);
 
-                engine.unlock(&path, password, &out)?;
+                engine.unlock(&path, password.expose(), &out)?;
 
                 if cancel_token.is_cancelled() {
                     return Err(LpdfError::Engine("Job cancelled".into()));
@@ -1752,7 +1782,7 @@ impl JobManager {
                 let p12 = PathBuf::from(p12_path);
                 let out = PathBuf::from(output_path);
 
-                engine.sign_document(&path, &p12, password, &out)?;
+                engine.sign_document(&path, &p12, password.expose(), &out)?;
 
                 Ok(JobOutput {
                     output_path: Some(output_path.clone()),
@@ -2340,7 +2370,12 @@ impl JobManager {
                     let _ = event_tx.send(JobEvent::Progress {
                         job_id: job_id.into(),
                         percent: step_base_percent,
-                        message: format!("Pipeline step {}/{}: {:?}", idx + 1, total_steps, step),
+                        message: format!(
+                            "Pipeline step {}/{}: {}",
+                            idx + 1,
+                            total_steps,
+                            step.label()
+                        ),
                     });
 
                     let step_output = stage_dir.join(format!("step_{}.pdf", idx + 1));
@@ -2385,7 +2420,7 @@ impl JobManager {
                         } => {
                             engine.protect(
                                 &current_input,
-                                password,
+                                password.expose(),
                                 permissions.clone(),
                                 &step_output,
                             )?;

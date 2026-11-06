@@ -274,7 +274,9 @@ master/
 │   │   │   │   │   ├── EngineReset.test.ts                   # Tests: every engine field is classified and reset on document switch (fails when a new field is unclassified)
 │   │   │   │   │   ├── IpcAndSessionTimeouts.test.ts         # Tests: whenDocumentLive/probe timeouts, stall timer starts at dequeue, listener cleanup
 │   │   │   │   │   ├── LabsGating.test.ts                    # Tests: Labs off by default, all Labs entry points hidden, honest labels derived from the classifier
+│   │   │   │   │   ├── MarkdownWording.test.ts               # Tests: Markdown view wording matches what each operation does (new file vs. replace)
 │   │   │   │   │   ├── MeasurePerimeter.test.ts              # Tests: perimeter closes the shape (BUG-022)
+│   │   │   │   │   ├── NoPasswordInConsole.test.ts           # Tests (BUG-058): no console call ever contains an entered password
 │   │   │   │   │   ├── OrganizeApply.test.ts                 # Tests: Organize Apply keeps rotation, reports failures (BUG-014)
 │   │   │   │   │   ├── OrganizeView.test.ts                  # Tests: organize view
 │   │   │   │   │   ├── OutputPathsAllViews.test.ts           # Tests (BUG-051): every writing view (Organize, Forms, Security x3, Batch, Pipelines, AiSummarize, Markdown, Convert x2) builds a distinct, non-existing output, with and without .pdf
@@ -378,7 +380,8 @@ master/
 │   │   ├── src/                                              # Crate source
 │   │   │   ├── config.rs                                     # App settings/config and AI model manifest types
 │   │   │   ├── error.rs                                      # `LpdfError` typed errors
-│   │   │   └── lib.rs                                        # Crate root, re-exports
+│   │   │   ├── lib.rs                                        # Crate root, re-exports
+│   │   │   └── secret.rs                                     # Secret: wrapper for passwords and other secrets; Debug/Display print [redacted]; value only via expose()
 │   │   └── Cargo.toml                                        # Crate manifest
 │   ├── lpdf-engine-fallback/                                 # Backup engine (lopdf) for repair/rewrite when pdfcraft fails; many ops "unsupported"
 │   │   ├── src/                                              # Crate source
@@ -454,7 +457,8 @@ master/
 │   │   │   ├── bug018_tests.rs                               # Tests (BUG-018): GetInfo on hostile files ends Failed with F4 code; fallback opens report degraded
 │   │   │   ├── bug050_tests.rs                               # Tests (BUG-050): a job whose output equals the input fails with OUTPUT_PATH_UNSAFE and leaves the original intact
 │   │   │   ├── output_guard_tests.rs                         # Tests: output_guard unit cases (same path, .., symlink, existing file, distinct new file)
-│   │   │   └── queue_tests.rs                                # Tests: queue behaviour
+│   │   │   ├── queue_tests.rs                                # Tests: queue behaviour
+│   │   │   └── secret_redaction_tests.rs                     # Tests (BUG-058): passwords absent from Debug, Display, Progress events, log lines and the job list
 │   │   └── Cargo.toml                                        # Crate manifest
 │   ├── lpdf-tools-convert/                                   # Thin convert wrappers over PdfEngine (currently unused by other crates)
 │   │   ├── src/                                              # Crate source

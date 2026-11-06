@@ -51,13 +51,35 @@ describe('Edit view numbers', () => {
         return (runJob.mock.calls.at(-1)![0] as { settings: { opacity: number; rotation: number } }).settings;
     }
 
-    test('opacity 0 and angle 0 are sent as 0', async () => {
+    test('angle 0 is sent as 0 (0 is a valid angle)', async () => {
         render(EditView);
-        await fireEvent.input(screen.getByLabelText('Opacity'), { target: { value: '0' } });
         await fireEvent.input(screen.getByLabelText('Angle'), { target: { value: '0' } });
         const s = await watermarkSettings();
-        expect(s.opacity).toBe(0);
         expect(s.rotation).toBe(0);
+    });
+
+    // The opacity field is limited to 0.1-1 (it had these limits before the sweep).
+    test('the opacity field carries min 0.1, max 1', () => {
+        render(EditView);
+        const o = screen.getByLabelText('Opacity') as HTMLInputElement;
+        expect(o).toHaveAttribute('min', '0.1');
+        expect(o).toHaveAttribute('max', '1');
+    });
+
+    test.each(['0', '0.05', '1.5', '-1', '2'])('opacity %s is refused with an inline message and nothing is submitted', async (value) => {
+        render(EditView);
+        await fireEvent.input(screen.getByLabelText('Opacity'), { target: { value } });
+        await fireEvent.click(screen.getByRole('button', { name: 'Add watermark' }));
+        await new Promise((r) => setTimeout(r, 0));
+        expect(runJob).not.toHaveBeenCalled();
+        expect(screen.getByTestId('watermark-opacity-error')).toHaveTextContent(/between 0\.1 and 1/);
+    });
+
+    test.each(['0.1', '0.5', '1'])('opacity %s is accepted and sent exactly', async (value) => {
+        render(EditView);
+        await fireEvent.input(screen.getByLabelText('Opacity'), { target: { value } });
+        const s = await watermarkSettings();
+        expect(s.opacity).toBe(Number(value));
     });
 
     test('empty fields mean the old defaults (opacity 0.5, angle 45)', async () => {

@@ -31,12 +31,21 @@
     const busyReason = 'Wait for the current job to finish, or cancel it';
 
     // Requests are built per attempt (a builder), so a Retry after a refused name gets the next free name.
+    // The opacity field is limited to 0.1-1; anything else is refused before a job is made.
+    let opacityError = $state<string | null>(null);
+
     function watermark() {
         const input = currentPath;
         if (!input || !watermarkText) return;
+        const opacity = parseNumberOr(watermarkOpacity, 0.5);
+        if (opacity < 0.1 || opacity > 1) {
+            opacityError = 'Opacity must be between 0.1 and 1.';
+            return;
+        }
+        opacityError = null;
         const settings: WatermarkSettings = {
             text: watermarkText,
-            opacity: parseNumberOr(watermarkOpacity, 0.5),
+            opacity,
             rotation: parseNumberOr(watermarkRotation, 45),
             color: [0.8, 0.2, 0.2], // Red-ish watermark
         };
@@ -92,9 +101,12 @@
             {#if currentPath}
                 <Input label="Text" bind:value={watermarkText} placeholder="CONFIDENTIAL" />
                 <div class="row-group">
-                    <Input type="number" label="Opacity" bind:value={watermarkOpacity} />
+                    <Input type="number" label="Opacity" min={0.1} max={1} step={0.05} bind:value={watermarkOpacity} />
                     <Input type="number" label="Angle" bind:value={watermarkRotation} />
                 </div>
+                {#if opacityError}
+                    <p class="field-error" role="alert" data-testid="watermark-opacity-error">{opacityError}</p>
+                {/if}
                 <Button variant="primary" onclick={watermark} disabled={!watermarkText || !!jobs.busyLabel} disabledReason={jobs.busyLabel ? busyReason : 'Enter the watermark text'}>
                     Add watermark
                 </Button>
@@ -177,6 +189,12 @@
         width: 100%;
         min-width: 0;
         box-sizing: border-box;
+    }
+
+    .field-error {
+        margin: 0;
+        color: var(--semantic-danger);
+        font-size: var(--font-size-footnote);
     }
 
     .button-row {

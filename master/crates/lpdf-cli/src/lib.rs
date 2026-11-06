@@ -1227,7 +1227,12 @@ fn execute_pipeline_steps<E: PdfEngine>(
                 password,
                 permissions,
             } => {
-                engine.protect(&current_input, password, permissions.clone(), &step_output)?;
+                engine.protect(
+                    &current_input,
+                    password.expose(),
+                    permissions.clone(),
+                    &step_output,
+                )?;
             }
             lpdf_jobs::pipeline::PipelineStep::PdfToPdfA { conformance } => {
                 let _ = engine.pdf_to_pdfa(&current_input, *conformance, &step_output)?;
