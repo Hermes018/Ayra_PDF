@@ -799,7 +799,7 @@ class App:
                          "return b ? b.textContent.trim() : null")
 
     def dismiss_status(self):
-        self.s.js("const b = document.querySelector('.studio-status-banner .banner-close'); if (b) b.click();")
+        self.s.js("const b = document.querySelector('.studio-status-banner .banner-close button'); if (b) b.click();")
 
     def click_button(self, text, css="button"):
         el = self.s.find_text(css, text)
@@ -825,7 +825,7 @@ class App:
         the outcome. Returns (output_path or None, banner text)."""
         self.dismiss_status()
         label = button or ("Flatten" if flatten else "Save")
-        el = self.s.find_text(".studio-top-bar button.top-action-btn", label)
+        el = self.s.find_text(".studio-top-bar .lp-btnwrap button", label)
         if not el:
             return None, f"button '{label}' not found"
         el.click()

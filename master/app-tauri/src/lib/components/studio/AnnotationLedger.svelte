@@ -43,9 +43,8 @@
   let isDrawingSig = $state(false);
   let webcamPreviewDataUrl = $state<string | null>(null);
 
-  // flow07 (BUG-046) clicks these exact texts; rename them together with that flow.
-  const STAMP_SIGNATURE_TEXT = 'Stamp Signature';
   const SIGNATURE_MODES: SignatureMode[] = ['draw', 'type', 'webcam'];
+  const SIGNATURE_MODE_LABEL: Record<SignatureMode, string> = { draw: 'Draw', type: 'Type', webcam: 'Webcam' };
 
   let kindOptions = $derived([
     { value: 'all', label: 'All items' },
@@ -511,7 +510,7 @@
   <Dialog
     bind:open={inserts.signatureModalOpen}
     title="Architectural signature stamp"
-    ariaLabel="Signature Capture Modal"
+    ariaLabel="Signature capture modal"
     onclose={() => (inserts.signatureModalOpen = false)}
   >
     <div class="modal-stack">
@@ -524,7 +523,7 @@
             data-testid="signature-tab-{mode}"
             onclick={() => (inserts.signatureMode = mode)}
           >
-            {mode.toUpperCase()}
+            {SIGNATURE_MODE_LABEL[mode]}
           </Button>
         {/each}
       </div>
@@ -540,7 +539,7 @@
           onpointerup={handleSigPointerUp}
           onpointercancel={handleSigPointerUp}
           role="img"
-          aria-label="Freehand Signature Pad"
+          aria-label="Freehand signature pad"
         >
           {#each sigStrokes as st, i (i)}
             {#if st.length > 1}
@@ -593,7 +592,7 @@
     {#snippet actions()}
       <Button variant="secondary" onclick={() => (inserts.signatureModalOpen = false)}>Cancel</Button>
       <Button variant="primary" data-testid="signature-stamp-btn" onclick={handleStampSignature}>
-        {STAMP_SIGNATURE_TEXT}
+        Stamp signature
       </Button>
     {/snippet}
   </Dialog>
@@ -606,7 +605,7 @@
     bind:open={inserts.audioModalOpen}
     variant={audioConfirming ? 'alert' : 'dialog'}
     title={audioConfirming ? 'Discard recording?' : 'Voice audio note (PDF /Sound attachment)'}
-    ariaLabel="Voice Audio Note Recorder"
+    ariaLabel="Voice audio note recorder"
     onclose={onAudioClose}
   >
     {#if audioConfirming}
@@ -639,7 +638,7 @@
   <Dialog
     bind:open={inserts.pastePagesModalOpen}
     title="Paste selected markup to pages"
-    ariaLabel="Multi-Page Advanced Paste"
+    ariaLabel="Multi-page advanced paste"
     onclose={() => (inserts.pastePagesModalOpen = false)}
   >
     <div class="modal-stack">
@@ -688,12 +687,11 @@
     flex-direction: column;
     gap: var(--space-2);
     padding: var(--space-3);
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
+    background: var(--surface-dialog);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
     border-radius: var(--radius-lg);
-    color: var(--glass-text);
+    color: var(--text-primary);
     pointer-events: auto;
     font-size: var(--font-size-caption);
   }
@@ -711,6 +709,16 @@
     gap: var(--space-1);
   }
 
+  /* Tab labels: primary text colour (the accent blue was under 4.5:1 on the dark panel); pressed = tint + bold. */
+  .drawer-tabs :global(.lp-btn.lp-btn--plain) {
+    color: var(--text-primary);
+  }
+
+  .drawer-tabs :global(.lp-btn.lp-btn--plain[aria-pressed='true']) {
+    color: var(--text-primary);
+    font-weight: 700;
+  }
+
   .ledger-controls,
   .library-controls,
   .modal-stack,
@@ -722,8 +730,27 @@
 
   .ledger-filter-row {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-1);
     align-items: flex-end;
+  }
+
+  /* Three filters share the 320px panel: each takes a third, shrinks to fit, never clips. */
+  .ledger-filter-row :global(.lp-field) {
+    flex: 1 1 6em;
+    min-width: 0;
+  }
+
+  .ledger-filter-row :global(.lp-select) {
+    min-width: 0;
+    width: 100%;
+    text-overflow: ellipsis;
+  }
+
+  /* Action labels never wrap into the next line; the row wraps instead (full text kept, with a title). */
+  .ledger-controls :global(.lp-btn),
+  .drawer-footer :global(.lp-btn) {
+    white-space: nowrap;
   }
 
   .library-list {
@@ -772,6 +799,7 @@
 
   .drawer-footer {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-2);
     justify-content: flex-end;
   }

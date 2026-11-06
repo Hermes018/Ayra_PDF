@@ -22,7 +22,7 @@ def run(flow):
     app = flow.launch([path], expect_pages=1)
     if not flow.check("document open", app.page_count() == 1, f"{app.page_count()} pages"):
         return
-    app.click_button("Edit Text", ".studio-top-bar .mode-segmented-switch button")
+    app.click_button("Edit text", ".studio-top-bar .mode-segmented-switch button")
     banner = app.s.wait("return !!document.querySelector('[data-testid=structural-edit-banner]')", 5)
     flow.check("Edit Text mode entered", banner, "")
     blocks = app.s.wait("""
@@ -62,7 +62,7 @@ def run(flow):
             return
     app.set_input("[data-testid=inline-pdf-text-editor] textarea", NEW)
     app.dismiss_status()
-    app.click_button("Commit Text", "[data-testid=inline-pdf-text-editor] button")
+    app.click_button("Commit text", "[data-testid=inline-pdf-text-editor] button")
     msg = app.s.wait("""
         const b = document.querySelector('.studio-status-banner span'); const t = b ? b.textContent.trim() : '';
         return /Structural text/i.test(t) ? t : null;""", 30)

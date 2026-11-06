@@ -55,7 +55,7 @@ def run(flow):
     if not flow.check("document open", app.page_count() == 1, f"{app.page_count()} pages"):
         return
     app.snap_off()
-    app.set_select('select[aria-label="Zoom Level Preset"]', "75")
+    app.set_select('select[data-testid="zoom-preset"]', "75")
     time.sleep(0.3)
     pr = app.page_rect(0)
     X, Y = pr["x"], pr["y"]

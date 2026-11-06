@@ -24,7 +24,7 @@ async function escape() {
   await tick();
   await tick();
 }
-const dialog = () => document.querySelector('[aria-label="Voice Audio Note Recorder"]') as HTMLElement;
+const dialog = () => document.querySelector('[aria-label="Voice audio note recorder"]') as HTMLElement;
 
 describe('discardAudioRecording (engine)', () => {
   it('stops the recorder and its microphone tracks and clears the recording state', () => {

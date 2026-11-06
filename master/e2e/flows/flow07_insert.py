@@ -29,7 +29,7 @@ def _text_editor(app, text):
     if not ok:
         return False
     app.set_input("[data-testid=inline-pdf-text-editor] textarea", text)
-    btn = app.s.find_text("[data-testid=inline-pdf-text-editor] button", "Commit Text")
+    btn = app.s.find_text("[data-testid=inline-pdf-text-editor] button", "Commit text")
     if not btn:
         return False
     btn.click()
@@ -68,7 +68,7 @@ def run(flow):
     if not flow.check("document open", app.page_count() == 1, f"{app.page_count()} pages"):
         return
     app.snap_off()
-    app.set_select('select[aria-label="Zoom Level Preset"]', "75")
+    app.set_select('select[data-testid="zoom-preset"]', "75")
     time.sleep(0.3)
     pr = app.page_rect(0)
     X, Y = pr["x"] + 60, pr["y"] + 80
@@ -98,17 +98,17 @@ def run(flow):
     place("stamp", "insert", "Engineering Stamp", X + 250, Y + 150)
 
     def sign():
-        if not app.s.wait("return !!document.querySelector('[aria-label=\"Signature Capture Modal\"]')", 5):
+        if not app.s.wait("return !!document.querySelector('[aria-label=\"Signature capture modal\"]')", 5):
             return False
-        app.click_button("DRAW", "[aria-label='Signature Capture Modal'] button")
-        pad = app.s.find('[aria-label="Freehand Signature Pad"]')
+        app.click_button("Draw", "[aria-label='Signature capture modal'] button")
+        pad = app.s.find('[aria-label="Freehand signature pad"]')
         if not pad:
             return False
         r = pad.rect()
         sx, sy = r["x"] + 20, r["y"] + r["height"] / 2
         app.s.mouse_path([(sx + i * 10, sy + (12 if i % 2 else -12)) for i in range(N_STROKE_POINTS)], step_ms=8)
         time.sleep(0.2)
-        app.click_button("Stamp Signature")
+        app.click_button("Stamp signature")
         time.sleep(0.4)
         return True
     place("signature (draw)", "insert", "Signature Suite", X, Y + 300, after=sign)

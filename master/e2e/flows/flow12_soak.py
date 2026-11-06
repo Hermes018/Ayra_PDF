@@ -73,10 +73,10 @@ def run(flow):
         try:
             # navigation
             for val in ("150", "75", "fit-width", "100"):
-                app.set_select('select[aria-label="Zoom Level Preset"]', val)
-            app.s.find('button[aria-label="Zoom In"]').click()
-            app.s.find('button[aria-label="Zoom Out"]').click()
-            app.set_select('select[aria-label="Zoom Level Preset"]', "75")
+                app.set_select('select[data-testid="zoom-preset"]', val)
+            app.s.find('button[aria-label="Zoom in"]').click()
+            app.s.find('button[aria-label="Zoom out"]').click()
+            app.set_select('select[data-testid="zoom-preset"]', "75")
             time.sleep(0.2)
             pr = app.page_rect(0)
             # close the previous markups, annotate, save (save reopens the output)

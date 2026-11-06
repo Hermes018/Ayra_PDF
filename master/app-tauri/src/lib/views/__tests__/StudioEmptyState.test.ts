@@ -27,10 +27,10 @@ describe('Studio empty state (UI-BUG-006)', () => {
         render(SpatialCanvas);
         for (const name of [/^Save/, /^Flatten/, 'Snap to drawing geometry', 'Digital drafting ruler']) {
             const btn = screen.getByRole('button', { name });
-            expect(btn).toBeDisabled();
-            expect(btn).toHaveAttribute('title', 'Open a PDF first');
+            expect(btn).toHaveAttribute('aria-disabled', 'true');
+            expect(document.getElementById(btn.getAttribute('aria-describedby') ?? '')).toHaveTextContent('Open a PDF first');
         }
-        expect(screen.getByRole('button', { name: /Edit Text/ })).toBeDisabled();
+        expect(screen.getByRole('button', { name: /Edit text/ })).toHaveAttribute('aria-disabled', 'true');
     });
 
     test('the Ledger stays available without a document', () => {

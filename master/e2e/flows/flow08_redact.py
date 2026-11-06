@@ -36,11 +36,11 @@ def run(flow):
     time.sleep(0.3)
     flow.check("redaction region marked on canvas", app.vector_nodes() == n0 + 1,
                f"nodes {n0} -> {app.vector_nodes()}")
-    has_commit = app.s.find_text(".studio-top-bar button", "Commit Redactions") is not None
+    has_commit = app.s.find_text(".studio-top-bar button", "Commit redactions") is not None
     if not flow.check("'Commit Redactions' action offered", has_commit, ""):
         app.quit()
         return
-    out, msg = app.save(button="Commit Redactions")
+    out, msg = app.save(button="Commit redactions")
     flow.info("commit_message", msg)
     new_file = bool(out) and os.path.exists(out) and os.path.abspath(out) != os.path.abspath(path)
     flow.check("commit writes a NEW output file", new_file, msg)

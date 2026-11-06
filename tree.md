@@ -503,7 +503,8 @@ master/
 │   │   ├── flow17_sweep_studio_docs.py                       # E2E smoke (sweep): document tabs, favourites bar and split layout, light/dark screenshots at 2 sizes, no console errors
 │   │   ├── flow18_sweep_studio_panels.py                     # E2E smoke (sweep): calibration dialog and shortcut settings, light/dark screenshots at 2 sizes, no console errors
 │   │   ├── flow19_sweep_toolbar.py                           # E2E smoke (sweep): dockable toolbar, radial menu and measure overlay, light/dark screenshots at 2 sizes, no console errors
-│   │   └── flow20_sweep_ledger.py                            # E2E smoke (sweep): annotation ledger and its dialogs, light/dark screenshots at 2 sizes, no console errors
+│   │   ├── flow20_sweep_ledger.py                            # E2E smoke (sweep): annotation ledger and its dialogs, light/dark screenshots at 2 sizes, no console errors
+│   │   └── flow21_sweep_canvas_chrome.py                     # E2E smoke (sweep): Studio canvas chrome (toolbars, banners, overlays), light/dark screenshots at 2 sizes, no console errors
 │   ├── .gitignore                                            # Ignores e2e/out/ (reports, screenshots, copied binary)
 │   ├── common.py                                             # Ground-truth helpers (poppler/qpdf/hashes), process sampling, isolation (private D-Bus/XDG)
 │   ├── ink_match.py                                          # Matcher for content-less annotations (drawn signature): one /Ink or /Stamp with non-empty InkList or AP, /Rect on page and covering the drawn stroke, enough points (BUG-046)

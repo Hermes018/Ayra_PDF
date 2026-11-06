@@ -46,3 +46,33 @@ describe('Tooltip in a component', () => {
     }
   });
 });
+
+import { commands } from '$lib/core/commandEngine.svelte';
+import IconButton from './IconButton.svelte';
+import { tick } from 'svelte';
+
+describe('Tooltip dismissal and IconButton tooltip text', () => {
+  it('Escape dismisses a visible tooltip; the next hover brings it back', async () => {
+    const detach = commands.attachKeyboard(window);
+    try {
+      render(IconButton, { icon: 'undo', ariaLabel: 'Undo', onclick: () => {} });
+      const btn = screen.getByRole('button', { name: 'Undo' });
+      const tip = document.querySelector('[role=tooltip]') as HTMLElement;
+      await fireEvent.pointerEnter(btn.parentElement as HTMLElement);
+      expect(tip).not.toHaveClass('is-dismissed');
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      await tick();
+      expect(tip).toHaveClass('is-dismissed');
+      await fireEvent.pointerEnter(btn.parentElement as HTMLElement);
+      expect(tip).not.toHaveClass('is-dismissed');
+    } finally {
+      detach();
+    }
+  });
+  it('a separate tooltip text keeps aria-label as the name ("Undo: Draw stroke")', () => {
+    render(IconButton, { icon: 'undo', ariaLabel: 'Undo', tooltip: 'Undo: Draw stroke', onclick: () => {} });
+    const btn = screen.getByRole('button', { name: 'Undo' });
+    expect(btn).toHaveAttribute('aria-label', 'Undo');
+    expect(document.getElementById(btn.getAttribute('aria-describedby') ?? '')).toHaveTextContent('Undo: Draw stroke');
+  });
+});

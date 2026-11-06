@@ -35,6 +35,8 @@
   import Dialog from '$lib/components/ui/Dialog.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import Input from '$lib/components/ui/Input.svelte';
+  import IconButton from '$lib/components/ui/IconButton.svelte';
+  import Select from '$lib/components/ui/Select.svelte';
   import RadialMenu from '$lib/components/studio/RadialMenu.svelte';
   import ShortcutSettings from '$lib/components/studio/ShortcutSettings.svelte';
   import FavoritesBar from '$lib/components/studio/FavoritesBar.svelte';
@@ -204,6 +206,22 @@
    *  disables document-only controls (no phantom "Page 1 / 2" on an empty canvas). */
   let hasDocument = $derived(viewport.pages.length > 0 && !!(loadedFilePath ?? appState.currentFile));
   const NEEDS_DOC = 'Open a PDF first';
+  const ZOOM_OPTIONS = [
+    { value: '50', label: '50%' },
+    { value: '75', label: '75%' },
+    { value: '100', label: '100%' },
+    { value: '125', label: '125%' },
+    { value: '150', label: '150%' },
+    { value: '200', label: '200%' },
+    { value: 'fit-width', label: 'Fit width' },
+    { value: 'fit-page', label: 'Fit page' },
+  ];
+  const OVERLAY_OPTIONS = [
+    { value: 'none', label: 'No overlay' },
+    { value: 'engineering-grid', label: 'Eng grid' },
+    { value: 'isometric-grid', label: 'Iso grid' },
+    { value: 'ruled-paper', label: 'Ruled' },
+  ];
 
   async function openPdfFromEmptyState() {
     try {
@@ -239,8 +257,7 @@
     radialVisible = true;
   }
 
-  function handleZoomSelect(e: Event) {
-    const val = (e.target as HTMLSelectElement).value;
+  function handleZoomSelect(val: string) {
     const w = canvasContainer ? canvasContainer.clientWidth : 800;
     const h = canvasContainer ? canvasContainer.clientHeight : 600;
     if (val === 'fit-width' || val === 'fit-page') {
@@ -1507,42 +1524,40 @@
   >
     <!-- Zone 1: Workspace & Mode -->
     <div class="top-zone zone-workspace">
-      <button
-        type="button"
-        class="top-icon-btn"
+      <IconButton
+        icon="chevron.left"
+        ariaLabel="Toggle left sidebar"
+        shortcutCmd="app.toggleSidebar"
         onclick={() => appState.toggleSidebar()}
-        title="Toggle Left Sidebar (Ctrl+B)"
-        aria-label="Toggle Left Sidebar"
-      >
-        <span style="font-size: 14px;">☰</span>
-      </button>
+      />
 
       <div class="mode-segmented-switch">
-        <button
-          type="button"
-          class="top-btn"
-          class:active={editMode === 'markup'}
+        <Button
+          variant="plain"
+          size="sm"
+          pressed={editMode === 'markup'}
+          title="Markup mode: fast annotations and CAD tools"
           onclick={() => {
             editMode = 'markup';
           }}
-          title="Markup Mode (Fast 60-120fps Annotations & CAD Tools)"
         >
           <StudioIcon name="pen.a" size={13} />
           <span>Markup</span>
-        </button>
-        <button
-          type="button"
-          class="top-btn"
-          class:active={editMode === 'structural'}
+        </Button>
+        <Button
+          variant="plain"
+          size="sm"
+          pressed={editMode === 'structural'}
           disabled={!hasDocument}
+          disabledReason={NEEDS_DOC}
+          title="Structural PDF edit mode: direct text and font editing"
           onclick={() => {
             editMode = 'structural';
           }}
-          title={hasDocument ? 'Structural PDF Edit Mode (Direct Text & Font Manipulation)' : NEEDS_DOC}
         >
           <StudioIcon name="text.review" size={13} />
-          <span>Edit Text</span>
-        </button>
+          <span>Edit text</span>
+        </Button>
       </div>
 
       {#if hasDocument}
@@ -1556,133 +1571,107 @@
 
     <!-- Zone 2: Viewport & Zoom -->
     <div class="top-zone zone-viewport">
-      <button
-        type="button"
-        class="top-icon-btn"
+      <IconButton
+        icon="zoom.out"
+        ariaLabel="Zoom out"
         disabled={!hasDocument}
+        disabledReason={NEEDS_DOC}
         onclick={() => viewport.zoomAt(viewId, 0.8, { x: 300, y: 300 })}
-        title={hasDocument ? 'Zoom Out' : NEEDS_DOC}
-        aria-label="Zoom Out"
-      >
-        <StudioIcon name="zoom.out" size={14} />
-      </button>
+      />
 
-      <select
-        class="top-select"
-        value={Math.round(currentView.zoom * 100).toString()}
-        onchange={handleZoomSelect}
+      <Select
+        label="Zoom level preset"
+        hideLabel
+        data-testid="zoom-preset"
+        bind:value={() => Math.round(currentView.zoom * 100).toString(), (v) => handleZoomSelect(v)}
+        options={ZOOM_OPTIONS}
         disabled={!hasDocument}
-        aria-label="Zoom Level Preset"
-        title="Zoom Preset (50% - 200%, Fit Width, Fit Page)"
-      >
-        <option value="50">50%</option>
-        <option value="75">75%</option>
-        <option value="100">100%</option>
-        <option value="125">125%</option>
-        <option value="150">150%</option>
-        <option value="200">200%</option>
-        <option value="fit-width">Fit Width</option>
-        <option value="fit-page">Fit Page</option>
-      </select>
+        disabledReason={NEEDS_DOC}
+      />
 
-      <button
-        type="button"
-        class="top-icon-btn"
+      <IconButton
+        icon="zoom.in"
+        ariaLabel="Zoom in"
         disabled={!hasDocument}
+        disabledReason={NEEDS_DOC}
         onclick={() => viewport.zoomAt(viewId, 1.25, { x: 300, y: 300 })}
-        title={hasDocument ? 'Zoom In' : NEEDS_DOC}
-        aria-label="Zoom In"
-      >
-        <StudioIcon name="zoom.in" size={14} />
-      </button>
+      />
 
-      <button
-        type="button"
-        class="top-icon-btn"
+      <IconButton
+        icon="reset"
+        ariaLabel="Rotate page 90° clockwise"
         disabled={!hasDocument}
+        disabledReason={NEEDS_DOC}
         onclick={handleRotatePage90}
-        title={hasDocument ? 'Rotate Page 90° Clockwise' : NEEDS_DOC}
-        aria-label="Rotate Page 90° Clockwise"
-      >
-        <StudioIcon name="reset" size={14} />
-      </button>
+      />
 
-      <select
-        class="top-select"
-        value={inserts.pageOverlay}
-        onchange={(e) => {
-          inserts.pageOverlay = (e.target as HTMLSelectElement).value as PageOverlayTemplate;
-        }}
+      <Select
+        label="Page background overlay"
+        hideLabel
+        data-testid="page-overlay"
+        bind:value={() => inserts.pageOverlay, (v) => (inserts.pageOverlay = v as PageOverlayTemplate)}
+        options={OVERLAY_OPTIONS}
         disabled={!hasDocument}
-        aria-label="Page Background Overlay Template"
-        title="Non-destructive Page Background Overlay (Engineering Grid, Isometric, Ruled)"
-      >
-        <option value="none">No overlay</option>
-        <option value="engineering-grid">Eng grid</option>
-        <option value="isometric-grid">Iso grid</option>
-        <option value="ruled-paper">Ruled</option>
-      </select>
+        disabledReason={NEEDS_DOC}
+      />
     </div>
 
     <div class="top-zone-divider"></div>
 
     <!-- Zone 3: History & Assist -->
     <div class="top-zone zone-history-assist">
-      <button
-        type="button"
-        class="top-icon-btn"
+      <IconButton
+        icon="undo"
+        ariaLabel="Undo"
+        tooltip={commands.undoLabel ? `Undo: ${commands.undoLabel}` : 'Undo'}
+        shortcutCmd="history.undo"
         disabled={!commands.canUndo}
+        disabledReason="Nothing to undo"
         onclick={() => commands.undo()}
-        title="Undo ({commands.undoLabel ?? 'None'})"
-        aria-label="Undo"
-      >
-        <StudioIcon name="undo" size={14} />
-      </button>
-      <button
-        type="button"
-        class="top-icon-btn"
+      />
+      <IconButton
+        icon="redo"
+        ariaLabel="Redo"
+        shortcutCmd="history.redo"
         disabled={!commands.canRedo}
+        disabledReason="Nothing to redo"
         onclick={() => commands.redo()}
-        title="Redo"
-        aria-label="Redo"
-      >
-        <StudioIcon name="redo" size={14} />
-      </button>
+      />
 
-      <button
-        type="button"
-        class="top-btn"
-        class:active={snapEngine.enabled}
+      <Button
+        variant="plain"
+        size="sm"
+        pressed={snapEngine.enabled}
         disabled={!hasDocument}
-        aria-pressed={snapEngine.enabled}
-        aria-label="Snap to drawing geometry"
+        disabledReason={NEEDS_DOC}
+        ariaLabel="Snap to drawing geometry"
+        title="Snap to drawing geometry (OSNAP): {snapEngine.enabled ? 'on' : 'off'}"
         onclick={() => {
           snapEngine.enabled = !snapEngine.enabled;
         }}
-        title={hasDocument ? `Snap to drawing geometry (OSNAP): ${snapEngine.enabled ? 'on' : 'off'}` : NEEDS_DOC}
       >
         <StudioIcon name="snap" size={13} />
         <span class="collapsible-label">Snap</span>
-      </button>
+      </Button>
 
-      <button
-        type="button"
-        class="top-btn"
-        class:active={measureEngine.ruler.visible}
+      <Button
+        variant="plain"
+        size="sm"
+        pressed={measureEngine.ruler.visible}
         disabled={!hasDocument}
-        aria-pressed={measureEngine.ruler.visible}
-        aria-label="Digital drafting ruler"
+        disabledReason={NEEDS_DOC}
+        ariaLabel="Digital drafting ruler"
+        title="Digital drafting ruler"
         onclick={() => {
           measureEngine.ruler = {
             ...measureEngine.ruler,
             visible: !measureEngine.ruler.visible,
           };
         }}
-        title={hasDocument ? 'Digital drafting ruler' : NEEDS_DOC}
       >
         <StudioIcon name="ruler" size={13} />
         <span class="collapsible-label">Ruler</span>
-      </button>
+      </Button>
     </div>
 
     <div class="top-zone-divider"></div>
@@ -1690,59 +1679,55 @@
     <!-- Zone 4: Actions & Persistence -->
     <div class="top-zone zone-actions">
       {#if shapes.editingTextBox}
-        <button
-          type="button"
-          class="top-action-btn primary-btn"
-          onclick={commitStructuralTextOrAnnotation}
-          title="Commit Active Text Block Edit"
-        >
-          Commit Text
-        </button>
+        <Button variant="primary" size="sm" title="Commit the active text block edit" onclick={commitStructuralTextOrAnnotation}>
+          Commit text
+        </Button>
       {/if}
 
-      <button
-        type="button"
-        class="top-action-btn"
+      <Button
+        variant="secondary"
+        size="sm"
         disabled={!hasDocument}
+        disabledReason={NEEDS_DOC}
         data-testid="save-pdf-btn"
+        title="Save markups as editable annotations (writes a new file atomically)"
         onclick={() => saveAnnotationsToPdf(false)}
-        title={hasDocument ? 'Save markups as editable annotations (writes a new file atomically)' : NEEDS_DOC}
       >
         Save <span class="collapsible-label">PDF</span>
-      </button>
-      <button
-        type="button"
-        class="top-action-btn"
+      </Button>
+      <Button
+        variant="secondary"
+        size="sm"
         disabled={!hasDocument}
+        disabledReason={NEEDS_DOC}
         data-testid="flatten-pdf-btn"
+        title="Flatten markups permanently into the page content"
         onclick={() => saveAnnotationsToPdf(true)}
-        title={hasDocument ? 'Flatten markups permanently into the page content' : NEEDS_DOC}
       >
         Flatten <span class="collapsible-label">PDF</span>
-      </button>
+      </Button>
       {#if hasRedactions}
-        <button
-          type="button"
-          class="top-action-btn danger-btn"
+        <Button
+          variant="destructive"
+          size="sm"
           data-testid="commit-redactions-btn"
+          title="Permanently remove the content under redacted regions"
           onclick={() => saveAnnotationsToPdf(true)}
-          title="Permanently Sanitize & Strip Underlying Content in Redacted Regions"
         >
-          Commit Redactions
-        </button>
+          Commit redactions
+        </Button>
       {/if}
 
-      <button
-        type="button"
-        class="top-action-btn ledger-btn"
-        class:primary-btn={inserts.ledgerOpen}
-        onclick={() => inserts.toggleLedger()}
-        aria-label="Ledger: markups, library and quantity takeoff"
+      <Button
+        variant={inserts.ledgerOpen ? 'primary' : 'secondary'}
+        size="sm"
+        ariaLabel="Ledger: markups, library and quantity takeoff"
         title="Ledger: markup list, reusable library and quantity takeoff"
+        onclick={() => inserts.toggleLedger()}
       >
         <StudioIcon name="note" size={13} />
         <span class="collapsible-label">Ledger</span>
-      </button>
+      </Button>
     </div>
   </header>
   </div>
@@ -1752,9 +1737,7 @@
       <StudioIcon name="pen.a" size={28} />
       <h2>Open a PDF to begin</h2>
       <p>Mark up, measure and edit drawings and documents. Your files never leave this computer.</p>
-      <button type="button" class="top-action-btn primary-btn" onclick={openPdfFromEmptyState}>
-        Open PDF…
-      </button>
+      <Button variant="primary" onclick={openPdfFromEmptyState}>Open PDF…</Button>
     </div>
   {/if}
 
@@ -1799,9 +1782,7 @@
   {#if statusNotice}
     <div class="studio-status-banner glass-panel" role="status" data-testid="studio-status-banner">
       <span>{statusNotice}</span>
-      <button type="button" class="banner-close" onclick={() => { statusNotice = null; }} aria-label="Dismiss Notice">
-        <StudioIcon name="close" size={12} />
-      </button>
+      <IconButton class="banner-close" icon="close" size="sm" ariaLabel="Dismiss notice" onclick={() => { statusNotice = null; }} />
     </div>
   {/if}
 
@@ -1809,16 +1790,11 @@
     <div class="structural-edit-banner glass-panel" data-testid="structural-edit-banner">
       <div class="banner-content">
         <StudioIcon name="text.review" size={16} />
-        <span>Structural PDF Text Edit Mode Active — Click any text block to edit native PDF streams</span>
+        <span>Structural PDF text edit mode is on. Click a text block to edit it.</span>
       </div>
-      <button
-        type="button"
-        class="top-action-btn primary-btn done-btn"
-        onclick={() => (editMode = 'markup')}
-        data-testid="exit-structural-btn"
-      >
-        Done Editing
-      </button>
+      <Button variant="primary" size="sm" data-testid="exit-structural-btn" onclick={() => (editMode = 'markup')}>
+        Done editing
+      </Button>
     </div>
   {/if}
 
@@ -1828,50 +1804,35 @@
       class="selection-action-bar glass-panel"
       role="toolbar"
       tabindex={0}
-      aria-label="Selection Manipulation Toolbar"
+      aria-label="Selection manipulation toolbar"
       onpointerdown={(e) => e.stopPropagation()}
     >
       <span class="sel-count">{selection.selectedIds.length} selected</span>
       <div class="hud-divider"></div>
-      <button type="button" class="sel-btn" onclick={() => selection.groupSelected()} title="Group Selected (Ctrl+G)">Group</button>
-      <button type="button" class="sel-btn" onclick={() => selection.ungroupSelected()} title="Ungroup Selected (Ctrl+Shift+G)">Ungroup</button>
+      <Button variant="plain" size="sm" title="Group Selected (Ctrl+G)" onclick={() => selection.groupSelected()}>Group</Button>
+      <Button variant="plain" size="sm" title="Ungroup Selected (Ctrl+Shift+G)" onclick={() => selection.ungroupSelected()}>Ungroup</Button>
       <div class="hud-divider"></div>
-      <button type="button" class="sel-btn" onclick={() => selection.alignSelected('left')} title="Align Left">Left</button>
-      <button type="button" class="sel-btn" onclick={() => selection.alignSelected('center')} title="Align Center">Center</button>
-      <button type="button" class="sel-btn" onclick={() => selection.alignSelected('right')} title="Align Right">Right</button>
-      <button type="button" class="sel-btn" onclick={() => selection.alignSelected('top')} title="Align Top">Top</button>
-      <button type="button" class="sel-btn" onclick={() => selection.alignSelected('middle')} title="Align Middle">Middle</button>
-      <button type="button" class="sel-btn" onclick={() => selection.alignSelected('bottom')} title="Align Bottom">Bottom</button>
+      <Button variant="plain" size="sm" title="Align Left" onclick={() => selection.alignSelected('left')}>Left</Button>
+      <Button variant="plain" size="sm" title="Align Center" onclick={() => selection.alignSelected('center')}>Center</Button>
+      <Button variant="plain" size="sm" title="Align Right" onclick={() => selection.alignSelected('right')}>Right</Button>
+      <Button variant="plain" size="sm" title="Align Top" onclick={() => selection.alignSelected('top')}>Top</Button>
+      <Button variant="plain" size="sm" title="Align Middle" onclick={() => selection.alignSelected('middle')}>Middle</Button>
+      <Button variant="plain" size="sm" title="Align Bottom" onclick={() => selection.alignSelected('bottom')}>Bottom</Button>
       <div class="hud-divider"></div>
-      <button type="button" class="sel-btn" onclick={() => selection.flipSelected('horizontal')} title="Flip Horizontal">Flip H</button>
-      <button type="button" class="sel-btn" onclick={() => selection.flipSelected('vertical')} title="Flip Vertical">Flip V</button>
+      <Button variant="plain" size="sm" title="Flip Horizontal" onclick={() => selection.flipSelected('horizontal')}>Flip H</Button>
+      <Button variant="plain" size="sm" title="Flip Vertical" onclick={() => selection.flipSelected('vertical')}>Flip V</Button>
       <div class="hud-divider"></div>
-      <button type="button" class="sel-btn" onclick={() => selection.reorderSelected('front')} title="Bring to Front">Front</button>
-      <button type="button" class="sel-btn" onclick={() => selection.reorderSelected('back')} title="Send to Back">Back</button>
-      <button type="button" class="sel-btn" onclick={() => selection.reorderSelected('forward')} title="Bring Forward">+1</button>
-      <button type="button" class="sel-btn" onclick={() => selection.reorderSelected('backward')} title="Send Backward">-1</button>
+      <Button variant="plain" size="sm" title="Bring to Front" onclick={() => selection.reorderSelected('front')}>Front</Button>
+      <Button variant="plain" size="sm" title="Send to Back" onclick={() => selection.reorderSelected('back')}>Back</Button>
+      <Button variant="plain" size="sm" title="Bring Forward" onclick={() => selection.reorderSelected('forward')}>+1</Button>
+      <Button variant="plain" size="sm" title="Send Backward" onclick={() => selection.reorderSelected('backward')}>-1</Button>
       <div class="hud-divider"></div>
-      <button type="button" class="sel-btn" onclick={() => selection.duplicateSelected()} title="Duplicate (Ctrl+D)">Duplicate</button>
-      <button
-        type="button"
-        class="sel-btn"
-        onclick={() => {
+      <Button variant="plain" size="sm" title="Duplicate (Ctrl+D)" onclick={() => selection.duplicateSelected()}>Duplicate</Button>
+      <Button variant="plain" size="sm" title="Multi-Page Advanced Paste (All, Even, Odd, Range)" onclick={() => {
           inserts.pastePagesModalOpen = true;
-        }}
-        title="Multi-Page Advanced Paste (All, Even, Odd, Range)"
-      >
-        Paste to Pages...
-      </button>
-      <button
-        type="button"
-        class="sel-btn"
-        class:active={selection.formatPainterActive}
-        onclick={() => selection.copyStyleFromSelected()}
-        title="Format Painter: Copy Style & Click Target Object"
-      >
-        Copy Style
-      </button>
-      <button type="button" class="sel-btn danger-btn" onclick={() => selection.deleteSelected()} title="Delete Selected (Del)">Delete</button>
+        }}>Paste to pages…</Button>
+      <Button variant="plain" size="sm" pressed={selection.formatPainterActive} title="Format Painter: Copy Style & Click Target Object" onclick={() => selection.copyStyleFromSelected()}>Copy style</Button>
+      <Button variant="destructive" size="sm" title="Delete Selected (Del)" onclick={() => selection.deleteSelected()}>Delete</Button>
     </div>
   {/if}
 
@@ -2390,51 +2351,33 @@
     <div
       class="inline-text-editor glass-panel"
       data-testid="inline-pdf-text-editor"
-      role="dialog"
-      tabindex="-1"
-      aria-label="Inline Text Editor"
+      role="group"
+      aria-label="Inline text editor"
       onpointerdown={(e) => e.stopPropagation()}
     >
       <div class="editor-header">
         <span>
           {shapes.editingTextBox.isStructural
-            ? 'Structural PDF Text Edit (Native Stream)'
-            : 'Canvas Rich Text Annotation'}
+            ? 'Structural PDF text edit (native stream)'
+            : 'Canvas rich text annotation'}
         </span>
       </div>
       <textarea
         class="editor-textarea"
         rows="3"
         bind:value={shapes.editingTextBox.text}
-        aria-label="Annotation or PDF Text Content"
+        aria-label="Annotation or PDF text content"
       ></textarea>
       <div class="editor-actions">
-        <label class="editor-size-label">
-          Size:
-          <input
-            type="number"
-            min="8"
-            max="72"
-            bind:value={shapes.editingTextBox.fontSize}
-            class="editor-size-input"
-          />
-          pt
-        </label>
+        <Input
+          type="number"
+          label="Size (pt)"
+          class="editor-size-field"
+          bind:value={() => String(shapes.editingTextBox?.fontSize ?? 12), (v) => { if (shapes.editingTextBox) shapes.editingTextBox.fontSize = Number(v) || shapes.editingTextBox.fontSize; }}
+        />
         <div class="editor-btns">
-          <button
-            type="button"
-            class="top-action-btn"
-            onclick={() => shapes.cancelActiveShape()}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            class="top-action-btn primary-btn"
-            onclick={commitStructuralTextOrAnnotation}
-          >
-            Commit Text
-          </button>
+          <Button variant="secondary" size="sm" onclick={() => shapes.cancelActiveShape()}>Cancel</Button>
+          <Button variant="primary" size="sm" onclick={commitStructuralTextOrAnnotation}>Commit text</Button>
         </div>
       </div>
     </div>
@@ -2462,13 +2405,7 @@
   {#if isInsertMediaTool(tools.currentToolId)}
     <div class="insert-config-pill glass-panel" data-testid="insert-config-pill">
       <span>Click canvas to place {studioToolLabel(tools.currentToolId, tools.activeToolLabel)}, or configure options:</span>
-      <button
-        type="button"
-        class="top-action-btn primary-btn"
-        onclick={() => handleConfigureInsertTool(tools.currentToolId)}
-      >
-        Configure...
-      </button>
+      <Button variant="primary" size="sm" onclick={() => handleConfigureInsertTool(tools.currentToolId)}>Configure…</Button>
     </div>
   {/if}
 
@@ -2579,7 +2516,7 @@
     position: absolute;
     top: -24px;
     left: 0;
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
     color: var(--glass-text);
     opacity: 0.7;
@@ -2630,9 +2567,9 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 4px 12px;
-    background: var(--glass-bg);
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    background: var(--surface-dialog);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
@@ -2646,26 +2583,20 @@
     scrollbar-width: none;
   }
 
+  /* Labels use the primary text colour (accent blue on the dark bar is under 4.5:1). */
+  .studio-top-bar :global(.lp-btn.lp-btn--plain) {
+    color: var(--text-primary);
+  }
+
   /* Narrow canvas: labels give way to icons; names stay in tooltips and aria-labels. */
   @container studio-top (max-width: 1100px) {
     .studio-top-bar .collapsible-label {
       display: none;
     }
     .studio-top-bar {
-      gap: 6px;
-      padding: 4px 8px;
+      gap: var(--space-2);
+      padding: var(--space-1) var(--space-2);
     }
-  }
-
-  .studio-top-bar :is(.top-btn, .top-action-btn, .top-select):disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
-
-  .ledger-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
   }
 
   .studio-empty-state {
@@ -2677,11 +2608,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: var(--space-3);
     max-width: 380px;
-    padding: 28px 32px;
+    padding: var(--space-6) var(--space-8);
     text-align: center;
-    background: var(--glass-bg);
+    background: var(--surface-dialog);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
@@ -2691,14 +2622,14 @@
   }
 
   .studio-empty-state h2 {
-    margin: 4px 0 0;
-    font-size: 17px;
+    margin: var(--space-1) 0 0;
+    font-size: var(--font-size-title2);
     font-weight: 600;
   }
 
   .studio-empty-state p {
-    margin: 0 0 6px;
-    font-size: 13px;
+    margin: 0 0 var(--space-2);
+    font-size: var(--font-size-body);
     line-height: 1.45;
     opacity: 0.75;
   }
@@ -2706,7 +2637,7 @@
   .top-zone {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--space-2);
     flex-shrink: 0;
   }
 
@@ -2721,109 +2652,19 @@
     display: flex;
     background: var(--canvas-selection);
     border-radius: 9999px;
-    padding: 2px;
-    gap: 2px;
+    padding: var(--space-1);
+    gap: var(--space-1);
   }
 
   .page-indicator-badge {
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
     color: var(--glass-text);
-    padding: 2px 8px;
+    padding: var(--space-1) var(--space-2);
     background: var(--canvas-selection);
     border-radius: 9999px;
     white-space: nowrap;
     opacity: 0.85;
-  }
-
-  .top-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    border: none;
-    background: transparent;
-    color: var(--glass-text);
-    padding: 4px 8px;
-    border-radius: 9999px;
-    font-size: 11px;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background var(--motion-duration) ease, color var(--motion-duration) ease;
-  }
-
-  .top-btn:hover {
-    background: var(--canvas-selection);
-  }
-
-  .top-btn.active {
-    background: var(--accent);
-    color: var(--laser-core);
-  }
-
-  .top-icon-btn {
-    width: 26px;
-    height: 26px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    background: transparent;
-    color: var(--glass-text);
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    transition: background 0.15s ease;
-  }
-
-  .top-icon-btn:hover:not(:disabled) {
-    background: var(--canvas-selection);
-  }
-
-  .top-icon-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
-
-  .top-select {
-    background: var(--canvas-selection);
-    color: var(--glass-text);
-    border: 1px solid var(--glass-border);
-    border-radius: 9999px;
-    padding: 3px 8px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    outline: none;
-  }
-
-  .top-action-btn {
-    border: 1px solid var(--glass-border);
-    background: var(--canvas-selection);
-    color: var(--glass-text);
-    padding: 4px 10px;
-    border-radius: 9999px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.15s ease, color 0.15s ease;
-  }
-
-  .top-action-btn:hover {
-    background: var(--accent);
-    color: var(--laser-core);
-  }
-
-  .primary-btn {
-    background: var(--accent);
-    color: var(--laser-core);
-  }
-
-  .danger-btn {
-    background: var(--danger);
-    color: var(--laser-core);
   }
 
   .studio-status-banner {
@@ -2834,22 +2675,14 @@
     z-index: 165;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
-    background: var(--glass-bg);
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: var(--surface-dialog);
     border: 1px solid var(--glass-border);
     border-radius: 9999px;
-    font-size: 11px;
+    font-size: var(--font-size-caption);
     color: var(--glass-text);
     pointer-events: auto;
-  }
-
-  .banner-close {
-    border: none;
-    background: transparent;
-    color: var(--glass-text);
-    cursor: pointer;
-    padding: 2px;
   }
 
   .selection-action-bar {
@@ -2860,39 +2693,24 @@
     z-index: 160;
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 5px 12px;
-    background: var(--glass-bg);
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-3);
+    background: var(--surface-dialog);
     backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
     border-radius: 9999px;
     color: var(--glass-text);
     pointer-events: auto;
-    font-size: 11px;
+    font-size: var(--font-size-caption);
   }
 
   .sel-count {
     font-weight: 600;
-    padding: 0 4px;
-  }
-
-  .sel-btn {
-    border: none;
-    background: transparent;
-    color: var(--glass-text);
-    padding: 3px 7px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 500;
-    cursor: pointer;
+    padding: 0 var(--space-1);
   }
 
   .sel-btn:hover,
-  .sel-btn.active {
-    background: var(--accent);
-    color: var(--laser-core);
-  }
 
   .inline-text-editor {
     position: absolute;
@@ -2901,8 +2719,8 @@
     transform: translateX(-50%);
     z-index: 170;
     width: 340px;
-    padding: 12px;
-    background: var(--glass-bg);
+    padding: var(--space-3);
+    background: var(--surface-dialog);
     backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
@@ -2911,11 +2729,11 @@
     pointer-events: auto;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--space-2);
   }
 
   .editor-header {
-    font-size: 12px;
+    font-size: var(--font-size-footnote);
     font-weight: 600;
   }
 
@@ -2925,8 +2743,8 @@
     color: var(--glass-text);
     border: 1px solid var(--glass-border);
     border-radius: 6px;
-    padding: 6px;
-    font-size: 12px;
+    padding: var(--space-2);
+    font-size: var(--font-size-footnote);
     resize: vertical;
   }
 
@@ -2936,26 +2754,9 @@
     justify-content: space-between;
   }
 
-  .editor-size-label {
-    font-size: 11px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .editor-size-input {
-    width: 48px;
-    background: var(--canvas-bg);
-    color: var(--glass-text);
-    border: 1px solid var(--glass-border);
-    border-radius: 4px;
-    padding: 2px 4px;
-    font-size: 11px;
-  }
-
   .editor-btns {
     display: flex;
-    gap: 6px;
+    gap: var(--space-2);
   }
 
   .structural-edit-banner {
@@ -2966,29 +2767,23 @@
     z-index: 160;
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 8px 16px;
-    background: var(--glass-bg);
+    gap: var(--space-4);
+    padding: var(--space-2) var(--space-4);
+    background: var(--surface-dialog);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--accent);
     border-radius: 9999px;
     box-shadow: 0 4px 16px var(--glass-shadow);
     color: var(--glass-text);
-    font-size: 12px;
+    font-size: var(--font-size-footnote);
   }
 
   .banner-content {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-2);
     font-weight: 500;
-  }
-
-  .done-btn {
-    padding: 4px 12px;
-    font-size: 11px;
-    font-weight: 600;
   }
 
   .text-blocks-overlay {
@@ -3005,7 +2800,7 @@
     position: absolute;
     pointer-events: auto;
     border: 1px dashed var(--accent);
-    background: rgba(37, 99, 235, 0.08);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
     border-radius: 2px;
     cursor: text;
     transition: background 0.1s ease, border-color 0.1s ease;
@@ -3013,9 +2808,9 @@
 
   .pdf-text-block-hotspot:hover,
   .pdf-text-block-hotspot.hovered {
-    background: rgba(37, 99, 235, 0.2);
+    background: color-mix(in srgb, var(--accent) 20%, transparent);
     border: 1.5px solid var(--focus-ring);
-    box-shadow: 0 0 6px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 30%, transparent);
   }
 
   .hotspot-badge {
@@ -3024,9 +2819,9 @@
     left: 0;
     background: var(--accent);
     color: var(--laser-core);
-    font-size: 10px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
-    padding: 1px 6px;
+    padding: 1px var(--space-2);
     border-radius: 4px;
     white-space: nowrap;
     opacity: 0;
@@ -3048,15 +2843,15 @@
     z-index: 140;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 6px 14px;
-    background: var(--glass-bg);
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    background: var(--surface-dialog);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
     border-radius: 9999px;
     box-shadow: var(--glass-shadow);
     color: var(--glass-text);
-    font-size: 12px;
+    font-size: var(--font-size-footnote);
   }
 </style>

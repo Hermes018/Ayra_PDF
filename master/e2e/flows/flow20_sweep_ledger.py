@@ -17,7 +17,7 @@ SIZES = [(1200, 800), (1600, 1000)]
 THEMES = [("light", "Light"), ("dark", "Dark")]
 
 DRAWER = '[aria-label="Annotation History and Quantity Takeoff Drawer"]'
-DIALOG = '[aria-label="Multi-Page Advanced Paste"]'
+DIALOG = '[aria-label="Multi-page advanced paste"]'
 RAW_JS = ("return [...document.querySelectorAll(arguments[0] + ' button, ' + arguments[0] + ' input, ' + arguments[0] + ' select')]"
           ".filter(e => !e.closest('.lp-btnwrap, .lp-iconwrap, .lp-field')).length")
 FOCUS_JS = "const d = document.querySelector(arguments[0]); return d ? d.contains(document.activeElement) : null"

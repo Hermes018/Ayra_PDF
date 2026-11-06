@@ -94,18 +94,18 @@ def run(flow):
 
     # --- zoom buttons ---------------------------------------------------------------------
     z0 = app.transform()[0]
-    app.s.find('button[aria-label="Zoom In"]').click()
+    app.s.find('button[aria-label="Zoom in"]').click()
     time.sleep(0.2)
     z1 = app.transform()[0]
     flow.check("zoom in button: x1.25", _close(z1 / z0, 1.25), f"{z0:.3f} -> {z1:.3f}")
-    app.s.find('button[aria-label="Zoom Out"]').click()
+    app.s.find('button[aria-label="Zoom out"]').click()
     time.sleep(0.2)
     z2 = app.transform()[0]
     flow.check("zoom out button: x0.8", _close(z2 / z1, 0.8), f"{z1:.3f} -> {z2:.3f}")
 
     # --- presets --------------------------------------------------------------------------
     for val, want in (("150", 1.5), ("50", 0.5), ("100", 1.0)):
-        app.set_select('select[aria-label="Zoom Level Preset"]', val)
+        app.set_select('select[data-testid="zoom-preset"]', val)
         time.sleep(0.2)
         z = app.transform()[0]
         flow.check(f"zoom preset {val}%", _close(z, want), f"zoom {z:.3f}")
@@ -119,7 +119,7 @@ def run(flow):
     flow.check("ctrl+wheel up zooms in", z1 > z0 * 1.05, f"{z0:.3f} -> {z1:.3f} ({method})")
 
     # --- pinch ----------------------------------------------------------------------------
-    app.set_select('select[aria-label="Zoom Level Preset"]', "100")
+    app.set_select('select[data-testid="zoom-preset"]', "100")
     time.sleep(0.2)
     z0 = app.transform()[0]
     _pinch(app, cx, cy, 100, 200)
@@ -130,14 +130,14 @@ def run(flow):
     flow.check("pinch leaves no stray markup", nodes == 0, f"{nodes} vector node(s)")
 
     # --- fit width / fit page (page 1 must fit the canvas) ---------------------------------
-    app.set_select('select[aria-label="Zoom Level Preset"]', "fit-width")
+    app.set_select('select[data-testid="zoom-preset"]', "fit-width")
     time.sleep(0.3)
     pr, vp = app.page_rect(0), _viewport_rect(app)
     left, right = pr["x"] - vp["x"], pr["x"] + pr["w"] - vp["x"]
     flow.check("fit width: page 1 spans the canvas width and is fully visible",
                left >= -1 and right <= vp["w"] + 1 and pr["w"] >= 0.9 * vp["w"],
                f"page x {left:.0f}..{right:.0f} in canvas width {vp['w']:.0f}")
-    app.set_select('select[aria-label="Zoom Level Preset"]', "fit-page")
+    app.set_select('select[data-testid="zoom-preset"]', "fit-page")
     time.sleep(0.3)
     pr, vp = app.page_rect(0), _viewport_rect(app)
     inside = (pr["x"] >= vp["x"] - 1 and pr["x"] + pr["w"] <= vp["x"] + vp["w"] + 1 and
@@ -151,7 +151,7 @@ def run(flow):
     flow.warn("no console errors while navigating", not errs, " | ".join(errs)[:300])
 
     # --- two documents: open B in the running instance (OS "open with" path) ------------
-    app.set_select('select[aria-label="Zoom Level Preset"]', "150")
+    app.set_select('select[data-testid="zoom-preset"]', "150")
     time.sleep(0.2)
     view_a = app.transform()
     drv = flow.driver()
@@ -187,7 +187,7 @@ def run(flow):
     else:
         on_b = show(name_b, 1)
         if on_b:
-            app.set_select('select[aria-label="Zoom Level Preset"]', "50")
+            app.set_select('select[data-testid="zoom-preset"]', "50")
             time.sleep(0.2)
         view_b = app.transform() if on_b else None
         back_a = show(name_a, pages_a)

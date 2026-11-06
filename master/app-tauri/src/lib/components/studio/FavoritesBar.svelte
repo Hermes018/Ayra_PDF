@@ -95,7 +95,7 @@
     gap: var(--space-2);
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-pill);
-    background: var(--glass-bg);
+    background: var(--surface-dialog);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);

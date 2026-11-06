@@ -60,7 +60,7 @@ def run(flow):
     app.s.mouse_click(X + 250, Y + 60)
     if app.s.wait("return !!document.querySelector('[data-testid=inline-pdf-text-editor] textarea')", 5):
         app.set_input("[data-testid=inline-pdf-text-editor] textarea", "E2E reopen note")
-        app.click_button("Commit Text", "[data-testid=inline-pdf-text-editor] button")
+        app.click_button("Commit text", "[data-testid=inline-pdf-text-editor] button")
     time.sleep(0.3)
     marks = app.vector_nodes()
     flow.check("three markups on the page before saving", marks == 3, f"{marks} vector nodes")

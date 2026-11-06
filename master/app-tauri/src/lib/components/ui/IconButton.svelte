@@ -13,6 +13,8 @@
       pressed?: boolean;
       /** Command id; the bound chord (commands.shortcutFor) is appended to the tooltip. */
       shortcutCmd?: string;
+      /** Tooltip text when it should say more than the accessible name (e.g. "Undo: Draw stroke"). */
+      tooltip?: string;
       size?: 'sm' | 'md' | 'lg';
     };
 
@@ -24,6 +26,7 @@
     disabled = false,
     disabledReason,
     shortcutCmd,
+    tooltip,
     size = 'md',
     class: klass = '',
     'data-testid': testid,
@@ -35,7 +38,8 @@
   $effect(() => warnIfBlank('IconButton', 'disabledReason', disabledReason, disabled));
 
   const chord = $derived(shortcutCmd ? commands.shortcutFor(shortcutCmd) : null);
-  const tipText = $derived(disabled && disabledReason ? `${ariaLabel}: ${disabledReason}` : chord ? `${ariaLabel} (${chord})` : ariaLabel);
+  const tipBase = $derived(tooltip ?? ariaLabel);
+  const tipText = $derived(disabled && disabledReason ? `${ariaLabel}: ${disabledReason}` : chord ? `${tipBase} (${chord})` : tipBase);
 
   function activate(e: MouseEvent): void {
     if (disabled) {

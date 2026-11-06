@@ -438,7 +438,7 @@
     z-index: 150;
     pointer-events: auto;
     display: flex;
-    background: var(--glass-bg);
+    background: var(--surface-dialog);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
@@ -589,7 +589,7 @@
     max-height: 380px;
     display: flex;
     flex-direction: column;
-    background: var(--glass-bg);
+    background: var(--surface-dialog);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--glass-border);

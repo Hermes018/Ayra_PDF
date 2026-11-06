@@ -57,7 +57,7 @@ describe('Edit Text hotspot reachable by pointer (BUG-013)', () => {
     test('a pointer click on a text block in Edit Text mode opens that block for editing', async () => {
         render(SpatialCanvas);
         await waitFor(() => expect(viewport.pages).toHaveLength(1));
-        const editBtn = await screen.findByRole('button', { name: /Edit Text/ });
+        const editBtn = await screen.findByRole('button', { name: /Edit text/ });
         await waitFor(() => expect(editBtn).toBeEnabled());
         await fireEvent.click(editBtn);
         await screen.findByRole('button', { name: /Edit text: Hello structural/ });
@@ -69,8 +69,8 @@ describe('Edit Text hotspot reachable by pointer (BUG-013)', () => {
         await fireEvent.pointerUp(wet, { clientX: centre.x, clientY: centre.y, button: 0, pointerId: 1 });
 
         const editor = await screen.findByTestId('inline-pdf-text-editor');
-        expect(editor).toHaveTextContent('Structural PDF Text Edit');
-        expect((screen.getByRole('textbox', { name: 'Annotation or PDF Text Content' }) as HTMLTextAreaElement).value).toBe(
+        expect(editor).toHaveTextContent('Structural PDF text edit');
+        expect((screen.getByRole('textbox', { name: 'Annotation or PDF text content' }) as HTMLTextAreaElement).value).toBe(
             'Hello structural'
         );
     });
@@ -78,7 +78,7 @@ describe('Edit Text hotspot reachable by pointer (BUG-013)', () => {
     test('a click on empty page area in Edit Text mode with Pan does not open a stray editor', async () => {
         render(SpatialCanvas);
         await waitFor(() => expect(viewport.pages).toHaveLength(1));
-        const editBtn = await screen.findByRole('button', { name: /Edit Text/ });
+        const editBtn = await screen.findByRole('button', { name: /Edit text/ });
         await waitFor(() => expect(editBtn).toBeEnabled());
         await fireEvent.click(editBtn);
         await screen.findByRole('button', { name: /Edit text: Hello structural/ });

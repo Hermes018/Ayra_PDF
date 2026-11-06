@@ -95,7 +95,7 @@ describe('Studio zoom preset uses the active page (BUG-020)', () => {
     test('Fit Width on a tabloid page keeps it inside the 990 px canvas', async () => {
         render(SpatialCanvas);
         await waitFor(() => expect(viewport.pages).toHaveLength(1));
-        const preset = screen.getByTitle(/Zoom Preset/) as HTMLSelectElement;
+        const preset = screen.getByTestId('zoom-preset') as HTMLSelectElement;
         await fireEvent.change(preset, { target: { value: 'fit-width' } });
         const r = pageScreenRect('main-canvas', 0);
         expect(r.left).toBeGreaterThanOrEqual(0);
@@ -106,7 +106,7 @@ describe('Studio zoom preset uses the active page (BUG-020)', () => {
     test('Fit Page on a tabloid page keeps all of it visible', async () => {
         render(SpatialCanvas);
         await waitFor(() => expect(viewport.pages).toHaveLength(1));
-        const preset = screen.getByTitle(/Zoom Preset/) as HTMLSelectElement;
+        const preset = screen.getByTestId('zoom-preset') as HTMLSelectElement;
         await fireEvent.change(preset, { target: { value: 'fit-page' } });
         const r = pageScreenRect('main-canvas', 0);
         expect(r.left).toBeGreaterThanOrEqual(0);
