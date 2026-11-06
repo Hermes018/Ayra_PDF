@@ -112,6 +112,23 @@ master/
 │   │   │   │   │   ├── RadialMenu.svelte                     # Circular quick-tool menu
 │   │   │   │   │   ├── ShortcutSettings.svelte               # Keyboard shortcut editor
 │   │   │   │   │   └── StudioIcon.svelte                     # SVG icon registry for studio tools
+│   │   │   │   ├── ui/                                       # Shared UI component library (DESIGN_LANGUAGE.md): tokens only, strict audit; used by the sweep
+│   │   │   │   │   ├── Button.svelte                         # Button: primary/secondary/destructive/plain, sizes, loading; disabled requires a reason (tooltip)
+│   │   │   │   │   ├── contrast.test.ts                      # Tests: dialog/title/body text contrast from tokens meets 4.5:1 (body) and 3:1 (large), light and dark
+│   │   │   │   │   ├── Dialog.svelte                         # Dialog/Sheet: focus trap, Escape via commandEngine registerEscape
+│   │   │   │   │   ├── EmptyState.svelte                     # Empty state: title, explanation, primary action
+│   │   │   │   │   ├── ErrorState.svelte                     # Error state: what happened + what to do + optional Retry
+│   │   │   │   │   ├── IconButton.svelte                     # Icon-only button; aria-label required
+│   │   │   │   │   ├── Input.svelte                          # Text input with label, hint and error
+│   │   │   │   │   ├── Progress.svelte                       # Progress bar for long jobs, optional Cancel
+│   │   │   │   │   ├── Select.svelte                         # Select with label and error
+│   │   │   │   │   ├── SidebarSection.svelte                 # Collapsible sidebar section
+│   │   │   │   │   ├── Toggle.svelte                         # On/off switch with label
+│   │   │   │   │   ├── Tooltip.svelte                        # Tooltip used for disabled reasons and icon labels
+│   │   │   │   │   ├── tooltip.test.ts                       # Tests: tooltip clamped to the viewport and flips side when there is no room (anchor at x≈0)
+│   │   │   │   │   ├── tooltipPlacement.ts                   # Tooltip placement: viewport clamp and side flip
+│   │   │   │   │   ├── types.ts                              # Shared prop types for ui/ components
+│   │   │   │   │   └── ui.test.ts                            # Tests: render, keyboard (Enter/Space, Tab, Escape) and disabled-reason exposure per ui/ component
 │   │   │   │   ├── Dropzone.svelte                           # File drop/pick area (native OS paths)
 │   │   │   │   ├── FaqModal.svelte                           # Help/FAQ dialog, lazy-loads translated FAQ
 │   │   │   │   ├── FaqModalKeys.test.ts                      # Tests: FaqModal key behaviour (Escape via commandEngine, focus in inputs/dialogs) — characterization kept green across the move
@@ -138,6 +155,7 @@ master/
 │   │   │   │   │   ├── snap-geometry.standard-form.p0.golden.json  # Golden: snap segments extracted from corpus standard-form.pdf page 1
 │   │   │   │   │   ├── snap.standard-form.p0.golden.json     # Golden: snap results on corpus geometry
 │   │   │   │   │   └── snap.synthetic.golden.json            # Golden: snap results on synthetic geometry
+│   │   │   │   ├── commandEngine.space.test.ts               # Tests (BUG-043): Space activates focused interactive elements; canvas Space behaviour characterized and kept
 │   │   │   │   ├── commandEngine.svelte.ts                   # Central keyboard shortcut/command dispatcher (only place keydown is handled)
 │   │   │   │   ├── core.test.ts                              # Tests: viewport zoom/pan/fit and engine basics
 │   │   │   │   ├── defaultPresets.json                       # Default pen/highlighter/shape presets
@@ -159,8 +177,12 @@ master/
 │   │   │   │   ├── snapEngine.svelte.ts                      # CAD-style snapping to PDF vector geometry (endpoint, midpoint, intersection)
 │   │   │   │   ├── studioReactivity.test.ts                  # Tests: tool/preset reactivity and ink shape recognition
 │   │   │   │   ├── themeContract.svelte.ts                   # Theme tokens (light/dark) used by every studio component
+│   │   │   │   ├── themeContract.test.ts                     # Tests: themeContract is the single token source (applyToRoot, NEW tokens, glass-blur parity with app.css)
 │   │   │   │   ├── toolEngine.svelte.ts                      # Active tool, tool presets and favourites
 │   │   │   │   └── viewportEngine.svelte.ts                  # Canvas zoom/pan/fit maths
+│   │   │   ├── gallery/                                      # Dev-only component gallery (excluded from release builds)
+│   │   │   │   ├── Gallery.svelte                            # Component gallery: every ui/ component in every state, light + dark (only with VITE_LPDF_GALLERY=1)
+│   │   │   │   └── marker.ts                                 # Single gallery marker constant used by Gallery.svelte and check-no-gallery.sh (positive + absent checks)
 │   │   │   ├── i18n/                                         # Help/FAQ translations
 │   │   │   │   ├── faq/                                      # FAQ content per language
 │   │   │   │   │   ├── bn.json                               # FAQ in Bengali
@@ -224,6 +246,8 @@ master/
 │   │   ├── locales/                                          # UI translation strings
 │   │   │   └── en.json                                       # English UI strings
 │   │   ├── routes/                                           # SvelteKit routes (single page app)
+│   │   │   ├── gallery/                                      # Gallery route (build-flag gated)
+│   │   │   │   └── +page.svelte                              # Gallery route page; renders nothing unless VITE_LPDF_GALLERY=1
 │   │   │   ├── +layout.svelte                                # Root layout: global CSS + toasts
 │   │   │   ├── +layout.ts                                    # Disables SSR/prerender (pure client SPA for Tauri)
 │   │   │   └── +page.svelte                                  # The one page: switches between tool views (default Studio) and handles OS "open with" files
@@ -413,7 +437,8 @@ master/
 │   │   ├── flow09_edit_text.py                               # Flow 9: edit PDF text in place
 │   │   ├── flow10_organize.py                                # Flow 10: reorder, rotate, delete, merge pages
 │   │   ├── flow11_save_reopen.py                             # Flow 11: save new file, original untouched, reopen in app/poppler/pdf.js
-│   │   └── flow12_soak.py                                    # Flow 12: scripted soak, crash/memory/fd/temp checks
+│   │   ├── flow12_soak.py                                    # Flow 12: scripted soak, crash/memory/fd/temp checks
+│   │   └── flow13_gallery.py                                 # E2E flow 13: gallery screenshots light/dark at 1200x800 and 1600x1000 (default, focus, hover/disabled, dialog), no console errors
 │   ├── .gitignore                                            # Ignores e2e/out/ (reports, screenshots, copied binary)
 │   ├── common.py                                             # Ground-truth helpers (poppler/qpdf/hashes), process sampling, isolation (private D-Bus/XDG)
 │   ├── pkg_smoke.py                                          # Clean-user install smoke test for rpm/deb/AppImage (flows 1-2 against the packaged binary, fresh HOME)
@@ -487,6 +512,7 @@ master/
 │   ├── ANTIGRAVITY_PROMPTS.md                                # Prompts used with the Antigravity agent for phases 11.7–12.1
 │   ├── ANTIGRAVITY_RUNBOOK.md                                # Step runbook for those phases
 │   ├── build-lock.sh                                         # Runs a heavy build under the shared flock lock with CARGO_BUILD_JOBS=2 and the shared target dir (ADR-020)
+│   ├── check-no-gallery.sh                                   # verify.sh step: builds the release frontend without the flag and fails if gallery code is present
 │   ├── CLAUDE_AUDIT_CONTEXT.md                               # Brief for an independent read-only audit
 │   ├── make_audit_bundle.sh                                  # Collects evidence into audit_bundle.tar.gz for external review
 │   ├── measure-ram.sh                                        # Measures a job's whole-cgroup peak and largest-process RSS into logs/runs/ram-measure.tsv

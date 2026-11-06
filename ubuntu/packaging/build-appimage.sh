@@ -96,5 +96,5 @@ cd "$MASTER"
 "$RUN" appimage-pnpm-install corepack pnpm --dir app-tauri install --offline --frozen-lockfile
 # NO_STRIP: linuxdeploy's bundled (older) strip is known to fail on newer distro libraries
 # (.relr.dyn); the release binary is already stripped by the cargo profile.
-NO_STRIP=true "$RUN" appimage-bundle corepack pnpm --dir app-tauri tauri build --bundles appimage --config "$OVERLAY"
+NO_STRIP=true "$RUN" appimage-bundle env -u VITE_LPDF_GALLERY corepack pnpm --dir app-tauri tauri build --bundles appimage --config "$OVERLAY"
 echo "Package written to: $MASTER/target/release/bundle/appimage/"

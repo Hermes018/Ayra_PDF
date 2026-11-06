@@ -55,7 +55,7 @@ def preflight(binary):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--flows", default="", help="comma list, e.g. 1,2,5 (default: all)")
+    ap.add_argument("--flows", default="", help="comma list, e.g. 1,2,5 (default: flows 1-12; 13 = optional gallery smoke, needs a VITE_LPDF_GALLERY=1 binary)")
     ap.add_argument("--binary", default=common.DEFAULT_BINARY)
     ap.add_argument("--soak-minutes", type=float, default=60.0, help="flow 12 duration (default 60)")
     ap.add_argument("--out", default=common.OUT)
@@ -84,7 +84,7 @@ def main():
     try:
         wanted = sorted({int(x) for x in a.flows.split(",") if x.strip()}) if a.flows else ALL_FLOWS
     except ValueError:
-        print(f"--flows must be a comma list of flow numbers 1-12, got {a.flows!r}", file=sys.stderr)
+        print(f"--flows must be a comma list of flow numbers (1-12 are the required golden paths, 13 is the optional gallery smoke), got {a.flows!r}", file=sys.stderr)
         return 2
     problems = preflight(binary)
     if problems:
@@ -136,7 +136,7 @@ def main():
             if n not in mods:
                 # An unknown or missing flow is a FAIL, never a silent skip.
                 why = (f"no module e2e/flows/flow{n:02d}_*.py" if n in ALL_FLOWS
-                       else f"unknown flow {n} (valid: 1-12)")
+                       else f"unknown flow {n} (valid: 1-12 required, 13 optional gallery smoke)")
                 print(f"== flow {n:02d} FAIL -- {why}", flush=True)
                 report["flows"].append({"flow": n, "title": "(missing)", "status": "FAIL", "reason": why,
                                         "duration_s": 0, "warnings": [], "steps": [], "metrics": {},

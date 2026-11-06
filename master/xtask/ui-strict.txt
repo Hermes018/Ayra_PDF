@@ -1,3 +1,15 @@
 # Files the UI-consistency sweep has finished (globs, one per line, relative to app-tauri/src).
 # `cargo xtask studio-audit --strict master/xtask/ui-strict.txt` fails on any violation in these.
 # Empty for now; add a path when its sweep lands, never remove one.
+# C0 shared component library: strict from day one.
+lib/components/ui/Button.svelte
+lib/components/ui/Dialog.svelte
+lib/components/ui/EmptyState.svelte
+lib/components/ui/ErrorState.svelte
+lib/components/ui/IconButton.svelte
+lib/components/ui/Input.svelte
+lib/components/ui/Progress.svelte
+lib/components/ui/Select.svelte
+lib/components/ui/SidebarSection.svelte
+lib/components/ui/Toggle.svelte
+lib/components/ui/Tooltip.svelte

@@ -16,6 +16,6 @@ command -v pnpm >/dev/null || { echo "pnpm not on PATH: run 'corepack enable' on
 cd "$MASTER"
 # The package ships the CLI and the sandboxed worker next to the GUI binary (see overlay "files").
 "${SB[@]}" cargo build --release -p lpdf-cli -p lpdf-worker
-"${SB[@]}" corepack pnpm --dir app-tauri install --frozen-lockfile
-"${SB[@]}" corepack pnpm --dir app-tauri tauri build --bundles rpm --config "$OVERLAY"
+"${SB[@]}" env -u VITE_LPDF_GALLERY corepack pnpm --dir app-tauri install --frozen-lockfile
+"${SB[@]}" env -u VITE_LPDF_GALLERY corepack pnpm --dir app-tauri tauri build --bundles rpm --config "$OVERLAY"
 echo "Package written to: $MASTER/target/release/bundle/rpm/"

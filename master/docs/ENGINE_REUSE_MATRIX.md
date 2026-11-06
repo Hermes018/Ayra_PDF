@@ -106,6 +106,14 @@ The `lpdf-tools-*` crates (organize, security, edit, convert, optimize, markdown
 | `lint/ast-grep/rules/string-error.yml` ("String as an error type" → thiserror enum) | cadcraft | **Yes in spirit** (DO-7). | `studio.rs` returns `Result<_, String>` everywhere; new adapter crates use typed errors with stable codes (`GeomError::code`). Migrating `studio.rs` is post-prototype. |
 | Workspace `edition = "2024"`, `rust-version = "1.95"` | cadcraft | n/a | Only matters because cadcraft crates need >= 1.95; our toolchain is stable 1.99 but `Cargo.toml` still declares `rust-version = "1.74"` (inaccurate once cadcraft is linked). |
 
+## 4b. Frontend UI libraries (C0, 2026-11-06; not counted in the section 5 summary)
+
+| Candidate | Version | Decision | Licence evidence | Reason |
+|---|---|---|---|---|
+| **Bits UI** (headless, Svelte 5) | 2.20.6 (peer `svelte ^5.33`, `@internationalized/date`) | **REJECT** (fit, not licence) | Checked in a scratch install with `pnpm licenses list --json` (scripts ignored): 33 packages, 29 MIT (`bits-ui`, `runed`, `svelte-toolbelt`, `tabbable`, `@floating-ui/*`, `esm-env`, `svelte` and its deps) and 4 Apache-2.0 (`@internationalized/date`, `@swc/helpers`, `aria-query`, `axobject-query`). No GPL/LGPL/MPL. No `preinstall`/`install`/`postinstall` script in any package. `bits-ui/dist` has no `fetch(`, `XMLHttpRequest`, `WebSocket`, `sendBeacon` or http URL; `fetch`/`URLSearchParams` appear only in `runed`'s unused `resource` and `use-search-params` utilities. | Passes every acceptance test, but we need 10 small components and its Dialog/Select/Tooltip install their own document `keydown` handlers (Escape, typeahead) and focus scopes. That breaks the rule that shortcuts and Escape go only through `commandEngine.registerEscape`, and it adds 7 runtime packages (floating-ui, tabbable, runed, svelte-toolbelt) to a bundle we audit by hand. Native `<button>`, `<select>` and `<input>` give better keyboard and a11y behaviour than a headless re-implementation. |
+| **Melt UI** | 0.44.0 (`melt`, runes builders) | **REJECT** | MIT; but runtime deps include `jest-axe` (a test library) plus `focus-trap`, `runed 0.23` and `@floating-ui/dom`. | Same keyboard-ownership conflict; the dependency list ships a test library at runtime; pre-1.0 API. Not installed. |
+| **Own components** (`lib/components/ui/`) | n/a | **ADOPT (own code)** | No new dependency. | Button, IconButton, Input, Select, Toggle, Dialog (sentinel focus trap, no key listeners), EmptyState, ErrorState, Progress, SidebarSection, Tooltip. |
+
 ## 5. Summary (61 rows)
 
 | Decision | Count | Rows |

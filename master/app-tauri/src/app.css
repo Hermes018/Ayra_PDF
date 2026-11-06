@@ -4,31 +4,10 @@
    ========================================================================== */
 
 :root {
-  color-scheme: light dark;
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
-    "Inter", "Inter Variable", "Cantarell", "Noto Sans", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", monospace;
-
-  --radius-xs: 6px;
-  --radius-sm: 8px;
-  --radius-md: 10px;   /* buttons, sidebar pills, inputs */
-  --radius-lg: 14px;   /* cards */
-  --radius-xl: 20px;   /* toasts, modals */
-  --radius-pill: 999px;
-
-  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
-  --space-4: 1rem;    --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem;
-
+  /* Token VALUES live in core/themeContract.svelte.ts (single source) and are written onto the root by
+     theme.applyToRoot / theme.attach. This file keeps only layout constants and legacy aliases. */
   --sidebar-width: 210px;
   --statusbar-height: 28px;
-
-  --glass-blur: blur(24px) saturate(180%);
-  --glass-blur-toast: blur(20px) saturate(180%);
-
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --dur-fast: 120ms;
-  --dur-med: 220ms;
 
   font-family: var(--font-sans);
   font-size: 13px;               /* macOS body size */
@@ -37,45 +16,9 @@
   text-rendering: optimizeLegibility;
 }
 
-/* ---------- DARK THEME ---------- */
-:root,
-:root[data-theme="dark"],
-:root.dark,
-[data-theme="dark"] {
-  color-scheme: dark;
-  --glass-bg-canvas: rgba(18, 18, 22, 1);
-  --glass-canvas-gradient:
-    radial-gradient(1200px 800px at 0% 0%, rgba(10, 132, 255, 0.10), transparent 60%),
-    radial-gradient(900px 700px at 100% 100%, rgba(191, 90, 242, 0.08), transparent 60%);
-  --glass-bg-sidebar: rgba(30, 30, 36, 0.62);
-  --glass-bg-surface: rgba(44, 44, 52, 0.55);
-  --glass-bg-elevated: rgba(58, 58, 68, 0.72);
-  --glass-bg-input: rgba(118, 118, 128, 0.24);
-  --glass-bg-hover: rgba(255, 255, 255, 0.06);
-  --glass-bg-active: rgba(10, 132, 255, 0.22);
-
-  --glass-border-subtle: rgba(255, 255, 255, 0.08);
-  --glass-border-specular: rgba(255, 255, 255, 0.14);
-  --glass-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.40), 0 2px 8px rgba(0, 0, 0, 0.25);
-  --glass-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.35);
-
-  --text-primary: rgba(255, 255, 255, 0.92);
-  --text-secondary: rgba(235, 235, 245, 0.62);
-  --text-tertiary: rgba(235, 235, 245, 0.36);
-
-  --accent-primary: #0A84FF;
-  --accent-primary-hover: #409CFF;
-  --accent-ring: rgba(10, 132, 255, 0.45);
-  --text-on-accent: #FFFFFF;
-
-  --semantic-success: #34C759;
-  --semantic-warning: #FF9F0A;
-  --semantic-danger: #FF3B30;
-
-  --option-bg: #2C2C34;
-  --option-fg: #F2F2F7;
-
-  /* Legacy theme aliases for full backwards compatibility */
+:root {
+  color-scheme: light dark;
+  /* Legacy theme aliases (references only, resolved from the contract tokens) */
   --bg-color: var(--glass-bg-canvas);
   --surface-bg: var(--glass-bg-surface);
   --surface-elevated: var(--glass-bg-elevated);
@@ -91,60 +34,8 @@
   --option-text: var(--option-fg);
   --shadow-color: var(--glass-shadow-sm);
 }
-
-/* ---------- LIGHT THEME ---------- */
-:root[data-theme="light"],
-:root.light,
-[data-theme="light"] {
-  color-scheme: light;
-  --glass-bg-canvas: rgba(245, 245, 247, 0.8);
-  --glass-canvas-gradient:
-    radial-gradient(1200px 800px at 0% 0%, rgba(0, 122, 255, 0.08), transparent 60%),
-    radial-gradient(900px 700px at 100% 100%, rgba(175, 82, 222, 0.06), transparent 60%);
-  --glass-bg-sidebar: rgba(246, 246, 250, 0.68);
-  --glass-bg-surface: rgba(255, 255, 255, 0.6);
-  --glass-bg-elevated: rgba(255, 255, 255, 0.82);
-  --glass-bg-input: rgba(118, 118, 128, 0.12);
-  --glass-bg-hover: rgba(0, 0, 0, 0.04);
-  --glass-bg-active: rgba(0, 122, 255, 0.14);
-
-  --glass-border-subtle: rgba(0, 0, 0, 0.08);
-  --glass-border-specular: rgba(255, 255, 255, 0.90);
-  --glass-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.06);
-  --glass-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.08);
-
-  --text-primary: rgba(0, 0, 0, 0.88);
-  --text-secondary: rgba(60, 60, 67, 0.66);
-  --text-tertiary: rgba(60, 60, 67, 0.36);
-
-  --accent-primary: #007AFF;
-  --accent-primary-hover: #0066D6;
-  --accent-ring: rgba(0, 122, 255, 0.35);
-  --text-on-accent: #FFFFFF;
-
-  --semantic-success: #34C759;
-  --semantic-warning: #FF9F0A;
-  --semantic-danger: #FF3B30;
-
-  --option-bg: #FFFFFF;
-  --option-fg: #1C1C1E;
-
-  /* Legacy theme aliases for full backwards compatibility */
-  --bg-color: var(--glass-bg-canvas);
-  --surface-bg: var(--glass-bg-surface);
-  --surface-elevated: var(--glass-bg-elevated);
-  --text-color: var(--text-primary);
-  --text-muted: var(--text-secondary);
-  --border-color: var(--glass-border-subtle);
-  --border-subtle: var(--glass-border-subtle);
-  --primary-color: var(--accent-primary);
-  --primary-hover: var(--accent-primary-hover);
-  --input-bg: var(--glass-bg-input);
-  --input-text: var(--text-primary);
-  --input-border: var(--glass-border-subtle);
-  --option-text: var(--option-fg);
-  --shadow-color: var(--glass-shadow-sm);
-}
+:root[data-theme="dark"], :root.dark, [data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="light"], :root.light, [data-theme="light"] { color-scheme: light; }
 
 /* ---------- Base & Reset ---------- */
 *, *::before, *::after {

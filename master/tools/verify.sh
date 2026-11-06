@@ -17,10 +17,12 @@ if [ "$mode" = all ] || [ "$mode" = --rust ]; then
   step gate cargo xtask gate                       # fmt, clippy, nextest, deny, audit, protocol-lint, android check
   step feature-map cargo xtask feature-map-check
   step studio-audit cargo xtask studio-audit --strict
+  step ui-strict cargo xtask studio-audit --strict xtask/ui-strict.txt   # ui/ components are strict from day one (C0)
 fi
 if [ "$mode" = all ] || [ "$mode" = --web ]; then
   step svelte-check pnpm --dir app-tauri check
   step vitest pnpm --dir app-tauri exec vitest run --maxWorkers=2
+  step no-gallery-in-release bash -c 'cd app-tauri && VITE_LPDF_GALLERY=1 pnpm build && ../tools/check-no-gallery.sh --expect-present && env -u VITE_LPDF_GALLERY pnpm build && ../tools/check-no-gallery.sh'   # positive control (flagged build has the marker), then the release bundle must not
 fi
 step tree-map python3 tools/tree/render_tree.py --check
 git -C "$top" checkout -- master/logs/sbom.cdx.json 2>/dev/null || true   # gate regenerates it

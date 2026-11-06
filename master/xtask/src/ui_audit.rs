@@ -69,10 +69,14 @@ impl Violation {
 /// `lib/components/**/<Name>.svelte` (so the rule bites the moment the component lands, and never
 /// asks for something that does not exist). The component's own file may use the raw tag.
 pub const SHARED_COMPONENTS: &[(&str, &[&str])] = &[
-    ("button", &["Button", "IconButton"]),
+    (
+        "button",
+        &["Button", "IconButton", "Toggle", "SidebarSection"],
+    ),
     (
         "input",
         &[
+            "Input",
             "TextField",
             "TextInput",
             "Checkbox",

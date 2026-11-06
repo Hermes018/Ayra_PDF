@@ -8,6 +8,12 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(() => ({
   plugins: [sveltekit()],
 
+  // The gallery flag comes ONLY from the process environment (never from .env files), so a stray
+  // .env cannot ship the gallery in a release build; release scripts run with `env -u VITE_LPDF_GALLERY`.
+  define: {
+    "import.meta.env.VITE_LPDF_GALLERY": JSON.stringify(process.env.VITE_LPDF_GALLERY ?? ""),
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors

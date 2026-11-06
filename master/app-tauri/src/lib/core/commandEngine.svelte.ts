@@ -23,6 +23,10 @@ export type Chord = string; // canonical: "Ctrl+Alt+Shift+Meta+Key"
 
 const HISTORY_LIMIT_DEFAULT = 500; // user-configurable via prefs; older entries are dropped from memory, not the file
 
+/** Elements whose Space key press is theirs (activation, typing), never the global pan spring. */
+const SPACE_OWNERS =
+  'button, select, textarea, input, a[href], [role="button"], [role="switch"], [role="checkbox"], [role="menuitem"], [role="tab"], [contenteditable=""], [contenteditable="true"]';
+
 export function canonicalChord(e: Pick<KeyboardEvent, 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey' | 'key'>): Chord {
   const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
   return [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.metaKey && 'Meta', key]
@@ -255,7 +259,8 @@ export class CommandBusAndShortcutEngine {
         e.preventDefault();
         return;
       }
-      if (e.code === 'Space' && !this.spaceSpringActive) {
+      // BUG-043: Space on a focused control belongs to the control (activation), not to the pan spring.
+      if (e.code === 'Space' && !this.spaceSpringActive && !(el && el.closest?.(SPACE_OWNERS))) {
         this.spaceSpringActive = true;
         tools.springLoad('preset.pan');
         e.preventDefault();

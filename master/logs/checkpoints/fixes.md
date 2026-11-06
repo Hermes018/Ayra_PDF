@@ -1,5 +1,12 @@
 # checkpoints/fixes.md — fixes builder (wt/fixes). Builder keeps this current; < 150 lines.
-- **CURRENT TASK (ERR-007 / BUG-015, P0 flow 5) — uncommitted, plan runs/plan-ERR007.md:** own clipped hatch engine
+- **C0 review fixes done (opaque dialog, tooltip clamp, marker+control, env guard, run.py text, BUG-043 Space). CURRENT TASK (C0, shared UI component library) — uncommitted, plan runs/plan-C0.md:** Bits UI 2.20.6 / Melt 0.44.0 evaluated, both REJECT
+  (row in ENGINE_REUSE_MATRIX 4b; licences fine, keyboard-ownership conflict). Tokens: themeContract.svelte.ts is the single source
+  (+applyToRoot, 11 NEW, full --glass-blur); app.css keeps only aliases/layout (red logs/runs/c0-theme-red-keep.log -> green c0-theme-green.log).
+  ui/ = Button IconButton Input Select Toggle Dialog EmptyState ErrorState Progress SidebarSection Tooltip (+ToastContainer reused);
+  ui.test.ts 29 tests green. Gallery: routes/gallery + lib/gallery (VITE_LPDF_GALLERY=1), tools/check-no-gallery.sh (+verify.sh step),
+  e2e/flows/flow13_gallery.py PASS (c0-e2e-gallery2.log), shots in e2e/out/screens/gallery_*. xtask: ui-strict.txt lists ui/*, ui_audit.rs
+  implementer lists += Input/Toggle/SidebarSection. FINDING: commandEngine swallows Space on focused buttons (flow13 WARN). Next: verify.sh gate.
+- **PREVIOUS TASK (ERR-007 / BUG-015, P0 flow 5) — uncommitted, plan runs/plan-ERR007.md:** own clipped hatch engine
   `HatchEngine::Studio` (default; lpdf-geom src/fill.rs + patterns.rs, no cadcraft in the path). Red first: logs/runs/geom-red.log
   (7/10 studio_hatch fail on Legacy), logs/runs/e2e-red-keep.log (saved PDF segment outside L). Green: geom 30/30, app-tauri 12/12, vitest HatchDefs.
   Preview = Rust-generated app-tauri/src/lib/core/hatchPatterns.json (checked by studio_golden.rs). AR-CONC x1/16 kept in adapter

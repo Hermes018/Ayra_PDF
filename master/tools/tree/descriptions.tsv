@@ -590,3 +590,29 @@ master/app-tauri/src/lib/components/FaqModalKeys.test.ts	Tests: FaqModal key beh
 master/e2e/test_leak_check.py	Tests (BUG-031): post-run leak check catches leaked harness/dbus processes; nothing left after bus stop or SIGTERM
 master/docs/DESIGN_LANGUAGE.md	App-wide design language: principles, tokens (themeContract + NEW), shared ui/ components (create vs reuse), patterns, wording guide, sweep "done" rules
 master/logs/DOGFOOD_AUTO.md	Automated real-world PDF dogfood results (files by anonymised DF-xx ID only; mapping kept outside the repo)
+master/app-tauri/src/lib/components/ui/	Shared UI component library (DESIGN_LANGUAGE.md): tokens only, strict audit; used by the sweep
+master/app-tauri/src/lib/components/ui/Button.svelte	Button: primary/secondary/destructive/plain, sizes, loading; disabled requires a reason (tooltip)
+master/app-tauri/src/lib/components/ui/IconButton.svelte	Icon-only button; aria-label required
+master/app-tauri/src/lib/components/ui/Input.svelte	Text input with label, hint and error
+master/app-tauri/src/lib/components/ui/Select.svelte	Select with label and error
+master/app-tauri/src/lib/components/ui/Toggle.svelte	On/off switch with label
+master/app-tauri/src/lib/components/ui/Dialog.svelte	Dialog/Sheet: focus trap, Escape via commandEngine registerEscape
+master/app-tauri/src/lib/components/ui/EmptyState.svelte	Empty state: title, explanation, primary action
+master/app-tauri/src/lib/components/ui/ErrorState.svelte	Error state: what happened + what to do + optional Retry
+master/app-tauri/src/lib/components/ui/Progress.svelte	Progress bar for long jobs, optional Cancel
+master/app-tauri/src/lib/components/ui/SidebarSection.svelte	Collapsible sidebar section
+master/app-tauri/src/lib/components/ui/Tooltip.svelte	Tooltip used for disabled reasons and icon labels
+master/app-tauri/src/lib/components/ui/types.ts	Shared prop types for ui/ components
+master/app-tauri/src/lib/components/ui/ui.test.ts	Tests: render, keyboard (Enter/Space, Tab, Escape) and disabled-reason exposure per ui/ component
+master/app-tauri/src/lib/core/themeContract.test.ts	Tests: themeContract is the single token source (applyToRoot, NEW tokens, glass-blur parity with app.css)
+master/app-tauri/src/lib/gallery/	Dev-only component gallery (excluded from release builds)
+master/app-tauri/src/lib/gallery/Gallery.svelte	Component gallery: every ui/ component in every state, light + dark (only with VITE_LPDF_GALLERY=1)
+master/app-tauri/src/routes/gallery/	Gallery route (build-flag gated)
+master/app-tauri/src/routes/gallery/+page.svelte	Gallery route page; renders nothing unless VITE_LPDF_GALLERY=1
+master/e2e/flows/flow13_gallery.py	E2E flow 13: gallery screenshots light/dark at 1200x800 and 1600x1000 (default, focus, hover/disabled, dialog), no console errors
+master/tools/check-no-gallery.sh	verify.sh step: builds the release frontend without the flag and fails if gallery code is present
+master/app-tauri/src/lib/gallery/marker.ts	Single gallery marker constant used by Gallery.svelte and check-no-gallery.sh (positive + absent checks)
+master/app-tauri/src/lib/components/ui/contrast.test.ts	Tests: dialog/title/body text contrast from tokens meets 4.5:1 (body) and 3:1 (large), light and dark
+master/app-tauri/src/lib/components/ui/tooltip.test.ts	Tests: tooltip clamped to the viewport and flips side when there is no room (anchor at x≈0)
+master/app-tauri/src/lib/components/ui/tooltipPlacement.ts	Tooltip placement: viewport clamp and side flip
+master/app-tauri/src/lib/core/commandEngine.space.test.ts	Tests (BUG-043): Space activates focused interactive elements; canvas Space behaviour characterized and kept
