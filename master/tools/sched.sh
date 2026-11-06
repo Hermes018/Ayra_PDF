@@ -53,7 +53,7 @@ sched_acquire() {
   fi
   local ticket="$SCHED_DIR/queue/$(sched_prio_num)-$(date +%s%N)-$$"
   : > "$ticket"
-  want=1; [ "${LPDF_EXCLUSIVE:-0}" = 1 ] && want=2
+  want=1; { [ "${LPDF_EXCLUSIVE:-0}" = 1 ] || [ "${LPDF_PRIO:-}" = e2e ]; } && want=2   # E2E exclusive until its peak is measured
   while :; do
     for t in "$SCHED_DIR"/queue/*; do            # drop tickets of dead waiters
       [ -e "$t" ] || continue; kill -0 "${t##*-}" 2>/dev/null || rm -f "$t"

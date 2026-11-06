@@ -12,7 +12,7 @@ Updated 2026-11-06 07:54 Asia/Dhaka by the lead. If this disagrees with STATE_AU
 |---|---|---|
 | main | 263bb7e (tags fixes-p0-green, engines-cp2b-green, release-cp2-green) | lead |
 | wt/engines | 9919398 + CP3 uncommitted (BUG-029/030 + minors; compiles, tests NOT run) | PARKED (tier). NOTE: CP3 changes path_exists to Result<bool,String>; fixes must adapt when CP3 merges |
-| wt/fixes | 263bb7e (merged) | idle; after restart: ERR-007 (BUG-015) on Sonnet high, then BUG-032/033 |
+| wt/fixes | 127e7c7 | RUNNING: ERR-007 (BUG-015) on fixes-builder (Sonnet high); then BUG-032/033 |
 | wt/release | 6fa23a8 WIP (follow-ups 1,2,3,5,6; unverified) | PAUSED. After restart: verify + merge; then BUG-031 (P1, process-group reap + no-leftover check). KI-006 offline AppImage proof → Saturday packaging, before RC |
 | android | 644caf3 | paused until Sun |
 
@@ -34,6 +34,6 @@ KI-001 tab switch clears undo · KI-002 Organize intermediate file · KI-003 Lab
 - **AR-CONC hatch scale** ×1/16 (undoes upstream's coarsening): keep, or follow upstream?
 
 ## Standing rules / exceptions
-- RAM: training first; HEAVY needs 5 GiB + 6 GiB reserve; 1 slot in practice. Disk: own target per worktree; refuse < 15 GB; ~32 GB free. **Owner 07:45: keep all target dirs (engines needed for ERR-007); delete only old release e2e/out runs by name, keeping the latest report, after the release builder finishes; revisit targets only below 22 GB free.**
+- RAM: training first; **2 HEAVY slots** (owner 08:05; peak 4 GiB, slot 2 needs ≥ 14,336 MiB available; E2E exclusive until measured; docs/RAM_BUDGET.md). Disk: own target per worktree; refuse < 15 GB; ~32 GB free. **Owner 07:45: keep all target dirs (engines needed for ERR-007); delete only old release e2e/out runs by name, keeping the latest report, after the release builder finishes; revisit targets only below 22 GB free.**
 - One-time rm -rf master/target/debug (ERR-008), approved. guard.py ALLOW_BUILD_LOCK=True (transitional).
 - Unpushed: everything since origin/main 2fa8927 (the owner pushes).
