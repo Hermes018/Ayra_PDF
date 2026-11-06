@@ -16,7 +16,11 @@ vi.mock('@tauri-apps/api/core', () => ({
         return null;
     }),
 }));
-vi.mock('$lib/components/PdfViewer.svelte', () => ({ default: () => {} }));
+vi.mock('$lib/components/PdfViewer.svelte', () => ({
+    default: (_a: unknown, props: { onpagecount?: (n: number) => void }) => {
+        queueMicrotask(() => props?.onpagecount?.(5));
+    },
+}));
 vi.mock('$lib/components/GridEditor.svelte', () => ({ default: () => {} }));
 
 import { IpcClient, pickFilesDialog } from '$lib/ipc';
@@ -102,17 +106,17 @@ describe.each(INPUTS)('every writer: input %s', (input) => {
 
     test('Forms: flatten', async () => {
         render(FormsView);
-        await click(screen.getByRole('button', { name: /Flatten All Forms/i }));
+        await click(screen.getByRole('button', { name: /Flatten all forms/i }));
         expectSafeOutputs(input);
     });
 
     test('Security: protect, unlock, redact', async () => {
         render(SecurityView);
-        await fireEvent.input(document.getElementById('protectPassword') as HTMLElement, { target: { value: 'pw' } });
+        await fireEvent.input(screen.getByTestId('protect-password'), { target: { value: 'pw' } });
         await click(screen.getByRole('button', { name: /Protect PDF/i }));
-        await fireEvent.input(document.getElementById('unlockPassword') as HTMLElement, { target: { value: 'pw' } });
-        await click(screen.getByRole('button', { name: /Remove Security/i }));
-        await click(screen.getByRole('button', { name: /Apply Redaction/i }));
+        await fireEvent.input(screen.getByTestId('unlock-password'), { target: { value: 'pw' } });
+        await click(screen.getByRole('button', { name: /Remove security/i }));
+        await click(screen.getByRole('button', { name: /Apply redaction/i }));
         expect(submitted.length).toBe(3);
         expectSafeOutputs(input);
     });

@@ -1,179 +1,148 @@
 <script lang="ts">
+    import { untrack } from 'svelte';
     import { appState } from '$lib/state.svelte';
     import { freeOutputPath } from '$lib/views/studio/outputNames';
-    import { IpcClient } from '$lib/ipc';
-    import type { JobRequest } from '$lib/bindings/JobRequest';
+    import Button from '$lib/components/ui/Button.svelte';
+    import Input from '$lib/components/ui/Input.svelte';
+    import EmptyState from '$lib/components/ui/EmptyState.svelte';
+    import ErrorState from '$lib/components/ui/ErrorState.svelte';
+    import Progress from '$lib/components/ui/Progress.svelte';
+    import { JobRunner } from '$lib/core/jobRunner.svelte';
     import { open } from '@tauri-apps/plugin-dialog';
 
+    // Presentation only: the same three operations (fill, flatten, sign) with the same requests. The signing password
+    // is read when each attempt starts and cleared after the job succeeds.
     let currentPath = $derived(appState.currentFile);
 
-    // Forms Fill State
-    let formFieldName = $state("Text1");
-    let formFieldValue = $state("John Doe");
+    // Forms fill state
+    let formFieldName = $state('Text1');
+    let formFieldValue = $state('John Doe');
 
-    // Sign State
-    let p12Path = $state("");
-    let signPassword = $state("");
+    // Sign state
+    let p12Path = $state('');
+    let signPassword = $state('');
+    let pickerFailed = $state(false);
 
-    async function handleFlattenForms() {
-        if (!currentPath) return;
+    // A password kept for a Retry must never be applied to a different file.
+    $effect(() => {
+        void currentPath;
+        untrack(() => {
+            signPassword = '';
+            jobs.reset();
+        });
+    });
 
-        const outputPath = await freeOutputPath(currentPath, 'forms-flattened');
-        const req: JobRequest = {
-            op: "FlattenForms",
-            input_path: currentPath,
-            output_path: outputPath,
-        };
+    const NEXT = 'Check that the file is still there and not open elsewhere, then try again. The original file is unchanged.';
+    const jobs = new JobRunner();
+    const busyReason = 'Wait for the current job to finish, or cancel it';
 
-        try {
-            const jobId = await IpcClient.submitJob(req);
-            console.log("Flatten forms job submitted with ID:", jobId);
-        } catch (e) {
-            console.error("Failed to submit flatten forms job:", e);
-        }
+    function handleFlattenForms() {
+        const input = currentPath;
+        if (!input) return;
+        void jobs.run('Flattening the forms', "Couldn't flatten the forms.", NEXT, async () => ({
+            op: 'FlattenForms',
+            input_path: input,
+            output_path: await freeOutputPath(input, 'forms-flattened'),
+        }));
     }
 
-    async function handleFillForm() {
-        if (!currentPath) return;
-        if (!formFieldName.trim()) return;
-
-        const outputPath = await freeOutputPath(currentPath, 'filled');
-        const fields: Record<string, string> = {};
-        fields[formFieldName] = formFieldValue;
-
-        const req: JobRequest = {
-            op: "FillForm",
-            input_path: currentPath,
-            output_path: outputPath,
-            fields
-        };
-
-        try {
-            const jobId = await IpcClient.submitJob(req);
-            console.log("Fill form job submitted with ID:", jobId);
-        } catch (e) {
-            console.error("Failed to submit fill form job:", e);
-        }
+    function handleFillForm() {
+        const input = currentPath;
+        if (!input || !formFieldName.trim()) return;
+        void jobs.run('Filling the field', "Couldn't fill the field.", NEXT, async () => {
+            const fields: Record<string, string> = {};
+            fields[formFieldName] = formFieldValue;
+            return {
+                op: 'FillForm',
+                input_path: input,
+                output_path: await freeOutputPath(input, 'filled'),
+                fields,
+            };
+        });
     }
 
     async function selectP12() {
+        pickerFailed = false;
         try {
             const selected = await open({
-                title: "Select PKCS#12 Certificate",
-                filters: [{
-                    name: "Certificates",
-                    extensions: ["p12", "pfx"]
-                }]
+                title: 'Select PKCS#12 Certificate',
+                filters: [{ name: 'Certificates', extensions: ['p12', 'pfx'] }],
             });
             if (typeof selected === 'string') {
                 p12Path = selected;
             }
         } catch (e) {
-            console.error("Failed to select p12:", e);
+            console.error('Failed to select p12:', e);
+            pickerFailed = true;
         }
     }
 
     async function handleSign() {
-        if (!currentPath || !p12Path || !signPassword) return;
-
-        const outputPath = await freeOutputPath(currentPath, 'signed');
-        const req: JobRequest = {
-            op: "SignDocument",
-            input_path: currentPath,
-            output_path: outputPath,
+        const input = currentPath;
+        if (!input || !p12Path || !signPassword) return;
+        await jobs.run('Signing the document', "Couldn't sign the document.", 'Check the certificate and its password, then try again. The original file is unchanged.', async () => ({
+            op: 'SignDocument',
+            input_path: input,
+            output_path: await freeOutputPath(input, 'signed'),
             p12_path: p12Path,
-            password: signPassword
-        };
-
-        try {
-            const jobId = await IpcClient.submitJob(req);
-            console.log("Sign job submitted with ID:", jobId);
-        } catch (e) {
-            console.error("Failed to submit sign job:", e);
-        }
+            password: signPassword,
+        }));
+        if (!jobs.error) signPassword = '';
     }
 </script>
 
 <div class="forms-view">
     <header class="view-header">
-        <h1>Forms & Signatures</h1>
-        <p>Fill interactive forms, flatten fields, and digitally sign documents natively.</p>
+        <h1>Forms and signatures</h1>
+        <p>Fill interactive forms, flatten fields, and digitally sign documents on this computer.</p>
     </header>
 
+    {#if pickerFailed}
+        <ErrorState what="Couldn't open the file picker." next="Try again." retry={selectP12} />
+    {/if}
+    {#if jobs.error}
+        <ErrorState what={jobs.error.what} next={jobs.error.next} retry={jobs.error.retry} data-testid="view-op-error" />
+    {/if}
+    {#if jobs.busyLabel}
+        <Progress value={null} label={jobs.busyLabel} oncancel={() => jobs.cancel()} data-testid="view-op-progress" />
+    {/if}
+
     {#if !currentPath}
-        <div class="empty-state">
-            <div class="empty-icon">📝</div>
-            <h3>No Document Selected</h3>
-            <p>Please select or open a PDF document to use forms and signatures.</p>
-        </div>
+        <EmptyState title="No document selected" body="Select or open a PDF to use forms and signatures." />
     {:else}
         <div class="content-grid">
-            <!-- Form Filling Section -->
+            <!-- Form filling -->
             <div class="tools-card">
-                <div class="card-header">
-                    <span class="icon">✏️</span>
-                    <h3>Fill Form</h3>
-                </div>
-                <div class="card-body">
-                    <p class="description">Fill out text fields in the document.</p>
-                    
-                    <div class="form-group">
-                        <label for="fieldName">Field Name</label>
-                        <input id="fieldName" type="text" bind:value={formFieldName} placeholder="e.g. Text1" class="input-field" />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="fieldValue">Field Value</label>
-                        <input id="fieldValue" type="text" bind:value={formFieldValue} placeholder="Enter value..." class="input-field" />
-                    </div>
-
-                    <button class="action-btn" onclick={handleFillForm} disabled={!formFieldName.trim()}>
-                        Apply Value
-                    </button>
-                </div>
+                <h3>Fill form</h3>
+                <p class="description">Fill out a text field in the document.</p>
+                <Input label="Field name" bind:value={formFieldName} placeholder="e.g. Text1" />
+                <Input label="Field value" bind:value={formFieldValue} placeholder="Enter value..." />
+                <Button variant="primary" onclick={handleFillForm} disabled={!formFieldName.trim() || !!jobs.busyLabel} disabledReason={jobs.busyLabel ? busyReason : 'Enter the field name'}>
+                    Apply value
+                </Button>
             </div>
 
-            <!-- Forms Management -->
+            <!-- Forms management -->
             <div class="tools-card">
-                <div class="card-header">
-                    <span class="icon">🧱</span>
-                    <h3>Manage Forms</h3>
-                </div>
-                <div class="card-body">
-                    <p class="description">Bake form fields permanently into the page, removing interactivity.</p>
-                    
-                    <button class="action-btn secondary" onclick={handleFlattenForms}>
-                        Flatten All Forms
-                    </button>
-                </div>
+                <h3>Manage forms</h3>
+                <p class="description">Bake form fields permanently into the page, removing interactivity.</p>
+                <Button variant="secondary" onclick={handleFlattenForms} disabled={!!jobs.busyLabel} disabledReason={busyReason}>
+                    Flatten all forms
+                </Button>
             </div>
 
-            <!-- Signatures Section -->
-            <div class="tools-card sign-card">
-                <div class="card-header">
-                    <span class="icon">✒️</span>
-                    <h3>Digital Signature</h3>
+            <!-- Signature -->
+            <div class="tools-card">
+                <h3>Digital signature</h3>
+                <p class="description">Sign the document with a local .p12 or .pfx certificate.</p>
+                <div class="file-picker">
+                    <Input label="Certificate (.p12 / .pfx)" value={p12Path} placeholder="Select a certificate..." class="flex-1" data-testid="cert-path" />
+                    <Button variant="secondary" onclick={selectP12}>Browse</Button>
                 </div>
-                <div class="card-body">
-                    <p class="description">Cryptographically sign the document using a local .p12 or .pfx certificate.</p>
-                    
-                    <div class="form-group">
-                        <label for="cert-path">Certificate (.p12 / .pfx)</label>
-                        <div class="file-picker">
-                            <input id="cert-path" type="text" readonly value={p12Path} placeholder="Select a certificate..." class="input-field flex-1" />
-                            <button class="browse-btn" onclick={selectP12} aria-label="Browse for certificate file">Browse</button>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input id="password" type="password" bind:value={signPassword} placeholder="Certificate password" class="input-field" />
-                    </div>
-
-                    <button class="action-btn primary" onclick={handleSign} disabled={!p12Path || !signPassword}>
-                        Sign Document
-                    </button>
-                </div>
+                <Input type="password" label="Password" bind:value={signPassword} placeholder="Certificate password" autocomplete="off" data-testid="sign-password" />
+                <Button variant="primary" onclick={handleSign} disabled={!p12Path || !signPassword || !!jobs.busyLabel} disabledReason={jobs.busyLabel ? busyReason : 'Choose a certificate and enter its password'}>
+                    Sign document
+                </Button>
             </div>
         </div>
     {/if}
@@ -181,19 +150,18 @@
 
 <style>
     .forms-view {
-        padding: 2rem;
+        padding: var(--space-8);
         max-width: 1200px;
         margin: 0 auto;
         color: var(--text-primary);
-    }
-
-    .view-header {
-        margin-bottom: 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
     }
 
     .view-header h1 {
-        margin: 0 0 0.5rem 0;
-        font-size: 2rem;
+        margin: 0 0 var(--space-2) 0;
+        font-size: var(--font-size-title1);
         font-weight: 600;
         color: var(--text-primary);
     }
@@ -201,180 +169,45 @@
     .view-header p {
         margin: 0;
         color: var(--text-secondary);
-    }
-
-    .empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 4rem 2rem;
-        background-color: var(--glass-bg-surface);
-        border-radius: var(--radius-lg, 14px);
-        border: 1px dashed var(--glass-border-subtle);
-        text-align: center;
-    }
-
-    .empty-icon {
-        font-size: 4rem;
-        margin-bottom: 1rem;
-        opacity: 0.5;
+        font-size: var(--font-size-body);
     }
 
     .content-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: var(--space-6);
     }
 
     .tools-card {
         background-color: var(--glass-bg-surface);
         border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-lg, 14px);
-        box-shadow: inset 0 1px 0 0 var(--glass-border-specular), var(--glass-shadow-sm);
-        overflow: hidden;
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
         display: flex;
         flex-direction: column;
+        gap: var(--space-3);
+        box-shadow: var(--glass-shadow-sm);
     }
 
-    .sign-card {
-        grid-column: 1 / -1;
-    }
-
-    .card-header {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 1.25rem;
-        background-color: var(--glass-bg-input);
-        border-bottom: 1px solid var(--glass-border-subtle);
-    }
-
-    .card-header h3 {
+    .tools-card h3 {
         margin: 0;
-        font-size: 1.25rem;
-        font-weight: 500;
-        color: var(--accent-primary);
-    }
-
-    .card-header .icon {
-        font-size: 1.5rem;
-    }
-
-    .card-body {
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
-        flex: 1;
+        font-size: var(--font-size-title3);
     }
 
     .description {
         margin: 0;
-        font-size: 0.9rem;
         color: var(--text-secondary);
-        line-height: 1.4;
-    }
-
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .form-group label {
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        font-weight: 500;
-    }
-
-    .input-field {
-        background-color: var(--glass-bg-input);
-        border: 1px solid var(--glass-border-subtle);
-        color: var(--text-primary);
-        padding: 0.75rem;
-        border-radius: var(--radius-md, 10px);
-        font-family: inherit;
-        font-size: 0.95rem;
-        transition: all var(--dur-fast, 120ms) ease;
-    }
-
-    .input-field:focus {
-        outline: none;
-        border-color: var(--accent-primary);
-        box-shadow: 0 0 0 2px var(--accent-ring);
+        font-size: var(--font-size-footnote);
     }
 
     .file-picker {
         display: flex;
-        gap: 0.5rem;
+        align-items: flex-end;
+        gap: var(--space-2);
     }
 
-    .flex-1 {
+    .file-picker :global(.flex-1) {
         flex: 1;
         min-width: 0;
-    }
-
-    .browse-btn {
-        background-color: var(--glass-bg-input);
-        color: var(--text-primary);
-        border: 1px solid var(--glass-border-subtle);
-        border-radius: var(--radius-sm, 8px);
-        padding: 0 1rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background-color var(--dur-fast, 120ms) ease;
-    }
-
-    .browse-btn:hover {
-        background-color: var(--glass-bg-hover);
-    }
-
-    .action-btn {
-        margin-top: auto;
-        padding: 0.75rem 1rem;
-        border-radius: var(--radius-md, 10px);
-        font-weight: 600;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: all var(--dur-fast, 120ms) ease;
-        border: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-    }
-
-    .action-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .action-btn:not(.secondary):not(.primary) {
-        background-color: var(--accent-primary);
-        color: var(--text-on-accent);
-    }
-
-    .action-btn:not(.secondary):not(.primary):hover:not(:disabled) {
-        opacity: 0.9;
-    }
-
-    .action-btn.secondary {
-        background-color: transparent;
-        border: 1px solid var(--semantic-danger);
-        color: var(--semantic-danger);
-    }
-
-    .action-btn.secondary:hover {
-        background-color: var(--glass-bg-hover);
-    }
-
-    .action-btn.primary {
-        background-color: var(--semantic-success);
-        color: var(--text-on-accent);
-    }
-
-    .action-btn.primary:hover:not(:disabled) {
-        opacity: 0.9;
     }
 </style>

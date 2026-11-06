@@ -18,6 +18,11 @@ export class JobRunner {
   error = $state<JobError | null>(null);
   #abort: AbortController | null = null;
 
+  /** Drop a shown error (e.g. when the open file changed: its Retry belongs to the old file). Never while running. */
+  reset(): void {
+    if (!this.busyLabel) this.error = null;
+  }
+
   cancel(): void {
     this.#abort?.abort();
   }

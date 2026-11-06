@@ -287,8 +287,12 @@
     });
 
     async function handleConvert() {
+        // A new action replaces whatever the previous one left on screen.
+        completedResult = null;
+        failedResult = null;
+        notice = null;
         if (!currentPath) {
-            notice = { kind: 'error', what: 'No PDF is selected.', next: 'Open or select a file, then convert again.' };
+            notice = { kind: 'error', what: 'No file is selected.', next: 'Open or select a file, then convert again.' };
             return;
         }
 
@@ -523,7 +527,7 @@
                 <button
                     type="button"
                     class="btn-primary convert-btn"
-                    disabled={!currentPath || isSubmitting}
+                    disabled={isSubmitting}
                     onclick={handleConvert}
                 >
                     {#if isSubmitting}

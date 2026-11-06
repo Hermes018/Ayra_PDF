@@ -654,3 +654,7 @@ master/app-tauri/src/lib/core/jobError.ts	friendlyJobError: maps backend job err
 master/app-tauri/src/lib/core/jobError.test.ts	Tests: friendlyJobError wording per error code
 master/app-tauri/src/lib/core/failedJobToast.test.ts	Tests: the global failed-job toast uses plain wording, never a raw error string
 master/app-tauri/src/lib/views/__tests__/OutputUnsafeUi.test.ts	Tests (BUG-052): a refused output shows an ErrorState with Retry on the next free name in every writing view
+master/app-tauri/src/lib/views/__tests__/SecurityFormsViews.test.ts	Tests: Security (protect/unlock/redact) and Forms views send the same job requests; password field autocomplete=off, cleared on success
+master/app-tauri/src/lib/views/__tests__/StaleNotices.test.ts	Tests: a new action clears the previous notice (Convert from/to, Pipelines); input-neutral "No file is selected"
+master/app-tauri/src/lib/components/PdfViewerLayout.test.ts	Tests: PdfViewer is not clipped inside tool views (left edge)
+master/crates/lpdf-engine-pdfcraft/tests/redact_page_tests.rs	Tests (BUG-053): redact refuses page 0 / > count / invalid regions (typed errors, nothing written); page N redacted, other pages intact (per-page text)

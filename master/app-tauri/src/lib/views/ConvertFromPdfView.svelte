@@ -235,6 +235,10 @@
     });
 
     async function handleExport() {
+        // A new action replaces whatever the previous one left on screen.
+        completedResult = null;
+        failedResult = null;
+        notice = null;
         if (!currentPath) {
             notice = { kind: 'error', what: 'No PDF is selected.', next: 'Open or select a file, then convert again.' };
             return;
@@ -532,7 +536,7 @@
                 <button
                     type="button"
                     class="btn-primary export-btn"
-                    disabled={!currentPath || isSubmitting}
+                    disabled={isSubmitting}
                     onclick={handleExport}
                 >
                     {#if isSubmitting}

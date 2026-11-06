@@ -63,6 +63,7 @@
     function applyPreset(preset: PipelinePreset) {
         selectedPresetId = preset.id;
         activeSteps = JSON.parse(JSON.stringify(preset.steps));
+        runFailure = null;
         executionMessage = `Loaded preset: ${preset.name}`;
     }
 
@@ -143,6 +144,8 @@
 
     async function handleRunWorkflow() {
         if (isSubmitting) return; // set before any await: a double click starts one job
+        executionMessage = null; // a new run replaces the previous message
+        runFailure = null;
         if (!inputPath || !outputPath) {
             executionMessage = 'Please select both input and output paths.';
             return;

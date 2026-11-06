@@ -44,3 +44,7 @@ lib/components/ViewShell.svelte
 lib/views/OptimizeView.svelte
 lib/views/EditView.svelte
 lib/views/ConvertView.svelte
+# Sweep group 11: Forms, Security, PdfViewer
+lib/views/FormsView.svelte
+lib/views/SecurityView.svelte
+lib/components/PdfViewer.svelte

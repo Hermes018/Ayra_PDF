@@ -1,8 +1,12 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import { invoke } from '@tauri-apps/api/core';
+    import ErrorState from '$lib/components/ui/ErrorState.svelte';
+    import Progress from '$lib/components/ui/Progress.svelte';
+    import EmptyState from '$lib/components/ui/EmptyState.svelte';
 
-    let { filePath } = $props<{ filePath: string | null }>();
+    // `onpagecount` reports the real page count once the document is open (used by screens that take a page number).
+    let { filePath, onpagecount } = $props<{ filePath: string | null; onpagecount?: (pages: number) => void }>();
 
     let canvas: HTMLCanvasElement;
     let loading = $state(false);
@@ -36,6 +40,7 @@
             const loadingTask = pdfjs.getDocument({ data: uint8Array });
             const pdf = await loadingTask.promise;
             currentPdfDoc = pdf;
+            onpagecount?.(pdf.numPages);
 
             // 3. Render the first page
             const page = await pdf.getPage(1);
@@ -59,7 +64,7 @@
             
         } catch (err: any) {
             console.error("Failed to render PDF:", err);
-            error = err.message || "Failed to render PDF";
+            error = 'render'; // details go to the log, not the screen
         } finally {
             loading = false;
         }
@@ -82,24 +87,25 @@
 <div class="pdf-viewer-container">
     {#if loading}
         <div class="loading-overlay">
-            <span class="spinner">⏳</span> Loading PDF...
+            <Progress value={null} label="Loading the PDF" />
         </div>
     {/if}
-    
+
     {#if error}
-        <div class="error-message">
-            {error}
-        </div>
+        <ErrorState
+            what="Couldn't show this PDF."
+            next="The file may be damaged or no longer there. Check it, then try again."
+            retry={() => filePath && renderPdf(filePath)}
+            data-testid="pdf-viewer-error"
+        />
     {/if}
 
     <div class="canvas-wrapper" style="display: {filePath && !error ? 'flex' : 'none'}">
         <canvas bind:this={canvas}></canvas>
     </div>
-    
+
     {#if !filePath}
-        <div class="empty-state">
-            <p>No PDF selected</p>
-        </div>
+        <EmptyState title="No PDF selected" body="Open a PDF to preview it here." />
     {/if}
 </div>
 
@@ -113,7 +119,7 @@
         align-items: center;
         justify-content: center;
         background-color: var(--glass-bg-canvas);
-        border-radius: 8px;
+        border-radius: var(--radius-sm);
         overflow: hidden;
     }
 
@@ -122,22 +128,21 @@
         height: 100%;
         overflow: auto;
         display: flex;
-        justify-content: center;
         align-items: flex-start;
-        padding: 2rem;
+        padding: var(--space-8);
     }
 
     canvas {
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        background-color: white;
+        /* auto margins centre a narrow page and let a wide one start at the left edge (no clipped left side) */
+        margin: 0 auto;
+        flex: none;
+        box-shadow: var(--glass-shadow-sm);
+        background-color: var(--laser-core);
     }
 
     .loading-overlay {
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        inset: 0;
         background-color: var(--glass-bg-canvas);
         backdrop-filter: var(--glass-blur);
         display: flex;
@@ -146,19 +151,6 @@
         justify-content: center;
         color: var(--text-primary);
         z-index: 10;
-    }
-
-    .error-message {
-        color: var(--semantic-danger);
-        padding: 1rem;
-        background-color: var(--glass-bg-surface);
-        border: 1px solid var(--semantic-danger);
-        border-radius: 4px;
-        margin: 2rem;
-    }
-
-    .empty-state {
-        color: var(--text-secondary);
-        font-size: 1.2rem;
+        padding: var(--space-8);
     }
 </style>

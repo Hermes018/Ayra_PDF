@@ -196,6 +196,7 @@ master/
 │   │   │   │   ├── MainLayout.svelte                         # App frame: sidebar + content + status bar, sidebar collapse
 │   │   │   │   ├── organizeApply.ts                          # Organize Apply: runs reorder/delete/rotate jobs in sequence and reports the true result (BUG-014)
 │   │   │   │   ├── PdfViewer.svelte                          # Read-only page preview using pdf.js
+│   │   │   │   ├── PdfViewerLayout.test.ts                   # Tests: PdfViewer is not clipped inside tool views (left edge)
 │   │   │   │   ├── Sidebar.svelte                            # Left navigation between tool groups
 │   │   │   │   ├── StatusBar.svelte                          # Bottom status line (engine, job state)
 │   │   │   │   ├── ToastContainer.svelte                     # Toast notifications
@@ -280,8 +281,10 @@ master/
 │   │   │   │   │   ├── OutputPathsBug050.test.ts             # Tests (BUG-050): every view builds a collision-safe output path that is never the input or an existing file
 │   │   │   │   │   ├── OutputUnsafeUi.test.ts                # Tests (BUG-052): a refused output shows an ErrorState with Retry on the next free name in every writing view
 │   │   │   │   │   ├── PipelinesView.test.ts                 # Tests: pipelines view
+│   │   │   │   │   ├── SecurityFormsViews.test.ts            # Tests: Security (protect/unlock/redact) and Forms views send the same job requests; password field autocomplete=off, cleared on success
 │   │   │   │   │   ├── SettingsView.test.ts                  # Tests: settings view
 │   │   │   │   │   ├── SignatureDraw.test.ts                 # Tests: drawn signature saved as ink, not text (BUG-017)
+│   │   │   │   │   ├── StaleNotices.test.ts                  # Tests: a new action clears the previous notice (Convert from/to, Pipelines); input-neutral "No file is selected"
 │   │   │   │   │   ├── StudioDamagedPdf.test.ts              # Tests: malformed PDFs show an error/degraded notice (BUG-018)
 │   │   │   │   │   ├── StudioDocumentStore.test.ts           # Tests: document store activate(), Organize round trip, save refuses on switch, per-document scales, split view Labs-only
 │   │   │   │   │   ├── StudioEditText.test.ts                # Tests: Edit Text hotspots reachable by pointer (BUG-013)
@@ -391,6 +394,7 @@ master/
 │   │   │   ├── extraction_tests.rs                           # Tests: text/image extraction
 │   │   │   ├── pandoc_tests.rs                               # Tests: Pandoc sidecar (mock binaries)
 │   │   │   ├── pdfa_tests.rs                                 # Tests: PDF/A preflight
+│   │   │   ├── redact_page_tests.rs                          # Tests (BUG-053): redact refuses page 0 / > count / invalid regions (typed errors, nothing written); page N redacted, other pages intact (per-page text)
 │   │   │   ├── sidecar_tests.rs                              # Tests: Office sidecar (mock binaries, isolation)
 │   │   │   └── summarizer_tests.rs                           # Tests: summarizer
 │   │   └── Cargo.toml                                        # Crate manifest (pdfcraft crates pinned by git rev)

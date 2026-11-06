@@ -1166,6 +1166,31 @@ impl PdfEngine for PdfcraftAdapter {
                 .open(name, None, std::sync::Arc::new(bytes), None)
                 .map_err(|e| LpdfError::Engine(e.to_string()))?;
 
+            // BUG-053: pages are 1-based and must exist; regions must be real rectangles. Nothing is defaulted or
+            // mapped to another page (no saturating arithmetic): a bad value is refused before anything is applied.
+            let page_count = session
+                .get(doc_id)
+                .map(|d| d.info.pages.len())
+                .ok_or_else(|| LpdfError::Engine("Document not found".into()))?;
+            for region in &regions {
+                if region.page == 0 || region.page > page_count {
+                    return Err(LpdfError::InvalidInput(format!(
+                        "REDACTION_PAGE_OUT_OF_RANGE: page {} does not exist; this document has {} page(s) (pages start at 1)",
+                        region.page, page_count
+                    )));
+                }
+                let finite = region.x.is_finite()
+                    && region.y.is_finite()
+                    && region.width.is_finite()
+                    && region.height.is_finite();
+                if !finite || region.width <= 0.0 || region.height <= 0.0 {
+                    return Err(LpdfError::InvalidInput(
+                        "REDACTION_REGION_INVALID: the region needs finite numbers with a width and height above 0"
+                            .into(),
+                    ));
+                }
+            }
+
             for region in regions {
                 let shape = pdfcraft_engine::Shape::Redact {
                     quads: vec![[
@@ -1182,7 +1207,7 @@ impl PdfEngine for PdfcraftAdapter {
                     look: Default::default(),
                 };
 
-                let page_idx = region.page.saturating_sub(1);
+                let page_idx = region.page - 1; // validated above: 1..=page_count
                 let mark = pdfcraft_engine::Edit::AddAnnotation(pdfcraft_engine::NewAnnotation {
                     page: page_idx,
                     style: pdfcraft_engine::Style::default_for(&shape),
