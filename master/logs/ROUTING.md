@@ -92,4 +92,12 @@ Per-milestone rates: `python3 master/tools/routing-stats.py`.
 | 2026-11-06 13:36 | fixes-build | sweep g13 (Markdown, Pipelines) + mixed-batch test; found BUG-057 | sonnet/medium | ok | | |
 | 2026-11-06 13:42 | review+verify (combined) | g13 + BUG-057 (secrets sweep) | opus/high | ok | | GREEN; found BUG-058 password in debug log |
 | 2026-11-06 13:46 | fixes-build | BUG-058 secrets redaction (+ wording, opacity limits, temp test) | sonnet/medium | ok | | encrypted-open password not listed → opus checks |
-| 2026-11-06 13:52 | review+verify (combined) | BUG-058 secrets (all password holders, log path, flow 2 grep) | opus/high | running | | security |
+| 2026-11-06 13:52 | review+verify (combined) | BUG-058 secrets (all password holders, log path, flow 2 grep) | opus/high | ok | | no leaks; owner logs clean |
+| 2026-11-06 13:57 | fixes-build | sweep group 14 (AiSummarize, Batch, Settings) — last | sonnet/medium | ok | | inventory 0 in 52 files |
+| 2026-11-06 14:06 | review+verify (combined) | g14 (Settings persistence, Batch/AI honesty, audit 0) | opus/high | fail | | settings save after load error writes defaults; i18n overclaims |
+| 2026-11-06 14:06 | visual review | final sweep screenshots | sonnet/medium | fail | | Batch header/emoji, settings dark renders light, stuck tooltip |
+| 2026-11-06 14:11 | fixes-build | g14 fix round (BUG-059 settings fail-closed, i18n overclaims, visual) | sonnet/medium | ok | | |
+| 2026-11-06 14:22 | review+verify (combined) | g14 fix round (settings writers, theme, i18n keys) | opus/high | fail | | model import fails open; military-grade |
+| 2026-11-06 14:22 | visual recheck | g14 screenshots | sonnet/medium | ok | | 4/4 fixed |
+| 2026-11-06 14:28 | fixes-build | g14 last items (model import fail-closed, handler test, military-grade) | sonnet/medium | ok | | |
+| 2026-11-06 14:33 | review+verify (combined) | g14 last items + gate + flows 10,11,23 | opus/high | running | | |
