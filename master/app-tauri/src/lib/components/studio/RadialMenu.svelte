@@ -4,10 +4,11 @@
   import StudioIcon, { type StudioIconName } from './StudioIcon.svelte';
   import {
     RADIAL,
-    radialHit,
+    hitTestRadial,
     clampCenter,
     sectorAngles,
     flyoutItemAngles,
+    polarToCartesian,
     describeArc,
     type RadialHit
   } from '$lib/core/radialGeometry';
@@ -48,6 +49,7 @@
   let activeSector = $state<number | null>(null);
   let activeFlyout = $state<number | null>(null);
   let menuContainer: HTMLDivElement | null = $state(null);
+  let svgEl: SVGSVGElement | null = $state(null);
 
   // Capture exact viewport coordinates when summoned
   let menuCenter = $derived.by(() => {
@@ -68,11 +70,28 @@
     onClose?.();
   }
 
+  function getSvgRelativePointer(e: PointerEvent): { dx: number; dy: number } {
+    if (svgEl) {
+      const rect = svgEl.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const scaleX = 440 / (rect.width || 440);
+      const scaleY = 440 / (rect.height || 440);
+      return {
+        dx: (e.clientX - cx) * scaleX,
+        dy: (e.clientY - cy) * scaleY,
+      };
+    }
+    return {
+      dx: e.clientX - menuCenter.x,
+      dy: e.clientY - menuCenter.y,
+    };
+  }
+
   function handlePointerMove(e: PointerEvent) {
     if (!visible) return;
-    const dx = e.clientX - menuCenter.x;
-    const dy = e.clientY - menuCenter.y;
-    const hit: RadialHit = radialHit(dx, dy, flyoutCounts, activeSector);
+    const { dx, dy } = getSvgRelativePointer(e);
+    const hit: RadialHit = hitTestRadial(dx, dy, flyoutCounts, activeSector);
 
     if (hit.zone === 'wedge') {
       activeSector = hit.sector;
@@ -80,16 +99,15 @@
     } else if (hit.zone === 'flyout') {
       activeSector = hit.sector;
       activeFlyout = hit.item;
-    } else if (hit.zone === 'cancel' || hit.zone === 'outside') {
+    } else if (hit.zone === 'center' || hit.zone === 'cancel' || hit.zone === 'outside') {
       activeFlyout = null;
     }
   }
 
   function handlePointerUp(e: PointerEvent) {
     if (!visible) return;
-    const dx = e.clientX - menuCenter.x;
-    const dy = e.clientY - menuCenter.y;
-    const hit: RadialHit = radialHit(dx, dy, flyoutCounts, activeSector);
+    const { dx, dy } = getSvgRelativePointer(e);
+    const hit: RadialHit = hitTestRadial(dx, dy, flyoutCounts, activeSector);
 
     if (hit.zone === 'wedge') {
       const wedge = WEDGES[hit.sector];
@@ -104,7 +122,7 @@
         tools.selectTool(item.tool as ToolId);
       }
       closeMenu();
-    } else if (hit.zone === 'cancel') {
+    } else if (hit.zone === 'center' || hit.zone === 'cancel') {
       closeMenu();
     }
   }
@@ -164,6 +182,7 @@
       aria-label="8-Sector Radial Markup Menu"
     >
       <svg
+        bind:this={svgEl}
         width={SVG_SIZE}
         height={SVG_SIZE}
         viewBox="-220 -220 440 440"
@@ -177,12 +196,13 @@
           tabindex={0}
           aria-label="Close Radial Menu"
           onclick={closeMenu}
+          onpointerdown={(e) => { e.stopPropagation(); closeMenu(); }}
           style="cursor: pointer;"
         >
           <circle
             cx={0}
             cy={0}
-            r={RADIAL.r0}
+            r={RADIAL.rEsc}
             class="center-hub"
           />
           <g transform="translate(-8, -14)" class="center-hub-icon-g">
@@ -202,11 +222,9 @@
         <!-- 8 Primary Wedges -->
         {#each WEDGES as wedge (wedge.sector)}
           {@const angles = sectorAngles(wedge.sector)}
-          {@const pathD = describeArc(0, 0, RADIAL.r0, RADIAL.r1, angles.startDeg, angles.endDeg)}
-          {@const rad = angles.midDeg * (Math.PI / 180)}
-          {@const iconR = (RADIAL.r0 + RADIAL.r1) / 2}
-          {@const iconX = iconR * Math.cos(rad)}
-          {@const iconY = iconR * Math.sin(rad)}
+          {@const pathD = describeArc(0, 0, RADIAL.rInnerIn, RADIAL.rInnerOut, angles.startDeg, angles.endDeg)}
+          {@const iconR = (RADIAL.rInnerIn + RADIAL.rInnerOut) / 2}
+          {@const pt = polarToCartesian(iconR, angles.midDeg)}
           {@const isHovered = activeSector === wedge.sector}
           {@const isCurrentTool = tools.activeToolId === wedge.tool || (wedge.presetId && tools.activePreset?.id === wedge.presetId)}
 
@@ -219,6 +237,7 @@
             tabindex={0}
             aria-label={wedge.label}
             onpointerenter={() => { activeSector = wedge.sector; activeFlyout = null; }}
+            onpointerdown={(e) => { e.stopPropagation(); tools.selectTool(wedge.tool as ToolId); closeMenu(); }}
             onclick={() => { tools.selectTool(wedge.tool as ToolId); closeMenu(); }}
             style="cursor: pointer;"
           >
@@ -227,13 +246,13 @@
               class="wedge-path"
             />
             <!-- Wedge Icon (Vector SVG) -->
-            <g transform="translate({iconX - 9}, {iconY - 14})" class="wedge-icon-g">
+            <g transform="translate({pt.x - 9}, {pt.y - 14})" class="wedge-icon-g">
               <StudioIcon name={wedge.icon as StudioIconName} size={18} />
             </g>
             <!-- Wedge Label -->
             <text
-              x={iconX}
-              y={iconY + 12}
+              x={pt.x}
+              y={pt.y + 12}
               text-anchor="middle"
               dominant-baseline="central"
               class="wedge-label"
@@ -250,11 +269,9 @@
 
           {#each activeWedge.flyout as item, idx}
             {@const { itemStart, itemEnd, itemMid } = flyoutItemAngles(activeSector, count, idx)}
-            {@const flyoutPath = describeArc(0, 0, RADIAL.r1 + 2, RADIAL.r2, itemStart, itemEnd)}
-            {@const flyoutRad = itemMid * (Math.PI / 180)}
-            {@const flyoutR = (RADIAL.r1 + RADIAL.r2) / 2}
-            {@const fx = flyoutR * Math.cos(flyoutRad)}
-            {@const fy = flyoutR * Math.sin(flyoutRad)}
+            {@const flyoutPath = describeArc(0, 0, RADIAL.rSubIn, RADIAL.rSubOut, itemStart, itemEnd)}
+            {@const flyoutR = (RADIAL.rSubIn + RADIAL.rSubOut) / 2}
+            {@const pt = polarToCartesian(flyoutR, itemMid)}
             {@const isFlyoutHovered = activeFlyout === idx}
 
             <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -265,6 +282,7 @@
               tabindex={0}
               aria-label={item.label}
               onpointerenter={() => { activeFlyout = idx; }}
+              onpointerdown={(e) => { e.stopPropagation(); tools.selectTool(item.tool as ToolId); closeMenu(); }}
               onclick={() => { tools.selectTool(item.tool as ToolId); closeMenu(); }}
               style="cursor: pointer;"
             >
@@ -272,12 +290,12 @@
                 d={flyoutPath}
                 class="flyout-path"
               />
-              <g transform="translate({fx - 7}, {fy - 12})" class="flyout-icon-g">
+              <g transform="translate({pt.x - 7}, {pt.y - 12})" class="flyout-icon-g">
                 <StudioIcon name={item.icon as StudioIconName} size={14} />
               </g>
               <text
-                x={fx}
-                y={fy + 12}
+                x={pt.x}
+                y={pt.y + 12}
                 text-anchor="middle"
                 dominant-baseline="central"
                 class="flyout-label"
@@ -332,7 +350,7 @@
   }
 
   .center-hub-label {
-    font-size: 10px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
     fill: var(--glass-text);
     pointer-events: none;
@@ -374,7 +392,7 @@
 
   .wedge-label {
     fill: var(--glass-text);
-    font-size: 10px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
     pointer-events: none;
   }
@@ -412,7 +430,7 @@
 
   .flyout-label {
     fill: var(--glass-text);
-    font-size: 9px;
+    font-size: var(--font-size-caption);
     font-weight: 600;
     pointer-events: none;
   }

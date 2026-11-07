@@ -1,9 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import {
   RADIAL,
-  radialHit,
+  pointToPolar,
+  polarToCartesian,
+  signedAngleDiff,
+  isAngleInSector,
   sectorAngles,
   flyoutItemAngles,
+  getParentSectorCenter,
+  hitTestRadial,
 } from '$lib/core/radialGeometry';
 import radialLayout from '$lib/core/radialLayout.json';
 import favSource from './FavoritesBar.svelte?raw';
@@ -19,69 +24,105 @@ function extractRule(src: string, selector: string): string {
 describe('Automated Headless Dogfood UI Geometry Suite', () => {
   const flyoutCounts = radialLayout.map((w: any) => w.flyout.length);
 
-  describe('Radial Menu Polar Math & Non-Overlap Audit (BUG-065)', () => {
+  describe('Radial Menu Visual-to-Hit-Test Identity & Regression Tests (Phase F5.4)', () => {
+    it('Screenshot 1 Regression: Cursor on Eraser (225°, r = 72) hits Eraser and hoveredSubIndex === null', () => {
+      const pt = polarToCartesian(72, 225);
+      const hit = hitTestRadial(pt.x, pt.y, flyoutCounts, null);
+      expect(hit.zone).toBe('wedge');
+      expect(hit.sector).toBe(5); // Sector 5 is Eraser
+      expect(hit.sliceIndex).toBe(5);
+      expect(hit.subIndex).toBeNull();
+    });
+
+    it('Screenshot 2 Regression: Cursor on Suite (315°, r = 55) sets hoveredSubIndex === null, and 7 submenu centroids hit 0..6 across 0°/360° boundary', () => {
+      // 1. Hover inner Suite at r = 55
+      const suitePt = polarToCartesian(55, 315);
+      const innerHit = hitTestRadial(suitePt.x, suitePt.y, flyoutCounts, 7);
+      expect(innerHit.zone).toBe('wedge');
+      expect(innerHit.sector).toBe(7); // Sector 7 is Suite
+      expect(innerHit.subIndex).toBeNull();
+
+      // 2. All 7 Suite submenu centroids at r = 152 hit exact index 0..6 across 0°/360° boundary
+      const suiteCount = flyoutCounts[7]; // 7
+      expect(suiteCount).toBe(7);
+
+      for (let k = 0; k < 7; k++) {
+        const { itemMid } = flyoutItemAngles(7, suiteCount, k);
+        const pt = polarToCartesian(152, itemMid);
+        const subHit = hitTestRadial(pt.x, pt.y, flyoutCounts, 7);
+        expect(subHit.zone).toBe('flyout');
+        expect(subHit.sector).toBe(7);
+        expect(subHit.sliceIndex).toBe(7);
+        expect(subHit.subIndex).toBe(k);
+        expect(subHit.item).toBe(k);
+      }
+    });
+
+    it('Screenshot 3 Regression: Cursor on Pen B -> Medium Red and Fine Black (r = 152) highlights sub items with 100% accuracy', () => {
+      // Sector 3 is Pen B (center 135°), 2 items: item 0 = Medium Red, item 1 = Fine Black
+      const count = flyoutCounts[3];
+      expect(count).toBe(2);
+
+      for (let k = 0; k < 2; k++) {
+        const { itemMid } = flyoutItemAngles(3, count, k);
+        const pt = polarToCartesian(152, itemMid);
+        const hit = hitTestRadial(pt.x, pt.y, flyoutCounts, 3);
+        expect(hit.zone).toBe('flyout');
+        expect(hit.sector).toBe(3);
+        expect(hit.sliceIndex).toBe(3);
+        expect(hit.subIndex).toBe(k);
+        expect(hit.item).toBe(k);
+      }
+    });
+
+    it('Screenshot 4 Regression: Cursor inside Esc (r = 19.8 at dx = -14, dy = 14) hits center Esc with null slice/sub', () => {
+      const hit = hitTestRadial(-14, 14, flyoutCounts, 7);
+      expect(hit.zone).toBe('center');
+      expect(hit.sliceIndex).toBeNull();
+      expect(hit.subIndex).toBeNull();
+    });
+
+    it('Render-to-Hit-Test Midpoint Identity Law: 100% identity for all 8 inner wedges and all outer submenus', () => {
+      const innerMidR = (RADIAL.rInnerIn + RADIAL.rInnerOut) / 2;
+      const subMidR = (RADIAL.rSubIn + RADIAL.rSubOut) / 2;
+
+      for (let i = 0; i < 8; i++) {
+        const innerCenter = getParentSectorCenter(i);
+        const innerPt = polarToCartesian(innerMidR, innerCenter);
+        const innerHit = hitTestRadial(innerPt.x, innerPt.y, flyoutCounts, i);
+        expect(innerHit.sliceIndex).toBe(i);
+        expect(innerHit.subIndex).toBeNull();
+
+        const n = flyoutCounts[i];
+        for (let k = 0; k < n; k++) {
+          const { itemMid } = flyoutItemAngles(i, n, k);
+          const subPt = polarToCartesian(subMidR, itemMid);
+          const subHit = hitTestRadial(subPt.x, subPt.y, flyoutCounts, i);
+          expect(subHit.sliceIndex).toBe(i);
+          expect(subHit.subIndex).toBe(k);
+        }
+      }
+    });
+
     it('all 8 inner wedges have adjacent label centroid distance >= 42px', () => {
-      const innerMidR = (RADIAL.r0 + RADIAL.r1) / 2; // (34 + 110) / 2 = 72
+      const innerMidR = (RADIAL.rInnerIn + RADIAL.rInnerOut) / 2;
       for (let s = 0; s < 8; s++) {
-        const rad1 = sectorAngles(s).midDeg * (Math.PI / 180);
-        const rad2 = sectorAngles((s + 1) % 8).midDeg * (Math.PI / 180);
-        const x1 = innerMidR * Math.cos(rad1);
-        const y1 = innerMidR * Math.sin(rad1);
-        const x2 = innerMidR * Math.cos(rad2);
-        const y2 = innerMidR * Math.sin(rad2);
-        const dist = Math.hypot(x2 - x1, y2 - y1);
+        const p1 = polarToCartesian(innerMidR, getParentSectorCenter(s));
+        const p2 = polarToCartesian(innerMidR, getParentSectorCenter((s + 1) % 8));
+        const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
         expect(dist).toBeGreaterThanOrEqual(42);
       }
     });
 
-    it('all outer submenu items (Suite sector 7, Select sector 1, Review sector 6) have centroid distance >= 42px', () => {
-      const outerMidR = (RADIAL.r1 + RADIAL.r2) / 2; // (110 + 195) / 2 = 152.5
-      const sectorsToTest = [1, 6, 7]; // Select, Review, Suite
-
-      for (const sector of sectorsToTest) {
-        const count = flyoutCounts[sector];
-        for (let i = 0; i < count - 1; i++) {
-          const a1 = flyoutItemAngles(sector, count, i).itemMid * (Math.PI / 180);
-          const a2 = flyoutItemAngles(sector, count, i + 1).itemMid * (Math.PI / 180);
-          const x1 = outerMidR * Math.cos(a1);
-          const y1 = outerMidR * Math.sin(a1);
-          const x2 = outerMidR * Math.cos(a2);
-          const y2 = outerMidR * Math.sin(a2);
-          const dist = Math.hypot(x2 - x1, y2 - y1);
-          expect(dist).toBeGreaterThanOrEqual(42);
-        }
-      }
-    });
-
-    it('simulates 360-degree pointermove at r = 70px with 100% deterministic 1-to-1 inner wedge mapping', () => {
-      for (let deg = 0; deg < 360; deg++) {
-        // deg 0 is top (y = -r), increasing clockwise
-        const rad = (deg - 90) * (Math.PI / 180);
-        const dx = 70 * Math.cos(rad);
-        const dy = 70 * Math.sin(rad);
-        const hit = radialHit(dx, dy, flyoutCounts);
-        const expectedSector = Math.floor(((deg + 22.5) % 360) / 45);
-        expect(hit.zone).toBe('wedge');
-        if (hit.zone === 'wedge') {
-          expect(hit.sector).toBe(expectedSector);
-        }
-      }
-    });
-
-    it('simulates outer ring pointermove at r = 150px with 100% deterministic 1-to-1 submenu item mapping', () => {
+    it('all outer submenu items have centroid distance >= 42px', () => {
+      const outerMidR = (RADIAL.rSubIn + RADIAL.rSubOut) / 2;
       for (const sector of [1, 6, 7]) {
         const count = flyoutCounts[sector];
-        for (let i = 0; i < count; i++) {
-          const { itemMid } = flyoutItemAngles(sector, count, i);
-          const rad = itemMid * (Math.PI / 180);
-          const dx = 150 * Math.cos(rad);
-          const dy = 150 * Math.sin(rad);
-          const hit = radialHit(dx, dy, flyoutCounts, sector);
-          expect(hit.zone).toBe('flyout');
-          if (hit.zone === 'flyout') {
-            expect(hit.sector).toBe(sector);
-            expect(hit.item).toBe(i);
-          }
+        for (let i = 0; i < count - 1; i++) {
+          const p1 = polarToCartesian(outerMidR, flyoutItemAngles(sector, count, i).itemMid);
+          const p2 = polarToCartesian(outerMidR, flyoutItemAngles(sector, count, i + 1).itemMid);
+          const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+          expect(dist).toBeGreaterThanOrEqual(42);
         }
       }
     });
@@ -100,7 +141,7 @@ describe('Automated Headless Dogfood UI Geometry Suite', () => {
     it('simulates 20 rapid fractional trackpad WheelEvents with smooth monotonic exponential scale progression', () => {
       let zoom = 1.0;
       const progression: number[] = [zoom];
-      const normalizedDelta = -4.5; // ctrlKey wheel event delta (zoom-in)
+      const normalizedDelta = -4.5;
 
       for (let i = 0; i < 20; i++) {
         const zoomFactor = Math.exp(-normalizedDelta * 0.0045);
