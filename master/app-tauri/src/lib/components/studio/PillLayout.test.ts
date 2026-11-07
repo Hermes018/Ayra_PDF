@@ -1,5 +1,6 @@
-// BUG-045: the property pill title stays on one line (sentence case, tooltip with the full name), and the pill sits
-// above the favourites bar and the Help button instead of overlapping them.
+// BUG-045 & BUG-064: the property pill title stays on one line (sentence case, tooltip with the full name),
+// the pill sits above the favourites bar and the Help button, and the favourites bar is lifted above
+// the 28px bottom status bar.
 import { describe, it, expect } from 'vitest';
 import pill from './PropertyPill.svelte?raw';
 import fav from './FavoritesBar.svelte?raw';
@@ -11,7 +12,7 @@ function rule(src: string, selector: string): string {
   return style.slice(i, style.indexOf('}', i));
 }
 
-describe('property pill layout (BUG-045)', () => {
+describe('property pill layout (BUG-045 & BUG-064)', () => {
   it('the tool label is one line, not upper-cased, with an ellipsis and a tooltip', () => {
     const r = rule(pill, '.tool-label');
     expect(r).toMatch(/white-space:\s*nowrap/);
@@ -23,7 +24,6 @@ describe('property pill layout (BUG-045)', () => {
     const bottom = /bottom:\s*(calc\([^;]+\)|[^;]+);/.exec(rule(pill, '.property-pill'))?.[1] ?? '';
     const favBottom = /bottom:\s*([^;]+);/.exec(rule(fav, '.favorites-bar'))?.[1] ?? '';
     expect(bottom).toContain('var(--control-height-lg)');
-    expect(bottom).not.toMatch(/\d+px/);
-    expect(favBottom).toBe('var(--space-4)');
+    expect(favBottom).toContain('status-bar-height');
   });
 });

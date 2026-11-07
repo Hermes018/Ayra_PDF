@@ -7,6 +7,7 @@
     radialHit,
     clampCenter,
     sectorAngles,
+    flyoutItemAngles,
     describeArc,
     type RadialHit
   } from '$lib/core/radialGeometry';
@@ -56,9 +57,9 @@
     return { x, y };
   });
 
-  const SVG_SIZE = RADIAL.r2 * 2 + 16;
-  const CX = SVG_SIZE / 2;
-  const CY = SVG_SIZE / 2;
+  const SVG_SIZE = 440;
+  const CX = 220;
+  const CY = 220;
 
   function closeMenu() {
     visible = false;
@@ -146,6 +147,7 @@
     class="radial-backdrop"
     bind:this={menuContainer}
     role="presentation"
+    onpointermove={handlePointerMove}
     onpointerdown={(e) => {
       if (e.target === menuContainer || (e.target as HTMLElement)?.classList.contains('radial-backdrop')) {
         closeMenu();
@@ -164,7 +166,7 @@
       <svg
         width={SVG_SIZE}
         height={SVG_SIZE}
-        viewBox="0 0 {SVG_SIZE} {SVG_SIZE}"
+        viewBox="-220 -220 440 440"
         class="radial-svg"
       >
         <!-- Center Cancel / Hub Circle -->
@@ -178,32 +180,33 @@
           style="cursor: pointer;"
         >
           <circle
-            cx={CX}
-            cy={CY}
+            cx={0}
+            cy={0}
             r={RADIAL.r0}
             class="center-hub"
           />
-          <g transform="translate({CX - 8}, {CY - 14})" class="center-hub-icon-g">
+          <g transform="translate(-8, -14)" class="center-hub-icon-g">
             <StudioIcon name="close" size={16} />
           </g>
           <text
-            x={CX}
-            y={CY + 14}
+            x={0}
+            y={12}
             text-anchor="middle"
+            dominant-baseline="central"
             class="center-hub-label"
           >
-            Close
+            Esc
           </text>
         </g>
 
         <!-- 8 Primary Wedges -->
         {#each WEDGES as wedge (wedge.sector)}
           {@const angles = sectorAngles(wedge.sector)}
-          {@const pathD = describeArc(CX, CY, RADIAL.r0, RADIAL.r1, angles.startDeg, angles.endDeg)}
+          {@const pathD = describeArc(0, 0, RADIAL.r0, RADIAL.r1, angles.startDeg, angles.endDeg)}
           {@const rad = angles.midDeg * (Math.PI / 180)}
           {@const iconR = (RADIAL.r0 + RADIAL.r1) / 2}
-          {@const iconX = CX + iconR * Math.cos(rad)}
-          {@const iconY = CY + iconR * Math.sin(rad)}
+          {@const iconX = iconR * Math.cos(rad)}
+          {@const iconY = iconR * Math.sin(rad)}
           {@const isHovered = activeSector === wedge.sector}
           {@const isCurrentTool = tools.activeToolId === wedge.tool || (wedge.presetId && tools.activePreset?.id === wedge.presetId)}
 
@@ -230,8 +233,9 @@
             <!-- Wedge Label -->
             <text
               x={iconX}
-              y={iconY + 14}
+              y={iconY + 12}
               text-anchor="middle"
+              dominant-baseline="central"
               class="wedge-label"
             >
               {wedge.label}
@@ -243,19 +247,14 @@
         {#if activeSector !== null && WEDGES[activeSector]?.flyout.length}
           {@const activeWedge = WEDGES[activeSector]!}
           {@const count = activeWedge.flyout.length}
-          {@const angles = sectorAngles(activeSector)}
-          {@const wedgeSpan = angles.endDeg - angles.startDeg}
-          {@const itemSpan = wedgeSpan / count}
 
           {#each activeWedge.flyout as item, idx}
-            {@const itemStart = angles.startDeg + idx * itemSpan}
-            {@const itemEnd = itemStart + itemSpan}
-            {@const itemMid = (itemStart + itemEnd) / 2}
-            {@const flyoutPath = describeArc(CX, CY, RADIAL.r1 + 2, RADIAL.r2, itemStart, itemEnd)}
+            {@const { itemStart, itemEnd, itemMid } = flyoutItemAngles(activeSector, count, idx)}
+            {@const flyoutPath = describeArc(0, 0, RADIAL.r1 + 2, RADIAL.r2, itemStart, itemEnd)}
             {@const flyoutRad = itemMid * (Math.PI / 180)}
             {@const flyoutR = (RADIAL.r1 + RADIAL.r2) / 2}
-            {@const fx = CX + flyoutR * Math.cos(flyoutRad)}
-            {@const fy = CY + flyoutR * Math.sin(flyoutRad)}
+            {@const fx = flyoutR * Math.cos(flyoutRad)}
+            {@const fy = flyoutR * Math.sin(flyoutRad)}
             {@const isFlyoutHovered = activeFlyout === idx}
 
             <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -280,6 +279,7 @@
                 x={fx}
                 y={fy + 12}
                 text-anchor="middle"
+                dominant-baseline="central"
                 class="flyout-label"
               >
                 {item.label}
@@ -296,7 +296,7 @@
   .radial-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 300;
+    z-index: var(--z-dialog, 300);
     background: transparent;
     user-select: none;
     touch-action: none;
@@ -314,7 +314,7 @@
   }
 
   .center-hub {
-    fill: var(--glass-bg);
+    fill: var(--surface-dialog);
     stroke: var(--glass-border);
     stroke-width: 1.5;
     cursor: pointer;
@@ -345,9 +345,9 @@
 
   /* Zero CSS transitions for 120Hz deterministic tracking */
   .wedge-path {
-    fill: var(--glass-bg);
+    fill: var(--surface-dialog);
     stroke: var(--glass-border);
-    stroke-width: 1.2;
+    stroke-width: 1.5;
     transition: none !important;
   }
 
@@ -359,7 +359,7 @@
 
   .wedge-group.active-tool .wedge-path {
     stroke: var(--accent);
-    stroke-width: 2;
+    stroke-width: 2.5;
     transition: none !important;
   }
 
@@ -389,9 +389,9 @@
   }
 
   .flyout-path {
-    fill: var(--glass-bg);
+    fill: var(--surface-dialog);
     stroke: var(--glass-border);
-    stroke-width: 1;
+    stroke-width: 1.5;
     transition: none !important;
   }
 

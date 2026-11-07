@@ -86,9 +86,9 @@
 <style>
   .favorites-bar {
     position: absolute;
-    bottom: var(--space-4);
-    left: var(--space-4);
-    z-index: 150;
+    bottom: calc(var(--status-bar-height, var(--statusbar-height, 28px)) + 12px);
+    left: 16px;
+    z-index: 40;
     pointer-events: auto;
     display: flex;
     align-items: center;

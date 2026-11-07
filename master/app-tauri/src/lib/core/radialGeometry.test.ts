@@ -5,6 +5,7 @@ import {
   getSector,
   clampCenter,
   sectorAngles,
+  flyoutItemAngles,
   describeArc,
   type RadialHit
 } from './radialGeometry';
@@ -12,18 +13,18 @@ import {
 describe('Radial Menu Geometry', () => {
   const flyoutCounts = [0, 5, 2, 2, 1, 2, 6, 7];
 
-  it('detects cancel zone inside r0 (rho < 36px)', () => {
+  it('detects cancel zone inside r0 (rho < 34px)', () => {
     const hit = radialHit(10, 10, flyoutCounts);
     expect(hit.zone).toBe('cancel');
   });
 
-  it('detects outside zone beyond r2 (rho >= 176px)', () => {
-    const hit = radialHit(200, 200, flyoutCounts);
+  it('detects outside zone beyond r2 (rho > 195px)', () => {
+    const hit = radialHit(210, 210, flyoutCounts);
     expect(hit.zone).toBe('outside');
   });
 
   it('identifies all 8 sector centres correctly in wedge zone', () => {
-    const rMid = (RADIAL.r0 + RADIAL.r1) / 2; // e.g. (36 + 112) / 2 = 74
+    const rMid = (RADIAL.r0 + RADIAL.r1) / 2; // (34 + 110) / 2 = 72
     for (let s = 0; s < 8; s++) {
       const angles = sectorAngles(s);
       const rad = angles.midDeg * (Math.PI / 180);
@@ -37,19 +38,15 @@ describe('Radial Menu Geometry', () => {
     }
   });
 
-  it('partitions flyout ring items accurately', () => {
+  it('partitions flyout ring items accurately with fan layout', () => {
     // Sector 1 has 5 flyouts
     const rFlyout = (RADIAL.r1 + RADIAL.r2) / 2;
-    const angles = sectorAngles(1); // Sector 1 midDeg = -45 deg, span -67.5 to -22.5
-    const span = angles.endDeg - angles.startDeg;
-    const itemSpan = span / 5;
-
     for (let i = 0; i < 5; i++) {
-      const mid = angles.startDeg + (i + 0.5) * itemSpan;
-      const rad = mid * (Math.PI / 180);
+      const { itemMid } = flyoutItemAngles(1, 5, i);
+      const rad = itemMid * (Math.PI / 180);
       const dx = rFlyout * Math.cos(rad);
       const dy = rFlyout * Math.sin(rad);
-      const hit = radialHit(dx, dy, flyoutCounts);
+      const hit = radialHit(dx, dy, flyoutCounts, 1);
       expect(hit.zone).toBe('flyout');
       if (hit.zone === 'flyout') {
         expect(hit.sector).toBe(1);
@@ -69,10 +66,10 @@ describe('Radial Menu Geometry', () => {
   });
 
   it('describeArc generates valid SVG path data', () => {
-    const arc = describeArc(100, 100, 36, 112, -90, -45);
+    const arc = describeArc(0, 0, 34, 110, -90, -45);
     expect(arc).toContain('M');
-    expect(arc).toContain('A 112 112');
-    expect(arc).toContain('A 36 36');
+    expect(arc).toContain('A 110 110');
+    expect(arc).toContain('A 34 34');
     expect(arc).toContain('Z');
   });
 
@@ -107,12 +104,10 @@ describe('Radial Menu Geometry', () => {
   });
 
   it('eliminates angular drift using lockedWedge in flyout ring', () => {
-    // Sector 1 (midDeg -45) has 5 flyouts.
-    // When moving outward with lockedWedge = 1, slight drift towards sector 0 or 2
-    // still maps to sector 1 flyouts rather than jumping to adjacent sectors.
-    const rFlyout = 140; // in [RADIAL.r1, RADIAL.r2]
-    // A point slightly drifting towards sector 0 (angle ~ -65 deg)
-    const driftAngleRad = -65 * (Math.PI / 180);
+    const rFlyout = 150; // in [RADIAL.r1, RADIAL.r2]
+    const { itemMid } = flyoutItemAngles(1, 5, 2);
+    // Slight drift ±5 degrees
+    const driftAngleRad = (itemMid + 5) * (Math.PI / 180);
     const dx = rFlyout * Math.cos(driftAngleRad);
     const dy = rFlyout * Math.sin(driftAngleRad);
 
@@ -124,13 +119,13 @@ describe('Radial Menu Geometry', () => {
   });
 
   it('respects backdrop dismissal zone beyond outer radius', () => {
-    expect(radialHit(180, 0, flyoutCounts).zone).toBe('outside');
+    expect(radialHit(210, 0, flyoutCounts).zone).toBe('outside');
     expect(radialHit(0, -250, flyoutCounts).zone).toBe('outside');
   });
 
   it('respects cancel hub zone inside r0 radius', () => {
     expect(radialHit(0, 0, flyoutCounts).zone).toBe('cancel');
     expect(radialHit(15, -15, flyoutCounts).zone).toBe('cancel');
-    expect(radialHit(35, 0, flyoutCounts).zone).toBe('cancel');
+    expect(radialHit(33, 0, flyoutCounts).zone).toBe('cancel');
   });
 });

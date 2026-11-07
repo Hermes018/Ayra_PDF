@@ -1,5 +1,11 @@
 // app-tauri/src/lib/core/radialGeometry.ts
-export const RADIAL = Object.freeze({ r0: 36, r1: 112, r2: 176, sectors: 8 });
+export const RADIAL = Object.freeze({
+  r0: 34,
+  r1: 110,
+  r2: 195,
+  sectors: 8,
+  itemSpanDeg: 30,
+});
 
 export type RadialHit =
   | { zone: 'cancel' }
@@ -20,7 +26,6 @@ export function getSector(
 ): number {
   const dx = clientX - centerX;
   const dy = clientY - centerY;
-  const distance = Math.sqrt(dx * dx + dy * dy);
   let angle = Math.atan2(dy, dx) + Math.PI / 2; // Shift so Top is 0
   if (angle < 0) angle += 2 * Math.PI;
   return Math.floor((angle + Math.PI / 8) / (Math.PI / 4)) % RADIAL.sectors;
@@ -32,48 +37,52 @@ export function radialHit(
   flyoutCounts: readonly number[],
   lockedWedge: number | null = null
 ): RadialHit {
-  const distance = Math.sqrt(dx * dx + dy * dy);
-  if (distance < RADIAL.r0) return { zone: 'cancel' };
-  if (distance >= RADIAL.r2) return { zone: 'outside' };
+  const r = Math.hypot(dx, dy);
+  if (r < RADIAL.r0) return { zone: 'cancel' };
+  if (r > RADIAL.r2) return { zone: 'outside' };
 
-  let angle = Math.atan2(dy, dx) + Math.PI / 2; // Shift so Top is 0
-  while (angle < 0) angle += 2 * Math.PI;
-  while (angle >= 2 * Math.PI) angle -= 2 * Math.PI;
+  // Normalized angle in degrees where 0° is top-center, increasing clockwise
+  const angleDeg = (Math.atan2(dy, dx) * 180 / Math.PI + 360 + 90) % 360;
 
-  const freeSector = Math.floor((angle + Math.PI / 8) / (Math.PI / 4)) % RADIAL.sectors;
+  const sliceAngle = 360 / RADIAL.sectors; // 45°
+  const freeSector = Math.floor(((angleDeg + sliceAngle / 2) % 360) / sliceAngle);
 
-  if (distance < RADIAL.r1) {
+  if (r <= RADIAL.r1) {
     return { zone: 'wedge', sector: freeSector };
   }
 
-  // Outer flyout ring (r1 <= distance < r2)
+  // Outer submenu fan ring (r1 < r <= r2)
   const targetSector = lockedWedge !== null ? lockedWedge : freeSector;
   const n = flyoutCounts[targetSector] ?? 0;
   if (n === 0) {
     return { zone: 'wedge', sector: targetSector };
   }
 
-  // Mid angle for target sector in shifted polar coordinates
-  const midAngle = targetSector * (Math.PI / 4);
-  let deltaAngle = angle - midAngle;
-  while (deltaAngle > Math.PI) deltaAngle -= 2 * Math.PI;
-  while (deltaAngle < -Math.PI) deltaAngle += 2 * Math.PI;
+  const itemSpan = RADIAL.itemSpanDeg;
+  const totalSpan = itemSpan * n;
+  const targetMidDeg = (targetSector * 45) % 360;
 
-  const halfSpan = Math.PI / 8;
-  if (Math.abs(deltaAngle) <= halfSpan * 1.25) {
-    const t = Math.max(0, Math.min(1, (deltaAngle + halfSpan) / (2 * halfSpan)));
+  let diff = angleDeg - targetMidDeg;
+  while (diff > 180) diff -= 360;
+  while (diff < -180) diff += 360;
+
+  const halfFan = totalSpan / 2;
+  // If pointer is within the active submenu fan (with a generous 15° outer cushion)
+  if (Math.abs(diff) <= halfFan + 15) {
+    const t = Math.max(0, Math.min(1, (diff + halfFan) / totalSpan));
     const item = Math.min(n - 1, Math.max(0, Math.floor(t * n)));
     return { zone: 'flyout', sector: targetSector, item };
   }
 
-  // Outside the active wedge's flyout fan, fall back to freeSector
+  // Otherwise fallback to freeSector
   const freeN = flyoutCounts[freeSector] ?? 0;
   if (freeN === 0) return { zone: 'wedge', sector: freeSector };
-  const freeMidAngle = freeSector * (Math.PI / 4);
-  let freeDelta = angle - freeMidAngle;
-  while (freeDelta > Math.PI) freeDelta -= 2 * Math.PI;
-  while (freeDelta < -Math.PI) freeDelta += 2 * Math.PI;
-  const freeT = Math.max(0, Math.min(1, (freeDelta + halfSpan) / (2 * halfSpan)));
+  const freeMidDeg = (freeSector * 45) % 360;
+  let freeDiff = angleDeg - freeMidDeg;
+  while (freeDiff > 180) freeDiff -= 360;
+  while (freeDiff < -180) freeDiff += 360;
+  const freeHalfFan = (freeN * itemSpan) / 2;
+  const freeT = Math.max(0, Math.min(1, (freeDiff + freeHalfFan) / (freeN * itemSpan)));
   const freeItem = Math.min(freeN - 1, Math.max(0, Math.floor(freeT * freeN)));
   return { zone: 'flyout', sector: freeSector, item: freeItem };
 }
@@ -84,13 +93,34 @@ export function clampCenter(x: number, y: number, w: number, h: number): { x: nu
 }
 
 export function sectorAngles(sector: number): { startDeg: number; endDeg: number; midDeg: number } {
-  // Sector 0 is centered at -90 deg (Top)
+  // Sector 0 is centered at -90 deg (Top in standard math coordinates)
   const midDeg = -90 + sector * 45;
   return {
     startDeg: midDeg - 22.5,
     endDeg: midDeg + 22.5,
     midDeg,
   };
+}
+
+export function flyoutItemAngles(
+  sector: number,
+  count: number,
+  idx: number
+): {
+  itemStart: number;
+  itemEnd: number;
+  itemMid: number;
+  itemSpan: number;
+} {
+  const angles = sectorAngles(sector);
+  const mid = angles.midDeg;
+  const itemSpan = RADIAL.itemSpanDeg;
+  const totalSpan = itemSpan * count;
+  const startFan = mid - totalSpan / 2;
+  const itemStart = startFan + idx * itemSpan;
+  const itemEnd = itemStart + itemSpan;
+  const itemMid = (itemStart + itemEnd) / 2;
+  return { itemStart, itemEnd, itemMid, itemSpan };
 }
 
 export function describeArc(
