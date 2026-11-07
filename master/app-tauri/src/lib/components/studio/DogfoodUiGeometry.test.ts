@@ -170,3 +170,63 @@ describe('Automated Headless Dogfood UI Geometry Suite', () => {
     });
   });
 });
+
+import {
+  computeTargetRenderScale,
+  MIN_BASE_DPR,
+  MAX_RENDER_SCALE,
+  MAX_CANVAS_DIM,
+} from '../../views/studio/renderScale';
+
+describe('Progressive HiDPI Zoom & Resolution Pipeline (BUG-067)', () => {
+  it('computes crisp baseline >= 1.5 at 1.0 zoom on 1.0 DPR displays', () => {
+    const scale = computeTargetRenderScale(1.0, 1.0, 612, 792);
+    expect(scale).toBeGreaterThanOrEqual(1.5);
+    expect(scale).toBe(1.5);
+  });
+
+  it('scales up proportionally (3.75) at 2.5 zoom on 1.5 DPR display for ~270 DPI resolution', () => {
+    const scale = computeTargetRenderScale(2.5, 1.5, 612, 792);
+    expect(scale).toBe(3.75);
+  });
+
+  it('enforces 8GB RAM WebKitGTK texture cap so max dimension never exceeds 4096px even at extreme 5.0 zoom', () => {
+    const scale = computeTargetRenderScale(5.0, 2.0, 612, 792);
+    const maxDim = Math.max(612 * scale, 792 * scale);
+    expect(maxDim).toBeLessThanOrEqual(MAX_CANVAS_DIM);
+    expect(scale).toBe(4.0);
+
+    // Large engineering architectural drawing (2592 x 3456 pt)
+    const archScale = computeTargetRenderScale(5.0, 2.0, 2592, 3456);
+    const archMaxDim = Math.max(2592 * archScale, 3456 * archScale);
+    expect(archMaxDim).toBeLessThanOrEqual(MAX_CANVAS_DIM);
+    expect(archScale).toBe(1.0);
+  });
+
+  it('debounces rapid burst of 10 trackpad zoom events into a single high-DPI re-render invocation', async () => {
+    let renderCalls: Array<{ targetScale: number }> = [];
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function onZoomChange(zoom: number) {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const targetScale = computeTargetRenderScale(zoom, 1.5, 612, 792);
+        renderCalls.push({ targetScale });
+      }, 140);
+    }
+
+    // Rapid 10 trackpad events
+    for (let i = 0; i < 10; i++) {
+      onZoomChange(1.0 + i * 0.15); // zooms from 1.0 to 2.35
+    }
+
+    // 0 calls during the active gesture
+    expect(renderCalls).toHaveLength(0);
+
+    // Wait 160ms for settle timer to fire
+    await new Promise((resolve) => setTimeout(resolve, 160));
+
+    expect(renderCalls).toHaveLength(1);
+    expect(renderCalls[0].targetScale).toBe(3.5);
+  });
+});

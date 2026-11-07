@@ -48,6 +48,7 @@
   import { inserts, type PageOverlayTemplate } from '$lib/core/insertEngine.svelte';
   import { freeOutputPath } from './outputNames';
   import { findPageForWorldPoint, parseCssColorToRgb, pdfPagePtToWorld, worldToPdfPagePt } from './pageGeometry';
+  import { computeTargetRenderScale } from './renderScale';
   import { saveLiveDocument } from './studioSave';
   import {
     activate,
@@ -90,6 +91,79 @@
   let pageCanvases: Record<number, HTMLCanvasElement | null> = $state({});
   let currentPdfDoc: any = null;
   let loadedFilePath = $state<string | null>(null);
+  let renderedPageScales: Record<number, number> = $state({});
+  let renderDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let inFlightRenderTaskId = 0;
+
+  async function reRenderPageHiDPI(pageIndex: number, targetScale: number, taskId: number) {
+    if (!currentPdfDoc || unmounted || inFlightRenderTaskId !== taskId) return;
+    const canvasEl = pageCanvases[pageIndex];
+    if (!canvasEl) return;
+    try {
+      const page = await currentPdfDoc.getPage(pageIndex + 1);
+      if (!currentPdfDoc || unmounted || inFlightRenderTaskId !== taskId) return;
+      const vp = page.getViewport({ scale: targetScale });
+      const offscreen = document.createElement('canvas');
+      offscreen.width = vp.width;
+      offscreen.height = vp.height;
+      const offCtx = offscreen.getContext('2d');
+      if (!offCtx) return;
+      await page.render({ canvasContext: offCtx, viewport: vp }).promise;
+      if (!currentPdfDoc || unmounted || inFlightRenderTaskId !== taskId) return;
+
+      canvasEl.width = vp.width;
+      canvasEl.height = vp.height;
+      const ctx = canvasEl.getContext('2d');
+      if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(offscreen, 0, 0);
+      }
+      renderedPageScales[pageIndex] = targetScale;
+    } catch (e: any) {
+      if (e?.name !== 'RenderingCancelledException') {
+        console.warn('HiDPI re-render failed for page', pageIndex, e);
+      }
+    }
+  }
+
+  function scheduleHiDpiReRender() {
+    if (!currentPdfDoc || viewport.pages.length === 0) return;
+    if (renderDebounceTimer) {
+      clearTimeout(renderDebounceTimer);
+      renderDebounceTimer = null;
+    }
+    renderDebounceTimer = setTimeout(() => {
+      if (!currentPdfDoc || unmounted) return;
+      const taskId = ++inFlightRenderTaskId;
+      const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+      const zoom = currentView.zoom;
+      const activeIdx = Math.max(0, Math.min(activePageNumber - 1, viewport.pages.length - 1));
+
+      // Re-render visible active page and immediate neighbors at HiDPI
+      const pagesToRender = [activeIdx, activeIdx - 1, activeIdx + 1].filter(
+        (i) => i >= 0 && i < viewport.pages.length
+      );
+
+      for (const idx of pagesToRender) {
+        const page = viewport.pages[idx];
+        if (!page) continue;
+        const targetScale = computeTargetRenderScale(zoom, dpr, page.widthPt, page.heightPt);
+        const currentScale = renderedPageScales[idx] || 0;
+        if (Math.abs(targetScale - currentScale) >= 0.25) {
+          void reRenderPageHiDPI(idx, targetScale, taskId);
+        }
+      }
+    }, 140);
+  }
+
+  $effect(() => {
+    const _z = currentView.zoom;
+    const _p = activePageNumber;
+    if (hasDocument && currentPdfDoc) {
+      scheduleHiDpiReRender();
+    }
+  });
 
   // Extracted PDF text blocks for discoverable structural text editing
   export interface PdfTextBlockDto {
@@ -206,7 +280,7 @@
    *  disables document-only controls (no phantom "Page 1 / 2" on an empty canvas). */
   let hasDocument = $derived(viewport.pages.length > 0 && !!(loadedFilePath ?? appState.currentFile));
   const NEEDS_DOC = 'Open a PDF first';
-  const ZOOM_OPTIONS = [
+  const BASE_ZOOM_OPTIONS = [
     { value: '50', label: '50%' },
     { value: '75', label: '75%' },
     { value: '100', label: '100%' },
@@ -216,6 +290,17 @@
     { value: 'fit-width', label: 'Fit width' },
     { value: 'fit-page', label: 'Fit page' },
   ];
+
+  let activeZoomOptions = $derived.by(() => {
+    const rounded = Math.round(currentView.zoom * 100).toString();
+    const exists = BASE_ZOOM_OPTIONS.some((o) => o.value === rounded);
+    if (exists) return BASE_ZOOM_OPTIONS;
+    const custom = { value: rounded, label: `${rounded}%` };
+    const numeric = BASE_ZOOM_OPTIONS.filter((o) => !isNaN(Number(o.value)));
+    const fit = BASE_ZOOM_OPTIONS.filter((o) => isNaN(Number(o.value)));
+    const merged = [...numeric, custom].sort((a, b) => Number(a.value) - Number(b.value));
+    return [...merged, ...fit];
+  });
   const OVERLAY_OPTIONS = [
     { value: 'none', label: 'No overlay' },
     { value: 'engineering-grid', label: 'Eng grid' },
@@ -618,19 +703,30 @@
         if (!live()) return;
       }
 
-      const baseScale = (96 / 72) * (window.devicePixelRatio || 1);
+      const dpr = window.devicePixelRatio || 1;
+      const initZoom = currentView.zoom;
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         if (!live()) return;
         const canvasEl = pageCanvases[i - 1];
         if (!canvasEl) continue;
-        const vp = page.getViewport({ scale: baseScale });
+        const pGeom = viewport.pages[i - 1];
+        const targetScale = computeTargetRenderScale(
+          initZoom,
+          dpr,
+          pGeom?.widthPt ?? 612,
+          pGeom?.heightPt ?? 792
+        );
+        const vp = page.getViewport({ scale: targetScale });
         canvasEl.width = vp.width;
         canvasEl.height = vp.height;
         const ctx = canvasEl.getContext('2d');
         if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
           await page.render({ canvasContext: ctx, viewport: vp }).promise;
         }
+        renderedPageScales[i - 1] = targetScale;
         if (!live()) return;
       }
 
@@ -938,6 +1034,11 @@
   onDestroy(() => {
     // The engines stay live in the document store: a canvas never resets or stashes them.
     unmounted = true;
+    if (renderDebounceTimer) {
+      clearTimeout(renderDebounceTimer);
+      renderDebounceTimer = null;
+    }
+    inFlightRenderTaskId++;
     if (currentPdfDoc) {
       currentPdfDoc.destroy();
     }
@@ -1584,7 +1685,7 @@
         hideLabel
         data-testid="zoom-preset"
         bind:value={() => Math.round(currentView.zoom * 100).toString(), (v) => handleZoomSelect(v)}
-        options={ZOOM_OPTIONS}
+        options={activeZoomOptions}
         disabled={!hasDocument}
         disabledReason={NEEDS_DOC}
       />
