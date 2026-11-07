@@ -985,6 +985,21 @@
       toggleRadialAt();
     };
 
+    ink.onSnap = (stroke) => {
+      const wet = document.getElementById('wet-layer');
+      if (wet) {
+        try {
+          // Release pointer capture to sever the hardware event stream immediately
+          const activeIds = [1, 2, 3, 4, 5];
+          for (const pid of activeIds) {
+            if (wet.hasPointerCapture(pid)) {
+              wet.releasePointerCapture(pid);
+            }
+          }
+        } catch {}
+      }
+    };
+
     // Register Phase D4 & D5 global command handlers (zero local keydown listeners)
     commands.register('selection.duplicate', (doc) => {
       selection.duplicateSelected();
@@ -1034,6 +1049,7 @@
   onDestroy(() => {
     // The engines stay live in the document store: a canvas never resets or stashes them.
     unmounted = true;
+    ink.onSnap = null;
     if (renderDebounceTimer) {
       clearTimeout(renderDebounceTimer);
       renderDebounceTimer = null;
@@ -2086,12 +2102,13 @@
             opacity={stroke.opacity}
             style={stroke.tool === 'review.highlight' ? 'mix-blend-mode: multiply;' : ''}
           />
-        {:else if stroke.tool === 'shape.ellipse'}
+        {:else if stroke.tool === 'shape.ellipse' || stroke.type === 'ellipse'}
           <ellipse
-            cx={bbox.cx}
-            cy={bbox.cy}
-            rx={bbox.width / 2}
-            ry={bbox.height / 2}
+            cx={stroke.cx ?? bbox.cx}
+            cy={stroke.cy ?? bbox.cy}
+            rx={stroke.rx ?? (bbox.width / 2)}
+            ry={stroke.ry ?? (bbox.height / 2)}
+            transform={stroke.rotation ? `rotate(${stroke.rotation} ${stroke.cx ?? bbox.cx} ${stroke.cy ?? bbox.cy})` : undefined}
             fill={fillUrl}
             fill-opacity={stroke.fillOpacity ?? 0.35}
             stroke={stroke.color}
@@ -2336,14 +2353,27 @@
   >
     <g style:transform={worldTransform}>
       {#if ink.currentStroke}
-        <path
-          d={ink.getSvgPath(ink.currentStroke)}
-          fill={ink.currentStroke.color}
-          opacity={ink.currentStroke.opacity}
-          style={ink.currentStroke.isHighlighter || ink.currentStroke.tool === 'highlighter'
-            ? 'mix-blend-mode: multiply;'
-            : ''}
-        />
+        {#if ink.currentStroke.type === 'ellipse' && ink.currentStroke.cx !== undefined && ink.currentStroke.cy !== undefined}
+          <ellipse
+            cx={ink.currentStroke.cx}
+            cy={ink.currentStroke.cy}
+            rx={ink.currentStroke.rx}
+            ry={ink.currentStroke.ry}
+            fill="none"
+            stroke={ink.currentStroke.color}
+            stroke-width={ink.currentStroke.widthPt}
+            opacity={ink.currentStroke.opacity}
+          />
+        {:else}
+          <path
+            d={ink.getSvgPath(ink.currentStroke)}
+            fill={ink.currentStroke.color}
+            opacity={ink.currentStroke.opacity}
+            style={ink.currentStroke.isHighlighter || ink.currentStroke.tool === 'highlighter'
+              ? 'mix-blend-mode: multiply;'
+              : ''}
+          />
+        {/if}
       {/if}
 
       {#if shapes.activeShape}

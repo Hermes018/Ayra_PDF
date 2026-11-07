@@ -45,6 +45,12 @@ export interface ActiveStroke {
   flipH?: boolean;
   flipV?: boolean;
   author?: string;
+  type?: 'stroke' | 'ellipse' | 'rect';
+  cx?: number;
+  cy?: number;
+  rx?: number;
+  ry?: number;
+  rotation?: number;
 }
 
 /** Distance from point p to line segment ab */
@@ -180,12 +186,19 @@ export class InkEngine {
   #laserRafId: number | null = null;
   #dwellTimeout: ReturnType<typeof setTimeout> | null = null;
   #strokeSeq = 0;
+  onSnap?: ((stroke: ActiveStroke) => void) | null = null;
 
   get isDrawing(): boolean {
     return this.currentStroke !== null;
   }
 
   getSvgPath(stroke: ActiveStroke): string {
+    if (stroke.type === 'ellipse' && stroke.cx !== undefined && stroke.cy !== undefined && stroke.rx !== undefined && stroke.ry !== undefined) {
+      const { cx, cy, rx, ry } = stroke;
+      const x1 = cx - rx;
+      const x2 = cx + rx;
+      return `M ${x1} ${cy} A ${rx} ${ry} 0 1 0 ${x2} ${cy} A ${rx} ${ry} 0 1 0 ${x1} ${cy} Z`;
+    }
     return generateSvgPathFromPoints(stroke.points, stroke.preset);
   }
 
@@ -351,6 +364,16 @@ export class InkEngine {
       const cy = strokeBoundingBox.minY + strokeBoundingBox.height / 2;
       const rx = strokeBoundingBox.width / 2;
       const ry = strokeBoundingBox.height / 2;
+
+      // Pure primitive conversion (Zero chord artifacts)
+      stroke.type = 'ellipse';
+      stroke.cx = cx;
+      stroke.cy = cy;
+      stroke.rx = rx;
+      stroke.ry = ry;
+      stroke.rotation = 0;
+
+      // Also generate 37 canonical points for backward compatibility with point-based bounding box & golden tests
       const ellipsePts: Point[] = [];
       const numSteps = 36;
       for (let i = 0; i <= numSteps; i++) {
@@ -362,6 +385,14 @@ export class InkEngine {
         });
       }
       stroke.points = ellipsePts;
+
+      // If this was an active live stroke, commit it and detach the active pointer stream immediately
+      if (stroke === this.currentStroke) {
+        this.completedStrokes.push(stroke);
+        this.currentStroke = null;
+        this.clearDwellTimeout();
+        this.onSnap?.(stroke);
+      }
       return true;
     }
 
